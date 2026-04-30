@@ -1,0 +1,356 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CCB DESIGN SYSTEM — CENTRE CHRÉTIEN BERAKAH
+   Couleurs : Violet Royal #5A2CA0 | Or Divin #D4AF37
+   ============================================================ */
+
+:root {
+  /* Brand Colors */
+  --violet: #5a2ca0;
+  --violet-dark: #3d1a72;
+  --violet-light: #7b4bc4;
+  --violet-pale: #ede5f8;
+  --violet-50: #f5f0fd;
+
+  --gold: #d4af37;
+  --gold-dark: #b8971e;
+  --gold-light: #e8cc6a;
+  --gold-pale: #fdf8e8;
+
+  /* Semantic */
+  --background: #ffffff;
+  --foreground: #0f0a1e;
+  --surface: #fafafa;
+  --surface-2: #f4f1fb;
+  --border: #e8e0f5;
+  --border-subtle: #f0ecfa;
+
+  --text-primary: #0f0a1e;
+  --text-secondary: #4a4060;
+  --text-muted: #8b7faa;
+  --text-inverse: #ffffff;
+
+  /* Status */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(90, 44, 160, 0.08);
+  --shadow-md: 0 4px 16px rgba(90, 44, 160, 0.12);
+  --shadow-lg: 0 8px 32px rgba(90, 44, 160, 0.16);
+  --shadow-gold: 0 4px 20px rgba(212, 175, 55, 0.3);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-title: var(--font-cinzel), "Georgia", serif;
+  --font-body: var(--font-montserrat), "Arial", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0614;
+    --foreground: #f0ebff;
+    --surface: #110d24;
+    --surface-2: #1a1235;
+    --border: #2a1f4a;
+    --border-subtle: #1e1638;
+
+    --text-primary: #f0ebff;
+    --text-secondary: #c4b5e8;
+    --text-muted: #7b6aaa;
+    --text-inverse: #0f0a1e;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ============================================================
+   TAILWIND THEME EXTENSIONS
+   ============================================================ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+
+  --color-violet: var(--violet);
+  --color-violet-dark: var(--violet-dark);
+  --color-violet-light: var(--violet-light);
+  --color-violet-pale: var(--violet-pale);
+  --color-violet-50: var(--violet-50);
+
+  --color-gold: var(--gold);
+  --color-gold-dark: var(--gold-dark);
+  --color-gold-light: var(--gold-light);
+  --color-gold-pale: var(--gold-pale);
+
+  --font-cinzel: var(--font-cinzel);
+  --font-montserrat: var(--font-montserrat);
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+
+.font-cinzel {
+  font-family: var(--font-title);
+}
+
+.font-montserrat {
+  font-family: var(--font-body);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-title);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+h4, h5, h6 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   CCB UTILITY CLASSES
+   ============================================================ */
+
+/* Gradient backgrounds */
+.bg-violet-gradient {
+  background: linear-gradient(135deg, var(--violet-dark) 0%, var(--violet) 50%, var(--violet-light) 100%);
+}
+
+.bg-gold-gradient {
+  background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%);
+}
+
+.bg-hero-gradient {
+  background: linear-gradient(
+    160deg,
+    var(--violet-dark) 0%,
+    var(--violet) 40%,
+    #7c3aed 70%,
+    var(--violet-light) 100%
+  );
+}
+
+/* Text gradients */
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-violet {
+  background: linear-gradient(135deg, var(--violet) 0%, var(--violet-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* CCB Button styles */
+.btn-primary {
+  background: var(--violet);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background: var(--violet-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  color: var(--violet-dark);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-gold);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--violet);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 2px solid var(--violet);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-outline:hover {
+  background: var(--violet-pale);
+}
+
+/* Card */
+.card-ccb {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-ccb:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(212, 175, 55, 0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--violet-light);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--violet);
+}
+
+/* ============================================================
+   SELECTION
+   ============================================================ */
+
+::selection {
+  background: var(--violet-pale);
+  color: var(--violet-dark);
+}
+
+/* ============================================================
+   PWA SAFE AREAS
+   ============================================================ */
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
