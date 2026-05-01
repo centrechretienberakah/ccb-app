@@ -17,51 +17,22 @@ interface Props {
   totalChapters: number;
 }
 
-// ─── Bible fetch — 2 APIs in fallback ────────────────────────────────────────
+// ─── Bible fetch — via notre proxy Next.js (évite CORS) ──────────────────────
 async function fetchChapter(
   bookEn: string,
   bookNumber: number,
   chapter: number
 ): Promise<Verse[]> {
-  // API 1 — getbible.net (Louis Segond, très fiable)
-  try {
-    const res = await fetch(
-      `https://getbible.net/v2/lsg/${bookNumber}/${chapter}.json`,
-      { cache: "force-cache" }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      const raw = data.verses || {};
-      const verses: Verse[] = Object.values(raw)
-        .map((v: any) => ({
-          verse: parseInt(v.verse_nr),
-          text: (v.verse || "").trim().replace(/\n/g, " "),
-        }))
-        .filter((v) => v.text.length > 0)
-        .sort((a, b) => a.verse - b.verse);
-      if (verses.length > 0) return verses;
-    }
-  } catch {}
-
-  // API 2 — bible-api.com (fallback)
-  try {
-    const res = await fetch(
-      `https://bible-api.com/${encodeURIComponent(bookEn)}+${chapter}?translation=lsg`,
-      { cache: "force-cache" }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      const verses: Verse[] = (data.verses || [])
-        .map((v: any) => ({
-          verse: v.verse,
-          text: (v.text || "").trim().replace(/\n/g, " "),
-        }))
-        .filter((v: Verse) => v.text.length > 0);
-      if (verses.length > 0) return verses;
-    }
-  } catch {}
-
-  throw new Error("Toutes les sources sont indisponibles.");
+  const params = new URLSearchParams({
+    bookNumber: String(bookNumber),
+    chapter: String(chapter),
+    bookEn,
+  });
+  const res = await fetch(`/api/bible?${params}`);
+  if (!res.ok) throw new Error("API proxy error " + res.status);
+  const data = await res.json();
+  if (!data.verses || data.verses.length === 0) throw new Error("Aucun verset retourné");
+  return data.verses as Verse[];
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
