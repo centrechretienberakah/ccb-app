@@ -17,22 +17,37 @@ interface Props {
   totalChapters: number;
 }
 
-// ─── Bible fetch — via notre proxy Next.js (évite CORS) ──────────────────────
-async function fetchChapter(
-  bookEn: string,
-  bookNumber: number,
-  chapter: number
-): Promise<Verse[]> {
-  const params = new URLSearchParams({
-    bookNumber: String(bookNumber),
-    chapter: String(chapter),
-    bookEn,
-  });
-  const res = await fetch(`/api/bible?${params}`);
-  if (!res.ok) throw new Error("API proxy error " + res.status);
+// ─── Bible fetch — GitHub raw LSG (CORS ok) avec fallback proxy ──────────────
+
+async function fetchFromGitHub(bookNumber: number, chapter: number): Promise<Verse[]> {
+  const padded = String(bookNumber).padStart(2, "0");
+  const url = `https://raw.githubusercontent.com/Mikenslywed/Bible-Francais-Louis-Segond/main/${padded}.json`;
+  const res = await fetch(url, { cache: "force-cache" });
+  if (!res.ok) throw new Error("GitHub " + res.status);
   const data = await res.json();
-  if (!data.verses || data.verses.length === 0) throw new Error("Aucun verset retourné");
+  const ch = (data.chapters as any[]).find((c) => c.chapter_number === chapter);
+  if (!ch?.verses?.length) throw new Error("Chapitre introuvable");
+  return (ch.verses as any[])
+    .map((v) => ({ verse: v.verse_number, text: String(v.text).replace(/^¶\s*/, "").trim() }))
+    .filter((v) => v.text.length > 0)
+    .sort((a, b) => a.verse - b.verse);
+}
+
+async function fetchFromProxy(bookEn: string, bookNumber: number, chapter: number): Promise<Verse[]> {
+  const params = new URLSearchParams({ bookNumber: String(bookNumber), chapter: String(chapter), bookEn });
+  const res = await fetch(`/api/bible?${params}`);
+  if (!res.ok) throw new Error("Proxy " + res.status);
+  const data = await res.json();
+  if (!data.verses?.length) throw new Error("Aucun verset");
   return data.verses as Verse[];
+}
+
+async function fetchChapter(bookEn: string, bookNumber: number, chapter: number): Promise<Verse[]> {
+  try {
+    return await fetchFromGitHub(bookNumber, chapter);
+  } catch {
+    return await fetchFromProxy(bookEn, bookNumber, chapter);
+  }
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
