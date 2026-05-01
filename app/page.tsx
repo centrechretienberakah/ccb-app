@@ -112,6 +112,7 @@ const testimonies = [
     role: "Membre CCB · Canada",
     initial: "K",
     country: "🇨🇦",
+    photo: "/testimonie-kevin.jpg",
   },
   {
     name: "Djeumo Daïna",
@@ -119,6 +120,7 @@ const testimonies = [
     role: "Membre CCB · Yaoundé",
     initial: "D",
     country: "🇨🇲",
+    photo: "/testimonie-daina.jpg",
   },
   {
     name: "Cabrelle Djontso",
@@ -126,6 +128,7 @@ const testimonies = [
     role: "Membre CCB · Yaoundé",
     initial: "C",
     country: "🇨🇲",
+    photo: "/testimonie-cabrelle.jpg",
   },
   {
     name: "MD Merveille Djambong",
@@ -133,6 +136,7 @@ const testimonies = [
     role: "Membre CCB · Douala",
     initial: "M",
     country: "🇨🇲",
+    photo: null,
   },
   {
     name: "Christiana Nguiffo",
@@ -140,6 +144,7 @@ const testimonies = [
     role: "Co-Hôte · Membre CCB · Belgique",
     initial: "C",
     country: "🇧🇪",
+    photo: "/testimonie-christiana.jpg",
   },
 ];
 
@@ -1067,23 +1072,38 @@ export default function HomePage() {
                   &ldquo;{t.text}&rdquo;
                 </p>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  <div
-                    style={{
-                      width: "38px",
-                      height: "38px",
-                      borderRadius: "50%",
-                      background: `linear-gradient(135deg, ${C.violet}, ${C.violetLight})`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontSize: "0.85rem",
-                      fontWeight: 700,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {t.initial}
-                  </div>
+                  {t.photo ? (
+                    <Image
+                      src={t.photo}
+                      alt={t.name}
+                      width={42}
+                      height={42}
+                      style={{
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        flexShrink: 0,
+                        border: `2px solid rgba(212,175,55,0.25)`,
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "42px",
+                        height: "42px",
+                        borderRadius: "50%",
+                        background: `linear-gradient(135deg, ${C.violet}, ${C.violetLight})`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontSize: "0.9rem",
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {t.initial}
+                    </div>
+                  )}
                   <div>
                     <div style={{ color: C.textPrimary, fontWeight: 600, fontSize: "0.88rem" }}>
                       {t.name} <span style={{ fontSize: "0.9rem" }}>{t.country}</span>
