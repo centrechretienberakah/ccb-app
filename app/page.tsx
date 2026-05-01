@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 // =====================================================
 // DATA
@@ -120,12 +121,14 @@ function NavBar() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
-            style={{ background: "var(--violet)" }}
-          >
-            CCB
-          </div>
+          <Image
+            src="/logo-ccb.png"
+            alt="Centre Chrétien Berakah"
+            width={40}
+            height={40}
+            className="rounded-full object-contain"
+            priority
+          />
           <span
             className="font-cinzel font-bold text-base hidden sm:block"
             style={{ color: "var(--violet)", letterSpacing: "0.05em" }}
@@ -615,12 +618,13 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                style={{ background: "rgba(212,175,55,0.2)", border: "1px solid rgba(212,175,55,0.3)" }}
-              >
-                CCB
-              </div>
+              <Image
+                src="/logo-ccb.png"
+                alt="Centre Chrétien Berakah"
+                width={32}
+                height={32}
+                className="rounded-full object-contain"
+              />
               <span
                 className="font-cinzel font-bold text-sm"
                 style={{ color: "var(--gold)" }}
@@ -657,3 +661,4 @@ export default function HomePage() {
     </div>
   );
 }
+                      
