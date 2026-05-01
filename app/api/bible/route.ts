@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Proxy server-side — pas de CORS, pas de blocage navigateur
+// ─── Helper: fetch with timeout ───────────────────────────────────────────────
+async function fetchWithTimeout(url: string, options: RequestInit, ms: number) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+// ─── Proxy server-side — pas de CORS, pas de blocage navigateur ───────────────
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const bookNumber = searchParams.get("bookNumber");
@@ -11,20 +22,70 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
   }
 
-  const verses: { verse: number; text: string }[] = [];
+  const bookNum = parseInt(bookNumber);
+  const chapterNum = parseInt(chapter);
+  const cacheHeaders = {
+    "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600",
+  };
 
-  // ── Source 1 : getbible.net (Louis Segond natif) ─────────────────────────
+  // ── Source 1 : jsDelivr CDN (scrollmapper/bible_databases — LSG) ─────────────
+  // jsDelivr is a global CDN backed by Fastly/Cloudflare — always reachable from Vercel.
+  // Format: { resultset: { row: [ { field: [book, chapter, verse, text] } ] } }
+  // ~3 MB for full Bible; Next.js Data Cache reuses the response across requests.
+  try {
+    const url =
+      "https://cdn.jsdelivr.net/gh/scrollmapper/bible_databases@master/json/t_lsg.json";
+    const res = await fetchWithTimeout(
+      url,
+      {
+        headers: { Accept: "application/json" },
+        // Cache the full Bible JSON for 30 days in Next.js Data Cache
+        next: { revalidate: 60 * 60 * 24 * 30 },
+      } as RequestInit,
+      25000
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const rows: { field: [string, string, string, string] }[] =
+        data?.resultset?.row ?? [];
+      if (rows.length > 0) {
+        const parsed = rows
+          .filter(
+            (r) =>
+              parseInt(r.field[0]) === bookNum &&
+              parseInt(r.field[1]) === chapterNum
+          )
+          .map((r) => ({
+            verse: parseInt(r.field[2]),
+            text: String(r.field[3]).trim().replace(/\n/g, " "),
+          }))
+          .filter((v) => v.text.length > 0)
+          .sort((a, b) => a.verse - b.verse);
+        if (parsed.length > 0) {
+          return NextResponse.json(
+            { verses: parsed, source: "jsdelivr" },
+            { headers: cacheHeaders }
+          );
+        }
+      }
+    }
+  } catch {
+    // Continue to next source
+  }
+
+  // ── Source 2 : getbible.net v2 (Louis Segond natif) ──────────────────────────
   try {
     const url = `https://getbible.net/v2/lsg/${bookNumber}/${chapter}.json`;
-    const res = await fetch(url, {
-      next: { revalidate: 86400 },
-      headers: { "User-Agent": "CCB-App/1.0", Accept: "application/json" },
-    });
+    const res = await fetchWithTimeout(
+      url,
+      { headers: { "User-Agent": "CCB-App/1.0", Accept: "application/json" } },
+      8000
+    );
     if (res.ok) {
       const data = await res.json();
       const raw = data.verses || {};
-      const parsed = Object.values(raw)
-        .map((v: any) => ({
+      const parsed = (Object.values(raw) as any[])
+        .map((v) => ({
           verse: parseInt(v.verse_nr),
           text: (v.verse || "").trim().replace(/\n/g, " "),
         }))
@@ -33,70 +94,41 @@ export async function GET(request: NextRequest) {
       if (parsed.length > 0) {
         return NextResponse.json(
           { verses: parsed, source: "getbible" },
-          { headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600" } }
+          { headers: cacheHeaders }
         );
       }
     }
   } catch {
-    // continue to next source
+    // Continue to next source
   }
 
-  // ── Source 2 : bible-api.com (fallback) ──────────────────────────────────
+  // ── Source 3 : bible-api.com (fallback) ──────────────────────────────────────
   if (bookEn) {
     try {
       const url = `https://bible-api.com/${encodeURIComponent(bookEn)}+${chapter}?translation=lsg`;
-      const res = await fetch(url, {
-        next: { revalidate: 86400 },
-        headers: { "User-Agent": "CCB-App/1.0" },
-      });
+      const res = await fetchWithTimeout(
+        url,
+        { headers: { "User-Agent": "CCB-App/1.0" } },
+        8000
+      );
       if (res.ok) {
         const data = await res.json();
-        const parsed = (data.verses || [])
-          .map((v: any) => ({
+        const parsed = ((data.verses || []) as any[])
+          .map((v) => ({
             verse: v.verse,
             text: (v.text || "").trim().replace(/\n/g, " "),
           }))
-          .filter((v: { verse: number; text: string }) => v.text.length > 0);
+          .filter((v) => v.text.length > 0);
         if (parsed.length > 0) {
           return NextResponse.json(
             { verses: parsed, source: "bibleapi" },
-            { headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600" } }
+            { headers: cacheHeaders }
           );
         }
       }
     } catch {
-      // continue
+      // All sources failed
     }
-  }
-
-  // ── Source 3 : getbible.net format alternatif ─────────────────────────────
-  try {
-    const url = `https://getbible.net/json?p=${encodeURIComponent(`${bookEn || ""}${chapter}`)}&version=lsg`;
-    const res = await fetch(url, {
-      next: { revalidate: 86400 },
-      headers: { "User-Agent": "CCB-App/1.0" },
-    });
-    if (res.ok) {
-      let text = await res.text();
-      // getbible wraps response in callback()
-      if (text.startsWith("(")) text = text.slice(1, -2);
-      const data = JSON.parse(text);
-      const book = Object.values(data)[0] as any;
-      if (book?.chapter) {
-        const parsed = Object.values(book.chapter)
-          .map((v: any) => ({
-            verse: parseInt(v.verse_nr),
-            text: (v.verse || "").trim(),
-          }))
-          .filter((v) => v.text.length > 0)
-          .sort((a, b) => a.verse - b.verse);
-        if (parsed.length > 0) {
-          return NextResponse.json({ verses: parsed, source: "getbible-json" });
-        }
-      }
-    }
-  } catch {
-    // all failed
   }
 
   return NextResponse.json(
