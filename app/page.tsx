@@ -74,49 +74,58 @@ const features = [
 
 const upcomingEvents = [
   {
-    date: "10",
-    month: "MAI",
+    date: "26",
+    month: "JUIN",
     title: "Bootcamp Annuel CCB 2026",
-    subtitle: "SEMBLABLE À CHRIST",
-    location: "Yaoundé, Cameroun",
+    subtitle: "SEMBLABLE À CHRIST · Romains 8:29",
+    location: "Douala, Cameroun · En ligne & Présentiel",
+    time: "26 – 28 Juin 2026",
+    link: "https://bootcamp.centrechretienberakah.com",
     special: true,
   },
   {
-    date: "04",
-    month: "MAI",
+    date: "☀",
+    month: "DIM",
     title: "Culte du Dimanche",
-    subtitle: "Rejoignez-nous chaque semaine",
-    location: "En ligne & En présentiel",
+    subtitle: "Chaque dimanche · 17h30 (Belgique)",
+    location: "En ligne — partout dans le monde",
+    time: "Tous les dimanches à 17h30",
+    link: "/live",
     special: false,
   },
   {
-    date: "07",
-    month: "MAI",
+    date: "🌙",
+    month: "VEN",
     title: "Nuit de Prière",
-    subtitle: "Intercession collective",
-    location: "Centre Berakah",
+    subtitle: "Dernier vendredi du mois · 23h30 (Belgique)",
+    location: "En ligne — intercession collective",
+    time: "Prochain : 29 Mai 2026 à 23h30",
+    link: "/prayer",
     special: false,
   },
 ];
 
 const testimonies = [
   {
-    name: "Marie K.",
-    text: "Grâce à CCB, j'ai trouvé ma vocation et ma famille spirituelle. Dieu a transformé ma vie !",
-    role: "Membre depuis 3 ans",
-    initial: "M",
+    name: "Nathalie B.",
+    text: "Le Bootcamp 2025 a été un tournant dans ma vie. Je suis repartie transformée, avec une vision claire et une foi renouvelée. Dieu a parlé !",
+    role: "Participante Bootcamp 2025 · France",
+    initial: "N",
+    country: "🇫🇷",
   },
   {
-    name: "Jean-Paul N.",
-    text: "Les cours de disciples m'ont donné les bases solides dont j'avais besoin pour ma foi.",
-    role: "Leader de cellule",
-    initial: "J",
-  },
-  {
-    name: "Esther T.",
-    text: "Le JESUS DAILY me rappelle chaque jour la puissance de la Parole de Dieu.",
-    role: "Membre actif",
+    name: "Emmanuel K.",
+    text: "Ces 2 jours ont brisé des chaînes que je portais depuis des années. La présence de Dieu était palpable. Je recommande à tous !",
+    role: "Participant Bootcamp 2025 · Cameroun",
     initial: "E",
+    country: "🇨🇲",
+  },
+  {
+    name: "Sarah M.",
+    text: "Je venais avec des questions profondes sur ma vie. Je suis repartie avec des réponses, de la paix et une nouvelle direction. Merci Révérend Elvis !",
+    role: "Participante Bootcamp 2025 · Belgique",
+    initial: "S",
+    country: "🇧🇪",
   },
 ];
 
@@ -474,17 +483,53 @@ export default function HomePage() {
             margin: "0 auto",
           }}
         >
-          {/* Logo */}
-          <div style={{ marginBottom: "1.75rem" }}>
-            <Image
-              src="/logo-ccb.png"
-              alt="CCB Logo"
-              width={90}
-              height={90}
-              className="object-contain mx-auto"
-              priority
-              style={{ filter: "drop-shadow(0 0 24px rgba(212,175,55,0.35))" }}
-            />
+          {/* Logo centré — style bootcamp */}
+          <div style={{ marginBottom: "2rem", display: "flex", justifyContent: "center" }}>
+            <div style={{
+              position: "relative",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+              {/* Anneau lumineux extérieur */}
+              <div style={{
+                position: "absolute",
+                width: "148px",
+                height: "148px",
+                borderRadius: "50%",
+                border: `1px solid rgba(212,175,55,0.22)`,
+                animation: "none",
+              }} />
+              {/* Anneau intérieur */}
+              <div style={{
+                position: "absolute",
+                width: "126px",
+                height: "126px",
+                borderRadius: "50%",
+                border: `1px solid rgba(212,175,55,0.12)`,
+              }} />
+              {/* Glow */}
+              <div style={{
+                position: "absolute",
+                width: "140px",
+                height: "140px",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)",
+              }} />
+              <Image
+                src="/logo-ccb.png"
+                alt="Centre Chrétien Berakah"
+                width={110}
+                height={110}
+                className="object-contain"
+                priority
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  filter: "drop-shadow(0 0 32px rgba(212,175,55,0.5)) drop-shadow(0 0 8px rgba(212,175,55,0.3))",
+                }}
+              />
+            </div>
           </div>
 
           {/* Badge */}
@@ -778,97 +823,129 @@ export default function HomePage() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {upcomingEvents.map((e) => (
-              <div
+              <a
                 key={e.title}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1.25rem",
-                  padding: "1.25rem 1.5rem",
-                  borderRadius: "16px",
-                  background: C.bgCard,
-                  border: `1px solid ${e.special ? C.border : C.borderSoft}`,
-                  cursor: "pointer",
-                  transition: "background 0.2s, border-color 0.2s",
-                }}
-                onMouseEnter={(el) => {
-                  el.currentTarget.style.background = C.bgCardHover;
-                  el.currentTarget.style.borderColor = C.border;
-                }}
-                onMouseLeave={(el) => {
-                  el.currentTarget.style.background = C.bgCard;
-                  el.currentTarget.style.borderColor = e.special ? C.border : C.borderSoft;
-                }}
+                href={e.link}
+                style={{ textDecoration: "none" }}
               >
-                {/* Date */}
                 <div
                   style={{
-                    width: "58px",
-                    height: "58px",
-                    borderRadius: "12px",
+                    borderRadius: "18px",
                     background: e.special
-                      ? `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`
-                      : "rgba(124,58,237,0.15)",
-                    border: e.special ? "none" : "1px solid rgba(124,58,237,0.3)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
+                      ? "linear-gradient(135deg, rgba(212,175,55,0.07), rgba(184,148,31,0.04))"
+                      : C.bgCard,
+                    border: `1px solid ${e.special ? C.border : C.borderSoft}`,
+                    overflow: "hidden",
+                    transition: "transform 0.2s, border-color 0.2s",
+                  }}
+                  onMouseEnter={(el) => {
+                    el.currentTarget.style.transform = "translateY(-2px)";
+                    el.currentTarget.style.borderColor = C.border;
+                  }}
+                  onMouseLeave={(el) => {
+                    el.currentTarget.style.transform = "translateY(0)";
+                    el.currentTarget.style.borderColor = e.special ? C.border : C.borderSoft;
                   }}
                 >
-                  <span
-                    style={{
-                      fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
-                      fontWeight: 700,
-                      fontSize: "1.2rem",
-                      lineHeight: 1,
-                      color: e.special ? "#0d0820" : C.violetLight,
-                    }}
-                  >
-                    {e.date}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "0.6rem",
-                      fontWeight: 700,
-                      letterSpacing: "0.1em",
-                      color: e.special ? "#0d0820" : C.violetLight,
-                    }}
-                  >
-                    {e.month}
-                  </span>
-                </div>
+                  {/* Top colored band for special */}
+                  {e.special && (
+                    <div style={{
+                      height: "3px",
+                      background: `linear-gradient(90deg, ${C.goldDark}, ${C.gold}, ${C.goldLight})`,
+                    }} />
+                  )}
 
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h4 style={{ color: C.textPrimary, fontWeight: 600, fontSize: "0.92rem", marginBottom: "0.2rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {e.title}
-                  </h4>
-                  <p style={{ color: e.special ? C.gold : C.violetLight, fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "0.2rem" }}>
-                    {e.subtitle}
-                  </p>
-                  <p style={{ color: C.textMuted, fontSize: "0.78rem" }}>
-                    ✦ {e.location}
-                  </p>
-                </div>
+                  <div style={{ padding: "1.25rem 1.25rem 1.1rem" }}>
+                    {/* Header row: badge date + titre + bouton */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap" }}>
 
-                <div
-                  style={{
-                    flexShrink: 0,
-                    padding: "0.4rem 1rem",
-                    borderRadius: "9999px",
-                    background: "rgba(212,175,55,0.08)",
-                    border: `1px solid ${C.border}`,
-                    color: C.gold,
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Détails →
+                      {/* Date badge */}
+                      <div style={{
+                        minWidth: "56px",
+                        height: "56px",
+                        borderRadius: "12px",
+                        background: e.special
+                          ? `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`
+                          : "rgba(124,58,237,0.15)",
+                        border: e.special ? "none" : "1px solid rgba(124,58,237,0.3)",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}>
+                        <span style={{
+                          fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
+                          fontWeight: 700,
+                          fontSize: e.date.length === 1 && isNaN(Number(e.date)) ? "1.4rem" : "1.2rem",
+                          lineHeight: 1,
+                          color: e.special ? "#0d0820" : C.violetLight,
+                        }}>{e.date}</span>
+                        <span style={{
+                          fontSize: "0.58rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.1em",
+                          color: e.special ? "#0d0820" : C.violetLight,
+                        }}>{e.month}</span>
+                      </div>
+
+                      {/* Text */}
+                      <div style={{ flex: 1, minWidth: "160px" }}>
+                        <h4 style={{
+                          color: C.textPrimary,
+                          fontWeight: 700,
+                          fontSize: "0.97rem",
+                          margin: "0 0 0.25rem",
+                          lineHeight: 1.3,
+                        }}>{e.title}</h4>
+                        <p style={{
+                          color: e.special ? C.gold : C.violetLight,
+                          fontSize: "0.72rem",
+                          fontWeight: 600,
+                          letterSpacing: "0.05em",
+                          textTransform: "uppercase",
+                          margin: "0 0 0.5rem",
+                        }}>{e.subtitle}</p>
+                      </div>
+
+                      {/* CTA button */}
+                      <div style={{
+                        padding: "0.45rem 1rem",
+                        borderRadius: "9999px",
+                        background: e.special
+                          ? `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`
+                          : "rgba(124,58,237,0.15)",
+                        border: e.special ? "none" : "1px solid rgba(124,58,237,0.3)",
+                        color: e.special ? "#0d0820" : C.violetLight,
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                        alignSelf: "flex-start",
+                      }}>
+                        {e.special ? "S'inscrire →" : "Rejoindre →"}
+                      </div>
+                    </div>
+
+                    {/* Footer row: infos pratiques */}
+                    <div style={{
+                      marginTop: "0.85rem",
+                      paddingTop: "0.75rem",
+                      borderTop: `1px solid ${C.borderSoft}`,
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.5rem 1.25rem",
+                    }}>
+                      <span style={{ color: C.textMuted, fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                        🕐 {e.time}
+                      </span>
+                      <span style={{ color: C.textMuted, fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                        📍 {e.location}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
 
@@ -941,14 +1018,27 @@ export default function HomePage() {
                 key={t.name}
                 style={{
                   padding: "1.75rem",
-                  borderRadius: "16px",
+                  borderRadius: "18px",
                   background: C.bgCard,
                   border: `1px solid ${C.borderSoft}`,
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
-                {/* Stars */}
-                <div style={{ color: C.gold, fontSize: "0.8rem", marginBottom: "1rem", letterSpacing: "0.1em" }}>
-                  ★★★★★
+                {/* Bootcamp badge + stars */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                  <span style={{
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: C.gold,
+                    background: "rgba(212,175,55,0.08)",
+                    border: `1px solid ${C.border}`,
+                    borderRadius: "9999px",
+                    padding: "0.25rem 0.65rem",
+                  }}>✦ Bootcamp 2025</span>
+                  <span style={{ color: C.gold, fontSize: "0.78rem", letterSpacing: "0.08em" }}>★★★★★</span>
                 </div>
                 <p
                   style={{
@@ -957,6 +1047,7 @@ export default function HomePage() {
                     lineHeight: 1.8,
                     fontStyle: "italic",
                     marginBottom: "1.5rem",
+                    flex: 1,
                   }}
                 >
                   &ldquo;{t.text}&rdquo;
@@ -980,7 +1071,9 @@ export default function HomePage() {
                     {t.initial}
                   </div>
                   <div>
-                    <div style={{ color: C.textPrimary, fontWeight: 600, fontSize: "0.88rem" }}>{t.name}</div>
+                    <div style={{ color: C.textPrimary, fontWeight: 600, fontSize: "0.88rem" }}>
+                      {t.name} <span style={{ fontSize: "0.9rem" }}>{t.country}</span>
+                    </div>
                     <div style={{ color: C.textMuted, fontSize: "0.75rem" }}>{t.role}</div>
                   </div>
                 </div>
