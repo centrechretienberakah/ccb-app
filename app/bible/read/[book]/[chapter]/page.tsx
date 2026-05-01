@@ -14,14 +14,6 @@ export async function generateMetadata({
   };
 }
 
-interface ApiVerse {
-  book_id: string;
-  book_name: string;
-  chapter: number;
-  verse: number;
-  text: string;
-}
-
 export default async function BibleReaderPage({
   params,
 }: {
@@ -31,28 +23,39 @@ export default async function BibleReaderPage({
   const bookName = decodeURIComponent(book);
   const chapterNum = parseInt(chapter);
 
-  // Find book info
-  const bookInfo = ALL_BOOKS.find((b) => b.fr === bookName);
-  if (!bookInfo || isNaN(chapterNum) || chapterNum < 1 || chapterNum > bookInfo.chapters) {
+  // Find book info + sequential number (1-66)
+  const bookIndex = ALL_BOOKS.findIndex((b) => b.fr === bookName);
+  if (bookIndex === -1) return notFound();
+
+  const bookInfo = ALL_BOOKS[bookIndex];
+  if (isNaN(chapterNum) || chapterNum < 1 || chapterNum > bookInfo.chapters) {
     return notFound();
   }
 
-  // Fetch text from bible-api.com (Louis Segond = lsg)
+  const bookNumber = bookIndex + 1; // 1 = Genèse ... 66 = Apocalypse
+
+  // Fetch from getbible.net v2 — Louis Segond (lsg), very reliable
   let verses: { verse: number; text: string }[] = [];
   let fetchError = false;
 
   try {
-    const url = `https://bible-api.com/${encodeURIComponent(bookInfo.en)}+${chapterNum}?translation=lsg`;
+    const url = `https://getbible.net/v2/lsg/${bookNumber}/${chapterNum}.json`;
     const res = await fetch(url, {
       next: { revalidate: 86400 }, // cache 24h
+      headers: { "Accept": "application/json" },
     });
 
     if (res.ok) {
       const data = await res.json();
-      verses = (data.verses || []).map((v: ApiVerse) => ({
-        verse: v.verse,
-        text: v.text.trim().replace(/\n/g, " "),
-      }));
+      // getbible.net format: data.verses = { "1": { verse_nr, verse }, "2": {...}, ... }
+      const raw = data.verses || {};
+      verses = Object.values(raw)
+        .map((v: any) => ({
+          verse: parseInt(v.verse_nr),
+          text: (v.verse || "").trim().replace(/\n/g, " "),
+        }))
+        .filter((v) => v.text.length > 0)
+        .sort((a, b) => a.verse - b.verse);
     } else {
       fetchError = true;
     }
