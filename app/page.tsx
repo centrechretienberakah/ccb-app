@@ -30,6 +30,7 @@ const navLinks = [
   ["Dévotions", "/devotion"],
   ["Cours", "/courses"],
   ["Événements", "/events"],
+  ["Communauté", "/community"],
   ["À propos", "/about"],
 ];
 
