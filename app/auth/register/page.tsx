@@ -2,8 +2,34 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+
+const C = {
+  bg: "#07040f",
+  bgCard: "rgba(255,255,255,0.05)",
+  border: "rgba(212,175,55,0.20)",
+  borderSoft: "rgba(255,255,255,0.08)",
+  gold: "#d4af37",
+  goldLight: "#f0d060",
+  textPrimary: "#ffffff",
+  textSecondary: "rgba(255,255,255,0.65)",
+  textMuted: "rgba(255,255,255,0.38)",
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "0.875rem 1rem",
+  borderRadius: "12px",
+  border: `1.5px solid ${C.borderSoft}`,
+  background: "rgba(255,255,255,0.04)",
+  color: C.textPrimary,
+  fontSize: "0.95rem",
+  outline: "none",
+  boxSizing: "border-box" as const,
+  transition: "border-color 0.2s",
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -30,7 +56,6 @@ export default function RegisterPage() {
       setError("Les mots de passe ne correspondent pas.");
       return;
     }
-
     if (form.password.length < 8) {
       setError("Le mot de passe doit contenir au moins 8 caractères.");
       return;
@@ -43,9 +68,7 @@ export default function RegisterPage() {
       email: form.email,
       password: form.password,
       options: {
-        data: {
-          full_name: form.fullName,
-        },
+        data: { full_name: form.fullName },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -58,214 +81,229 @@ export default function RegisterPage() {
     }
   };
 
-  if (success) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center px-4"
-        style={{
-          background:
-            "linear-gradient(160deg, var(--violet-dark) 0%, var(--violet) 60%, var(--violet-light) 100%)",
-        }}
-      >
-        <div
-          className="w-full max-w-md rounded-2xl p-10 text-center"
-          style={{
-            background: "rgba(255,255,255,0.97)",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-          }}
-        >
-          <div className="text-5xl mb-4">🎉</div>
-          <h2
-            className="font-cinzel font-bold text-xl mb-3"
-            style={{ color: "var(--violet)" }}
-          >
-            Bienvenue dans la famille !
-          </h2>
-          <p
-            className="text-sm leading-relaxed mb-6"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Un email de confirmation a été envoyé à{" "}
-            <strong>{form.email}</strong>. Veuillez cliquer sur le lien pour
-            activer votre compte.
-          </p>
-          <Link
-            href="/auth/login"
-            className="inline-block px-6 py-3 rounded-full font-bold text-sm text-white transition-all hover:-translate-y-0.5"
-            style={{ background: "var(--violet)" }}
-          >
-            Aller à la connexion
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 py-10"
-      style={{
-        background:
-          "linear-gradient(160deg, var(--violet-dark) 0%, var(--violet) 60%, var(--violet-light) 100%)",
-      }}
-    >
-      <div
-        className="absolute top-1/3 left-1/4 w-80 h-80 rounded-full opacity-10"
-        style={{ background: "var(--gold)", filter: "blur(80px)" }}
-      />
+    <div style={{
+      minHeight: "100vh",
+      background: C.bg,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "1.5rem",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* Glows */}
+      <div style={{
+        position: "absolute", top: "5%", left: "50%", transform: "translateX(-50%)",
+        width: "700px", height: "500px", borderRadius: "50%",
+        background: "radial-gradient(ellipse, rgba(124,58,237,0.18) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "5%", right: "15%",
+        width: "350px", height: "350px", borderRadius: "50%",
+        background: "radial-gradient(ellipse, rgba(212,175,55,0.07) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
 
-      <div className="relative w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3"
-              style={{
-                background: "rgba(212,175,55,0.2)",
-                border: "2px solid rgba(212,175,55,0.4)",
-              }}
-            >
-              CCB
-            </div>
+      <div style={{ position: "relative", width: "100%", maxWidth: "440px" }}>
+
+        {/* Logo + titre */}
+        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+          <Link href="/" style={{ display: "inline-block", marginBottom: "1rem" }}>
+            <Image
+              src="/logo-ccb.png"
+              alt="Centre Chrétien Berakah"
+              width={72}
+              height={72}
+              style={{ objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(212,175,55,0.45))" }}
+            />
           </Link>
-          <h1
-            className="font-cinzel font-bold text-white text-2xl"
-            style={{ letterSpacing: "0.05em" }}
-          >
+          <h1 style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: "1.8rem",
+            fontWeight: 700,
+            color: C.textPrimary,
+            letterSpacing: "0.06em",
+            margin: "0 0 0.5rem",
+          }}>
             Créer un compte
           </h1>
-          <p className="text-white/60 text-sm mt-2">
-            Rejoignez la famille Berakah ✨
+          <p style={{ color: C.textMuted, fontSize: "0.88rem", margin: 0 }}>
+            Rejoins la famille Berakah aujourd'hui 🙌
           </p>
         </div>
 
         {/* Card */}
-        <div
-          className="rounded-2xl p-8"
-          style={{
-            background: "rgba(255,255,255,0.97)",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-          }}
-        >
-          <form onSubmit={handleRegister} className="space-y-4">
-            {error && (
-              <div
-                className="text-sm px-4 py-3 rounded-xl"
+        <div style={{
+          background: C.bgCard,
+          border: `1px solid ${C.border}`,
+          borderRadius: "20px",
+          padding: "2rem",
+          backdropFilter: "blur(16px)",
+        }}>
+
+          {success ? (
+            /* Success state */
+            <div style={{ textAlign: "center", padding: "1rem 0" }}>
+              <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✉️</div>
+              <h2 style={{ color: C.gold, fontFamily: "'Cinzel', serif", fontSize: "1.2rem", fontWeight: 700, marginBottom: "0.75rem" }}>
+                Vérifie ta boîte mail !
+              </h2>
+              <p style={{ color: C.textSecondary, fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "1.5rem" }}>
+                Un email de confirmation a été envoyé à <strong style={{ color: C.textPrimary }}>{form.email}</strong>.
+                Clique sur le lien pour activer ton compte.
+              </p>
+              <Link
+                href="/auth/login"
                 style={{
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  color: "#dc2626",
+                  display: "inline-block",
+                  padding: "0.875rem 2rem",
+                  borderRadius: "12px",
+                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldLight})`,
+                  color: "#07040f",
+                  fontWeight: 800,
+                  fontSize: "0.9rem",
+                  textDecoration: "none",
+                  letterSpacing: "0.04em",
                 }}
               >
-                ⚠️ {error}
-              </div>
-            )}
+                Aller à la connexion →
+              </Link>
+            </div>
+          ) : (
+            /* Register form */
+            <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
+              {error && (
+                <div style={{
+                  background: "rgba(239,68,68,0.12)",
+                  border: "1px solid rgba(239,68,68,0.35)",
+                  color: "#fca5a5",
+                  borderRadius: "12px",
+                  padding: "0.75rem 1rem",
+                  fontSize: "0.85rem",
+                }}>
+                  ⚠️ {error}
+                </div>
+              )}
 
-            {[
-              {
-                name: "fullName",
-                label: "Nom complet",
-                type: "text",
-                placeholder: "Jean Dupont",
-              },
-              {
-                name: "email",
-                label: "Adresse email",
-                type: "email",
-                placeholder: "vous@example.com",
-              },
-              {
-                name: "password",
-                label: "Mot de passe",
-                type: "password",
-                placeholder: "Min. 8 caractères",
-              },
-              {
-                name: "confirmPassword",
-                label: "Confirmer le mot de passe",
-                type: "password",
-                placeholder: "Répétez votre mot de passe",
-              },
-            ].map((field) => (
-              <div key={field.name}>
-                <label
-                  className="block text-sm font-semibold mb-2"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {field.label}
+              {/* Nom complet */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: C.textSecondary, marginBottom: "0.5rem", letterSpacing: "0.06em" }}>
+                  NOM COMPLET
                 </label>
                 <input
-                  type={field.type}
-                  name={field.name}
-                  value={form[field.name as keyof typeof form]}
+                  type="text"
+                  name="fullName"
+                  value={form.fullName}
                   onChange={handleChange}
-                  placeholder={field.placeholder}
+                  placeholder="Jean Dupont"
                   required
-                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-                  style={{
-                    border: "2px solid var(--border)",
-                    color: "var(--text-primary)",
-                    background: "var(--surface)",
-                  }}
-                  onFocus={(e) =>
-                    (e.currentTarget.style.borderColor = "var(--violet)")
-                  }
-                  onBlur={(e) =>
-                    (e.currentTarget.style.borderColor = "var(--border)")
-                  }
+                  style={inputStyle}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = C.gold)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = C.borderSoft)}
                 />
               </div>
-            ))}
 
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              En créant un compte, vous acceptez nos{" "}
-              <Link
-                href="/terms"
-                className="hover:underline"
-                style={{ color: "var(--violet)" }}
+              {/* Email */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: C.textSecondary, marginBottom: "0.5rem", letterSpacing: "0.06em" }}>
+                  ADRESSE EMAIL
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="vous@example.com"
+                  required
+                  style={inputStyle}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = C.gold)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = C.borderSoft)}
+                />
+              </div>
+
+              {/* Mot de passe */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: C.textSecondary, marginBottom: "0.5rem", letterSpacing: "0.06em" }}>
+                  MOT DE PASSE
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Minimum 8 caractères"
+                  required
+                  style={inputStyle}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = C.gold)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = C.borderSoft)}
+                />
+              </div>
+
+              {/* Confirmer */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: C.textSecondary, marginBottom: "0.5rem", letterSpacing: "0.06em" }}>
+                  CONFIRMER LE MOT DE PASSE
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  style={inputStyle}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = C.gold)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = C.borderSoft)}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: loading
+                    ? "rgba(212,175,55,0.35)"
+                    : `linear-gradient(135deg, ${C.gold}, ${C.goldLight})`,
+                  color: "#07040f",
+                  fontWeight: 800,
+                  fontSize: "0.95rem",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  letterSpacing: "0.05em",
+                  marginTop: "0.25rem",
+                }}
               >
-                Conditions d&apos;utilisation
-              </Link>{" "}
-              et notre{" "}
-              <Link
-                href="/privacy"
-                className="hover:underline"
-                style={{ color: "var(--violet)" }}
-              >
-                Politique de confidentialité
-              </Link>
-              .
-            </p>
+                {loading ? "Création en cours..." : "Créer mon compte →"}
+              </button>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-xl font-bold text-sm transition-all mt-2"
-              style={{
-                background: loading ? "var(--border)" : "var(--violet)",
-                color: "white",
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
-            >
-              {loading ? "Création en cours..." : "Créer mon compte →"}
-            </button>
-          </form>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <div style={{ flex: 1, height: "1px", background: C.borderSoft }} />
+                <span style={{ fontSize: "0.75rem", color: C.textMuted }}>ou</span>
+                <div style={{ flex: 1, height: "1px", background: C.borderSoft }} />
+              </div>
 
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
-            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>ou</span>
-            <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
-          </div>
-
-          <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
-            Vous avez déjà un compte ?{" "}
-            <Link href="/auth/login" className="font-bold hover:underline" style={{ color: "var(--violet)" }}>
-              Se connecter
-            </Link>
-          </p>
+              <p style={{ textAlign: "center", fontSize: "0.88rem", color: C.textSecondary, margin: 0 }}>
+                Déjà un compte ?{" "}
+                <Link href="/auth/login" style={{ color: C.gold, fontWeight: 700, textDecoration: "none" }}>
+                  Se connecter
+                </Link>
+              </p>
+            </form>
+          )}
         </div>
 
-        <p className="text-center text-white/40 text-xs mt-6">
+        <p style={{ textAlign: "center", marginTop: "1.5rem", marginBottom: "0.5rem" }}>
+          <Link href="/" style={{ color: C.textMuted, fontSize: "0.82rem", textDecoration: "none" }}>
+            ← Retour à l'accueil
+          </Link>
+        </p>
+
+        <p style={{ textAlign: "center", color: C.textMuted, fontSize: "0.72rem", margin: 0 }}>
           © 2026 Centre Chrétien Berakah
         </p>
       </div>

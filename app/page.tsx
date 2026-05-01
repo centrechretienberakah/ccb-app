@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Design tokens ────────────────────────────────────────────
 const C = {
@@ -122,6 +123,16 @@ const testimonies = [
 // ─── NavBar ──────────────────────────────────────────────────
 function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<{ email?: string } | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   return (
     <nav
@@ -199,43 +210,72 @@ function NavBar() {
 
         {/* CTA desktop + hamburger */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Link
-            href="/auth/login"
-            className="hidden sm:block"
-            style={{
-              color: C.goldMuted,
-              textDecoration: "none",
-              fontSize: "0.82rem",
-              fontWeight: 600,
-              letterSpacing: "0.03em",
-              transition: "color 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = C.gold)}
-            onMouseLeave={(e) => (e.currentTarget.style.color = C.goldMuted)}
-          >
-            Connexion
-          </Link>
-          <Link
-            href="/auth/register"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "0.5rem 1.25rem",
-              borderRadius: "9999px",
-              background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
-              color: "#0d0820",
-              fontSize: "0.8rem",
-              fontWeight: 700,
-              textDecoration: "none",
-              letterSpacing: "0.04em",
-              whiteSpace: "nowrap",
-              transition: "opacity 0.2s, transform 0.2s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
-          >
-            Rejoindre
-          </Link>
+          {user ? (
+            /* Logged in — show dashboard button */
+            <Link
+              href="/dashboard"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                padding: "0.5rem 1.25rem",
+                borderRadius: "9999px",
+                background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
+                color: "#0d0820",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                textDecoration: "none",
+                letterSpacing: "0.04em",
+                whiteSpace: "nowrap",
+                transition: "opacity 0.2s, transform 0.2s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+            >
+              Mon espace →
+            </Link>
+          ) : (
+            /* Not logged in — show login + register */
+            <>
+              <Link
+                href="/auth/login"
+                className="hidden sm:block"
+                style={{
+                  color: C.goldMuted,
+                  textDecoration: "none",
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.03em",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = C.gold)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = C.goldMuted)}
+              >
+                Connexion
+              </Link>
+              <Link
+                href="/auth/register"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "0.5rem 1.25rem",
+                  borderRadius: "9999px",
+                  background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
+                  color: "#0d0820",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  letterSpacing: "0.04em",
+                  whiteSpace: "nowrap",
+                  transition: "opacity 0.2s, transform 0.2s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+              >
+                Rejoindre
+              </Link>
+            </>
+          )}
 
           {/* Hamburger — mobile only */}
           <button
@@ -304,40 +344,62 @@ function NavBar() {
             </Link>
           ))}
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem", flexWrap: "wrap" }}>
-            <Link
-              href="/auth/login"
-              onClick={() => setMobileOpen(false)}
-              style={{
-                flex: 1,
-                textAlign: "center",
-                padding: "0.65rem",
-                border: `1px solid ${C.border}`,
-                borderRadius: "9999px",
-                color: C.gold,
-                textDecoration: "none",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-              }}
-            >
-              Connexion
-            </Link>
-            <Link
-              href="/auth/register"
-              onClick={() => setMobileOpen(false)}
-              style={{
-                flex: 1,
-                textAlign: "center",
-                padding: "0.65rem",
-                borderRadius: "9999px",
-                background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
-                color: "#0d0820",
-                textDecoration: "none",
-                fontSize: "0.85rem",
-                fontWeight: 700,
-              }}
-            >
-              Rejoindre
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileOpen(false)}
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  padding: "0.75rem",
+                  borderRadius: "9999px",
+                  background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
+                  color: "#0d0820",
+                  textDecoration: "none",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                }}
+              >
+                Mon espace →
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  onClick={() => setMobileOpen(false)}
+                  style={{
+                    flex: 1,
+                    textAlign: "center",
+                    padding: "0.65rem",
+                    border: `1px solid ${C.border}`,
+                    borderRadius: "9999px",
+                    color: C.gold,
+                    textDecoration: "none",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  Connexion
+                </Link>
+                <Link
+                  href="/auth/register"
+                  onClick={() => setMobileOpen(false)}
+                  style={{
+                    flex: 1,
+                    textAlign: "center",
+                    padding: "0.65rem",
+                    borderRadius: "9999px",
+                    background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
+                    color: "#0d0820",
+                    textDecoration: "none",
+                    fontSize: "0.85rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  Rejoindre
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
