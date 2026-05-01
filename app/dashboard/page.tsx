@@ -39,6 +39,34 @@ export default async function DashboardPage() {
   const greeting =
     hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
+  // Fetch today's devotion verse dynamically
+  const today = new Date().toISOString().split("T")[0];
+  const { data: todayDevotion } = await supabase
+    .from("daily_devotions")
+    .select("verse_text, verse_reference, id")
+    .eq("devotion_date", today)
+    .eq("is_published", true)
+    .single();
+
+  // Fallback verse if no devotion in DB yet
+  const dailyVerse = todayDevotion || {
+    verse_text: "Je puis tout par Christ qui me fortifie.",
+    verse_reference: "Philippiens 4:13",
+    id: null,
+  };
+
+  // Check if user already completed today's devotion
+  let devotionCompleted = false;
+  if (todayDevotion?.id) {
+    const { data: progress } = await supabase
+      .from("user_devotion_progress")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("devotion_id", todayDevotion.id)
+      .single();
+    devotionCompleted = !!progress;
+  }
+
   return (
     <div
       className="min-h-screen"
@@ -121,24 +149,31 @@ export default async function DashboardPage() {
             }}
           >
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <p
-                  className="text-xs font-bold uppercase tracking-widest mb-2"
-                  style={{ color: "rgba(61,26,114,0.7)" }}
-                >
-                  ✦ Verset du jour
-                </p>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <p
+                    className="text-xs font-bold uppercase tracking-widest"
+                    style={{ color: "rgba(61,26,114,0.7)" }}
+                  >
+                    ✦ Verset du jour
+                  </p>
+                  {devotionCompleted && (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(61,26,114,0.15)", color: "rgba(61,26,114,0.75)" }}>
+                      ✅ Lu
+                    </span>
+                  )}
+                </div>
                 <p
                   className="font-cinzel font-semibold leading-relaxed"
-                  style={{ color: "var(--violet-dark)", fontSize: "0.95rem" }}
+                  style={{ color: "var(--violet-dark)", fontSize: "0.92rem" }}
                 >
-                  &ldquo;Je puis tout par Christ qui me fortifie.&rdquo;
+                  &ldquo;{dailyVerse.verse_text}&rdquo;
                 </p>
                 <p
                   className="text-xs mt-1 font-medium"
                   style={{ color: "rgba(61,26,114,0.6)" }}
                 >
-                  Philippiens 4:13
+                  {dailyVerse.verse_reference}
                 </p>
               </div>
               <span className="text-2xl shrink-0">☀️</span>
@@ -199,14 +234,14 @@ export default async function DashboardPage() {
         >
           <div
             className="w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0"
-            style={{ background: "var(--violet)" }}
+            style={{ background: "linear-gradient(135deg, #b45309, #d4af37)" }}
           >
             <span
               className="font-cinzel font-bold text-white text-lg leading-none"
             >
-              10
+              26
             </span>
-            <span className="text-white/70 text-xs font-bold">MAI</span>
+            <span className="text-white/80 text-xs font-bold">JUIN</span>
           </div>
           <div className="flex-1 min-w-0">
             <h4
@@ -215,23 +250,25 @@ export default async function DashboardPage() {
             >
               Bootcamp Annuel CCB 2026
             </h4>
-            <p className="text-xs mt-0.5" style={{ color: "var(--violet-light)" }}>
-              SEMBLABLE À CHRIST
+            <p className="text-xs mt-0.5 font-semibold" style={{ color: "#b45309" }}>
+              SEMBLABLE À CHRIST · Romains 8:29
             </p>
             <p
               className="text-xs mt-1"
               style={{ color: "var(--text-muted)" }}
             >
-              📍 Yaoundé, Cameroun
+              📍 Douala, Cameroun · En ligne & Présentiel
             </p>
           </div>
-          <Link
-            href="/events"
+          <a
+            href="https://bootcamp.centrechretienberakah.com"
+            target="_blank"
+            rel="noopener noreferrer"
             className="shrink-0 text-xs font-bold px-3 py-2 rounded-full"
-            style={{ background: "var(--violet)", color: "white" }}
+            style={{ background: "linear-gradient(135deg, #b45309, #d4af37)", color: "white", textDecoration: "none" }}
           >
-            Voir
-          </Link>
+            S&apos;inscrire
+          </a>
         </div>
       </div>
 
