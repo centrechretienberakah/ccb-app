@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   ALL_PLANS,
@@ -13,7 +14,7 @@ import {
   DayReading,
   ChapterRef,
 } from "@/lib/bible/plans";
-import { getBibleComUrl } from "@/lib/bible/books";
+// getBibleComUrl replaced by internal reader route
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface ActivePlan {
@@ -542,7 +543,7 @@ function ChapterCard({
   isRead: boolean;
   onMarkRead: (ref: ChapterRef, day: number) => void;
 }) {
-  const url = getBibleComUrl(ref_.book, ref_.chapter);
+  const url = `/bible/read/${encodeURIComponent(ref_.book)}/${ref_.chapter}`;
 
   return (
     <div style={{
@@ -564,8 +565,6 @@ function ChapterCard({
       <div style={{ display: "flex", gap: 8 }}>
         <a
           href={url}
-          target="_blank"
-          rel="noopener noreferrer"
           style={{
             background: "#1a1a1a", border: "1px solid #333",
             borderRadius: 8, padding: "7px 12px",
