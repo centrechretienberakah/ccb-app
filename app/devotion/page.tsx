@@ -18,7 +18,6 @@ export default async function DevotionPage() {
     .from("daily_devotions")
     .select("*")
     .eq("devotion_date", today)
-    .eq("is_published", true)
     .single();
 
   // Fallback si aucune dévotion n'est encore en base
@@ -35,16 +34,20 @@ export default async function DevotionPage() {
     declaration: "Je marche par la foi et non par la vue. Dieu est fidèle à toutes ses promesses dans ma vie !",
   };
 
-  // Check if user already completed today's devotion
+  // Check if user already completed today's devotion (graceful if table missing)
   let alreadyCompleted = false;
   if (user && content.id) {
-    const { data: progress } = await supabase
-      .from("user_devotion_progress")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("devotion_id", content.id)
-      .single();
-    alreadyCompleted = !!progress;
+    try {
+      const { data: progress } = await supabase
+        .from("user_devotion_progress")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("devotion_id", content.id)
+        .single();
+      alreadyCompleted = !!progress;
+    } catch {
+      // Table may not exist yet
+    }
   }
 
   const dateStr = new Date().toLocaleDateString("fr-FR", {

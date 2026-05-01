@@ -45,7 +45,6 @@ export default async function DashboardPage() {
     .from("daily_devotions")
     .select("verse_text, verse_reference, id")
     .eq("devotion_date", today)
-    .eq("is_published", true)
     .single();
 
   // Fallback verse if no devotion in DB yet
@@ -55,16 +54,20 @@ export default async function DashboardPage() {
     id: null,
   };
 
-  // Check if user already completed today's devotion
+  // Check if user already completed today's devotion (graceful if table missing)
   let devotionCompleted = false;
   if (todayDevotion?.id) {
-    const { data: progress } = await supabase
-      .from("user_devotion_progress")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("devotion_id", todayDevotion.id)
-      .single();
-    devotionCompleted = !!progress;
+    try {
+      const { data: progress } = await supabase
+        .from("user_devotion_progress")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("devotion_id", todayDevotion.id)
+        .single();
+      devotionCompleted = !!progress;
+    } catch {
+      // Table may not exist yet
+    }
   }
 
   return (
