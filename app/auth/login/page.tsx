@@ -220,5 +220,9 @@ export default function LoginPage() {
         </Suspense>
 
         <p className="text-center text-white/40 text-xs mt-6">
-          © 2026 Centre Chrétien Berakah
-    
+          &copy; 2026 Centre Chretien Berakah
+        </p>
+      </div>
+    </div>
+  );
+}
