@@ -4,6 +4,15 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────
+interface PrayerReply {
+  id: string;
+  prayer_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  user_profiles?: { display_name: string; avatar_url?: string } | null;
+}
+
 interface Prayer {
   id: string;
   user_id: string;
@@ -13,6 +22,7 @@ interface Prayer {
   created_at: string;
   intercessionsCount: number;
   user_profiles?: { display_name: string; avatar_url?: string } | null;
+  comments: PrayerReply[];
 }
 
 // ─── Utilitaires ──────────────────────────────────────────────
@@ -32,6 +42,109 @@ function Avatar({ profile, size = 36 }: { profile?: { display_name?: string; ava
   );
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#a855f7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.36, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{initials}</div>
+  );
+}
+
+// ─── Section réponses ─────────────────────────────────────────
+function ReplySection({ prayerId, replies, currentUserId, currentUserProfile, onReplyAdded, onReplyDeleted }: {
+  prayerId: string;
+  replies: PrayerReply[];
+  currentUserId: string;
+  currentUserProfile: any;
+  onReplyAdded: (reply: PrayerReply) => void;
+  onReplyDeleted: (replyId: string) => void;
+}) {
+  const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const remaining = 500 - content.length;
+
+  async function submit() {
+    if (content.trim().length < 2) return;
+    setSaving(true); setError("");
+    const supabase = createClient();
+    const { data, error: e } = await supabase
+      .from("prayer_comments")
+      .insert({ prayer_id: prayerId, user_id: currentUserId, content: content.trim() })
+      .select("id, prayer_id, user_id, content, created_at")
+      .single();
+    if (e) { setError(e.message); setSaving(false); return; }
+    onReplyAdded({ ...data, user_profiles: currentUserProfile });
+    setContent(""); setSaving(false);
+  }
+
+  async function deleteReply(replyId: string) {
+    const supabase = createClient();
+    await supabase.from("prayer_comments").delete().eq("id", replyId);
+    onReplyDeleted(replyId);
+  }
+
+  return (
+    <div style={{ background: "#0a0a0a", borderTop: "1px solid #1a1a1a", padding: "14px 16px" }}>
+      {/* Liste des réponses */}
+      {replies.length > 0 && (
+        <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+          {replies.map((r) => (
+            <div key={r.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <Avatar profile={r.user_profiles} size={28} />
+              <div style={{ flex: 1, background: "#111", borderRadius: 10, padding: "8px 12px", position: "relative" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#c4b89a" }}>
+                    {r.user_profiles?.display_name || "Membre"}
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 10, color: "#555" }}>{timeAgo(r.created_at)}</span>
+                    {r.user_id === currentUserId && (
+                      <button onClick={() => deleteReply(r.id)}
+                        style={{ background: "none", border: "none", color: "#444", cursor: "pointer", fontSize: 11, padding: "1px 4px", lineHeight: 1 }}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p style={{ margin: 0, fontSize: 13, color: "#d8d0c0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{r.content}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Formulaire de réponse */}
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <Avatar profile={currentUserProfile} size={28} />
+        <div style={{ flex: 1 }}>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submit(); }}
+            placeholder="Ecrire une reponse de priere... (Ctrl+Entree pour envoyer)"
+            rows={2}
+            style={{
+              width: "100%", background: "#111", border: "1px solid #222", borderRadius: 10,
+              padding: "8px 12px", color: "#e8e0d0", fontSize: 13, resize: "none",
+              boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.5,
+              outline: "none",
+            }}
+          />
+          {error && <div style={{ color: "#f87171", fontSize: 11, marginTop: 3 }}>{error}</div>}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
+            <span style={{ fontSize: 10, color: remaining < 50 ? "#f87171" : "#444" }}>{remaining} car. restants</span>
+            <button
+              onClick={submit}
+              disabled={saving || content.trim().length < 2}
+              style={{
+                background: saving || content.trim().length < 2 ? "#1a1a1a" : "linear-gradient(135deg,#7c3aed,#a855f7)",
+                border: "none", borderRadius: 8, padding: "6px 14px",
+                color: saving || content.trim().length < 2 ? "#555" : "#fff",
+                fontSize: 12, fontWeight: 700,
+                cursor: saving || content.trim().length < 2 ? "not-allowed" : "pointer",
+              }}>
+              {saving ? "..." : "Repondre 🙏"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -56,11 +169,7 @@ function PrayerForm({ currentUserProfile, currentUserId, onSubmitted }: {
       .select("id, user_id, content, is_anonymous, is_answered, created_at")
       .single();
     if (e) { setError(e.message); setSaving(false); return; }
-    onSubmitted({
-      ...data,
-      intercessionsCount: 0,
-      user_profiles: isAnonymous ? null : currentUserProfile,
-    });
+    onSubmitted({ ...data, intercessionsCount: 0, user_profiles: isAnonymous ? null : currentUserProfile, comments: [] });
     setContent(""); setIsAnonymous(false); setOpen(false); setSaving(false);
   }
 
@@ -78,33 +187,23 @@ function PrayerForm({ currentUserProfile, currentUserId, onSubmitted }: {
       <div style={{ fontSize: 13, fontWeight: 700, color: "#a855f7", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 18 }}>🙏</span> Nouvelle requete de priere
       </div>
-
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
+      <textarea value={content} onChange={(e) => setContent(e.target.value)}
         placeholder="Partagez votre besoin de priere... La communaute intercede pour vous."
         rows={4}
         style={{ width: "100%", background: "#0a0a0a", border: "1px solid #222", borderRadius: 10, padding: "10px 14px", color: "#e8e0d0", fontSize: 14, resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }}
       />
-      <div style={{ fontSize: 11, color: remaining < 50 ? "#f87171" : "#444", textAlign: "right", marginTop: 4 }}>
-        {remaining} caracteres restants
-      </div>
-
-      {/* Option anonyme */}
+      <div style={{ fontSize: 11, color: remaining < 50 ? "#f87171" : "#444", textAlign: "right", marginTop: 4 }}>{remaining} caracteres restants</div>
       <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, cursor: "pointer" }}>
-        <div
-          onClick={() => setIsAnonymous(!isAnonymous)}
+        <div onClick={() => setIsAnonymous(!isAnonymous)}
           style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${isAnonymous ? "#a855f7" : "#333"}`, background: isAnonymous ? "#a855f7" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
           {isAnonymous && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
         </div>
         <div>
           <div style={{ fontSize: 13, color: "#e0d8c8", fontWeight: 600 }}>Publier de facon anonyme</div>
-          <div style={{ fontSize: 11, color: "#555" }}>Votre nom ne sera pas affiche. La communaute priера quand meme pour vous.</div>
+          <div style={{ fontSize: 11, color: "#555" }}>Votre nom ne sera pas affiche.</div>
         </div>
       </label>
-
       {error && <div style={{ color: "#f87171", fontSize: 12, marginTop: 10 }}>{error}</div>}
-
       <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
         <button onClick={() => setOpen(false)} style={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 10, padding: "9px 18px", color: "#888", cursor: "pointer", fontSize: 13 }}>Annuler</button>
         <button onClick={submit} disabled={saving || content.trim().length < 10}
@@ -116,18 +215,23 @@ function PrayerForm({ currentUserProfile, currentUserId, onSubmitted }: {
   );
 }
 
-// ─── Carte de requete de priere ───────────────────────────────
-function PrayerCard({ prayer, currentUserId, isInterceding, onIntercede, onMarkAnswered, onDelete }: {
+// ─── Carte de requête de prière ───────────────────────────────
+function PrayerCard({ prayer, currentUserId, currentUserProfile, isInterceding, onIntercede, onMarkAnswered, onDelete, onReplyAdded, onReplyDeleted }: {
   prayer: Prayer;
   currentUserId: string;
+  currentUserProfile: any;
   isInterceding: boolean;
   onIntercede: () => void;
   onMarkAnswered: () => void;
   onDelete: () => void;
+  onReplyAdded: (reply: PrayerReply) => void;
+  onReplyDeleted: (replyId: string) => void;
 }) {
   const [localCount, setLocalCount] = useState(prayer.intercessionsCount);
   const [localInterceding, setLocalInterceding] = useState(isInterceding);
+  const [showReplies, setShowReplies] = useState(false);
   const isMyPrayer = prayer.user_id === currentUserId;
+  const replyCount = prayer.comments.length;
 
   function handleIntercede() {
     setLocalInterceding(!localInterceding);
@@ -145,25 +249,22 @@ function PrayerCard({ prayer, currentUserId, isInterceding, onIntercede, onMarkA
       <div style={{ padding: 16 }}>
         {/* En-tete */}
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12 }}>
-          {prayer.is_anonymous ? (
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#374151,#4b5563)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🙏</div>
-          ) : (
-            <Avatar profile={prayer.user_profiles} size={36} />
-          )}
+          {prayer.is_anonymous
+            ? <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#374151,#4b5563)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🙏</div>
+            : <Avatar profile={prayer.user_profiles} size={36} />}
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: "#f0e8d0" }}>
               {prayer.is_anonymous ? "Membre anonyme" : (prayer.user_profiles?.display_name || "Membre")}
             </div>
             <div style={{ fontSize: 11, color: "#555" }}>{timeAgo(prayer.created_at)}</div>
           </div>
-          {/* Actions auteur */}
           {isMyPrayer && (
             <div style={{ display: "flex", gap: 4 }}>
               {!prayer.is_answered && (
-                <button onClick={onMarkAnswered} title="Marquer comme exaucee"
+                <button onClick={onMarkAnswered}
                   style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 8, padding: "4px 8px", color: "#4ade80", cursor: "pointer", fontSize: 12 }}>✅ Exaucee</button>
               )}
-              <button onClick={onDelete} title="Supprimer"
+              <button onClick={onDelete}
                 style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 14, padding: "4px 6px" }}>🗑️</button>
             </div>
           )}
@@ -172,25 +273,39 @@ function PrayerCard({ prayer, currentUserId, isInterceding, onIntercede, onMarkA
         {/* Contenu */}
         <p style={{ fontSize: 14, color: "#e0d8c8", lineHeight: 1.7, margin: "0 0 14px", whiteSpace: "pre-wrap" }}>{prayer.content}</p>
 
-        {/* Bouton intercession */}
-        <div style={{ borderTop: "1px solid #1a1a1a", paddingTop: 12, display: "flex", alignItems: "center", gap: 12 }}>
+        {/* Actions */}
+        <div style={{ borderTop: "1px solid #1a1a1a", paddingTop: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {/* Bouton intercession */}
           <button onClick={handleIntercede}
-            style={{ display: "flex", alignItems: "center", gap: 8, background: localInterceding ? "rgba(168,85,247,0.15)" : "#0a0a0a", border: `1px solid ${localInterceding ? "#a855f7" : "#222"}`, borderRadius: 20, padding: "8px 16px", color: localInterceding ? "#a855f7" : "#666", cursor: "pointer", fontSize: 13, fontWeight: localInterceding ? 700 : 400, transition: "all 0.15s" }}>
-            <span style={{ fontSize: 16 }}>🙏</span>
-            {localInterceding ? "Je prie pour toi" : "Je prie pour toi"}
+            style={{ display: "flex", alignItems: "center", gap: 6, background: localInterceding ? "rgba(168,85,247,0.15)" : "#0a0a0a", border: `1px solid ${localInterceding ? "#a855f7" : "#222"}`, borderRadius: 20, padding: "7px 14px", color: localInterceding ? "#a855f7" : "#666", cursor: "pointer", fontSize: 13, fontWeight: localInterceding ? 700 : 400, transition: "all 0.15s" }}>
+            <span style={{ fontSize: 15 }}>🙏</span>
+            Je prie pour toi
             {localCount > 0 && (
-              <span style={{ background: localInterceding ? "rgba(168,85,247,0.2)" : "#1a1a1a", borderRadius: 20, padding: "1px 8px", fontSize: 12, color: localInterceding ? "#a855f7" : "#888", fontWeight: 600 }}>
-                {localCount}
-              </span>
+              <span style={{ background: localInterceding ? "rgba(168,85,247,0.2)" : "#1a1a1a", borderRadius: 20, padding: "1px 7px", fontSize: 12, color: localInterceding ? "#a855f7" : "#888", fontWeight: 600 }}>{localCount}</span>
             )}
           </button>
-          {localCount > 0 && (
-            <span style={{ fontSize: 12, color: "#555" }}>
-              {localCount === 1 ? "1 personne prie pour cette requete" : `${localCount} personnes prient pour cette requete`}
-            </span>
-          )}
+
+          {/* Bouton réponses */}
+          <button
+            onClick={() => setShowReplies(!showReplies)}
+            style={{ display: "flex", alignItems: "center", gap: 6, background: showReplies ? "rgba(212,175,55,0.1)" : "#0a0a0a", border: `1px solid ${showReplies ? "rgba(212,175,55,0.4)" : "#222"}`, borderRadius: 20, padding: "7px 14px", color: showReplies ? "#d4af37" : "#666", cursor: "pointer", fontSize: 13, fontWeight: showReplies ? 700 : 400, transition: "all 0.15s" }}>
+            <span style={{ fontSize: 15 }}>💬</span>
+            {replyCount > 0 ? `${replyCount} reponse${replyCount > 1 ? "s" : ""}` : "Repondre"}
+          </button>
         </div>
       </div>
+
+      {/* Section réponses (dépliable) */}
+      {showReplies && (
+        <ReplySection
+          prayerId={prayer.id}
+          replies={prayer.comments}
+          currentUserId={currentUserId}
+          currentUserProfile={currentUserProfile}
+          onReplyAdded={onReplyAdded}
+          onReplyDeleted={onReplyDeleted}
+        />
+      )}
     </div>
   );
 }
@@ -234,6 +349,18 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
     setPrayers((prev) => prev.filter((p) => p.id !== prayerId));
   }
 
+  function handleReplyAdded(prayerId: string, reply: PrayerReply) {
+    setPrayers((prev) => prev.map((p) =>
+      p.id === prayerId ? { ...p, comments: [...p.comments, reply] } : p
+    ));
+  }
+
+  function handleReplyDeleted(prayerId: string, replyId: string) {
+    setPrayers((prev) => prev.map((p) =>
+      p.id === prayerId ? { ...p, comments: p.comments.filter((c) => c.id !== replyId) } : p
+    ));
+  }
+
   const filtered = prayers.filter((p) => {
     if (filter === "mine") return p.user_id === currentUserId;
     if (filter === "answered") return p.is_answered;
@@ -247,20 +374,15 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
     <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 80px" }}>
       {/* Top nav */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 6, background: "#111", border: "1px solid #222", borderRadius: 10, padding: "7px 14px", color: "#888", fontSize: 13, textDecoration: "none" }}>
-          ← Accueil
-        </a>
-        <a href="/community" style={{ background: "#111", border: "1px solid #222", borderRadius: 10, padding: "7px 14px", color: "#888", fontSize: 13, textDecoration: "none" }}>
-          Communauté
-        </a>
+        <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 6, background: "#111", border: "1px solid #222", borderRadius: 10, padding: "7px 14px", color: "#888", fontSize: 13, textDecoration: "none" }}>← Accueil</a>
+        <a href="/community" style={{ background: "#111", border: "1px solid #222", borderRadius: 10, padding: "7px 14px", color: "#888", fontSize: 13, textDecoration: "none" }}>Communauté</a>
       </div>
+
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 24, paddingTop: 8 }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>🙏</div>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#f0e8d0", letterSpacing: -0.5 }}>Mur d'Intercession</h1>
-        <p style={{ margin: "6px 0 0", fontSize: 13, color: "#666" }}>
-          Portez-vous les uns les autres dans la priere — Gal 6:2
-        </p>
+        <p style={{ margin: "6px 0 0", fontSize: 13, color: "#666" }}>Portez-vous les uns les autres dans la priere — Gal 6:2</p>
         {totalPriants > 0 && (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 20, padding: "4px 14px", marginTop: 10, fontSize: 12, color: "#a855f7" }}>
             <span>🙏</span> {totalPriants} intercession{totalPriants > 1 ? "s" : ""} offertes a ce jour
@@ -269,11 +391,7 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
       </div>
 
       {/* Formulaire */}
-      <PrayerForm
-        currentUserProfile={currentUserProfile}
-        currentUserId={currentUserId}
-        onSubmitted={handlePrayerSubmitted}
-      />
+      <PrayerForm currentUserProfile={currentUserProfile} currentUserId={currentUserId} onSubmitted={handlePrayerSubmitted} />
 
       {/* Filtres */}
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
@@ -285,12 +403,12 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
         ))}
       </div>
 
-      {/* Liste des requetes */}
+      {/* Liste */}
       {filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px" }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>🕊️</div>
           <div style={{ color: "#555", fontSize: 14 }}>
-            {filter === "answered" ? "Aucune priere exaucee pour l'instant." : filter === "mine" ? "Vous n'avez pas encore soumis de requete." : "Aucune requete de priere pour l'instant."}
+            {filter === "mine" ? "Vous n'avez pas encore soumis de requete." : filter === "answered" ? "Aucune priere exaucee pour l'instant." : "Aucune requete de priere pour l'instant."}
           </div>
         </div>
       ) : (
@@ -299,10 +417,13 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
             key={prayer.id}
             prayer={prayer}
             currentUserId={currentUserId}
+            currentUserProfile={currentUserProfile}
             isInterceding={intercessedIds.has(prayer.id)}
             onIntercede={() => handleIntercede(prayer.id)}
             onMarkAnswered={() => handleMarkAnswered(prayer.id)}
             onDelete={() => handleDelete(prayer.id)}
+            onReplyAdded={(reply) => handleReplyAdded(prayer.id, reply)}
+            onReplyDeleted={(replyId) => handleReplyDeleted(prayer.id, replyId)}
           />
         ))
       )}
