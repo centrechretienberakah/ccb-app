@@ -464,20 +464,65 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   const [filterCat, setFilterCat] = useState<string>("");
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set(userLikedPostIds));
   const [myVotes, setMyVotes] = useState<Record<string, number>>(userVotes);
+  const userIdRef = useRef(currentUserId);
 
-  // ── Supabase Realtime : sync des posts pour tous les membres ──
+  // ── Source de vérité : fetch client + Realtime (bypass cache Next.js) ──
   useEffect(() => {
+    const uid = userIdRef.current;
     const supabase = createClient();
-    const SELECT_POSTS = `id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, user_profiles(display_name, avatar_url), post_categories(name, icon, color)`;
+    const SEL = `id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, user_profiles(display_name, avatar_url), post_categories(name, icon, color)`;
 
+    // 1. Re-fetch complet depuis Supabase côté client au montage
+    //    Résout définitivement le problème du cache Next.js / remount serveur
+    (async () => {
+      const { data: pd } = await supabase.from("posts").select(SEL)
+        .order("is_pinned", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(60);
+      if (!pd) return;
+
+      const [{ data: lk }, { data: cm }, { data: vt }] = await Promise.all([
+        supabase.from("post_likes").select("post_id, user_id"),
+        supabase.from("post_comments").select("id, post_id, user_id, content, created_at, user_profiles(display_name, avatar_url)"),
+        supabase.from("poll_votes").select("post_id, user_id, option_index"),
+      ]);
+
+      const lm: Record<string, number> = {};
+      const cm2: Record<string, any[]> = {};
+      const vm: Record<string, number[]> = {};
+      const liked = new Set<string>();
+      const voted: Record<string, number> = {};
+
+      for (const l of lk || []) {
+        lm[l.post_id] = (lm[l.post_id] || 0) + 1;
+        if (l.user_id === uid) liked.add(l.post_id);
+      }
+      for (const c of cm || []) {
+        if (!cm2[c.post_id]) cm2[c.post_id] = [];
+        cm2[c.post_id].push(c);
+      }
+      for (const v of vt || []) {
+        if (!vm[v.post_id]) vm[v.post_id] = [];
+        vm[v.post_id].push(v.option_index);
+        if (v.user_id === uid) voted[v.post_id] = v.option_index;
+      }
+
+      setPosts(pd.map((p: any) => ({
+        ...p, likeCount: lm[p.id] || 0,
+        comments: cm2[p.id] || [], voteResults: vm[p.id] || [],
+      })) as Post[]);
+      setLikedIds(liked);
+      setMyVotes(voted);
+    })();
+
+    // 2. Realtime : mise à jour en temps réel pour tous les membres
     const channel = supabase
       .channel("realtime:posts")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
-        // Récupérer le post complet avec ses jointures
-        const { data } = await supabase.from("posts").select(SELECT_POSTS).eq("id", (payload.new as any).id).single();
+        const { data } = await supabase.from("posts").select(SEL).eq("id", (payload.new as any).id).single();
         if (!data) return;
         setPosts((prev) => {
-          if (prev.some((p) => p.id === data.id)) return prev; // déjà présent (mise à jour optimiste)
+          if (prev.some((p) => p.id === data.id)) return prev;
           return [{ ...(data as any), likeCount: 0, comments: [], voteResults: [] } as Post, ...prev];
         });
       })
@@ -485,8 +530,8 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         setPosts((prev) => prev.filter((p) => p.id !== (payload.old as any).id));
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "posts" }, (payload) => {
-        const updated = payload.new as any;
-        setPosts((prev) => prev.map((p) => p.id === updated.id ? { ...p, is_pinned: updated.is_pinned } : p));
+        const u = payload.new as any;
+        setPosts((prev) => prev.map((p) => p.id === u.id ? { ...p, is_pinned: u.is_pinned } : p));
       })
       .subscribe();
 
@@ -496,7 +541,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   const filtered = filterCat ? posts.filter((p) => p.category_id === filterCat) : posts;
 
   function handlePostCreated(post: Post) {
-    // Ajout optimiste — Realtime dédupliquera si nécessaire
+    // Ajout optimiste immédiat — le fetch Realtime dédupliquera
     setPosts((prev) => prev.some((p) => p.id === post.id) ? prev : [post, ...prev]);
   }
 
