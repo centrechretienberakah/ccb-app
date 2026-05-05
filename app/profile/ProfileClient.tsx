@@ -175,7 +175,10 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(10px)"
       }}>
         <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ fontWeight: 700, fontSize: 18, color: "#d4af37" }}>Mon Profil</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 6, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "7px 12px", color: "#888", fontSize: 13, textDecoration: "none" }}>← Accueil</a>
+            <div style={{ fontWeight: 700, fontSize: 16, color: "#d4af37" }}>Mon Profil</div>
+          </div>
           <div style={{ display: "flex", gap: 8 }}>
             {!editing ? (
               <button onClick={() => setEditing(true)} style={{

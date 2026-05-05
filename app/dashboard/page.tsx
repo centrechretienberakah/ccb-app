@@ -24,15 +24,26 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
-  // Fetch profile
+  // Fetch profile (legacy table)
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, spiritual_level, is_premium, badges")
     .eq("id", user.id)
     .single();
 
-  const firstName = profile?.full_name?.split(" ")[0] || "Ami(e)";
+  // Fetch user_profiles for avatar + display_name
+  const { data: userProfile } = await supabase
+    .from("user_profiles")
+    .select("display_name, avatar_url")
+    .eq("user_id", user.id)
+    .single();
+
+  const firstName = userProfile?.display_name?.split(" ")[0]
+    || profile?.full_name?.split(" ")[0]
+    || user.email?.split("@")[0]
+    || "Ami(e)";
   const level = profile?.spiritual_level || "Nouveau croyant";
+  const avatarUrl = userProfile?.avatar_url || null;
 
   // Get greeting based on hour
   const hour = new Date().getHours();
@@ -93,15 +104,24 @@ export default async function DashboardPage() {
               CCB
             </Link>
             <Link href="/profile">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                style={{
-                  background: "rgba(212,175,55,0.25)",
-                  border: "2px solid rgba(212,175,55,0.4)",
-                }}
-              >
-                {firstName[0]?.toUpperCase()}
-              </div>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={firstName}
+                  className="w-10 h-10 rounded-full object-cover"
+                  style={{ border: "2px solid rgba(212,175,55,0.5)" }}
+                />
+              ) : (
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-black font-bold text-sm"
+                  style={{
+                    background: "linear-gradient(135deg, #d4af37, #c9a227)",
+                    border: "2px solid rgba(212,175,55,0.6)",
+                  }}
+                >
+                  {firstName[0]?.toUpperCase()}
+                </div>
+              )}
             </Link>
           </div>
 
