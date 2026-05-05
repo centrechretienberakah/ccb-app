@@ -466,26 +466,28 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   const [myVotes, setMyVotes] = useState<Record<string, number>>(userVotes);
   const userIdRef = useRef(currentUserId);
 
-  // ── Source de vérité : fetch client + Realtime (bypass cache Next.js) ──
+  // ── Source de vérité : Realtime + double-sync pour zéro perte d'événement ──
   useEffect(() => {
+    let mounted = true;
     const uid = userIdRef.current;
     const supabase = createClient();
     const SEL = `id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, user_profiles(display_name, avatar_url), post_categories(name, icon, color)`;
 
-    // 1. Re-fetch complet depuis Supabase côté client au montage
-    //    Résout définitivement le problème du cache Next.js / remount serveur
-    (async () => {
+    // Chargement des posts avec MERGE (ne jamais écraser les posts optimistes)
+    async function loadPosts() {
+      if (!mounted) return;
       const { data: pd } = await supabase.from("posts").select(SEL)
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(60);
-      if (!pd) return;
+      if (!pd || !mounted) return;
 
       const [{ data: lk }, { data: cm }, { data: vt }] = await Promise.all([
         supabase.from("post_likes").select("post_id, user_id"),
         supabase.from("post_comments").select("id, post_id, user_id, content, created_at, user_profiles(display_name, avatar_url)"),
         supabase.from("poll_votes").select("post_id, user_id, option_index"),
       ]);
+      if (!mounted) return;
 
       const lm: Record<string, number> = {};
       const cm2: Record<string, any[]> = {};
@@ -507,35 +509,59 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         if (v.user_id === uid) voted[v.post_id] = v.option_index;
       }
 
-      setPosts(pd.map((p: any) => ({
+      const freshPosts = pd.map((p: any) => ({
         ...p, likeCount: lm[p.id] || 0,
         comments: cm2[p.id] || [], voteResults: vm[p.id] || [],
-      })) as Post[]);
+      })) as Post[];
+
+      const freshIds = new Set(freshPosts.map((p) => p.id));
+
+      // MERGE : conserver les posts optimistes non encore en DB
+      setPosts((prev) => {
+        const extra = prev.filter((p) => !freshIds.has(p.id));
+        return [...extra, ...freshPosts];
+      });
       setLikedIds(liked);
       setMyVotes(voted);
-    })();
+    }
 
-    // 2. Realtime : mise à jour en temps réel pour tous les membres
+    // 1. Chargement immédiat au montage
+    loadPosts();
+
+    // 2. Realtime : mise à jour temps réel pour tous les membres
     const channel = supabase
-      .channel("realtime:posts")
+      .channel(`realtime:posts:${uid}`) // canal unique par utilisateur → évite conflits multi-onglets
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
+        if (!mounted) return;
         const { data } = await supabase.from("posts").select(SEL).eq("id", (payload.new as any).id).single();
-        if (!data) return;
+        if (!data || !mounted) return;
         setPosts((prev) => {
           if (prev.some((p) => p.id === data.id)) return prev;
           return [{ ...(data as any), likeCount: 0, comments: [], voteResults: [] } as Post, ...prev];
         });
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "posts" }, (payload) => {
+        if (!mounted) return;
         setPosts((prev) => prev.filter((p) => p.id !== (payload.old as any).id));
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "posts" }, (payload) => {
+        if (!mounted) return;
         const u = payload.new as any;
         setPosts((prev) => prev.map((p) => p.id === u.id ? { ...p, is_pinned: u.is_pinned } : p));
       })
-      .subscribe();
+      .subscribe(async (status) => {
+        // 3. Dès que la connexion Realtime est confirmée → resync pour combler
+        //    le gap entre le 1er fetch et l'activation du WebSocket
+        if (status === "SUBSCRIBED") {
+          await loadPosts();
+        }
+        // 4. Fallback : si Realtime échoue, on a quand même les données du 1er fetch
+      });
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const filtered = filterCat ? posts.filter((p) => p.category_id === filterCat) : posts;

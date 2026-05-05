@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import CommunityClient from "./CommunityClient";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Communauté — CCB" };
 
 export default async function CommunityPage() {
