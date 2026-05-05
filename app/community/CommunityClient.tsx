@@ -101,17 +101,17 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
 
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 80px" }}>
 
-        {/* ── ONGLET FEED ── */}
-        {tab === "feed" && (
+        {/* ── ONGLET FEED ── toujours monté (display:none préserve l'état React) */}
+        <div style={{ display: tab === "feed" ? "block" : "none" }}>
           <FeedClient
             posts={posts} categories={categories}
             currentUserId={currentUserId} currentUserProfile={currentUserProfile}
             isAdmin={isAdmin} userLikedPostIds={userLikedPostIds} userVotes={userVotes}
           />
-        )}
+        </div>
 
         {/* ── ONGLET MEMBRES ── */}
-        {tab === "members" && (
+        <div style={{ display: tab === "members" ? "block" : "none" }}>
           <div>
             {isAdmin && (
               <div style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", gap: 10, alignItems: "center" }}>
@@ -181,7 +181,7 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
               })}
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Modal Admin Membre */}

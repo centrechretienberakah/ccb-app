@@ -90,6 +90,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
 
   async function submit() {
     if (!content.trim()) { setError("Le texte du post est requis."); return; }
+    if (!categoryId) { setError("Veuillez sélectionner une catégorie avant de publier."); return; }
     setSaving(true); setError("");
     const supabase = createClient();
     let pollData: any = null;
@@ -210,15 +211,20 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
         </div>
       )}
 
-      {/* Catégorie */}
-      <div style={{ marginTop: 12, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 12, color: "#555" }}>Catégorie :</span>
-        {categories.map((c) => (
-          <button key={c.id} onClick={() => setCategoryId(categoryId === c.id ? "" : c.id)}
-            style={{ background: categoryId === c.id ? `${c.color}22` : "#0a0a0a", border: `1px solid ${categoryId === c.id ? c.color : "#222"}`, borderRadius: 20, padding: "4px 10px", color: categoryId === c.id ? c.color : "#666", fontSize: 11, cursor: "pointer" }}>
-            {c.icon} {c.name}
-          </button>
-        ))}
+      {/* Catégorie — obligatoire */}
+      <div style={{ marginTop: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: categoryId ? "#555" : "#f87171", marginBottom: 6, letterSpacing: 0.4 }}>
+          CATÉGORIE <span style={{ color: "#f87171" }}>*</span>
+          {!categoryId && <span style={{ fontWeight: 400, marginLeft: 6 }}>(obligatoire)</span>}
+        </div>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", WebkitOverflowScrolling: "touch" as any, scrollbarWidth: "none" as any, paddingBottom: 4 }}>
+          {categories.map((c) => (
+            <button key={c.id} onClick={() => setCategoryId(categoryId === c.id ? "" : c.id)}
+              style={{ flexShrink: 0, background: categoryId === c.id ? `${c.color}22` : "#0a0a0a", border: `1px solid ${categoryId === c.id ? c.color : "#333"}`, borderRadius: 20, padding: "5px 12px", color: categoryId === c.id ? c.color : "#666", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+              {c.icon} {c.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && <div style={{ color: "#f87171", fontSize: 12, marginTop: 8 }}>{error}</div>}
@@ -514,13 +520,18 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       {/* Créer un post */}
       <PostCreator categories={categories} currentUserProfile={currentUserProfile} currentUserId={currentUserId} onPostCreated={handlePostCreated} />
 
-      {/* Filtre catégories */}
+      {/* Filtre catégories — bande horizontale glissante sur mobile */}
       {categories.length > 0 && (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-          <button onClick={() => setFilterCat("")} style={{ background: !filterCat ? "#d4af37" : "#111", border: `1px solid ${!filterCat ? "#d4af37" : "#222"}`, borderRadius: 20, padding: "5px 14px", color: !filterCat ? "#000" : "#666", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Tous</button>
+        <div style={{
+          display: "flex", gap: 6, marginBottom: 16,
+          overflowX: "auto", WebkitOverflowScrolling: "touch" as any,
+          scrollbarWidth: "none" as any, paddingBottom: 4, paddingTop: 2,
+          msOverflowStyle: "none" as any,
+        }}>
+          <button onClick={() => setFilterCat("")} style={{ flexShrink: 0, background: !filterCat ? "#d4af37" : "#111", border: `1px solid ${!filterCat ? "#d4af37" : "#222"}`, borderRadius: 20, padding: "6px 16px", color: !filterCat ? "#000" : "#666", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Tous</button>
           {categories.map((c) => (
             <button key={c.id} onClick={() => setFilterCat(filterCat === c.id ? "" : c.id)}
-              style={{ background: filterCat === c.id ? `${c.color}20` : "#111", border: `1px solid ${filterCat === c.id ? c.color : "#222"}`, borderRadius: 20, padding: "5px 14px", color: filterCat === c.id ? c.color : "#666", fontSize: 12, cursor: "pointer" }}>
+              style={{ flexShrink: 0, background: filterCat === c.id ? `${c.color}20` : "#111", border: `1px solid ${filterCat === c.id ? c.color : "#222"}`, borderRadius: 20, padding: "6px 16px", color: filterCat === c.id ? c.color : "#666", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
               {c.icon} {c.name}
             </button>
           ))}
