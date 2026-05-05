@@ -9,6 +9,7 @@ interface Props {
   profile: any;
   milestones: any[];
   stats: { chaptersRead: number; versesSaved: number; readingDates: string[] };
+  isAdmin: boolean;
 }
 
 const MILESTONE_LIST = [
@@ -34,7 +35,7 @@ function computeStreak(dates: string[]): number {
   return streak;
 }
 
-export default function ProfileClient({ user, profile, milestones, stats }: Props) {
+export default function ProfileClient({ user, profile, milestones, stats, isAdmin }: Props) {
   const supabase = createClient();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -53,7 +54,7 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
     avatar_url: profile?.avatar_url || "",
   });
 
-  const [activeMillestones, setActiveMilestones] = useState<Set<string>>(
+  const [activeMilestones, setActiveMilestones] = useState<Set<string>>(
     new Set(milestones.map((m) => m.milestone))
   );
 
@@ -67,17 +68,12 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("Photo max 2 MB");
-      return;
-    }
+    if (file.size > 2 * 1024 * 1024) { showToast("Photo max 2 MB"); return; }
     setUploadingPhoto(true);
     try {
       const ext = file.name.split(".").pop();
       const path = `${user.id}/avatar.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, { upsert: true });
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       setForm((f) => ({ ...f, avatar_url: publicUrl + "?t=" + Date.now() }));
@@ -92,37 +88,38 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
   async function handleSave() {
     setSaving(true);
     try {
-      const profileData = {
+      // Les non-admins ne peuvent pas modifier cell_group
+      const profileData: any = {
         user_id: user.id,
         display_name: form.display_name,
         bio: form.bio,
         testimony: form.testimony,
-        cell_group: form.cell_group,
         is_public: form.is_public,
         avatar_url: form.avatar_url,
       };
+      if (isAdmin) profileData.cell_group = form.cell_group;
+
       const { error } = await supabase
         .from("user_profiles")
         .upsert(profileData, { onConflict: "user_id" });
       if (error) throw error;
 
-      // Synchroniser les jalons
-      const existing = new Set(milestones.map((m) => m.milestone));
-      for (const key of Array.from(activeMillestones)) {
-        if (!existing.has(key)) {
-          await supabase.from("spiritual_milestones").upsert(
-            { user_id: user.id, milestone: key },
-            { onConflict: "user_id,milestone" }
-          );
+      // Seuls les admins peuvent modifier les jalons
+      if (isAdmin) {
+        const existing = new Set(milestones.map((m) => m.milestone));
+        for (const key of Array.from(activeMilestones)) {
+          if (!existing.has(key)) {
+            await supabase.from("spiritual_milestones").upsert(
+              { user_id: user.id, milestone: key },
+              { onConflict: "user_id,milestone" }
+            );
+          }
         }
-      }
-      for (const key of Array.from(existing)) {
-        if (!activeMillestones.has(key)) {
-          await supabase
-            .from("spiritual_milestones")
-            .delete()
-            .eq("user_id", user.id)
-            .eq("milestone", key);
+        for (const key of Array.from(existing)) {
+          if (!activeMilestones.has(key)) {
+            await supabase.from("spiritual_milestones").delete()
+              .eq("user_id", user.id).eq("milestone", key);
+          }
         }
       }
 
@@ -137,21 +134,16 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
   }
 
   function toggleMilestone(key: string) {
+    if (!isAdmin) return;
     setActiveMilestones((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   }
 
   const avatarSrc = form.avatar_url || null;
-  const initials = (form.display_name || "?")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = (form.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#e8e0d0", fontFamily: "'Inter', sans-serif" }}>
@@ -163,6 +155,17 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
           borderRadius: 30, fontSize: 14, fontWeight: 700, zIndex: 9999,
           boxShadow: "0 4px 20px rgba(0,0,0,0.5)", whiteSpace: "nowrap"
         }}>{toast}</div>
+      )}
+
+      {/* Badge admin */}
+      {isAdmin && (
+        <div style={{
+          background: "rgba(124,58,237,0.15)", borderBottom: "1px solid rgba(124,58,237,0.3)",
+          padding: "6px 16px", textAlign: "center",
+          fontSize: 11, color: "#a78bfa", fontWeight: 700, letterSpacing: "0.1em"
+        }}>
+          🛡️ MODE ADMINISTRATEUR — Vous pouvez gérer les cellules et jalons
+        </div>
       )}
 
       {/* Header */}
@@ -202,10 +205,7 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
           <div style={{ position: "relative", marginBottom: 16 }}>
             {avatarSrc ? (
-              <img src={avatarSrc} alt="avatar" style={{
-                width: 100, height: 100, borderRadius: "50%",
-                objectFit: "cover", border: "3px solid #d4af37"
-              }} />
+              <img src={avatarSrc} alt="avatar" style={{ width: 100, height: 100, borderRadius: "50%", objectFit: "cover", border: "3px solid #d4af37" }} />
             ) : (
               <div style={{
                 width: 100, height: 100, borderRadius: "50%",
@@ -252,7 +252,7 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
           )}
         </div>
 
-        {/* Stats de croissance */}
+        {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 24 }}>
           {[
             { icon: "🔥", value: streak, label: "jours streak" },
@@ -294,11 +294,11 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
           )}
         </div>
 
-        {/* Groupe de cellule */}
-        {editing && (
-          <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 16, padding: 20, marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "#888", fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
-              Groupe de cellule
+        {/* Groupe de cellule — ADMIN ONLY */}
+        {isAdmin && editing && (
+          <div style={{ background: "#111", border: "1px solid rgba(124,58,237,0.3)", borderRadius: 16, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: "#a78bfa", fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
+              🛡️ Groupe de cellule (Admin)
             </div>
             <input
               value={form.cell_group}
@@ -333,7 +333,7 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
           ) : (
             <p style={{
               color: form.testimony ? "#ddd" : "#555", fontSize: 14, lineHeight: 1.8, margin: 0,
-              fontStyle: form.testimony ? "italic" : "italic",
+              fontStyle: "italic",
               borderLeft: form.testimony ? "3px solid #d4af37" : "3px solid #222",
               paddingLeft: 14
             }}>
@@ -343,22 +343,27 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
         </div>
 
         {/* Jalons spirituels */}
-        <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 16, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: "#888", fontWeight: 600, marginBottom: 14, textTransform: "uppercase", letterSpacing: 1 }}>
-            Jalons Spirituels
+        <div style={{ background: "#111", border: `1px solid ${isAdmin ? "rgba(124,58,237,0.3)" : "#1a1a1a"}`, borderRadius: 16, padding: 20, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ fontSize: 12, color: isAdmin ? "#a78bfa" : "#888", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>
+              {isAdmin ? "🛡️ Jalons Spirituels (Admin)" : "Jalons Spirituels"}
+            </div>
+            {!isAdmin && (
+              <span style={{ fontSize: 10, color: "#444", fontStyle: "italic" }}>Gérés par les administrateurs</span>
+            )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {MILESTONE_LIST.map((m) => {
-              const active = activeMillestones.has(m.key);
+              const active = activeMilestones.has(m.key);
               return (
                 <button
                   key={m.key}
-                  onClick={() => editing && toggleMilestone(m.key)}
+                  onClick={() => isAdmin && editing && toggleMilestone(m.key)}
                   style={{
                     background: active ? "rgba(212,175,55,0.15)" : "#0d0d0d",
                     border: `1px solid ${active ? "#d4af37" : "#222"}`,
                     borderRadius: 12, padding: "14px 12px", textAlign: "left",
-                    cursor: editing ? "pointer" : "default",
+                    cursor: isAdmin && editing ? "pointer" : "default",
                     display: "flex", alignItems: "center", gap: 10
                   }}
                 >
@@ -373,12 +378,14 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
               );
             })}
           </div>
-          {editing && <p style={{ fontSize: 11, color: "#555", marginTop: 10, marginBottom: 0 }}>
-            Clique sur un jalon pour le cocher / décocher
-          </p>}
+          {isAdmin && editing && (
+            <p style={{ fontSize: 11, color: "#555", marginTop: 10, marginBottom: 0 }}>
+              Clique sur un jalon pour le cocher / décocher
+            </p>
+          )}
         </div>
 
-        {/* Visibilité du profil */}
+        {/* Visibilité */}
         {editing && (
           <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 16, padding: 20, marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -406,11 +413,11 @@ export default function ProfileClient({ user, profile, milestones, stats }: Prop
           </div>
         )}
 
-        {/* Lien vers la communauté */}
+        {/* Lien communauté */}
         <a href="/community" style={{
-          display: "block", background: "#111", border: "1px solid #1a1a1a",
+          display: "flex", background: "#111", border: "1px solid #1a1a1a",
           borderRadius: 16, padding: 20, textDecoration: "none",
-          display: "flex", alignItems: "center", justifyContent: "space-between"
+          alignItems: "center", justifyContent: "space-between"
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 24 }}>👥</span>
