@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -465,10 +465,39 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set(userLikedPostIds));
   const [myVotes, setMyVotes] = useState<Record<string, number>>(userVotes);
 
+  // ── Supabase Realtime : sync des posts pour tous les membres ──
+  useEffect(() => {
+    const supabase = createClient();
+    const SELECT_POSTS = `id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, user_profiles(display_name, avatar_url), post_categories(name, icon, color)`;
+
+    const channel = supabase
+      .channel("realtime:posts")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
+        // Récupérer le post complet avec ses jointures
+        const { data } = await supabase.from("posts").select(SELECT_POSTS).eq("id", (payload.new as any).id).single();
+        if (!data) return;
+        setPosts((prev) => {
+          if (prev.some((p) => p.id === data.id)) return prev; // déjà présent (mise à jour optimiste)
+          return [{ ...(data as any), likeCount: 0, comments: [], voteResults: [] } as Post, ...prev];
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "posts" }, (payload) => {
+        setPosts((prev) => prev.filter((p) => p.id !== (payload.old as any).id));
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "posts" }, (payload) => {
+        const updated = payload.new as any;
+        setPosts((prev) => prev.map((p) => p.id === updated.id ? { ...p, is_pinned: updated.is_pinned } : p));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const filtered = filterCat ? posts.filter((p) => p.category_id === filterCat) : posts;
 
   function handlePostCreated(post: Post) {
-    setPosts((prev) => [post, ...prev]);
+    // Ajout optimiste — Realtime dédupliquera si nécessaire
+    setPosts((prev) => prev.some((p) => p.id === post.id) ? prev : [post, ...prev]);
   }
 
   async function handleLike(postId: string) {
