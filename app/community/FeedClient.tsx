@@ -1,14 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-
-// ─── Cache module-level ───────────────────────────────────────
-// Survit aux remounts React (navigation retour, soft refresh, etc.)
-// Réinitialisé uniquement sur rechargement complet de la page
-let _postsCache: Post[] = [];
-let _likedIdsCache: Set<string> = new Set();
-let _myVotesCache: Record<string, number> = {};
 import { createClient } from "@/lib/supabase/client";
+
+// ─── Cache window (client uniquement) ───────────────────────────────────────
+// Protege par typeof window pour eviter la pollution SSR entre requetes.
+// Survit aux remounts React (navigation retour, soft refresh, etc.)
+function getClientCache() {
+  if (typeof window === "undefined") return null;
+  const w = window as any;
+  if (!w.__ccbFeedCache) {
+    w.__ccbFeedCache = { posts: [] as Post[], likedIds: new Set<string>(), votes: {} as Record<string, number> };
+  }
+  return w.__ccbFeedCache as { posts: Post[]; likedIds: Set<string>; votes: Record<string, number> };
+}
 
 // ─── Types ───────────────────────────────────────────────────
 export interface Category { id: string; name: string; icon: string; color: string; }
@@ -466,108 +471,156 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   posts: Post[]; categories: Category[]; currentUserId: string; currentUserProfile: any;
   isAdmin: boolean; userLikedPostIds: string[]; userVotes: Record<string, number>;
 }) {
-  // Priorité : cache module (résiste aux remounts) → sinon props serveur
-  const [posts, setPosts] = useState<Post[]>(() =>
-    _postsCache.length > 0 ? _postsCache : initialPosts
-  );
+  // Priorite : cache window (resiste aux remounts React) → sinon props serveur
+  const [posts, setPosts] = useState<Post[]>(() => {
+    const cache = getClientCache();
+    return cache && cache.posts.length > 0 ? cache.posts : initialPosts;
+  });
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [filterCat, setFilterCat] = useState<string>("");
-  const [likedIds, setLikedIds] = useState<Set<string>>(() =>
-    _likedIdsCache.size > 0 ? _likedIdsCache : new Set(userLikedPostIds)
-  );
-  const [myVotes, setMyVotes] = useState<Record<string, number>>(() =>
-    Object.keys(_myVotesCache).length > 0 ? _myVotesCache : userVotes
-  );
+  const [likedIds, setLikedIds] = useState<Set<string>>(() => {
+    const cache = getClientCache();
+    return cache && cache.likedIds.size > 0 ? cache.likedIds : new Set(userLikedPostIds);
+  });
+  const [myVotes, setMyVotes] = useState<Record<string, number>>(() => {
+    const cache = getClientCache();
+    return cache && Object.keys(cache.votes).length > 0 ? cache.votes : userVotes;
+  });
   const userIdRef = useRef(currentUserId);
 
-  // ── Sync vers cache module (persiste les posts entre remounts) ──────────────
-  useEffect(() => { _postsCache = posts; }, [posts]);
-  useEffect(() => { _likedIdsCache = likedIds; }, [likedIds]);
-  useEffect(() => { _myVotesCache = myVotes; }, [myVotes]);
+  // ── Sync vers cache window (persiste entre remounts) ───────────────────────
+  useEffect(() => { const c = getClientCache(); if (c) c.posts = posts; }, [posts]);
+  useEffect(() => { const c = getClientCache(); if (c) c.likedIds = likedIds; }, [likedIds]);
+  useEffect(() => { const c = getClientCache(); if (c) c.votes = myVotes; }, [myVotes]);
 
   // ── Source de vérité : Realtime + double-sync pour zéro perte d'événement ──
   useEffect(() => {
     let mounted = true;
     const uid = userIdRef.current;
     const supabase = createClient();
-    const SEL = `id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, user_profiles(display_name, avatar_url), post_categories(name, icon, color)`;
+    // SANS join user_profiles — PostgREST retourne 400 (pas de FK directe).
+    // Les profils sont fetches separement apres.
+    const SEL = `id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`;
 
-    // Chargement des posts avec MERGE (ne jamais écraser les posts optimistes)
+    // Chargement des posts avec MERGE (ne jamais ecraser les posts optimistes)
     async function loadPosts() {
       if (!mounted) return;
-      const { data: pd } = await supabase.from("posts").select(SEL)
-        .order("is_pinned", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(60);
-      if (!pd || !mounted) return;
+      try {
+        const { data: pd, error: pdErr } = await supabase.from("posts").select(SEL)
+          .order("is_pinned", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(60);
+        if (pdErr) { console.error("[CCB Feed] SELECT posts error:", pdErr.message); return; }
+        if (!pd || !mounted) return;
 
-      const [{ data: lk }, { data: cm }, { data: vt }] = await Promise.all([
-        supabase.from("post_likes").select("post_id, user_id"),
-        supabase.from("post_comments").select("id, post_id, user_id, content, created_at, user_profiles(display_name, avatar_url)"),
-        supabase.from("poll_votes").select("post_id, user_id, option_index"),
-      ]);
-      if (!mounted) return;
+        const [{ data: lk, error: lkErr }, { data: cm, error: cmErr }, { data: vt }] = await Promise.all([
+          supabase.from("post_likes").select("post_id, user_id"),
+          // SANS join user_profiles (pas de FK directe)
+          supabase.from("post_comments").select("id, post_id, user_id, content, created_at"),
+          supabase.from("poll_votes").select("post_id, user_id, option_index"),
+        ]);
+        if (!mounted) return;
+        if (lkErr) console.warn("[CCB Feed] likes error:", lkErr.message);
+        if (cmErr) console.warn("[CCB Feed] comments error:", cmErr.message);
 
-      const lm: Record<string, number> = {};
-      const cm2: Record<string, any[]> = {};
-      const vm: Record<string, number[]> = {};
-      const liked = new Set<string>();
-      const voted: Record<string, number> = {};
+        // Fetch profils en batch (posts + commentaires)
+        const postUserIds = [...new Set(pd.map((p: any) => p.user_id as string))];
+        const commentUserIds = [...new Set((cm || []).map((c: any) => c.user_id as string))];
+        const allUserIds = [...new Set([...postUserIds, ...commentUserIds])];
+        let rawProfiles: any[] = [];
+        if (allUserIds.length > 0) {
+          const { data: rpd, error: profErr } = await supabase
+            .from("user_profiles")
+            .select("user_id, display_name, avatar_url")
+            .in("user_id", allUserIds);
+          if (profErr) console.warn("[CCB Feed] profiles error:", profErr.message);
+          rawProfiles = rpd || [];
+        }
+        const profilesMap: Record<string, { display_name: string; avatar_url?: string }> = Object.fromEntries(
+          rawProfiles.map((p: any) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+        );
+        console.log("[CCB Feed] profilesMap:", Object.keys(profilesMap).length, "profils");
 
-      for (const l of lk || []) {
-        lm[l.post_id] = (lm[l.post_id] || 0) + 1;
-        if (l.user_id === uid) liked.add(l.post_id);
+        const lm: Record<string, number> = {};
+        const cm2: Record<string, any[]> = {};
+        const vm: Record<string, number[]> = {};
+        const liked = new Set<string>();
+        const voted: Record<string, number> = {};
+
+        for (const l of lk || []) {
+          lm[l.post_id] = (lm[l.post_id] || 0) + 1;
+          if (l.user_id === uid) liked.add(l.post_id);
+        }
+        for (const c of cm || []) {
+          if (!cm2[c.post_id]) cm2[c.post_id] = [];
+          cm2[c.post_id].push({ ...c, user_profiles: profilesMap[c.user_id] || null });
+        }
+        for (const v of vt || []) {
+          if (!vm[v.post_id]) vm[v.post_id] = [];
+          vm[v.post_id].push(v.option_index);
+          if (v.user_id === uid) voted[v.post_id] = v.option_index;
+        }
+
+        const freshPosts = pd.map((p: any) => ({
+          ...p,
+          user_profiles: profilesMap[p.user_id] || null,
+          likeCount: lm[p.id] || 0,
+          comments: cm2[p.id] || [], voteResults: vm[p.id] || [],
+        })) as Post[];
+
+        const freshIds = new Set(freshPosts.map((p) => p.id));
+
+        // MERGE : conserver les posts crees apres ce fetch (optimistes)
+        setPosts((prev) => {
+          const extra = prev.filter((p) => !freshIds.has(p.id));
+          const merged = [...extra, ...freshPosts];
+          console.log("[CCB Feed] loadPosts merge: DB=" + freshPosts.length + " extra=" + extra.length + " total=" + merged.length);
+          const cache = getClientCache();
+          if (cache) cache.posts = merged;
+          return merged;
+        });
+        setLikedIds(liked);
+        setMyVotes(voted);
+      } catch (err: any) {
+        console.error("[CCB Feed] loadPosts exception:", err?.message ?? err);
       }
-      for (const c of cm || []) {
-        if (!cm2[c.post_id]) cm2[c.post_id] = [];
-        cm2[c.post_id].push(c);
-      }
-      for (const v of vt || []) {
-        if (!vm[v.post_id]) vm[v.post_id] = [];
-        vm[v.post_id].push(v.option_index);
-        if (v.user_id === uid) voted[v.post_id] = v.option_index;
-      }
-
-      const freshPosts = pd.map((p: any) => ({
-        ...p, likeCount: lm[p.id] || 0,
-        comments: cm2[p.id] || [], voteResults: vm[p.id] || [],
-      })) as Post[];
-
-      const freshIds = new Set(freshPosts.map((p) => p.id));
-
-      // MERGE : conserver les posts créés après ce fetch (optimistes ou race condition)
-      setPosts((prev) => {
-        const extra = prev.filter((p) => !freshIds.has(p.id));
-        const merged = [...extra, ...freshPosts];
-        _postsCache = merged; // sync cache immédiatement
-        return merged;
-      });
-      setLikedIds(liked);
-      setMyVotes(voted);
     }
 
     // 1. Chargement immédiat au montage
     loadPosts();
 
-    // 2. Realtime : mise à jour temps réel pour tous les membres
+    // 2. Realtime : INSERT / DELETE / UPDATE en temps reel
     const channel = supabase
-      .channel(`ccb:posts:${uid}`) // canal unique par utilisateur
+      .channel("ccb-feed-posts") // canal stable (pas par uid)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
         if (!mounted) return;
-        const { data } = await supabase.from("posts").select(SEL).eq("id", (payload.new as any).id).single();
+        const newId = (payload.new as any).id as string;
+        const newUserId = (payload.new as any).user_id as string;
+        console.log("[CCB Feed] Realtime INSERT:", newId);
+        // Fetch post + profil en parallele (SANS embedded join)
+        const [{ data, error }, { data: profileData }] = await Promise.all([
+          supabase.from("posts").select(SEL).eq("id", newId).single(),
+          supabase.from("user_profiles").select("display_name, avatar_url").eq("user_id", newUserId).single(),
+        ]);
+        if (error) { console.warn("[CCB Feed] Realtime INSERT fetch error:", error.message); return; }
         if (!data || !mounted) return;
+        const newPost = { ...(data as any), user_profiles: profileData || null, likeCount: 0, comments: [], voteResults: [] } as Post;
         setPosts((prev) => {
-          if (prev.some((p) => p.id === data.id)) return prev;
-          const next = [{ ...(data as any), likeCount: 0, comments: [], voteResults: [] } as Post, ...prev];
-          _postsCache = next;
+          if (prev.some((p) => p.id === newPost.id)) return prev; // deja present (optimiste)
+          const next = [newPost, ...prev];
+          const cache = getClientCache();
+          if (cache) cache.posts = next;
           return next;
         });
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "posts" }, (payload) => {
         if (!mounted) return;
+        const deletedId = (payload.old as any).id;
+        console.log("[CCB Feed] Realtime DELETE:", deletedId);
         setPosts((prev) => {
-          const next = prev.filter((p) => p.id !== (payload.old as any).id);
-          _postsCache = next;
+          const next = prev.filter((p) => p.id !== deletedId);
+          const cache = getClientCache();
+          if (cache) cache.posts = next;
           return next;
         });
       })
@@ -576,16 +629,15 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         const u = payload.new as any;
         setPosts((prev) => {
           const next = prev.map((p) => p.id === u.id ? { ...p, is_pinned: u.is_pinned } : p);
-          _postsCache = next;
+          const cache = getClientCache();
+          if (cache) cache.posts = next;
           return next;
         });
       })
-      .subscribe(async (status) => {
-        // 3. Dès que la connexion Realtime est confirmée → resync pour combler
-        //    le gap entre le 1er fetch et l'activation du WebSocket
-        if (status === "SUBSCRIBED") {
-          await loadPosts();
-        }
+      .subscribe((status) => {
+        console.log("[CCB Feed] Realtime status:", status);
+        // PAS de loadPosts ici — evite les races avec l'etat optimiste.
+        // Les INSERT manques pendant le gap mount->SUBSCRIBED arrivent via Realtime.
       });
 
     return () => {
@@ -597,10 +649,12 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   const filtered = filterCat ? posts.filter((p) => p.category_id === filterCat) : posts;
 
   function handlePostCreated(post: Post) {
+    console.log("[CCB Feed] handlePostCreated:", post.id);
     setPosts((prev) => {
       if (prev.some((p) => p.id === post.id)) return prev;
       const next = [post, ...prev];
-      _postsCache = next; // persist dans le cache module immédiatement
+      const cache = getClientCache();
+      if (cache) cache.posts = next;
       return next;
     });
   }
@@ -618,10 +672,13 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
 
   async function handleComment(postId: string, text: string) {
     const supabase = createClient();
-    const { data } = await supabase.from("post_comments").insert({ post_id: postId, user_id: currentUserId, content: text })
-      .select("id, user_id, content, created_at, user_profiles(display_name, avatar_url)").single();
+    const { data } = await supabase.from("post_comments")
+      .insert({ post_id: postId, user_id: currentUserId, content: text })
+      .select("id, user_id, content, created_at").single();
     if (data) {
-      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments: [...p.comments, data as any] } : p));
+      // Attacher le profil courant directement (pas de join necessaire)
+      const commentWithProfile = { ...data, user_profiles: currentUserProfile };
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments: [...p.comments, commentWithProfile as any] } : p));
     }
   }
 
