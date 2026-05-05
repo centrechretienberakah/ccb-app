@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+
+// ─── Cache module-level ───────────────────────────────────────
+// Survit aux remounts React (navigation retour, soft refresh, etc.)
+// Réinitialisé uniquement sur rechargement complet de la page
+let _postsCache: Post[] = [];
+let _likedIdsCache: Set<string> = new Set();
+let _myVotesCache: Record<string, number> = {};
 import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -459,12 +466,24 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   posts: Post[]; categories: Category[]; currentUserId: string; currentUserProfile: any;
   isAdmin: boolean; userLikedPostIds: string[]; userVotes: Record<string, number>;
 }) {
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  // Priorité : cache module (résiste aux remounts) → sinon props serveur
+  const [posts, setPosts] = useState<Post[]>(() =>
+    _postsCache.length > 0 ? _postsCache : initialPosts
+  );
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [filterCat, setFilterCat] = useState<string>("");
-  const [likedIds, setLikedIds] = useState<Set<string>>(new Set(userLikedPostIds));
-  const [myVotes, setMyVotes] = useState<Record<string, number>>(userVotes);
+  const [likedIds, setLikedIds] = useState<Set<string>>(() =>
+    _likedIdsCache.size > 0 ? _likedIdsCache : new Set(userLikedPostIds)
+  );
+  const [myVotes, setMyVotes] = useState<Record<string, number>>(() =>
+    Object.keys(_myVotesCache).length > 0 ? _myVotesCache : userVotes
+  );
   const userIdRef = useRef(currentUserId);
+
+  // ── Sync vers cache module (persiste les posts entre remounts) ──────────────
+  useEffect(() => { _postsCache = posts; }, [posts]);
+  useEffect(() => { _likedIdsCache = likedIds; }, [likedIds]);
+  useEffect(() => { _myVotesCache = myVotes; }, [myVotes]);
 
   // ── Source de vérité : Realtime + double-sync pour zéro perte d'événement ──
   useEffect(() => {
@@ -516,10 +535,12 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
 
       const freshIds = new Set(freshPosts.map((p) => p.id));
 
-      // MERGE : conserver les posts optimistes non encore en DB
+      // MERGE : conserver les posts créés après ce fetch (optimistes ou race condition)
       setPosts((prev) => {
         const extra = prev.filter((p) => !freshIds.has(p.id));
-        return [...extra, ...freshPosts];
+        const merged = [...extra, ...freshPosts];
+        _postsCache = merged; // sync cache immédiatement
+        return merged;
       });
       setLikedIds(liked);
       setMyVotes(voted);
@@ -530,24 +551,34 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
 
     // 2. Realtime : mise à jour temps réel pour tous les membres
     const channel = supabase
-      .channel(`realtime:posts:${uid}`) // canal unique par utilisateur → évite conflits multi-onglets
+      .channel(`ccb:posts:${uid}`) // canal unique par utilisateur
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
         if (!mounted) return;
         const { data } = await supabase.from("posts").select(SEL).eq("id", (payload.new as any).id).single();
         if (!data || !mounted) return;
         setPosts((prev) => {
           if (prev.some((p) => p.id === data.id)) return prev;
-          return [{ ...(data as any), likeCount: 0, comments: [], voteResults: [] } as Post, ...prev];
+          const next = [{ ...(data as any), likeCount: 0, comments: [], voteResults: [] } as Post, ...prev];
+          _postsCache = next;
+          return next;
         });
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "posts" }, (payload) => {
         if (!mounted) return;
-        setPosts((prev) => prev.filter((p) => p.id !== (payload.old as any).id));
+        setPosts((prev) => {
+          const next = prev.filter((p) => p.id !== (payload.old as any).id);
+          _postsCache = next;
+          return next;
+        });
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "posts" }, (payload) => {
         if (!mounted) return;
         const u = payload.new as any;
-        setPosts((prev) => prev.map((p) => p.id === u.id ? { ...p, is_pinned: u.is_pinned } : p));
+        setPosts((prev) => {
+          const next = prev.map((p) => p.id === u.id ? { ...p, is_pinned: u.is_pinned } : p);
+          _postsCache = next;
+          return next;
+        });
       })
       .subscribe(async (status) => {
         // 3. Dès que la connexion Realtime est confirmée → resync pour combler
@@ -555,7 +586,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         if (status === "SUBSCRIBED") {
           await loadPosts();
         }
-        // 4. Fallback : si Realtime échoue, on a quand même les données du 1er fetch
       });
 
     return () => {
@@ -567,8 +597,12 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   const filtered = filterCat ? posts.filter((p) => p.category_id === filterCat) : posts;
 
   function handlePostCreated(post: Post) {
-    // Ajout optimiste immédiat — le fetch Realtime dédupliquera
-    setPosts((prev) => prev.some((p) => p.id === post.id) ? prev : [post, ...prev]);
+    setPosts((prev) => {
+      if (prev.some((p) => p.id === post.id)) return prev;
+      const next = [post, ...prev];
+      _postsCache = next; // persist dans le cache module immédiatement
+      return next;
+    });
   }
 
   async function handleLike(postId: string) {
