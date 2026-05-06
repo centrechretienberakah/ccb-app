@@ -132,7 +132,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#f0e8d0", fontFamily: "var(--font-inter, sans-serif)", paddingBottom: 80 }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-inter, sans-serif)", paddingBottom: 80 }}>
 
       {/* ── Header ── */}
       <div style={{

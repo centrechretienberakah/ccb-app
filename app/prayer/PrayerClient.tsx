@@ -370,7 +370,7 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
   const totalPriants = prayers.reduce((acc, p) => acc + p.intercessionsCount, 0);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#e8e0d0", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }}>
     <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 80px" }}>
       {/* Top nav */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>

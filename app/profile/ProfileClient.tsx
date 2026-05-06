@@ -146,7 +146,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
   const initials = (form.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#e8e0d0", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }}>
       {/* Toast */}
       {toast && (
         <div style={{

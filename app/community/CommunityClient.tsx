@@ -76,7 +76,7 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
   });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#e8e0d0", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }}>
       {/* Header */}
       <div style={{ background: "rgba(10,10,10,0.97)", backdropFilter: "blur(10px)", borderBottom: "1px solid #1a1a1a", padding: "14px 16px", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 680, margin: "0 auto" }}>
