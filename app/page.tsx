@@ -201,7 +201,7 @@ function NavBar() {
           />
           <span
             style={{
-              fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
+              fontFamily: "var(--font-title)",
               fontWeight: 700,
               fontSize: "0.9rem",
               color: C.gold,
@@ -576,7 +576,7 @@ export default function HomePage() {
           {/* Title */}
           <h1
             style={{
-              fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
+              fontFamily: "var(--font-title)",
               fontWeight: 700,
               fontSize: "clamp(2.2rem, 6vw, 4.2rem)",
               lineHeight: 1.12,
@@ -715,7 +715,7 @@ export default function HomePage() {
             </p>
             <h2
               style={{
-                fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
+                fontFamily: "var(--font-title)",
                 fontWeight: 700,
                 fontSize: "clamp(1.6rem, 4vw, 2.6rem)",
                 color: C.textPrimary,
@@ -746,7 +746,7 @@ export default function HomePage() {
                 style={{
                   display: "block",
                   padding: "1.75rem",
-                  borderRadius: "16px",
+                  borderRadius: "var(--radius-lg)",
                   background: C.bgCard,
                   border: `1px solid ${C.borderSoft}`,
                   textDecoration: "none",
@@ -767,7 +767,7 @@ export default function HomePage() {
                   style={{
                     width: "40px",
                     height: "40px",
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-md)",
                     background: "rgba(212,175,55,0.08)",
                     border: `1px solid ${C.border}`,
                     display: "flex",
@@ -830,7 +830,7 @@ export default function HomePage() {
             </p>
             <h2
               style={{
-                fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
+                fontFamily: "var(--font-title)",
                 fontWeight: 700,
                 fontSize: "clamp(1.5rem, 3.5vw, 2.3rem)",
                 color: C.textPrimary,
@@ -850,7 +850,7 @@ export default function HomePage() {
               >
                 <div
                   style={{
-                    borderRadius: "18px",
+                    borderRadius: "var(--radius-lg)",
                     background: e.special
                       ? "linear-gradient(135deg, rgba(212,175,55,0.07), rgba(184,148,31,0.04))"
                       : C.bgCard,
@@ -883,7 +883,7 @@ export default function HomePage() {
                       <div style={{
                         minWidth: "56px",
                         height: "56px",
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-md)",
                         background: e.special
                           ? `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`
                           : "rgba(124,58,237,0.15)",
@@ -895,7 +895,7 @@ export default function HomePage() {
                         flexShrink: 0,
                       }}>
                         <span style={{
-                          fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
+                          fontFamily: "var(--font-title)",
                           fontWeight: 700,
                           fontSize: e.date.length === 1 && isNaN(Number(e.date)) ? "1.4rem" : "1.2rem",
                           lineHeight: 1,
@@ -1015,7 +1015,7 @@ export default function HomePage() {
             </p>
             <h2
               style={{
-                fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
+                fontFamily: "var(--font-title)",
                 fontWeight: 700,
                 fontSize: "clamp(1.5rem, 3.5vw, 2.3rem)",
                 color: C.textPrimary,
@@ -1038,7 +1038,7 @@ export default function HomePage() {
                 key={t.name}
                 style={{
                   padding: "1.75rem",
-                  borderRadius: "18px",
+                  borderRadius: "var(--radius-lg)",
                   background: C.bgCard,
                   border: `1px solid ${C.borderSoft}`,
                   display: "flex",
@@ -1156,7 +1156,7 @@ export default function HomePage() {
 
           <h2
             style={{
-              fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
+              fontFamily: "var(--font-title)",
               fontWeight: 700,
               fontSize: "clamp(1.5rem, 4vw, 2.4rem)",
               color: C.textPrimary,
@@ -1270,7 +1270,7 @@ export default function HomePage() {
             />
             <span
               style={{
-                fontFamily: "var(--font-cinzel, 'Cinzel', serif)",
+                fontFamily: "var(--font-title)",
                 fontWeight: 700,
                 fontSize: "0.78rem",
                 color: C.gold,
