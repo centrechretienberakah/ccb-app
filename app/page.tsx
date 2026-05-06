@@ -1304,4 +1304,7 @@ export default function HomePage() {
             © 2026 Centre Chrétien Berakah
           </p>
         </div>
-     
+      </footer>
+    </div>
+  );
+}
