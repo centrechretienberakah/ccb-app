@@ -146,63 +146,54 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
   const initials = (form.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
       {/* Toast */}
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
-          background: "#d4af37", color: "#000", padding: "10px 24px",
+          background: "var(--gold)", color: "var(--violet-dark)", padding: "10px 24px",
           borderRadius: 30, fontSize: 14, fontWeight: 700, zIndex: 9999,
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5)", whiteSpace: "nowrap"
+          boxShadow: "var(--shadow-gold)", whiteSpace: "nowrap"
         }}>{toast}</div>
       )}
 
       {/* Badge admin */}
       {isAdmin && (
         <div style={{
-          background: "rgba(124,58,237,0.15)", borderBottom: "1px solid rgba(124,58,237,0.3)",
+          background: "var(--violet-pale)", borderBottom: "1px solid var(--border)",
           padding: "6px 16px", textAlign: "center",
-          fontSize: 11, color: "#a78bfa", fontWeight: 700, letterSpacing: "0.1em"
+          fontSize: 11, color: "var(--violet)", fontWeight: 700, letterSpacing: "0.1em"
         }}>
           🛡️ MODE ADMINISTRATEUR — Vous pouvez gérer les cellules et jalons
         </div>
       )}
 
-      {/* Header */}
+      {/* Actions bar */}
       <div style={{
-        background: "linear-gradient(180deg, #111 0%, #0a0a0a 100%)",
-        borderBottom: "1px solid #1a1a1a", padding: "16px",
-        position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(10px)"
+        background: "var(--surface)", borderBottom: "1px solid var(--border)", padding: "12px 20px",
+        display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8,
       }}>
-        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 6, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "7px 12px", color: "#888", fontSize: 13, textDecoration: "none" }}>← Accueil</a>
-            <div style={{ fontWeight: 700, fontSize: 16, color: "#d4af37" }}>Mon Profil</div>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {!editing ? (
-              <button onClick={() => setEditing(true)} style={{
-                background: "#1a1a1a", border: "1px solid #333", borderRadius: 10,
-                padding: "8px 16px", color: "#d4af37", fontSize: 13, fontWeight: 600, cursor: "pointer"
-              }}>✏️ Modifier</button>
-            ) : (
-              <>
-                <button onClick={() => setEditing(false)} style={{
-                  background: "#1a1a1a", border: "1px solid #333", borderRadius: 10,
-                  padding: "8px 16px", color: "#888", fontSize: 13, cursor: "pointer"
-                }}>Annuler</button>
-                <button onClick={handleSave} disabled={saving} style={{
-                  background: saving ? "#666" : "linear-gradient(135deg, #d4af37, #c9a227)",
-                  border: "none", borderRadius: 10,
-                  padding: "8px 20px", color: "#000", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer"
-                }}>{saving ? "Sauvegarde..." : "💾 Sauvegarder"}</button>
-              </>
-            )}
-          </div>
-        </div>
+        {!editing ? (
+          <button onClick={() => setEditing(true)} style={{
+            background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10,
+            padding: "8px 16px", color: "var(--gold)", fontSize: 13, fontWeight: 600, cursor: "pointer"
+          }}>✏️ Modifier</button>
+        ) : (
+          <>
+            <button onClick={() => setEditing(false)} style={{
+              background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10,
+              padding: "8px 16px", color: "var(--text-muted)", fontSize: 13, cursor: "pointer"
+            }}>Annuler</button>
+            <button onClick={handleSave} disabled={saving} style={{
+              background: saving ? "var(--text-muted)" : "linear-gradient(135deg, var(--gold-dark), var(--gold))",
+              border: "none", borderRadius: 10,
+              padding: "8px 20px", color: "var(--violet-dark)", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer"
+            }}>{saving ? "Sauvegarde..." : "💾 Sauvegarder"}</button>
+          </>
+        )}
       </div>
 
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 80px" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 40px" }}>
 
         {/* Avatar + nom */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>

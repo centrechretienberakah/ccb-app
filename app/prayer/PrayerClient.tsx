@@ -370,13 +370,8 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
   const totalPriants = prayers.reduce((acc, p) => acc + p.intercessionsCount, 0);
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }}>
-    <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 80px" }}>
-      {/* Top nav */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 6, background: "#111", border: "1px solid #222", borderRadius: 10, padding: "7px 14px", color: "#888", fontSize: 13, textDecoration: "none" }}>← Accueil</a>
-        <a href="/community" style={{ background: "#111", border: "1px solid #222", borderRadius: 10, padding: "7px 14px", color: "#888", fontSize: 13, textDecoration: "none" }}>Communauté</a>
-      </div>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 40px" }}>
 
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 24, paddingTop: 8 }}>

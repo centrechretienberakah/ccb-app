@@ -69,37 +69,26 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
   }
 
   const tabStyle = (active: boolean) => ({
-    flex: 1, padding: "10px 0", background: "none", border: "none",
-    borderBottom: `2px solid ${active ? "#d4af37" : "transparent"}`,
-    color: active ? "#d4af37" : "#555", fontWeight: active ? 700 : 400,
-    fontSize: 14, cursor: "pointer", transition: "all 0.2s",
+    padding: "12px 20px", background: "none", border: "none",
+    borderBottom: `2px solid ${active ? "var(--gold)" : "transparent"}`,
+    color: active ? "var(--gold)" : "var(--text-muted)", fontWeight: active ? 700 : 400,
+    fontSize: 14, cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap" as const,
   });
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }}>
-      {/* Header */}
-      <div style={{ background: "rgba(10,10,10,0.97)", backdropFilter: "blur(10px)", borderBottom: "1px solid #1a1a1a", padding: "14px 16px", position: "sticky", top: 0, zIndex: 100 }}>
-        <div style={{ maxWidth: 680, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-            <button onClick={() => router.back()} style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "7px 12px", color: "#d4af37", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>←</button>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 16, color: "#d4af37" }}>Communauté CCB</div>
-              <div style={{ fontSize: 11, color: "#555" }}>
-                {members.length} membre{members.length > 1 ? "s" : ""}
-                {isAdmin && <span style={{ marginLeft: 8, color: "#a855f7", fontWeight: 600 }}>· Admin</span>}
-              </div>
-            </div>
-            <a href="/profile" style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "7px 12px", color: "#888", fontSize: 12, textDecoration: "none" }}>Mon profil</a>
-          </div>
-          {/* Onglets */}
-          <div style={{ display: "flex", borderBottom: "1px solid #1a1a1a" }}>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
+      {/* Onglets sub-nav */}
+      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)", padding: "0 20px" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex" }}>
             <button style={tabStyle(tab === "feed")} onClick={() => setTab("feed")}>📰 Fil d'actualité</button>
             <button style={tabStyle(tab === "members")} onClick={() => setTab("members")}>👥 Membres ({members.length})</button>
           </div>
+          {isAdmin && <span style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700 }}>🛡️ Admin</span>}
         </div>
       </div>
 
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 80px" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 40px" }}>
 
         {/* ── ONGLET FEED ── toujours monté (display:none préserve l'état React) */}
         <div style={{ display: tab === "feed" ? "block" : "none" }}>
