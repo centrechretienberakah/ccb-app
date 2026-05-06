@@ -32,7 +32,7 @@ export default async function AdminPage() {
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", weekAgo),
     supabase.from("posts").select("*", { count: "exact", head: true }),
-    supabase.from("prayer_requests").select("*", { count: "exact", head: true }).eq("status", "open"),
+    supabase.from("prayer_requests").select("*", { count: "exact", head: true }).eq("is_answered", false),
     supabase.from("events").select("*", { count: "exact", head: true }).gte("event_date", monthStart),
     supabase.from("daily_devotions").select("*", { count: "exact", head: true }),
     supabase.from("user_bible_plans").select("*", { count: "exact", head: true }).eq("is_active", true),
@@ -40,25 +40,25 @@ export default async function AdminPage() {
 
   const { data: members } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, spiritual_level, created_at, country")
+    .select("id, full_name, role, spiritual_level, created_at, country, city")
     .order("created_at", { ascending: false })
     .limit(100);
 
   const { data: recentPosts } = await supabase
     .from("posts")
-    .select("id, content, created_at, user_id, category, is_pinned")
+    .select("id, content, created_at, user_id, is_pinned, post_type")
     .order("created_at", { ascending: false })
     .limit(30);
 
   const { data: recentPrayers } = await supabase
     .from("prayer_requests")
-    .select("id, title, body, status, created_at, user_id, is_anonymous")
+    .select("id, title, content, is_answered, created_at, user_id, is_anonymous, category")
     .order("created_at", { ascending: false })
     .limit(30);
 
   const { data: devotions } = await supabase
     .from("daily_devotions")
-    .select("id, devotion_date, title, verse_reference, meditation_p1, verse_text, prayer, declaration, meditation_p2, meditation_p3, reflection_question")
+    .select("id, devotion_date, title, verse_reference, verse_text, meditation_p1, meditation_p2, meditation_p3, reflection_question, prayer, declaration")
     .order("devotion_date", { ascending: false })
     .limit(30);
 
