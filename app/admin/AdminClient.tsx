@@ -418,4 +418,228 @@ export default function AdminClient({
                       value={m.role}
                       onChange={e => changeRole(m.id, e.target.value)}
                       style={{ ...inputStyle, width: "auto", minWidth: "120px", padding: "0.4rem 0.75rem", fontSize: "0.8rem" }}
-             
+                    >
+                      <option value="member">Membre</option>
+                      <option value="leader">Leader</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                );
+              })}
+              {filteredMembers.length === 0 && (
+                <div style={{ ...card, textAlign: "center", color: "var(--text-muted)", padding: "3rem" }}>
+                  Aucun membre correspondant.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ════════ PUBLICATIONS ════════ */}
+        {tab === "posts" && (
+          <div>
+            <p style={sectionTitle}>{posts.length} publication(s)</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {posts.map(p => (
+                <div key={p.id} style={{ ...card, display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem", flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--gold)" }}>
+                        {nameFor(postProfiles, p.user_id)}
+                      </span>
+                      {p.category && (
+                        <span style={{ fontSize: "0.68rem", padding: "0.15rem 0.5rem", borderRadius: "9999px", background: "var(--surface)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                          {p.category}
+                        </span>
+                      )}
+                      {p.is_pinned && (
+                        <span style={{ fontSize: "0.68rem", padding: "0.15rem 0.5rem", borderRadius: "9999px", background: "rgba(212,175,55,0.12)", color: "var(--gold)", border: "1px solid rgba(212,175,55,0.25)" }}>
+                          📌 Épinglé
+                        </span>
+                      )}
+                      <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginLeft: "auto" }}>{timeAgo(p.created_at)}</span>
+                    </div>
+                    <div style={{ fontSize: "0.88rem", color: "var(--text-secondary)", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                      {p.content}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deletePost(p.id)}
+                    title="Supprimer"
+                    style={{ padding: "0.4rem 0.75rem", borderRadius: "var(--radius-md)", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#f87171", fontSize: "0.78rem", cursor: "pointer", flexShrink: 0 }}
+                  >
+                    🗑 Supprimer
+                  </button>
+                </div>
+              ))}
+              {posts.length === 0 && (
+                <div style={{ ...card, textAlign: "center", color: "var(--text-muted)", padding: "3rem" }}>
+                  Aucune publication.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ════════ PRIÈRES ════════ */}
+        {tab === "prayers" && (
+          <div>
+            <p style={sectionTitle}>{prayers.filter(p => p.status === "open").length} prière(s) ouverte(s)</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {prayers.map(p => (
+                <div key={p.id} style={{ ...card, borderLeft: `3px solid ${p.status === "answered" ? "var(--gold)" : "rgba(244,114,182,0.6)"}` }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem", flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>{p.title}</span>
+                        <span style={{ fontSize: "0.68rem", padding: "0.15rem 0.5rem", borderRadius: "9999px", background: p.status === "answered" ? "rgba(212,175,55,0.12)" : "rgba(244,114,182,0.12)", color: p.status === "answered" ? "var(--gold)" : "#f472b6", border: `1px solid ${p.status === "answered" ? "rgba(212,175,55,0.25)" : "rgba(244,114,182,0.25)"}` }}>
+                          {p.status === "answered" ? "✓ Répondue" : "⌛ Ouverte"}
+                        </span>
+                        <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginLeft: "auto" }}>{timeAgo(p.created_at)}</span>
+                      </div>
+                      <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                        {p.is_anonymous ? "Anonyme" : nameFor(prayerProfiles, p.user_id)}
+                      </div>
+                      {p.body && (
+                        <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                          {p.body}
+                        </div>
+                      )}
+                    </div>
+                    {p.status === "open" && (
+                      <button
+                        onClick={() => closePrayer(p.id)}
+                        style={{ padding: "0.4rem 0.85rem", borderRadius: "var(--radius-md)", border: "1px solid rgba(212,175,55,0.3)", background: "rgba(212,175,55,0.08)", color: "var(--gold)", fontSize: "0.78rem", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
+                      >
+                        ✓ Répondue
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {prayers.length === 0 && (
+                <div style={{ ...card, textAlign: "center", color: "var(--text-muted)", padding: "3rem" }}>
+                  Aucune prière.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ════════ DÉVOTIONS ════════ */}
+        {tab === "devotions" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+              <p style={{ ...sectionTitle, margin: 0 }}>{devotions.length} dévotion(s)</p>
+              <button
+                onClick={() => { setShowDevotionForm(v => !v); setDevMsg(null); }}
+                style={{ padding: "0.55rem 1.25rem", borderRadius: "9999px", border: "none", background: showDevotionForm ? "var(--surface)" : "var(--gold)", color: showDevotionForm ? "var(--text-primary)" : "#1a0a00", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
+              >
+                {showDevotionForm ? "✕ Annuler" : "+ Nouvelle dévotion"}
+              </button>
+            </div>
+
+            {/* ── Devotion form ── */}
+            {showDevotionForm && (
+              <div style={{ ...card, marginBottom: "1.5rem", borderTop: "3px solid var(--gold)" }}>
+                <h3 style={{ fontFamily: "var(--font-title)", color: "var(--gold)", fontSize: "1rem", margin: "0 0 1.25rem", letterSpacing: "0.04em" }}>
+                  ✦ Nouvelle dévotion
+                </h3>
+
+                {devMsg && (
+                  <div style={{ padding: "0.75rem 1rem", borderRadius: "var(--radius-md)", marginBottom: "1rem", background: devMsg.type === "success" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${devMsg.type === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`, color: devMsg.type === "success" ? "#86efac" : "#fca5a5", fontSize: "0.88rem" }}>
+                    {devMsg.text}
+                  </div>
+                )}
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: "1rem" }}>
+                    <div>
+                      <label style={labelStyle}>Date *</label>
+                      <input type="date" value={form.devotion_date} onChange={e => setForm(f => ({ ...f, devotion_date: e.target.value }))} style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Titre *</label>
+                      <input type="text" placeholder="Ex : Marcher dans la foi" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} style={inputStyle} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1rem" }}>
+                    <div>
+                      <label style={labelStyle}>Référence *</label>
+                      <input type="text" placeholder="Jean 3:16" value={form.verse_reference} onChange={e => setForm(f => ({ ...f, verse_reference: e.target.value }))} style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Texte du verset</label>
+                      <input type="text" placeholder="Car Dieu a tant aimé le monde..." value={form.verse_text} onChange={e => setForm(f => ({ ...f, verse_text: e.target.value }))} style={inputStyle} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Méditation 1 *</label>
+                    <textarea placeholder="Premier paragraphe de méditation..." value={form.meditation_p1} onChange={e => setForm(f => ({ ...f, meditation_p1: e.target.value }))} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Méditation 2</label>
+                    <textarea placeholder="Deuxième paragraphe (optionnel)..." value={form.meditation_p2} onChange={e => setForm(f => ({ ...f, meditation_p2: e.target.value }))} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Méditation 3 (optionnel)</label>
+                    <textarea placeholder="Troisième paragraphe..." value={form.meditation_p3} onChange={e => setForm(f => ({ ...f, meditation_p3: e.target.value }))} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Question de réflexion (optionnel)</label>
+                    <input type="text" placeholder="Ex : Comment puis-je appliquer ce verset aujourd'hui ?" value={form.reflection_question} onChange={e => setForm(f => ({ ...f, reflection_question: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Prière *</label>
+                    <textarea placeholder="Seigneur, je te prie..." value={form.prayer} onChange={e => setForm(f => ({ ...f, prayer: e.target.value }))} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Déclaration de foi *</label>
+                    <input type="text" placeholder="Je déclare que..." value={form.declaration} onChange={e => setForm(f => ({ ...f, declaration: e.target.value }))} style={inputStyle} />
+                  </div>
+
+                  <button
+                    onClick={saveDevotion}
+                    disabled={saving}
+                    style={{ padding: "0.9rem", borderRadius: "var(--radius-md)", border: "none", background: saving ? "rgba(212,175,55,0.3)" : "var(--gold)", color: "#1a0a00", fontWeight: 800, fontSize: "0.95rem", cursor: saving ? "not-allowed" : "pointer", letterSpacing: "0.03em" }}
+                  >
+                    {saving ? "Publication en cours..." : "✦ Publier la dévotion"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Devotion list ── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {devotions.map(d => (
+                <div key={d.id} style={{ ...card, display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+                  <div style={{ background: "var(--gold)", borderRadius: "var(--radius-md)", padding: "0.3rem 0.7rem", fontSize: "0.75rem", fontWeight: 700, color: "#1a0a00", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    {new Date(d.devotion_date + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: "0.92rem", marginBottom: "0.2rem" }}>{d.title}</div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--gold)" }}>{d.verse_reference}</div>
+                    {d.verse_text && (
+                      <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontStyle: "italic", marginTop: "0.3rem", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                        &ldquo;{d.verse_text}&rdquo;
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {devotions.length === 0 && (
+                <div style={{ ...card, textAlign: "center", color: "var(--text-muted)", padding: "3rem" }}>
+                  Aucune dévotion. Créez la première !
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
