@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { OT_BOOKS, NT_BOOKS, BibleBook } from "@/lib/bible/books";
 
 interface Note {
   id: string;
@@ -29,7 +31,7 @@ interface Props {
 
 export default function BibleClient({ user, notes: initialNotes, savedVerses: initialSavedVerses }: Props) {
   const supabase = createClient();
-  const [tab, setTab] = useState<"notes" | "verses">("notes");
+  const [tab, setTab] = useState<"read" | "notes" | "verses">("read");
   const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [savedVerses, setSavedVerses] = useState<SavedVerse[]>(initialSavedVerses);
   const [toast, setToast] = useState<string | null>(null);
@@ -99,7 +101,10 @@ export default function BibleClient({ user, notes: initialNotes, savedVerses: in
 
       {/* Sub-nav tabs */}
       <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", overflowX: "auto" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", overflowX: "auto" }}>
+          <button style={tabStyle(tab === "read")} onClick={() => setTab("read")}>
+            📖 Lire la Bible
+          </button>
           <button style={tabStyle(tab === "notes")} onClick={() => setTab("notes")}>
             📝 Notes ({notes.length})
           </button>
@@ -109,7 +114,8 @@ export default function BibleClient({ user, notes: initialNotes, savedVerses: in
         </div>
       </div>
 
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 48px" }}>
+      <div style={{ maxWidth: tab === "read" ? 960 : 720, margin: "0 auto", padding: "24px 16px 48px" }}>
+        {tab === "read" && <BibleBrowserTab />}
         {tab === "notes" && (
           <NotesTab notes={notes} onSave={saveNote} onDelete={deleteNote} />
         )}
@@ -117,6 +123,170 @@ export default function BibleClient({ user, notes: initialNotes, savedVerses: in
           <VersesTab verses={savedVerses} onDelete={deleteVerse} />
         )}
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB: Bible Browser
+// ─────────────────────────────────────────────────────────────────────────────
+function BibleBrowserTab() {
+  const router = useRouter();
+  const [testament, setTestament] = useState<"ot" | "nt">("nt");
+  const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null);
+
+  const books = testament === "ot" ? OT_BOOKS : NT_BOOKS;
+
+  function handleBookClick(book: BibleBook) {
+    setSelectedBook(selectedBook?.fr === book.fr ? null : book);
+  }
+
+  function handleChapterClick(book: BibleBook, chapter: number) {
+    const slug = encodeURIComponent(book.fr);
+    router.push(`/bible/read/${slug}/${chapter}`);
+  }
+
+  const btnBase: React.CSSProperties = {
+    background: "var(--surface-2)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius-md)",
+    padding: "10px 14px",
+    color: "var(--text-primary)",
+    fontSize: 13,
+    cursor: "pointer",
+    fontFamily: "var(--font-body)",
+    textAlign: "left",
+    transition: "all 0.15s",
+  };
+
+  const chapterBtn: React.CSSProperties = {
+    background: "var(--surface-2)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius-sm)",
+    padding: "8px 4px",
+    color: "var(--text-secondary)",
+    fontSize: 13,
+    cursor: "pointer",
+    fontFamily: "var(--font-body)",
+    textAlign: "center",
+    transition: "all 0.15s",
+    fontWeight: 600,
+  };
+
+  return (
+    <div>
+      {/* Testament toggle */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+        <button
+          onClick={() => { setTestament("nt"); setSelectedBook(null); }}
+          style={{
+            ...btnBase,
+            background: testament === "nt" ? "var(--gold)" : "var(--surface-2)",
+            color: testament === "nt" ? "#000" : "var(--text-primary)",
+            fontWeight: testament === "nt" ? 700 : 400,
+            border: testament === "nt" ? "1px solid var(--gold)" : "1px solid var(--border)",
+          }}
+        >
+          ✝ Nouveau Testament
+        </button>
+        <button
+          onClick={() => { setTestament("ot"); setSelectedBook(null); }}
+          style={{
+            ...btnBase,
+            background: testament === "ot" ? "var(--gold)" : "var(--surface-2)",
+            color: testament === "ot" ? "#000" : "var(--text-primary)",
+            fontWeight: testament === "ot" ? 700 : 400,
+            border: testament === "ot" ? "1px solid var(--gold)" : "1px solid var(--border)",
+          }}
+        >
+          📜 Ancien Testament
+        </button>
+      </div>
+
+      {/* Book grid */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+        gap: 8,
+        marginBottom: selectedBook ? 20 : 0,
+      }}>
+        {books.map((book) => {
+          const isSelected = selectedBook?.fr === book.fr;
+          return (
+            <button
+              key={book.fr}
+              onClick={() => handleBookClick(book)}
+              style={{
+                ...btnBase,
+                background: isSelected ? "rgba(var(--gold-rgb, 200,155,60),0.15)" : "var(--card-bg)",
+                border: `1px solid ${isSelected ? "var(--gold)" : "var(--border)"}`,
+                color: isSelected ? "var(--gold)" : "var(--text-primary)",
+                fontWeight: isSelected ? 700 : 400,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontSize: 13 }}>{book.fr}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, marginLeft: 6 }}>
+                {book.chapters}ch
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Chapter selector */}
+      {selectedBook && (
+        <div style={{
+          background: "var(--card-bg)",
+          border: "1px solid var(--gold)",
+          borderRadius: "var(--radius-lg)",
+          padding: 20,
+          boxShadow: "var(--shadow-md)",
+        }}>
+          <div style={{
+            fontFamily: "var(--font-title)",
+            color: "var(--gold)",
+            fontSize: 16,
+            fontWeight: 700,
+            marginBottom: 16,
+          }}>
+            {selectedBook.fr} — Choisir un chapitre
+          </div>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(48px, 1fr))",
+            gap: 6,
+          }}>
+            {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map((ch) => (
+              <button
+                key={ch}
+                onClick={() => handleChapterClick(selectedBook, ch)}
+                style={chapterBtn}
+                onMouseEnter={(e) => {
+                  (e.target as HTMLButtonElement).style.background = "var(--gold)";
+                  (e.target as HTMLButtonElement).style.color = "#000";
+                  (e.target as HTMLButtonElement).style.borderColor = "var(--gold)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLButtonElement).style.background = "var(--surface-2)";
+                  (e.target as HTMLButtonElement).style.color = "var(--text-secondary)";
+                  (e.target as HTMLButtonElement).style.borderColor = "var(--border)";
+                }}
+              >
+                {ch}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!selectedBook && (
+        <div style={{ textAlign: "center", padding: "30px 0 0", color: "var(--text-muted)", fontSize: 13 }}>
+          Sélectionnez un livre pour choisir un chapitre à lire
+        </div>
+      )}
     </div>
   );
 }
