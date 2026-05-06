@@ -137,8 +137,14 @@ function BibleBrowserTab() {
 
   const books = testament === "ot" ? OT_BOOKS : NT_BOOKS;
 
-  function handleBookClick(book: BibleBook) {
-    setSelectedBook(selectedBook?.fr === book.fr ? null : book);
+  function handleTestamentChange(t: "ot" | "nt") {
+    setTestament(t);
+    setSelectedBook(null);
+  }
+
+  function handleBookSelect(e: React.ChangeEvent<HTMLSelectElement>) {
+    const book = books.find((b) => b.fr === e.target.value) ?? null;
+    setSelectedBook(book);
   }
 
   function handleChapterClick(book: BibleBook, chapter: number) {
@@ -146,26 +152,13 @@ function BibleBrowserTab() {
     router.push(`/bible/read/${slug}/${chapter}`);
   }
 
-  const btnBase: React.CSSProperties = {
-    background: "var(--surface-2)",
-    border: "1px solid var(--border)",
-    borderRadius: "var(--radius-md)",
-    padding: "10px 14px",
-    color: "var(--text-primary)",
-    fontSize: 13,
-    cursor: "pointer",
-    fontFamily: "var(--font-body)",
-    textAlign: "left",
-    transition: "all 0.15s",
-  };
-
   const chapterBtn: React.CSSProperties = {
     background: "var(--surface-2)",
     border: "1px solid var(--border)",
     borderRadius: "var(--radius-sm)",
-    padding: "8px 4px",
+    padding: "10px 4px",
     color: "var(--text-secondary)",
-    fontSize: 13,
+    fontSize: 14,
     cursor: "pointer",
     fontFamily: "var(--font-body)",
     textAlign: "center",
@@ -176,71 +169,83 @@ function BibleBrowserTab() {
   return (
     <div>
       {/* Testament toggle */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-        <button
-          onClick={() => { setTestament("nt"); setSelectedBook(null); }}
-          style={{
-            ...btnBase,
-            background: testament === "nt" ? "var(--gold)" : "var(--surface-2)",
-            color: testament === "nt" ? "#000" : "var(--text-primary)",
-            fontWeight: testament === "nt" ? 700 : 400,
-            border: testament === "nt" ? "1px solid var(--gold)" : "1px solid var(--border)",
-          }}
-        >
-          ✝ Nouveau Testament
-        </button>
-        <button
-          onClick={() => { setTestament("ot"); setSelectedBook(null); }}
-          style={{
-            ...btnBase,
-            background: testament === "ot" ? "var(--gold)" : "var(--surface-2)",
-            color: testament === "ot" ? "#000" : "var(--text-primary)",
-            fontWeight: testament === "ot" ? 700 : 400,
-            border: testament === "ot" ? "1px solid var(--gold)" : "1px solid var(--border)",
-          }}
-        >
-          📜 Ancien Testament
-        </button>
+      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+        {(["nt", "ot"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => handleTestamentChange(t)}
+            style={{
+              padding: "10px 18px",
+              background: testament === t ? "var(--gold)" : "var(--card-bg)",
+              color: testament === t ? "#000" : "var(--text-primary)",
+              fontWeight: testament === t ? 700 : 400,
+              border: `1px solid ${testament === t ? "var(--gold)" : "var(--border)"}`,
+              borderRadius: "var(--radius-md)",
+              fontSize: 13,
+              cursor: "pointer",
+              fontFamily: "var(--font-body)",
+              transition: "all 0.15s",
+            }}
+          >
+            {t === "nt" ? "✝ Nouveau Testament" : "📜 Ancien Testament"}
+          </button>
+        ))}
       </div>
 
-      {/* Book grid */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-        gap: 8,
-        marginBottom: selectedBook ? 20 : 0,
-      }}>
-        {books.map((book) => {
-          const isSelected = selectedBook?.fr === book.fr;
-          return (
-            <button
-              key={book.fr}
-              onClick={() => handleBookClick(book)}
-              style={{
-                ...btnBase,
-                background: isSelected ? "rgba(var(--gold-rgb, 200,155,60),0.15)" : "var(--card-bg)",
-                border: `1px solid ${isSelected ? "var(--gold)" : "var(--border)"}`,
-                color: isSelected ? "var(--gold)" : "var(--text-primary)",
-                fontWeight: isSelected ? 700 : 400,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span style={{ fontSize: 13 }}>{book.fr}</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, marginLeft: 6 }}>
-                {book.chapters}ch
-              </span>
-            </button>
-          );
-        })}
+      {/* Book dropdown */}
+      <div style={{ marginBottom: 24 }}>
+        <label style={{
+          display: "block",
+          fontSize: 12,
+          fontWeight: 600,
+          color: "var(--text-muted)",
+          marginBottom: 8,
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+        }}>
+          Choisir un livre
+        </label>
+        <div style={{ position: "relative" }}>
+          <select
+            value={selectedBook?.fr ?? ""}
+            onChange={handleBookSelect}
+            style={{
+              width: "100%",
+              appearance: "none",
+              background: "var(--card-bg)",
+              border: "1.5px solid var(--border)",
+              borderRadius: "var(--radius-md)",
+              padding: "13px 44px 13px 16px",
+              color: selectedBook ? "var(--text-primary)" : "var(--text-muted)",
+              fontSize: 15,
+              fontFamily: "var(--font-body)",
+              cursor: "pointer",
+              outline: "none",
+              boxShadow: "var(--shadow-sm)",
+              fontWeight: selectedBook ? 600 : 400,
+            }}
+          >
+            <option value="">— Sélectionnez un livre —</option>
+            {books.map((book) => (
+              <option key={book.fr} value={book.fr}>
+                {book.fr}  ({book.chapters} chapitres)
+              </option>
+            ))}
+          </select>
+          {/* Chevron icon */}
+          <span style={{
+            position: "absolute", right: 14, top: "50%",
+            transform: "translateY(-50%)",
+            pointerEvents: "none", color: "var(--gold)", fontSize: 16,
+          }}>▾</span>
+        </div>
       </div>
 
-      {/* Chapter selector */}
+      {/* Chapter grid */}
       {selectedBook && (
         <div style={{
           background: "var(--card-bg)",
-          border: "1px solid var(--gold)",
+          border: "1.5px solid var(--gold)",
           borderRadius: "var(--radius-lg)",
           padding: 20,
           boxShadow: "var(--shadow-md)",
@@ -248,15 +253,15 @@ function BibleBrowserTab() {
           <div style={{
             fontFamily: "var(--font-title)",
             color: "var(--gold)",
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: 700,
             marginBottom: 16,
           }}>
-            {selectedBook.fr} — Choisir un chapitre
+            {selectedBook.fr} — {selectedBook.chapters} chapitres
           </div>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(48px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(52px, 1fr))",
             gap: 6,
           }}>
             {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map((ch) => (
@@ -265,14 +270,16 @@ function BibleBrowserTab() {
                 onClick={() => handleChapterClick(selectedBook, ch)}
                 style={chapterBtn}
                 onMouseEnter={(e) => {
-                  (e.target as HTMLButtonElement).style.background = "var(--gold)";
-                  (e.target as HTMLButtonElement).style.color = "#000";
-                  (e.target as HTMLButtonElement).style.borderColor = "var(--gold)";
+                  const el = e.currentTarget;
+                  el.style.background = "var(--gold)";
+                  el.style.color = "#000";
+                  el.style.borderColor = "var(--gold)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.target as HTMLButtonElement).style.background = "var(--surface-2)";
-                  (e.target as HTMLButtonElement).style.color = "var(--text-secondary)";
-                  (e.target as HTMLButtonElement).style.borderColor = "var(--border)";
+                  const el = e.currentTarget;
+                  el.style.background = "var(--surface-2)";
+                  el.style.color = "var(--text-secondary)";
+                  el.style.borderColor = "var(--border)";
                 }}
               >
                 {ch}
@@ -283,8 +290,14 @@ function BibleBrowserTab() {
       )}
 
       {!selectedBook && (
-        <div style={{ textAlign: "center", padding: "30px 0 0", color: "var(--text-muted)", fontSize: 13 }}>
-          Sélectionnez un livre pour choisir un chapitre à lire
+        <div style={{
+          textAlign: "center",
+          padding: "32px 0",
+          color: "var(--text-muted)",
+          fontSize: 13,
+          borderTop: "1px dashed var(--border)",
+        }}>
+          📖 Sélectionnez un livre dans la liste pour choisir un chapitre
         </div>
       )}
     </div>
