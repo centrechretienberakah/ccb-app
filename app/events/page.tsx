@@ -13,9 +13,9 @@ export default async function EventsPage() {
   // Fetch all published events (upcoming first, then past)
   const { data: events } = await supabase
     .from("events")
-    .select("*")
+    .select("id, title, description, event_type, event_date, end_date, location, is_online, link_url, stream_url, image_url, is_published, status, created_by, created_at")
     .eq("is_published", true)
-    .order("date_start", { ascending: true });
+    .order("event_date", { ascending: true });
 
   // Fetch current user RSVPs
   const { data: rsvps } = await supabase
