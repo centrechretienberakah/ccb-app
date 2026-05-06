@@ -3,10 +3,14 @@
 /* ============================================================
    CCB DESIGN SYSTEM — CENTRE CHRÉTIEN BERAKAH
    Couleurs : Violet Royal #5A2CA0 | Or Divin #D4AF37
+   Mode clair : fond beige chaleureux
+   Mode sombre : fond brun-noir chaud
    ============================================================ */
 
-:root {
-  /* Brand Colors */
+/* ── Mode clair (défaut — beige) ── */
+:root,
+[data-theme="light"] {
+  /* Brand */
   --violet: #5a2ca0;
   --violet-dark: #3d1a72;
   --violet-light: #7b4bc4;
@@ -18,61 +22,115 @@
   --gold-light: #e8cc6a;
   --gold-pale: #fdf8e8;
 
-  /* Semantic */
-  --background: #ffffff;
-  --foreground: #0f0a1e;
-  --surface: #fafafa;
-  --surface-2: #f4f1fb;
-  --border: #e8e0f5;
-  --border-subtle: #f0ecfa;
+  /* Fonds — beige chaud */
+  --background:   #f2ece0;
+  --foreground:   #1e150a;
+  --surface:      #faf6ee;
+  --surface-2:    #e8e0d0;
+  --border:       #d4c8b0;
+  --border-subtle:#e0d8c8;
 
-  --text-primary: #0f0a1e;
-  --text-secondary: #4a4060;
-  --text-muted: #8b7faa;
-  --text-inverse: #ffffff;
+  /* Texte */
+  --text-primary:   #1e150a;
+  --text-secondary: #5a4830;
+  --text-muted:     #9a8060;
+  --text-inverse:   #ffffff;
 
   /* Status */
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --info: #3b82f6;
+  --success: #16a34a;
+  --warning: #d97706;
+  --error:   #dc2626;
+  --info:    #2563eb;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(90, 44, 160, 0.08);
-  --shadow-md: 0 4px 16px rgba(90, 44, 160, 0.12);
-  --shadow-lg: 0 8px 32px rgba(90, 44, 160, 0.16);
-  --shadow-gold: 0 4px 20px rgba(212, 175, 55, 0.3);
+  /* Ombres dorées & chaudes */
+  --shadow-sm:   0 1px 3px rgba(90, 44, 160, 0.07);
+  --shadow-md:   0 4px 16px rgba(90, 44, 160, 0.1);
+  --shadow-lg:   0 8px 32px rgba(90, 44, 160, 0.14);
+  --shadow-gold: 0 4px 20px rgba(212, 175, 55, 0.28);
+  --shadow-warm: 0 4px 20px rgba(90, 50, 10, 0.12);
 
   /* Radii */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
   --radius-full: 9999px;
 
-  /* Typography */
+  /* Typo */
   --font-title: var(--font-cinzel), "Georgia", serif;
-  --font-body: var(--font-montserrat), "Arial", sans-serif;
+  --font-body:  var(--font-montserrat), "Arial", sans-serif;
+
+  /* Couleurs propres au mode clair */
+  --page-bg:          #f2ece0;
+  --card-bg:          #faf6ee;
+  --input-bg:         #fff8f0;
+  --input-border:     #d4c8b0;
+  --nav-bg:           rgba(242, 236, 224, 0.92);
+  --header-gradient:  linear-gradient(160deg, #3d1a72 0%, #5a2ca0 50%, #7b4bc4 100%);
 }
 
+/* ── Mode sombre ── */
+[data-theme="dark"],
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0614;
-    --foreground: #f0ebff;
-    --surface: #110d24;
-    --surface-2: #1a1235;
-    --border: #2a1f4a;
-    --border-subtle: #1e1638;
+    /* Fonds — brun-noir chaud */
+    --background:   #0e0b07;
+    --foreground:   #f0e8d8;
+    --surface:      #1a1610;
+    --surface-2:    #252018;
+    --border:       #352e20;
+    --border-subtle:#2a2418;
 
-    --text-primary: #f0ebff;
-    --text-secondary: #c4b5e8;
-    --text-muted: #7b6aaa;
-    --text-inverse: #0f0a1e;
+    /* Texte */
+    --text-primary:   #f0e8d8;
+    --text-secondary: #c0a880;
+    --text-muted:     #7a6848;
+    --text-inverse:   #1e150a;
 
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    /* Status */
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --error:   #ef4444;
+    --info:    #3b82f6;
+
+    /* Ombres */
+    --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-md:   0 4px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg:   0 8px 32px rgba(0, 0, 0, 0.55);
+    --shadow-gold: 0 4px 20px rgba(212, 175, 55, 0.25);
+    --shadow-warm: 0 4px 20px rgba(0, 0, 0, 0.4);
+
+    /* Couleurs propres au mode sombre */
+    --page-bg:         #0e0b07;
+    --card-bg:         #1a1610;
+    --input-bg:        #151210;
+    --input-border:    #352e20;
+    --nav-bg:          rgba(14, 11, 7, 0.94);
+    --header-gradient: linear-gradient(160deg, #1a0533 0%, #2d0a5e 50%, #3d1a72 100%);
   }
+}
+
+/* Sélecteur explicite pour le JS toggle */
+[data-theme="dark"] {
+  --background:   #0e0b07;
+  --foreground:   #f0e8d8;
+  --surface:      #1a1610;
+  --surface-2:    #252018;
+  --border:       #352e20;
+  --border-subtle:#2a2418;
+  --text-primary:   #f0e8d8;
+  --text-secondary: #c0a880;
+  --text-muted:     #7a6848;
+  --text-inverse:   #1e150a;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,.35);
+  --shadow-md:   0 4px 16px rgba(0,0,0,.45);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,.55);
+  --page-bg:         #0e0b07;
+  --card-bg:         #1a1610;
+  --input-bg:        #151210;
+  --input-border:    #352e20;
+  --nav-bg:          rgba(14,11,7,0.94);
+  --header-gradient: linear-gradient(160deg,#1a0533 0%,#2d0a5e 50%,#3d1a72 100%);
 }
 
 /* ============================================================
@@ -80,32 +138,29 @@
    ============================================================ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-border: var(--border);
-
-  --color-violet: var(--violet);
+  --color-background:  var(--background);
+  --color-foreground:  var(--foreground);
+  --color-surface:     var(--surface);
+  --color-surface-2:   var(--surface-2);
+  --color-border:      var(--border);
+  --color-violet:      var(--violet);
   --color-violet-dark: var(--violet-dark);
-  --color-violet-light: var(--violet-light);
+  --color-violet-light:var(--violet-light);
   --color-violet-pale: var(--violet-pale);
-  --color-violet-50: var(--violet-50);
-
-  --color-gold: var(--gold);
-  --color-gold-dark: var(--gold-dark);
-  --color-gold-light: var(--gold-light);
-  --color-gold-pale: var(--gold-pale);
-
-  --font-cinzel: var(--font-cinzel);
-  --font-montserrat: var(--font-montserrat);
+  --color-violet-50:   var(--violet-50);
+  --color-gold:        var(--gold);
+  --color-gold-dark:   var(--gold-dark);
+  --color-gold-light:  var(--gold-light);
+  --color-gold-pale:   var(--gold-pale);
+  --font-cinzel:       var(--font-cinzel);
+  --font-montserrat:   var(--font-montserrat);
 }
 
 /* ============================================================
    BASE STYLES
    ============================================================ */
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -117,26 +172,22 @@ html {
 }
 
 body {
-  background-color: var(--background);
+  background-color: var(--page-bg);
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* ============================================================
    TYPOGRAPHY
    ============================================================ */
 
-.font-cinzel {
-  font-family: var(--font-title);
-}
-
-.font-montserrat {
-  font-family: var(--font-body);
-}
+.font-cinzel     { font-family: var(--font-title); }
+.font-montserrat { font-family: var(--font-body); }
 
 h1, h2, h3 {
   font-family: var(--font-title);
@@ -155,7 +206,6 @@ h4, h5, h6 {
    CCB UTILITY CLASSES
    ============================================================ */
 
-/* Gradient backgrounds */
 .bg-violet-gradient {
   background: linear-gradient(135deg, var(--violet-dark) 0%, var(--violet) 50%, var(--violet-light) 100%);
 }
@@ -165,16 +215,9 @@ h4, h5, h6 {
 }
 
 .bg-hero-gradient {
-  background: linear-gradient(
-    160deg,
-    var(--violet-dark) 0%,
-    var(--violet) 40%,
-    #7c3aed 70%,
-    var(--violet-light) 100%
-  );
+  background: var(--header-gradient);
 }
 
-/* Text gradients */
 .text-gradient-gold {
   background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
   -webkit-background-clip: text;
@@ -189,7 +232,7 @@ h4, h5, h6 {
   background-clip: text;
 }
 
-/* CCB Button styles */
+/* Boutons */
 .btn-primary {
   background: var(--violet);
   color: white;
@@ -206,7 +249,6 @@ h4, h5, h6 {
   align-items: center;
   gap: 0.5rem;
 }
-
 .btn-primary:hover {
   background: var(--violet-dark);
   transform: translateY(-1px);
@@ -229,7 +271,6 @@ h4, h5, h6 {
   align-items: center;
   gap: 0.5rem;
 }
-
 .btn-gold:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-gold);
@@ -250,24 +291,33 @@ h4, h5, h6 {
   align-items: center;
   gap: 0.5rem;
 }
-
 .btn-outline:hover {
   background: var(--violet-pale);
 }
 
-/* Card */
+/* Carte */
 .card-ccb {
-  background: var(--surface);
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-
 .card-ccb:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
+}
+
+/* Inputs globaux */
+input, textarea, select {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--text-primary);
+  transition: background-color 0.25s, border-color 0.25s, color 0.25s;
+}
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
 }
 
 /* ============================================================
@@ -275,64 +325,37 @@ h4, h5, h6 {
    ============================================================ */
 
 @keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  50%       { transform: translateY(-10px); }
 }
 
 @keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
-  50% { box-shadow: 0 0 0 12px rgba(212, 175, 55, 0); }
+  0%, 100% { box-shadow: 0 0 0 0   rgba(212,175,55,0.4); }
+  50%       { box-shadow: 0 0 0 12px rgba(212,175,55,0); }
 }
 
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s ease forwards;
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
-
-.animate-pulse-gold {
-  animation: pulse-gold 2s ease-in-out infinite;
-}
+.animate-fade-in-up { animation: fadeInUp 0.6s ease forwards; }
+.animate-float       { animation: float 4s ease-in-out infinite; }
+.animate-pulse-gold  { animation: pulse-gold 2s ease-in-out infinite; }
 
 /* ============================================================
    SCROLLBAR
    ============================================================ */
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--surface);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--violet-light);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--violet);
-}
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--violet-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--violet); }
 
 /* ============================================================
    SELECTION
@@ -347,10 +370,5 @@ h4, h5, h6 {
    PWA SAFE AREAS
    ============================================================ */
 
-.safe-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
+.safe-top    { padding-top:    env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
