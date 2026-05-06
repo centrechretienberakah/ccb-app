@@ -549,6 +549,21 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   background: var(--error);
   border: 2px solid var(--surface);
 }
+.topbar-notif-badge {
+  position: absolute;
+  top: 4px; right: 4px;
+  min-width: 16px; height: 16px;
+  border-radius: 8px;
+  background: var(--error);
+  border: 1.5px solid var(--surface);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 3px;
+  line-height: 1;
+  pointer-events: none;
+}
 .topbar-theme-btn { color: var(--gold-dark); }
 .topbar-theme-btn:hover { background: var(--gold-pale); color: var(--gold-dark); }
 .topbar-avatar {

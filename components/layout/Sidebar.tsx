@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   IconHome, IconBook, IconHeart, IconUsers, IconSun,
   IconPlay, IconGraduationCap, IconBookmark, IconRadio,
-  IconGift, IconCrown, IconUser, IconSettings, IconLogOut,
+  IconGift, IconCrown, IconUser, IconSettings, IconLogOut, IconBell,
 } from "@/components/icons";
 
 const NAV_ITEMS = [
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/bible",         label: "Bible",          Icon: IconBook },
   { href: "/prayer",        label: "Prière",         Icon: IconHeart },
   { href: "/community",     label: "Communauté",     Icon: IconUsers },
+  { href: "/notifications", label: "Notifications",  Icon: IconBell },
   { href: "/devotion",      label: "Dévotion",       Icon: IconSun },
   { href: "/jesus-daily",   label: "Jesus Daily",    Icon: IconPlay },
   { href: "/classes",       label: "Salle de classe",Icon: IconGraduationCap },
