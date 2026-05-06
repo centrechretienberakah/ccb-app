@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   IconHome, IconBook, IconHeart, IconUsers, IconSun,
-  IconPlay, IconGraduationCap, IconBookmark, IconRadio,
+  IconPlay, IconGraduationCap, IconRadio,
   IconGift, IconCrown, IconUser, IconSettings, IconLogOut, IconBell,
 } from "@/components/icons";
 
@@ -17,7 +17,6 @@ const NAV_ITEMS = [
   { href: "/devotion",      label: "Dévotion",       Icon: IconSun },
   { href: "/jesus-daily",   label: "Jesus Daily",    Icon: IconPlay },
   { href: "/classes",       label: "Salle de classe",Icon: IconGraduationCap },
-  { href: "/plan-biblique", label: "Plan biblique",  Icon: IconBookmark },
   { href: "/live",          label: "Live",           Icon: IconRadio },
 ];
 

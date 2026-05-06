@@ -27,7 +27,6 @@ export default async function AdminPage() {
     { count: openPrayers },
     { count: totalEvents },
     { count: totalDevotions },
-    { count: activePlans },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", weekAgo),
@@ -35,7 +34,6 @@ export default async function AdminPage() {
     supabase.from("prayer_requests").select("*", { count: "exact", head: true }).eq("is_answered", false),
     supabase.from("events").select("*", { count: "exact", head: true }).gte("event_date", monthStart),
     supabase.from("daily_devotions").select("*", { count: "exact", head: true }),
-    supabase.from("user_bible_plans").select("*", { count: "exact", head: true }).eq("is_active", true),
   ]);
 
   const { data: members } = await supabase
@@ -88,7 +86,6 @@ export default async function AdminPage() {
         openPrayers: openPrayers ?? 0,
         totalEvents: totalEvents ?? 0,
         totalDevotions: totalDevotions ?? 0,
-        activePlans: activePlans ?? 0,
       }}
       members={members ?? []}
       posts={recentPosts ?? []}

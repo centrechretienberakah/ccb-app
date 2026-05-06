@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 
 interface Stats {
   totalMembers: number; newMembersWeek: number; totalPosts: number;
-  openPrayers: number; totalEvents: number; totalDevotions: number; activePlans: number;
+  openPrayers: number; totalEvents: number; totalDevotions: number;
 }
 interface Member {
   id: string; full_name: string; role: string;
@@ -232,7 +232,6 @@ export default function AdminClient({
                 { label: "Prieres ouvertes", value: stats.openPrayers, icon: "🙏", accent: "#f472b6" },
                 { label: "Evenements", value: stats.totalEvents, icon: "📅", accent: "#34d399" },
                 { label: "Devotions", value: stats.totalDevotions, icon: "📖", accent: "var(--gold)" },
-                { label: "Plans actifs", value: stats.activePlans, icon: "🎯", accent: "var(--violet-light, #a78bfa)" },
               ].map(s => (
                 <div key={s.label} style={{ ...card, borderTop: `3px solid ${s.accent}`, textAlign: "center" }}>
                   <div style={{ fontSize: "1.5rem", marginBottom: "0.4rem" }}>{s.icon}</div>

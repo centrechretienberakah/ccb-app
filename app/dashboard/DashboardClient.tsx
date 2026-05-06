@@ -21,7 +21,6 @@ const QUICK_ACTIONS = [
   { emoji: "👥", label: "Communauté", sub: "Échanges & partages", href: "/community", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #4ade80 100%)", glow: "rgba(74,222,128,0.35)" },
   { emoji: "🎬", label: "Jesus Daily", sub: "Vidéos prophétiques", href: "/jesus-daily", gradient: "linear-gradient(145deg, #3d1a72 0%, #5a2ca0 55%, #a78bfa 100%)", glow: "rgba(167,139,250,0.35)" },
   { emoji: "🎓", label: "Classes", sub: "Formation biblique", href: "/classes", gradient: "linear-gradient(145deg, #164e63 0%, #0891b2 55%, #22d3ee 100%)", glow: "rgba(34,211,238,0.35)" },
-  { emoji: "📋", label: "Plan biblique", sub: "Lecture quotidienne", href: "/plan-biblique", gradient: "linear-gradient(145deg, #7c2d12 0%, #c2410c 55%, #fb923c 100%)", glow: "rgba(251,146,60,0.35)" },
   { emoji: "📡", label: "Live", sub: "Cultes en direct", href: "/live", gradient: "linear-gradient(145deg, #1e1b4b 0%, #4338ca 55%, #818cf8 100%)", glow: "rgba(129,140,248,0.35)" },
 ];
 
