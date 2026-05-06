@@ -2,18 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AdminClient from "./AdminClient";
 
-export const metadata = {
-  title: "Admin — CCB",
-};
+export const metadata = { title: "Administration — CCB" };
 
 export default async function AdminPage() {
   const supabase = await createClient();
 
-  // Check auth
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?redirect=/admin");
 
-  // Check admin role
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, full_name")
@@ -22,61 +18,34 @@ export default async function AdminPage() {
 
   if (profile?.role !== "admin") redirect("/dashboard");
 
-  // Fetch all devotions
-  const { data: devotions } = await supabase
-    .from("daily_devotions")
-    .select("*")
-    .order("devotion_date", { ascending: true });
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 
-  // Fetch all members
+  const [
+    { count: totalMembers },
+    { count: newMembersWeek },
+    { count: totalPosts },
+    { count: openPrayers },
+    { count: totalEvents },
+    { count: totalDevotions },
+    { count: activePlans },
+  ] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", weekAgo),
+    supabase.from("posts").select("*", { count: "exact", head: true }),
+    supabase.from("prayer_requests").select("*", { count: "exact", head: true }).eq("status", "open"),
+    supabase.from("events").select("*", { count: "exact", head: true }).gte("event_date", monthStart),
+    supabase.from("daily_devotions").select("*", { count: "exact", head: true }),
+    supabase.from("user_bible_plans").select("*", { count: "exact", head: true }).eq("is_active", true),
+  ]);
+
   const { data: members } = await supabase
     .from("profiles")
-    .select("id, full_name, role, spiritual_level, created_at")
-    .order("created_at", { ascending: false });
+    .select("id, full_name, email, role, spiritual_level, created_at, country")
+    .order("created_at", { ascending: false })
+    .limit(100);
 
-  // Stats
-  const today = new Date().toISOString().split("T")[0];
-
-  let todayReads = 0;
-  let totalReads = 0;
-
-  try {
-    // Total reads
-    const { count: total } = await supabase
-      .from("user_devotion_progress")
-      .select("*", { count: "exact", head: true });
-    totalReads = total || 0;
-
-    // Today's reads
-    const { data: todayDevotion } = await supabase
-      .from("daily_devotions")
-      .select("id")
-      .eq("devotion_date", today)
-      .single();
-
-    if (todayDevotion?.id) {
-      const { count } = await supabase
-        .from("user_devotion_progress")
-        .select("*", { count: "exact", head: true })
-        .eq("devotion_id", todayDevotion.id);
-      todayReads = count || 0;
-    }
-  } catch {
-    // Tables may not exist
-  }
-
-  const stats = {
-    totalMembers: members?.length || 0,
-    totalDevotions: devotions?.length || 0,
-    todayReads,
-    totalReads,
-  };
-
-  return (
-    <AdminClient
-      devotions={devotions || []}
-      members={members || []}
-      stats={stats}
-    />
-  );
-}
+  const { data: recentPosts } = await supabase
+    .from("posts")
+    .select("id, content, created_at, user_id, category, is_pinned")
+    .order("created_at",
