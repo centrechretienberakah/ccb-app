@@ -1,26 +1,49 @@
 import { Metadata } from "next";
-import ComingSoon from "@/components/ComingSoon";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import PlanBibliqueClient from "./PlanBibliqueClient";
+import { ALL_PLANS } from "@/lib/bible/plans";
 
-export const metadata: Metadata = { title: "Plan de Lecture Biblique" };
+export const metadata: Metadata = { title: "Plan Biblique — CCB" };
 
-export default function PlanBibliquePage() {
+export default async function PlanBibliquePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // Active plan
+  const { data: activePlan } = await supabase
+    .from("user_bible_plans")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  // All user plans (to know which were previously started)
+  const { data: userPlans } = await supabase
+    .from("user_bible_plans")
+    .select("plan_id, start_date, is_active")
+    .eq("user_id", user.id);
+
+  // Reading progress for active plan
+  let progress: { day_number: number; book_name: string; chapter: number }[] = [];
+  if (activePlan) {
+    const { data } = await supabase
+      .from("user_reading_progress")
+      .select("day_number, book_name, chapter")
+      .eq("user_id", user.id)
+      .eq("plan_id", activePlan.plan_id)
+      .order("day_number", { ascending: true });
+    progress = data ?? [];
+  }
+
   return (
-    <ComingSoon
-      emoji="📅"
-      title="Plan de Lecture Biblique"
-      subtitle="Lire la Bible en 1 an"
-      description="Un plan structuré pour lire toute la Bible en un an, avec des rappels quotidiens et des commentaires guidés."
-      accentColor="var(--violet)"
-      accentGlow="rgba(90,44,160,0.2)"
-      features={[
-        { icon: "📖", label: "Bible complète en 1 an" },
-        { icon: "✅", label: "Suivi de progression" },
-        { icon: "💬", label: "Commentaires guidés" },
-        { icon: "🔔", label: "Rappels quotidiens" },
-        { icon: "📊", label: "Statistiques" },
-        { icon: "👥", label: "Lecture en groupe" },
-      ]}
-      notifyLabel="Me notifier au lancement"
+    <PlanBibliqueClient
+      userId={user.id}
+      plans={ALL_PLANS}
+      activePlan={activePlan ?? null}
+      userPlans={userPlans ?? []}
+      progress={progress}
     />
   );
 }
