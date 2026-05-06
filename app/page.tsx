@@ -4,24 +4,24 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
-// ─── Design tokens ────────────────────────────────────────────
+// ─── Design tokens — CSS variables du design system ───────────
 const C = {
-  bg: "#07040f",
-  bgAlt: "#0d0820",
-  bgCard: "rgba(255,255,255,0.04)",
-  bgCardHover: "rgba(255,255,255,0.07)",
-  border: "rgba(212,175,55,0.18)",
-  borderSoft: "rgba(255,255,255,0.07)",
-  gold: "#d4af37",
-  goldLight: "#f0d060",
-  goldDark: "#b8941f",
-  violet: "#7c3aed",
-  violetLight: "#a78bfa",
-  violetGlow: "rgba(124,58,237,0.25)",
-  textPrimary: "#ffffff",
-  textSecondary: "rgba(255,255,255,0.70)",
-  textMuted: "rgba(255,255,255,0.40)",
-  goldMuted: "rgba(212,175,55,0.60)",
+  bg:           "var(--page-bg)",
+  bgAlt:        "var(--surface)",
+  bgCard:       "var(--card-bg)",
+  bgCardHover:  "var(--card-bg)",
+  border:       "var(--border)",
+  borderSoft:   "var(--border-subtle)",
+  gold:         "var(--gold)",
+  goldLight:    "var(--gold)",
+  goldDark:     "var(--gold-dark)",
+  violet:       "var(--violet)",
+  violetLight:  "var(--violet-light)",
+  violetGlow:   "rgba(90,44,160,0.25)",
+  textPrimary:  "var(--text-primary)",
+  textSecondary:"var(--text-secondary)",
+  textMuted:    "var(--text-muted)",
+  goldMuted:    "var(--gold)",
 };
 
 // ─── Data ────────────────────────────────────────────────────
@@ -171,9 +171,9 @@ function NavBar() {
         left: 0,
         right: 0,
         zIndex: 50,
-        background: "rgba(7,4,15,0.88)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
+        background: "var(--header-gradient)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         borderBottom: `1px solid ${C.border}`,
       }}
     >
@@ -250,7 +250,7 @@ function NavBar() {
                 padding: "0.5rem 1.25rem",
                 borderRadius: "9999px",
                 background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
-                color: "#0d0820",
+                color: "var(--page-bg)",
                 fontSize: "0.8rem",
                 fontWeight: 700,
                 textDecoration: "none",
@@ -290,7 +290,7 @@ function NavBar() {
                   padding: "0.5rem 1.25rem",
                   borderRadius: "9999px",
                   background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
-                  color: "#0d0820",
+                  color: "var(--page-bg)",
                   fontSize: "0.8rem",
                   fontWeight: 700,
                   textDecoration: "none",
@@ -348,7 +348,7 @@ function NavBar() {
         <div
           className="md:hidden"
           style={{
-            background: "rgba(7,4,15,0.98)",
+            background: "var(--page-bg)",
             borderTop: `1px solid ${C.border}`,
             padding: "1rem 1.25rem 1.5rem",
           }}
@@ -383,7 +383,7 @@ function NavBar() {
                   padding: "0.75rem",
                   borderRadius: "9999px",
                   background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
-                  color: "#0d0820",
+                  color: "var(--page-bg)",
                   textDecoration: "none",
                   fontSize: "0.85rem",
                   fontWeight: 700,
@@ -419,7 +419,7 @@ function NavBar() {
                     padding: "0.65rem",
                     borderRadius: "9999px",
                     background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
-                    color: "#0d0820",
+                    color: "var(--page-bg)",
                     textDecoration: "none",
                     fontSize: "0.85rem",
                     fontWeight: 700,
@@ -439,7 +439,7 @@ function NavBar() {
 // ─── Page ────────────────────────────────────────────────────
 export default function HomePage() {
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", color: C.textPrimary, fontFamily: "var(--font-body, sans-serif)" }}>
+    <div style={{ background: C.bg, minHeight: "100vh", color: C.textPrimary, fontFamily: "var(--font-body)" }}>
       <NavBar />
 
       {/* ──── HERO ──── */}
@@ -459,9 +459,9 @@ export default function HomePage() {
           style={{
             position: "absolute",
             inset: 0,
-            background: `radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.28) 0%, transparent 70%),
+            background: `radial-gradient(ellipse 80% 60% at 50% 0%, rgba(90,44,160,0.28) 0%, transparent 70%),
                           radial-gradient(ellipse 60% 50% at 80% 80%, rgba(212,175,55,0.08) 0%, transparent 60%),
-                          linear-gradient(180deg, #0d0820 0%, ${C.bg} 60%)`,
+                          linear-gradient(180deg, var(--surface) 0%, var(--page-bg) 60%)`,
           }}
         />
 
@@ -633,7 +633,7 @@ export default function HomePage() {
                 padding: "0.9rem 2rem",
                 borderRadius: "9999px",
                 background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
-                color: "#0d0820",
+                color: "var(--page-bg)",
                 fontSize: "0.88rem",
                 fontWeight: 700,
                 textDecoration: "none",
@@ -899,13 +899,13 @@ export default function HomePage() {
                           fontWeight: 700,
                           fontSize: e.date.length === 1 && isNaN(Number(e.date)) ? "1.4rem" : "1.2rem",
                           lineHeight: 1,
-                          color: e.special ? "#0d0820" : C.violetLight,
+                          color: e.special ? "var(--page-bg)" : "var(--violet-light)",
                         }}>{e.date}</span>
                         <span style={{
                           fontSize: "0.58rem",
                           fontWeight: 700,
                           letterSpacing: "0.1em",
-                          color: e.special ? "#0d0820" : C.violetLight,
+                          color: e.special ? "var(--page-bg)" : "var(--violet-light)",
                         }}>{e.month}</span>
                       </div>
 
@@ -936,7 +936,7 @@ export default function HomePage() {
                           ? `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`
                           : "rgba(124,58,237,0.15)",
                         border: e.special ? "none" : "1px solid rgba(124,58,237,0.3)",
-                        color: e.special ? "#0d0820" : C.violetLight,
+                        color: e.special ? "var(--page-bg)" : "var(--violet-light)",
                         fontSize: "0.75rem",
                         fontWeight: 700,
                         whiteSpace: "nowrap",
@@ -1122,7 +1122,7 @@ export default function HomePage() {
       <section
         style={{
           padding: "6rem 1.25rem",
-          background: `linear-gradient(135deg, #0d0820 0%, rgba(124,58,237,0.2) 50%, #0d0820 100%)`,
+          background: `linear-gradient(135deg, var(--page-bg) 0%, rgba(90,44,160,0.2) 50%, var(--page-bg) 100%)`,
           position: "relative",
           overflow: "hidden",
         }}
@@ -1194,7 +1194,7 @@ export default function HomePage() {
                 padding: "0.9rem 2.2rem",
                 borderRadius: "9999px",
                 background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
-                color: "#0d0820",
+                color: "var(--page-bg)",
                 fontSize: "0.88rem",
                 fontWeight: 700,
                 textDecoration: "none",
@@ -1245,7 +1245,7 @@ export default function HomePage() {
       <footer
         style={{
           padding: "2.5rem 1.25rem",
-          background: "#05030a",
+          background: "var(--page-bg)",
           borderTop: `1px solid ${C.border}`,
         }}
       >
@@ -1304,7 +1304,4 @@ export default function HomePage() {
             © 2026 Centre Chrétien Berakah
           </p>
         </div>
-      </footer>
-    </div>
-  );
-}
+     
