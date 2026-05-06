@@ -20,6 +20,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/premium":       "Premium",
   "/profile":       "Mon profil",
   "/notifications": "Notifications",
+  "/events":        "Événements",
   "/settings":      "Paramètres",
 };
 
