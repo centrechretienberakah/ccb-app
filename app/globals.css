@@ -62,7 +62,7 @@
   --font-body:  var(--font-montserrat), "Arial", sans-serif;
 
   /* Header */
-  --header-gradient: linear-gradient(160deg, #3d1a72 0%, #5a2ca0 50%, #7b4bc4 100%);
+  --header-gradient: linear-gradient(160deg, #4a2c0e 0%, #7c4a1e 55%, #a87030 100%);
 }
 
 /* ── Mode SOMBRE via préférence système ── */
@@ -95,7 +95,7 @@
     --shadow-lg:   0 8px 32px rgba(0,0,0,0.55);
     --shadow-gold: 0 4px 20px rgba(212,175,55,0.25);
 
-    --header-gradient: linear-gradient(160deg,#1a0533 0%,#2d0a5e 50%,#3d1a72 100%);
+    --header-gradient: linear-gradient(160deg,#1e0e04 0%,#3d2010 50%,#5c3018 100%);
   }
 }
 
@@ -128,7 +128,7 @@
   --shadow-lg:   0 8px 32px rgba(0,0,0,0.55);
   --shadow-gold: 0 4px 20px rgba(212,175,55,0.25);
 
-  --header-gradient: linear-gradient(160deg,#1a0533 0%,#2d0a5e 50%,#3d1a72 100%);
+  --header-gradient: linear-gradient(160deg,#1e0e04 0%,#3d2010 50%,#5c3018 100%);
 }
 
 /* ── Mode CLAIR explicite (data-theme="light") ── */
@@ -150,7 +150,7 @@
   --text-muted:     #9a8060;
   --text-inverse:   #ffffff;
 
-  --header-gradient: linear-gradient(160deg,#3d1a72 0%,#5a2ca0 50%,#7b4bc4 100%);
+  --header-gradient: linear-gradient(160deg,#4a2c0e 0%,#7c4a1e 55%,#a87030 100%);
 }
 
 /* ============================================================
@@ -715,7 +715,7 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 }
 .dashboard-hero-orb-2 {
   width: 200px; height: 200px;
-  background: radial-gradient(circle, rgba(123,75,196,0.25) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(212,160,48,0.22) 0%, transparent 70%);
   bottom: -60px; left: 20px;
 }
 .dashboard-hero-inner {
@@ -753,10 +753,10 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   width: 22px; height: 22px;
   border-radius: 50%;
   background: var(--gold);
-  border: 2px solid var(--violet-dark);
+  border: 2px solid #3d2010;
   display: flex; align-items: center; justify-content: center;
   font-size: 10px;
-  color: var(--violet-dark);
+  color: #3d2010;
 }
 .dashboard-hero-text { flex: 1; min-width: 0; }
 .dashboard-greeting {
@@ -805,7 +805,7 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   font-weight: 700;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--violet-dark);
+  border: 2px solid #3d2010;
 }
 
 /* Sections */
