@@ -2,310 +2,334 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const C = {
-  bg: "#07040f",
-  bgCard: "rgba(255,255,255,0.05)",
-  border: "rgba(212,175,55,0.20)",
-  borderSoft: "rgba(255,255,255,0.08)",
-  gold: "#d4af37",
-  goldLight: "#f0d060",
-  textPrimary: "#ffffff",
-  textSecondary: "rgba(255,255,255,0.65)",
-  textMuted: "rgba(255,255,255,0.38)",
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "0.875rem 1rem",
-  borderRadius: "12px",
-  border: `1.5px solid ${C.borderSoft}`,
-  background: "rgba(255,255,255,0.04)",
-  color: C.textPrimary,
-  fontSize: "0.95rem",
-  outline: "none",
-  boxSizing: "border-box" as const,
-  transition: "border-color 0.2s",
-};
+const STEPS = [
+  { label: "Compte", icon: "✉" },
+  { label: "Profil", icon: "👤" },
+  { label: "Bienvenue", icon: "🎉" },
+];
 
 export default function RegisterPage() {
   const router = useRouter();
 
-  const [form, setForm] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  // Step 1
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Step 2
+  const [displayName, setDisplayName] = useState("");
+  const [cellGroup, setCellGroup] = useState("");
+
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
+  /* ── Step 1: valider email + mot de passe ── */
+  function handleStep1(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
-    if (form.password !== form.confirmPassword) {
+    if (password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caracteres.");
+      return;
+    }
+    if (password !== confirmPassword) {
       setError("Les mots de passe ne correspondent pas.");
       return;
     }
-    if (form.password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères.");
+    setStep(2);
+  }
+
+  /* ── Step 2: creer le compte ── */
+  async function handleStep2(e: React.FormEvent) {
+    e.preventDefault();
+    if (!displayName.trim()) {
+      setError("Veuillez entrer votre prenom ou nom d'affichage.");
       return;
     }
-
     setLoading(true);
-    const supabase = createClient();
+    setError("");
 
-    const { error } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
+    const supabase = createClient();
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
       options: {
-        data: { full_name: form.fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          display_name: displayName.trim(),
+          cell_group: cellGroup.trim() || null,
+        },
       },
     });
 
-    if (error) {
-      setError("Erreur lors de la création du compte : " + error.message);
+    if (signUpError) {
+      setError(
+        signUpError.message.includes("already")
+          ? "Un compte avec cet email existe deja. Essayez de vous connecter."
+          : signUpError.message
+      );
       setLoading(false);
-    } else {
-      setSuccess(true);
+      return;
     }
-  };
+
+    // Upsert user_profiles
+    if (data.user) {
+      await supabase.from("user_profiles").upsert({
+        user_id: data.user.id,
+        display_name: displayName.trim(),
+        cell_group: cellGroup.trim() || null,
+      });
+    }
+
+    setStep(3);
+    setLoading(false);
+  }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: C.bg,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "1.5rem",
-      position: "relative",
-      overflow: "hidden",
-    }}>
-      {/* Glows */}
-      <div style={{
-        position: "absolute", top: "5%", left: "50%", transform: "translateX(-50%)",
-        width: "700px", height: "500px", borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(124,58,237,0.18) 0%, transparent 70%)",
-        pointerEvents: "none",
-      }} />
-      <div style={{
-        position: "absolute", bottom: "5%", right: "15%",
-        width: "350px", height: "350px", borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(212,175,55,0.07) 0%, transparent 70%)",
-        pointerEvents: "none",
-      }} />
+    <div className="auth-page">
 
-      <div style={{ position: "relative", width: "100%", maxWidth: "440px" }}>
+      {/* ── Panneau gauche (desktop) ── */}
+      <aside className="auth-panel-left">
+        <div className="auth-panel-orb auth-panel-orb-1" />
+        <div className="auth-panel-orb auth-panel-orb-2" />
 
-        {/* Logo + titre */}
-        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <Link href="/" style={{ display: "inline-block", marginBottom: "1rem" }}>
-            <Image
-              src="/logo-ccb.png"
-              alt="Centre Chrétien Berakah"
-              width={72}
-              height={72}
-              style={{ objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(212,175,55,0.45))" }}
-            />
-          </Link>
-          <h1 style={{
-            fontFamily: "'Cinzel', serif",
-            fontSize: "1.8rem",
-            fontWeight: 700,
-            color: C.textPrimary,
-            letterSpacing: "0.06em",
-            margin: "0 0 0.5rem",
-          }}>
-            Créer un compte
-          </h1>
-          <p style={{ color: C.textMuted, fontSize: "0.88rem", margin: 0 }}>
-            Rejoins la famille Berakah aujourd'hui 🙌
-          </p>
+        <div className="auth-panel-logo">
+          <div className="auth-panel-logo-mark">✝</div>
+          <div>
+            <div className="auth-panel-logo-name">CCB</div>
+            <div className="auth-panel-logo-sub">Centre Chretien Berakah</div>
+          </div>
         </div>
 
-        {/* Card */}
-        <div style={{
-          background: C.bgCard,
-          border: `1px solid ${C.border}`,
-          borderRadius: "20px",
-          padding: "2rem",
-          backdropFilter: "blur(16px)",
-        }}>
+        <div className="auth-panel-content">
+          <div className="auth-panel-verse">
+            &laquo;&nbsp;Vous ne m'avez pas choisi ;
+            mais moi, je vous ai choisis.&nbsp;&raquo;
+          </div>
+          <div className="auth-panel-verse-ref">Jean 15 : 16</div>
 
-          {success ? (
-            /* Success state */
-            <div style={{ textAlign: "center", padding: "1rem 0" }}>
-              <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✉️</div>
-              <h2 style={{ color: C.gold, fontFamily: "'Cinzel', serif", fontSize: "1.2rem", fontWeight: 700, marginBottom: "0.75rem" }}>
-                Vérifie ta boîte mail !
-              </h2>
-              <p style={{ color: C.textSecondary, fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "1.5rem" }}>
-                Un email de confirmation a été envoyé à <strong style={{ color: C.textPrimary }}>{form.email}</strong>.
-                Clique sur le lien pour activer ton compte.
-              </p>
-              <Link
-                href="/auth/login"
-                style={{
-                  display: "inline-block",
-                  padding: "0.875rem 2rem",
-                  borderRadius: "12px",
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldLight})`,
-                  color: "#07040f",
-                  fontWeight: 800,
-                  fontSize: "0.9rem",
-                  textDecoration: "none",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                Aller à la connexion →
-              </Link>
+          <div className="auth-panel-features">
+            {[
+              { icon: "🌍", text: "Rejoignez une communaute de disciples passionnes" },
+              { icon: "✨", text: "Developpez votre foi avec des outils numeriques" },
+              { icon: "📡", text: "Cultes en direct et replays disponibles" },
+              { icon: "👑", text: "Acces Premium aux formations et groupes prives" },
+            ].map(({ icon, text }) => (
+              <div key={text} className="auth-panel-feature">
+                <div className="auth-panel-feature-icon">{icon}</div>
+                <div className="auth-panel-feature-text">{text}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="auth-panel-footer">
+          &copy; 2026 Centre Chretien Berakah
+        </div>
+      </aside>
+
+      {/* ── Panneau droit ── */}
+      <div className="auth-panel-right">
+        <div className="auth-form-container">
+
+          {/* Header */}
+          <div className="auth-form-header">
+            <div className="auth-form-logo-mobile">✝</div>
+            {step < 3 ? (
+              <>
+                <h1 className="auth-form-title">Rejoignez CCB</h1>
+                <p className="auth-form-subtitle">Votre place dans la famille est reservee</p>
+              </>
+            ) : (
+              <>
+                <h1 className="auth-form-title">Bienvenue ! 🎉</h1>
+                <p className="auth-form-subtitle">Votre compte a ete cree avec succes</p>
+              </>
+            )}
+          </div>
+
+          {/* Stepper */}
+          {step < 3 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0, marginBottom: 24 }}>
+              {STEPS.map(({ label, icon }, i) => {
+                const n = i + 1;
+                const done = step > n;
+                const active = step === n;
+                return (
+                  <div key={label} style={{ display: "flex", alignItems: "center" }}>
+                    <div style={{
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                    }}>
+                      <div style={{
+                        width: 36, height: 36, borderRadius: "50%",
+                        background: done ? "var(--violet)" : active ? "var(--violet)" : "var(--surface-2)",
+                        border: `2px solid ${active || done ? "var(--violet)" : "var(--border)"}`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: done ? 16 : 14,
+                        color: active || done ? "white" : "var(--text-muted)",
+                        fontWeight: 700,
+                        transition: "all 0.2s",
+                      }}>
+                        {done ? "✓" : icon}
+                      </div>
+                      <span style={{ fontSize: 10, color: active ? "var(--violet)" : "var(--text-muted)", fontWeight: active ? 700 : 400 }}>
+                        {label}
+                      </span>
+                    </div>
+                    {i < STEPS.length - 1 && (
+                      <div style={{ width: 48, height: 2, background: step > n ? "var(--violet)" : "var(--border)", margin: "0 4px", marginBottom: 18 }} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ) : (
-            /* Register form */
-            <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
-              {error && (
-                <div style={{
-                  background: "rgba(239,68,68,0.12)",
-                  border: "1px solid rgba(239,68,68,0.35)",
-                  color: "#fca5a5",
-                  borderRadius: "12px",
-                  padding: "0.75rem 1rem",
-                  fontSize: "0.85rem",
-                }}>
-                  ⚠️ {error}
-                </div>
-              )}
-
-              {/* Nom complet */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: C.textSecondary, marginBottom: "0.5rem", letterSpacing: "0.06em" }}>
-                  NOM COMPLET
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={handleChange}
-                  placeholder="Jean Dupont"
-                  required
-                  style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = C.gold)}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = C.borderSoft)}
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: C.textSecondary, marginBottom: "0.5rem", letterSpacing: "0.06em" }}>
-                  ADRESSE EMAIL
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="vous@example.com"
-                  required
-                  style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = C.gold)}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = C.borderSoft)}
-                />
-              </div>
-
-              {/* Mot de passe */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: C.textSecondary, marginBottom: "0.5rem", letterSpacing: "0.06em" }}>
-                  MOT DE PASSE
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="Minimum 8 caractères"
-                  required
-                  style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = C.gold)}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = C.borderSoft)}
-                />
-              </div>
-
-              {/* Confirmer */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: C.textSecondary, marginBottom: "0.5rem", letterSpacing: "0.06em" }}>
-                  CONFIRMER LE MOT DE PASSE
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                  style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = C.gold)}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = C.borderSoft)}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: "100%",
-                  padding: "1rem",
-                  borderRadius: "12px",
-                  border: "none",
-                  background: loading
-                    ? "rgba(212,175,55,0.35)"
-                    : `linear-gradient(135deg, ${C.gold}, ${C.goldLight})`,
-                  color: "#07040f",
-                  fontWeight: 800,
-                  fontSize: "0.95rem",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  letterSpacing: "0.05em",
-                  marginTop: "0.25rem",
-                }}
-              >
-                {loading ? "Création en cours..." : "Créer mon compte →"}
-              </button>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <div style={{ flex: 1, height: "1px", background: C.borderSoft }} />
-                <span style={{ fontSize: "0.75rem", color: C.textMuted }}>ou</span>
-                <div style={{ flex: 1, height: "1px", background: C.borderSoft }} />
-              </div>
-
-              <p style={{ textAlign: "center", fontSize: "0.88rem", color: C.textSecondary, margin: 0 }}>
-                Déjà un compte ?{" "}
-                <Link href="/auth/login" style={{ color: C.gold, fontWeight: 700, textDecoration: "none" }}>
-                  Se connecter
-                </Link>
-              </p>
-            </form>
           )}
-        </div>
 
-        <p style={{ textAlign: "center", marginTop: "1.5rem", marginBottom: "0.5rem" }}>
-          <Link href="/" style={{ color: C.textMuted, fontSize: "0.82rem", textDecoration: "none" }}>
-            ← Retour à l'accueil
+          {/* Card */}
+          <div className="auth-card">
+            {error && (
+              <div className="auth-error" style={{ marginBottom: 16 }}>
+                <span>⚠</span> {error}
+              </div>
+            )}
+
+            {/* ── ETAPE 1 ── */}
+            {step === 1 && (
+              <form onSubmit={handleStep1} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="auth-field">
+                  <label className="auth-label">Adresse email</label>
+                  <input
+                    className="auth-input"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="vous@exemple.com"
+                    required
+                  />
+                </div>
+                <div className="auth-field">
+                  <label className="auth-label">Mot de passe</label>
+                  <input
+                    className="auth-input"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min. 6 caracteres"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div className="auth-field">
+                  <label className="auth-label">Confirmer le mot de passe</label>
+                  <input
+                    className="auth-input"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+                <button type="submit" className="auth-btn" style={{ marginTop: 4 }}>
+                  Continuer →
+                </button>
+              </form>
+            )}
+
+            {/* ── ETAPE 2 ── */}
+            {step === 2 && (
+              <form onSubmit={handleStep2} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="auth-field">
+                  <label className="auth-label">Prenom / Nom d&apos;affichage</label>
+                  <input
+                    className="auth-input"
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Ex: Jean-Pierre ou Soeur Marie"
+                    required
+                  />
+                </div>
+                <div className="auth-field">
+                  <label className="auth-label">Groupe de cellule (optionnel)</label>
+                  <input
+                    className="auth-input"
+                    type="text"
+                    value={cellGroup}
+                    onChange={(e) => setCellGroup(e.target.value)}
+                    placeholder="Ex: Cellule Bastos, Groupe Alpha..."
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setStep(1); setError(""); }}
+                    style={{
+                      flex: 1, padding: "12px", borderRadius: "var(--radius-lg)",
+                      border: "1px solid var(--border)", background: "var(--surface-2)",
+                      color: "var(--text-secondary)", cursor: "pointer", fontSize: 14, fontWeight: 600,
+                    }}
+                  >
+                    ← Retour
+                  </button>
+                  <button
+                    type="submit"
+                    className="auth-btn"
+                    disabled={loading}
+                    style={{ flex: 2 }}
+                  >
+                    {loading ? "Creation..." : "Creer mon compte 🎉"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ── ETAPE 3 — Succes ── */}
+            {step === 3 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 20, textAlign: "center" }}>
+                <div style={{ fontSize: 56, lineHeight: 1 }}>🎉</div>
+                <div>
+                  <div style={{ fontFamily: "var(--font-title)", fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+                    Bienvenue dans la famille CCB !
+                  </div>
+                  <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                    Verifiez votre boite email pour confirmer votre adresse,
+                    puis connectez-vous pour acceder a votre espace.
+                  </div>
+                </div>
+                <div className="auth-success">
+                  Un email de confirmation a ete envoye a <strong>{email}</strong>
+                </div>
+                <button
+                  onClick={() => router.push("/auth/login")}
+                  className="auth-btn auth-btn-gold"
+                >
+                  Aller a la connexion →
+                </button>
+              </div>
+            )}
+
+            {step < 3 && (
+              <>
+                <div className="auth-divider">
+                  <div className="auth-divider-line" />
+                  <span className="auth-divider-text">ou</span>
+                  <div className="auth-divider-line" />
+                </div>
+                <p className="auth-switch">
+                  Deja un compte ?{" "}
+                  <Link href="/auth/login">Se connecter</Link>
+                </p>
+              </>
+            )}
+          </div>
+
+          <Link href="/" className="auth-back">
+            ← Retour a l&apos;accueil
           </Link>
-        </p>
-
-        <p style={{ textAlign: "center", color: C.textMuted, fontSize: "0.72rem", margin: 0 }}>
-          © 2026 Centre Chrétien Berakah
-        </p>
+        </div>
       </div>
     </div>
   );
