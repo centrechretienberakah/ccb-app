@@ -13,10 +13,10 @@ interface Props {
 }
 
 const MILESTONE_LIST = [
-  { key: "baptism", label: "Baptisé(e)", icon: "💧" },
-  { key: "consecration", label: "Consacré(e)", icon: "🕊️" },
-  { key: "cell_group", label: "Engagé(e) en cellule", icon: "👥" },
-  { key: "ministry", label: "Serviteur(e) actif(ve)", icon: "🙌" },
+  { key: "baptism",      label: "Baptisé(e)",              icon: "💧" },
+  { key: "consecration", label: "Consacré(e)",              icon: "🕊️" },
+  { key: "cell_group",   label: "Engagé(e) en cellule",    icon: "👥" },
+  { key: "ministry",     label: "Serviteur(e) actif(ve)",  icon: "🙌" },
 ];
 
 function computeStreak(dates: string[]): number {
@@ -88,7 +88,6 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
   async function handleSave() {
     setSaving(true);
     try {
-      // Les non-admins ne peuvent pas modifier cell_group
       const profileData: any = {
         user_id: user.id,
         display_name: form.display_name,
@@ -98,31 +97,23 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         avatar_url: form.avatar_url,
       };
       if (isAdmin) profileData.cell_group = form.cell_group;
-
-      const { error } = await supabase
-        .from("user_profiles")
-        .upsert(profileData, { onConflict: "user_id" });
+      const { error } = await supabase.from("user_profiles").upsert(profileData, { onConflict: "user_id" });
       if (error) throw error;
-
-      // Seuls les admins peuvent modifier les jalons
       if (isAdmin) {
         const existing = new Set(milestones.map((m) => m.milestone));
         for (const key of Array.from(activeMilestones)) {
           if (!existing.has(key)) {
             await supabase.from("spiritual_milestones").upsert(
-              { user_id: user.id, milestone: key },
-              { onConflict: "user_id,milestone" }
+              { user_id: user.id, milestone: key }, { onConflict: "user_id,milestone" }
             );
           }
         }
         for (const key of Array.from(existing)) {
           if (!activeMilestones.has(key)) {
-            await supabase.from("spiritual_milestones").delete()
-              .eq("user_id", user.id).eq("milestone", key);
+            await supabase.from("spiritual_milestones").delete().eq("user_id", user.id).eq("milestone", key);
           }
         }
       }
-
       showToast("Profil sauvegardé ✅");
       setEditing(false);
       router.refresh();
@@ -145,15 +136,23 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
   const avatarSrc = form.avatar_url || null;
   const initials = (form.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%", background: "var(--input-bg)", border: "1px solid var(--input-border)",
+    borderRadius: "var(--radius-md)", padding: "10px 14px",
+    color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box",
+    fontFamily: "var(--font-body)", outline: "none",
+  };
+
   return (
     <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
+
       {/* Toast */}
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
-          background: "var(--gold)", color: "var(--violet-dark)", padding: "10px 24px",
-          borderRadius: 30, fontSize: 14, fontWeight: 700, zIndex: 9999,
-          boxShadow: "var(--shadow-gold)", whiteSpace: "nowrap"
+          background: "var(--gold)", color: "#000", padding: "10px 24px",
+          borderRadius: "var(--radius-full)", fontSize: 14, fontWeight: 700,
+          zIndex: 9999, boxShadow: "var(--shadow-gold)", whiteSpace: "nowrap",
         }}>{toast}</div>
       )}
 
@@ -162,7 +161,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         <div style={{
           background: "var(--violet-pale)", borderBottom: "1px solid var(--border)",
           padding: "6px 16px", textAlign: "center",
-          fontSize: 11, color: "var(--violet)", fontWeight: 700, letterSpacing: "0.1em"
+          fontSize: 11, color: "var(--violet)", fontWeight: 700, letterSpacing: "0.1em",
         }}>
           🛡️ MODE ADMINISTRATEUR — Vous pouvez gérer les cellules et jalons
         </div>
@@ -170,50 +169,62 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
 
       {/* Actions bar */}
       <div style={{
-        background: "var(--surface)", borderBottom: "1px solid var(--border)", padding: "12px 20px",
-        display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8,
+        background: "var(--surface)", borderBottom: "1px solid var(--border)",
+        padding: "12px 20px", display: "flex", alignItems: "center",
+        justifyContent: "flex-end", gap: 8,
       }}>
         {!editing ? (
           <button onClick={() => setEditing(true)} style={{
-            background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10,
-            padding: "8px 16px", color: "var(--gold)", fontSize: 13, fontWeight: 600, cursor: "pointer"
+            background: "var(--surface-2)", border: "1px solid var(--border)",
+            borderRadius: "var(--radius-md)", padding: "8px 16px",
+            color: "var(--gold)", fontSize: 13, fontWeight: 600, cursor: "pointer",
+            fontFamily: "var(--font-body)",
           }}>✏️ Modifier</button>
         ) : (
           <>
             <button onClick={() => setEditing(false)} style={{
-              background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10,
-              padding: "8px 16px", color: "var(--text-muted)", fontSize: 13, cursor: "pointer"
+              background: "var(--surface-2)", border: "1px solid var(--border)",
+              borderRadius: "var(--radius-md)", padding: "8px 16px",
+              color: "var(--text-muted)", fontSize: 13, cursor: "pointer",
+              fontFamily: "var(--font-body)",
             }}>Annuler</button>
             <button onClick={handleSave} disabled={saving} style={{
-              background: saving ? "var(--text-muted)" : "linear-gradient(135deg, var(--gold-dark), var(--gold))",
-              border: "none", borderRadius: 10,
-              padding: "8px 20px", color: "var(--violet-dark)", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer"
+              background: saving ? "var(--surface-2)" : "linear-gradient(135deg, var(--gold-dark), var(--gold))",
+              border: "none", borderRadius: "var(--radius-md)", padding: "8px 20px",
+              color: saving ? "var(--text-muted)" : "#000",
+              fontSize: 13, fontWeight: 700,
+              cursor: saving ? "not-allowed" : "pointer",
+              fontFamily: "var(--font-body)",
             }}>{saving ? "Sauvegarde..." : "💾 Sauvegarder"}</button>
           </>
         )}
       </div>
 
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 40px" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 48px" }}>
 
         {/* Avatar + nom */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
           <div style={{ position: "relative", marginBottom: 16 }}>
             {avatarSrc ? (
-              <img src={avatarSrc} alt="avatar" style={{ width: 100, height: 100, borderRadius: "50%", objectFit: "cover", border: "3px solid #d4af37" }} />
+              <img src={avatarSrc} alt="avatar" style={{
+                width: 100, height: 100, borderRadius: "50%",
+                objectFit: "cover", border: "3px solid var(--gold)",
+              }} />
             ) : (
               <div style={{
                 width: 100, height: 100, borderRadius: "50%",
-                background: "linear-gradient(135deg, #d4af37, #c9a227)",
+                background: "linear-gradient(135deg, var(--gold-dark), var(--gold))",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 32, fontWeight: 700, color: "#000"
+                fontSize: 32, fontWeight: 700, color: "#000",
               }}>{initials}</div>
             )}
             {editing && (
               <button onClick={() => fileRef.current?.click()} disabled={uploadingPhoto} style={{
                 position: "absolute", bottom: 0, right: 0,
-                background: "#d4af37", border: "none", borderRadius: "50%",
-                width: 32, height: 32, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14
+                background: "var(--gold)", border: "2px solid var(--page-bg)",
+                borderRadius: "50%", width: 32, height: 32,
+                cursor: "pointer", display: "flex", alignItems: "center",
+                justifyContent: "center", fontSize: 14,
               }}>
                 {uploadingPhoto ? "⏳" : "📷"}
               </button>
@@ -226,22 +237,22 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
               value={form.display_name}
               onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
               placeholder="Ton prénom et nom"
-              style={{
-                background: "#1a1a1a", border: "1px solid #333", borderRadius: 10,
-                padding: "10px 16px", color: "#e8e0d0", fontSize: 18, fontWeight: 700,
-                textAlign: "center", width: "100%", maxWidth: 300
-              }}
+              style={{ ...inputStyle, fontSize: 18, fontWeight: 700, textAlign: "center", maxWidth: 300 }}
             />
           ) : (
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#f0e8d0" }}>
+            <div style={{
+              fontSize: 22, fontWeight: 700, color: "var(--text-primary)",
+              fontFamily: "var(--font-title)",
+            }}>
               {form.display_name || user.email}
             </div>
           )}
+
           {form.cell_group && !editing && (
             <div style={{
-              marginTop: 6, background: "rgba(212,175,55,0.12)",
-              border: "1px solid rgba(212,175,55,0.3)", borderRadius: 20,
-              padding: "4px 14px", fontSize: 12, color: "#d4af37"
+              marginTop: 8, background: "rgba(212,175,55,0.1)",
+              border: "1px solid rgba(212,175,55,0.3)", borderRadius: "var(--radius-full)",
+              padding: "4px 14px", fontSize: 12, color: "var(--gold)",
             }}>👥 {form.cell_group}</div>
           )}
         </div>
@@ -249,40 +260,43 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 24 }}>
           {[
-            { icon: "🔥", value: streak, label: "jours streak" },
+            { icon: "🔥", value: streak,            label: "jours streak" },
             { icon: "📖", value: stats.chaptersRead, label: "chapitres lus" },
-            { icon: "⭐", value: stats.versesSaved, label: "versets sauvés" },
+            { icon: "⭐", value: stats.versesSaved,  label: "versets sauvés" },
           ].map((stat) => (
             <div key={stat.label} style={{
-              background: "#111", border: "1px solid #222",
-              borderRadius: 14, padding: "16px 10px", textAlign: "center"
+              background: "var(--card-bg)", border: "1px solid var(--border)",
+              borderRadius: "var(--radius-lg)", padding: "16px 10px",
+              textAlign: "center", boxShadow: "var(--shadow-sm)",
             }}>
               <div style={{ fontSize: 24, marginBottom: 4 }}>{stat.icon}</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "#d4af37" }}>{stat.value}</div>
-              <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{stat.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--gold)" }}>{stat.value}</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{stat.label}</div>
             </div>
           ))}
         </div>
 
         {/* Bio */}
-        <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 16, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: "#888", fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
-            À propos
-          </div>
+        <div style={{
+          background: "var(--card-bg)", border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16,
+          boxShadow: "var(--shadow-sm)",
+        }}>
+          <div style={{
+            fontSize: 11, color: "var(--text-muted)", fontWeight: 700,
+            marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.1em",
+          }}>À propos</div>
           {editing ? (
-            <textarea
-              value={form.bio}
-              onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-              placeholder="Quelques mots sur toi..."
-              rows={3}
-              style={{
-                width: "100%", background: "#1a1a1a", border: "1px solid #333",
-                borderRadius: 10, padding: "10px 14px", color: "#e8e0d0",
-                fontSize: 14, resize: "vertical", boxSizing: "border-box"
-              }}
+            <textarea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+              placeholder="Quelques mots sur toi..." rows={3}
+              style={{ ...inputStyle, resize: "vertical" } as any}
             />
           ) : (
-            <p style={{ color: form.bio ? "#ccc" : "#555", fontSize: 14, lineHeight: 1.7, margin: 0, fontStyle: form.bio ? "normal" : "italic" }}>
+            <p style={{
+              color: form.bio ? "var(--text-secondary)" : "var(--text-muted)",
+              fontSize: 14, lineHeight: 1.7, margin: 0,
+              fontStyle: form.bio ? "normal" : "italic",
+            }}>
               {form.bio || "Aucune biographie renseignée."}
             </p>
           )}
@@ -290,46 +304,44 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
 
         {/* Groupe de cellule — ADMIN ONLY */}
         {isAdmin && editing && (
-          <div style={{ background: "#111", border: "1px solid rgba(124,58,237,0.3)", borderRadius: 16, padding: 20, marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "#a78bfa", fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
-              🛡️ Groupe de cellule (Admin)
-            </div>
-            <input
-              value={form.cell_group}
+          <div style={{
+            background: "var(--card-bg)", border: "1px solid rgba(90,44,160,0.3)",
+            borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16,
+          }}>
+            <div style={{
+              fontSize: 11, color: "var(--violet-light)", fontWeight: 700,
+              marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.1em",
+            }}>🛡️ Groupe de cellule (Admin)</div>
+            <input value={form.cell_group}
               onChange={(e) => setForm((f) => ({ ...f, cell_group: e.target.value }))}
               placeholder="Ex : Cellule Jeunes, Cellule Nord..."
-              style={{
-                width: "100%", background: "#1a1a1a", border: "1px solid #333",
-                borderRadius: 10, padding: "10px 14px", color: "#e8e0d0",
-                fontSize: 14, boxSizing: "border-box"
-              }}
+              style={inputStyle}
             />
           </div>
         )}
 
         {/* Témoignage */}
-        <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 16, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: "#888", fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
-            Mon Témoignage
-          </div>
+        <div style={{
+          background: "var(--card-bg)", border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16,
+          boxShadow: "var(--shadow-sm)",
+        }}>
+          <div style={{
+            fontSize: 11, color: "var(--text-muted)", fontWeight: 700,
+            marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.1em",
+          }}>Mon Témoignage</div>
           {editing ? (
-            <textarea
-              value={form.testimony}
+            <textarea value={form.testimony}
               onChange={(e) => setForm((f) => ({ ...f, testimony: e.target.value }))}
-              placeholder="Partage ce que Dieu a fait dans ta vie..."
-              rows={5}
-              style={{
-                width: "100%", background: "#1a1a1a", border: "1px solid #333",
-                borderRadius: 10, padding: "10px 14px", color: "#e8e0d0",
-                fontSize: 14, resize: "vertical", lineHeight: 1.6, boxSizing: "border-box"
-              }}
+              placeholder="Partage ce que Dieu a fait dans ta vie..." rows={5}
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 } as any}
             />
           ) : (
             <p style={{
-              color: form.testimony ? "#ddd" : "#555", fontSize: 14, lineHeight: 1.8, margin: 0,
-              fontStyle: "italic",
-              borderLeft: form.testimony ? "3px solid #d4af37" : "3px solid #222",
-              paddingLeft: 14
+              color: form.testimony ? "var(--text-secondary)" : "var(--text-muted)",
+              fontSize: 14, lineHeight: 1.8, margin: 0, fontStyle: "italic",
+              borderLeft: `3px solid ${form.testimony ? "var(--gold)" : "var(--border)"}`,
+              paddingLeft: 14,
             }}>
               {form.testimony || "Aucun témoignage partagé encore."}
             </p>
@@ -337,90 +349,106 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         </div>
 
         {/* Jalons spirituels */}
-        <div style={{ background: "#111", border: `1px solid ${isAdmin ? "rgba(124,58,237,0.3)" : "#1a1a1a"}`, borderRadius: 16, padding: 20, marginBottom: 16 }}>
+        <div style={{
+          background: "var(--card-bg)",
+          border: `1px solid ${isAdmin ? "rgba(90,44,160,0.3)" : "var(--border)"}`,
+          borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16,
+          boxShadow: "var(--shadow-sm)",
+        }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <div style={{ fontSize: 12, color: isAdmin ? "#a78bfa" : "#888", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>
+            <div style={{
+              fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em",
+              color: isAdmin ? "var(--violet-light)" : "var(--text-muted)",
+            }}>
               {isAdmin ? "🛡️ Jalons Spirituels (Admin)" : "Jalons Spirituels"}
             </div>
             {!isAdmin && (
-              <span style={{ fontSize: 10, color: "#444", fontStyle: "italic" }}>Gérés par les administrateurs</span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)", fontStyle: "italic" }}>
+                Gérés par les administrateurs
+              </span>
             )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {MILESTONE_LIST.map((m) => {
               const active = activeMilestones.has(m.key);
               return (
-                <button
-                  key={m.key}
+                <button key={m.key}
                   onClick={() => isAdmin && editing && toggleMilestone(m.key)}
                   style={{
-                    background: active ? "rgba(212,175,55,0.15)" : "#0d0d0d",
-                    border: `1px solid ${active ? "#d4af37" : "#222"}`,
-                    borderRadius: 12, padding: "14px 12px", textAlign: "left",
+                    background: active ? "rgba(212,175,55,0.1)" : "var(--surface)",
+                    border: `1px solid ${active ? "var(--gold)" : "var(--border)"}`,
+                    borderRadius: "var(--radius-md)", padding: "14px 12px", textAlign: "left",
                     cursor: isAdmin && editing ? "pointer" : "default",
-                    display: "flex", alignItems: "center", gap: 10
+                    display: "flex", alignItems: "center", gap: 10,
+                    boxShadow: active ? "var(--shadow-gold)" : "none",
+                    transition: "all 0.15s",
                   }}
                 >
                   <span style={{ fontSize: 20 }}>{m.icon}</span>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: active ? "#d4af37" : "#777" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: active ? "var(--gold)" : "var(--text-muted)" }}>
                       {m.label}
                     </div>
-                    {active && <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>✓ Accompli</div>}
+                    {active && <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>✓ Accompli</div>}
                   </div>
                 </button>
               );
             })}
           </div>
           {isAdmin && editing && (
-            <p style={{ fontSize: 11, color: "#555", marginTop: 10, marginBottom: 0 }}>
-              Clique sur un jalon pour le cocher / décocher
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10, marginBottom: 0 }}>
+              Cliquez sur un jalon pour le cocher / décocher
             </p>
           )}
         </div>
 
-        {/* Visibilité */}
+        {/* Visibilité du profil */}
         {editing && (
-          <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 16, padding: 20, marginBottom: 16 }}>
+          <div style={{
+            background: "var(--card-bg)", border: "1px solid var(--border)",
+            borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16,
+            boxShadow: "var(--shadow-sm)",
+          }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#ccc" }}>Profil visible par la communauté</div>
-                <div style={{ fontSize: 12, color: "#555", marginTop: 4 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+                  Profil visible par la communauté
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
                   {form.is_public ? "Les autres membres peuvent voir ton profil" : "Ton profil est privé"}
                 </div>
               </div>
-              <button
-                onClick={() => setForm((f) => ({ ...f, is_public: !f.is_public }))}
-                style={{
-                  background: form.is_public ? "#d4af37" : "#333",
-                  border: "none", borderRadius: 20, width: 48, height: 26,
-                  cursor: "pointer", position: "relative", transition: "background 0.2s"
-                }}
-              >
+              <button onClick={() => setForm((f) => ({ ...f, is_public: !f.is_public }))} style={{
+                background: form.is_public ? "var(--gold)" : "var(--surface-2)",
+                border: "none", borderRadius: 20, width: 48, height: 26,
+                cursor: "pointer", position: "relative", transition: "background 0.2s",
+                flexShrink: 0,
+              }}>
                 <div style={{
                   width: 20, height: 20, borderRadius: "50%", background: "#fff",
                   position: "absolute", top: 3, left: form.is_public ? 24 : 4,
-                  transition: "left 0.2s"
+                  transition: "left 0.2s",
                 }} />
               </button>
             </div>
           </div>
         )}
 
-        {/* Lien communauté */}
+        {/* Lien Communauté */}
         <a href="/community" style={{
-          display: "flex", background: "#111", border: "1px solid #1a1a1a",
-          borderRadius: 16, padding: 20, textDecoration: "none",
-          alignItems: "center", justifyContent: "space-between"
+          display: "flex", background: "var(--card-bg)", border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)", padding: 20, textDecoration: "none",
+          alignItems: "center", justifyContent: "space-between",
+          boxShadow: "var(--shadow-sm)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 24 }}>👥</span>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#ccc" }}>Voir la Communauté</div>
-              <div style={{ fontSize: 12, color: "#555" }}>Découvre les autres membres CCB</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Voir la Communauté</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Découvre les autres membres CCB</div>
             </div>
           </div>
-          <span style={{ color: "#d4af37", fontSize: 18 }}>→</span>
+          <span style={{ color: "var(--gold)", fontSize: 18 }}>→</span>
         </a>
       </div>
     </div>

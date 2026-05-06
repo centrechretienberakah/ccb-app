@@ -4,8 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 // ─── Cache window (client uniquement) ───────────────────────────────────────
-// Protege par typeof window pour eviter la pollution SSR entre requetes.
-// Survit aux remounts React (navigation retour, soft refresh, etc.)
 function getClientCache() {
   if (typeof window === "undefined") return null;
   const w = window as any;
@@ -65,9 +63,21 @@ function Avatar({ profile, size = 40 }: { profile?: { display_name?: string; ava
     <img src={profile.avatar_url} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
   );
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg,#d4af37,#c9a227)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.38, fontWeight: 700, color: "#000", flexShrink: 0 }}>{initials}</div>
+    <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, var(--gold-dark), var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.38, fontWeight: 700, color: "#000", flexShrink: 0 }}>{initials}</div>
   );
 }
+
+// Shared input style constant
+const inputStyle: React.CSSProperties = {
+  background: "var(--input-bg, var(--page-bg))",
+  border: "1px solid var(--input-border, var(--border))",
+  borderRadius: "var(--radius-md)",
+  padding: "10px 14px",
+  color: "var(--text-primary)",
+  fontSize: 13,
+  boxSizing: "border-box",
+  fontFamily: "inherit",
+};
 
 // ─── PostCreator ─────────────────────────────────────────────
 function PostCreator({ categories, currentUserProfile, currentUserId, onPostCreated }: {
@@ -124,19 +134,19 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
   }
 
   if (!open) return (
-    <div onClick={() => setOpen(true)} style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 16 }}>
+    <div onClick={() => setOpen(true)} style={{ background: "var(--card-bg)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 16 }}>
       <Avatar profile={currentUserProfile} size={36} />
-      <div style={{ flex: 1, color: "#555", fontSize: 14 }}>Partager quelque chose avec la communauté...</div>
+      <div style={{ flex: 1, color: "var(--text-muted)", fontSize: 14 }}>Partager quelque chose avec la communauté...</div>
       <span style={{ fontSize: 18 }}>✍️</span>
     </div>
   );
 
   return (
-    <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 16, padding: 20, marginBottom: 16 }}>
+    <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16 }}>
       {/* Type selector */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
         {POST_TYPES.map((pt) => (
-          <button key={pt.key} onClick={() => setType(pt.key)} style={{ background: type === pt.key ? "rgba(212,175,55,0.15)" : "#0a0a0a", border: `1px solid ${type === pt.key ? "#d4af37" : "#222"}`, borderRadius: 20, padding: "5px 12px", color: type === pt.key ? "#d4af37" : "#666", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+          <button key={pt.key} onClick={() => setType(pt.key)} style={{ background: type === pt.key ? "rgba(var(--gold-rgb, 212,175,55), 0.15)" : "var(--page-bg)", border: `1px solid ${type === pt.key ? "var(--gold)" : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "5px 12px", color: type === pt.key ? "var(--gold)" : "var(--text-muted)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
             <span>{pt.icon}</span>{pt.label}
           </button>
         ))}
@@ -146,7 +156,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
       <textarea value={content} onChange={(e) => setContent(e.target.value)}
         placeholder={type === "poll" ? "Question du sondage..." : type === "quiz" ? "Question du quiz..." : "Exprimez-vous..."}
         rows={3}
-        style={{ width: "100%", background: "#0a0a0a", border: "1px solid #222", borderRadius: 10, padding: "10px 14px", color: "#e8e0d0", fontSize: 14, resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }}
+        style={{ ...inputStyle, width: "100%", resize: "vertical" }}
       />
 
       {/* Champs spécifiques par type */}
@@ -155,11 +165,11 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
           <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])} />
           {mediaUrl ? (
             <div style={{ position: "relative" }}>
-              <img src={mediaUrl} style={{ width: "100%", borderRadius: 10, maxHeight: 300, objectFit: "cover" }} />
+              <img src={mediaUrl} style={{ width: "100%", borderRadius: "var(--radius-md)", maxHeight: 300, objectFit: "cover" }} />
               <button onClick={() => setMediaUrl("")} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: "50%", width: 28, height: 28, color: "#fff", cursor: "pointer", fontSize: 14 }}>✕</button>
             </div>
           ) : (
-            <button onClick={() => fileRef.current?.click()} style={{ width: "100%", background: "#0a0a0a", border: "2px dashed #333", borderRadius: 10, padding: "20px", color: "#555", cursor: "pointer", fontSize: 13 }}>
+            <button onClick={() => fileRef.current?.click()} style={{ width: "100%", background: "var(--page-bg)", border: "2px dashed var(--border)", borderRadius: "var(--radius-md)", padding: "20px", color: "var(--text-muted)", cursor: "pointer", fontSize: 13 }}>
               {uploading ? "⏳ Chargement..." : "🖼️ Cliquer pour ajouter une image"}
             </button>
           )}
@@ -169,21 +179,21 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
       {type === "video" && (
         <input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)}
           placeholder="URL YouTube ou Vimeo (ex: https://youtube.com/watch?v=...)"
-          style={{ width: "100%", marginTop: 10, background: "#0a0a0a", border: "1px solid #222", borderRadius: 10, padding: "10px 14px", color: "#e8e0d0", fontSize: 13, boxSizing: "border-box" }}
+          style={{ ...inputStyle, width: "100%", marginTop: 10 }}
         />
       )}
 
       {type === "link" && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-          <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="URL du lien *" style={{ background: "#0a0a0a", border: "1px solid #222", borderRadius: 10, padding: "10px 14px", color: "#e8e0d0", fontSize: 13, boxSizing: "border-box" }} />
-          <input value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} placeholder="Titre (optionnel)" style={{ background: "#0a0a0a", border: "1px solid #222", borderRadius: 10, padding: "10px 14px", color: "#e8e0d0", fontSize: 13, boxSizing: "border-box" }} />
-          <input value={linkDesc} onChange={(e) => setLinkDesc(e.target.value)} placeholder="Description courte (optionnel)" style={{ background: "#0a0a0a", border: "1px solid #222", borderRadius: 10, padding: "10px 14px", color: "#e8e0d0", fontSize: 13, boxSizing: "border-box" }} />
+          <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="URL du lien *" style={inputStyle} />
+          <input value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} placeholder="Titre (optionnel)" style={inputStyle} />
+          <input value={linkDesc} onChange={(e) => setLinkDesc(e.target.value)} placeholder="Description courte (optionnel)" style={inputStyle} />
         </div>
       )}
 
       {(type === "poll" || type === "quiz") && (
         <div style={{ marginTop: 10 }}>
-          <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
             {type === "quiz" ? "Cochez la bonne réponse :" : "Options du sondage :"}
           </div>
           {type === "poll" ? (
@@ -192,13 +202,13 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
                 <div key={i} style={{ display: "flex", gap: 8 }}>
                   <input value={opt} onChange={(e) => { const n = [...pollOptions]; n[i] = e.target.value; setPollOptions(n); }}
                     placeholder={`Option ${i + 1}`}
-                    style={{ flex: 1, background: "#0a0a0a", border: "1px solid #222", borderRadius: 8, padding: "8px 12px", color: "#e8e0d0", fontSize: 13 }}
+                    style={{ ...inputStyle, flex: 1, padding: "8px 12px" }}
                   />
-                  {pollOptions.length > 2 && <button onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))} style={{ background: "#1a1a1a", border: "none", borderRadius: 8, width: 32, color: "#f87171", cursor: "pointer" }}>✕</button>}
+                  {pollOptions.length > 2 && <button onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))} style={{ background: "var(--surface)", border: "none", borderRadius: "var(--radius-sm)", width: 32, color: "var(--error)", cursor: "pointer" }}>✕</button>}
                 </div>
               ))}
               {pollOptions.length < 6 && (
-                <button onClick={() => setPollOptions([...pollOptions, ""])} style={{ background: "#0a0a0a", border: "1px dashed #333", borderRadius: 8, padding: "8px", color: "#555", cursor: "pointer", fontSize: 13 }}>+ Ajouter une option</button>
+                <button onClick={() => setPollOptions([...pollOptions, ""])} style={{ background: "var(--page-bg)", border: "1px dashed var(--border)", borderRadius: "var(--radius-sm)", padding: "8px", color: "var(--text-muted)", cursor: "pointer", fontSize: 13 }}>+ Ajouter une option</button>
               )}
             </div>
           ) : (
@@ -206,17 +216,17 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
               {quizOptions.map((opt, i) => (
                 <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input type="checkbox" checked={opt.correct} onChange={(e) => { const n = [...quizOptions]; n[i] = { ...n[i], correct: e.target.checked }; setQuizOptions(n); }}
-                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#4ade80" }}
+                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--success)" }}
                   />
                   <input value={opt.text} onChange={(e) => { const n = [...quizOptions]; n[i].text = e.target.value; setQuizOptions(n); }}
                     placeholder={`Réponse ${i + 1}`}
-                    style={{ flex: 1, background: "#0a0a0a", border: `1px solid ${opt.correct ? "#4ade80" : "#222"}`, borderRadius: 8, padding: "8px 12px", color: "#e8e0d0", fontSize: 13 }}
+                    style={{ ...inputStyle, flex: 1, padding: "8px 12px", border: `1px solid ${opt.correct ? "var(--success)" : "var(--border)"}` }}
                   />
-                  {quizOptions.length > 2 && <button onClick={() => setQuizOptions(quizOptions.filter((_, j) => j !== i))} style={{ background: "#1a1a1a", border: "none", borderRadius: 8, width: 32, color: "#f87171", cursor: "pointer" }}>✕</button>}
+                  {quizOptions.length > 2 && <button onClick={() => setQuizOptions(quizOptions.filter((_, j) => j !== i))} style={{ background: "var(--surface)", border: "none", borderRadius: "var(--radius-sm)", width: 32, color: "var(--error)", cursor: "pointer" }}>✕</button>}
                 </div>
               ))}
               {quizOptions.length < 6 && (
-                <button onClick={() => setQuizOptions([...quizOptions, { text: "", correct: false }])} style={{ background: "#0a0a0a", border: "1px dashed #333", borderRadius: 8, padding: "8px", color: "#555", cursor: "pointer", fontSize: 13 }}>+ Ajouter une réponse</button>
+                <button onClick={() => setQuizOptions([...quizOptions, { text: "", correct: false }])} style={{ background: "var(--page-bg)", border: "1px dashed var(--border)", borderRadius: "var(--radius-sm)", padding: "8px", color: "var(--text-muted)", cursor: "pointer", fontSize: 13 }}>+ Ajouter une réponse</button>
               )}
             </div>
           )}
@@ -225,25 +235,25 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
 
       {/* Catégorie — obligatoire */}
       <div style={{ marginTop: 12 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: categoryId ? "#555" : "#f87171", marginBottom: 6, letterSpacing: 0.4 }}>
-          CATÉGORIE <span style={{ color: "#f87171" }}>*</span>
+        <div style={{ fontSize: 11, fontWeight: 600, color: categoryId ? "var(--text-muted)" : "var(--error)", marginBottom: 6, letterSpacing: 0.4 }}>
+          CATÉGORIE <span style={{ color: "var(--error)" }}>*</span>
           {!categoryId && <span style={{ fontWeight: 400, marginLeft: 6 }}>(obligatoire)</span>}
         </div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", WebkitOverflowScrolling: "touch" as any, scrollbarWidth: "none" as any, paddingBottom: 4 }}>
           {categories.map((c) => (
             <button key={c.id} onClick={() => setCategoryId(categoryId === c.id ? "" : c.id)}
-              style={{ flexShrink: 0, background: categoryId === c.id ? `${c.color}22` : "#0a0a0a", border: `1px solid ${categoryId === c.id ? c.color : "#333"}`, borderRadius: 20, padding: "5px 12px", color: categoryId === c.id ? c.color : "#666", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+              style={{ flexShrink: 0, background: categoryId === c.id ? `${c.color}22` : "var(--page-bg)", border: `1px solid ${categoryId === c.id ? c.color : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "5px 12px", color: categoryId === c.id ? c.color : "var(--text-muted)", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
               {c.icon} {c.name}
             </button>
           ))}
         </div>
       </div>
 
-      {error && <div style={{ color: "#f87171", fontSize: 12, marginTop: 8 }}>{error}</div>}
+      {error && <div style={{ color: "var(--error)", fontSize: 12, marginTop: 8 }}>{error}</div>}
 
       <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "flex-end" }}>
-        <button onClick={() => setOpen(false)} style={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 10, padding: "9px 18px", color: "#888", cursor: "pointer", fontSize: 13 }}>Annuler</button>
-        <button onClick={submit} disabled={saving} style={{ background: "linear-gradient(135deg,#d4af37,#c9a227)", border: "none", borderRadius: 10, padding: "9px 20px", color: "#000", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", fontSize: 13 }}>
+        <button onClick={() => setOpen(false)} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "9px 18px", color: "var(--text-muted)", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+        <button onClick={submit} disabled={saving} style={{ background: "linear-gradient(135deg, var(--gold-dark), var(--gold))", border: "none", borderRadius: "var(--radius-md)", padding: "9px 20px", color: "#000", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", fontSize: 13 }}>
           {saving ? "Publication..." : "Publier"}
         </button>
       </div>
@@ -290,56 +300,56 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
   const totalVotes = post.poll_options ? localVoteResults.length : 0;
 
   return (
-    <div style={{ background: "#111", border: `1px solid ${post.is_pinned ? "rgba(212,175,55,0.3)" : "#1a1a1a"}`, borderRadius: 16, marginBottom: 12, overflow: "hidden" }}>
+    <div style={{ background: "var(--card-bg)", border: `1px solid ${post.is_pinned ? "rgba(212,175,55,0.3)" : "var(--border-subtle)"}`, borderRadius: "var(--radius-lg)", marginBottom: 12, overflow: "hidden" }}>
       {post.is_pinned && (
-        <div style={{ background: "rgba(212,175,55,0.08)", padding: "6px 16px", fontSize: 11, color: "#d4af37", fontWeight: 600 }}>📌 Épinglé</div>
+        <div style={{ background: "rgba(212,175,55,0.08)", padding: "6px 16px", fontSize: 11, color: "var(--gold)", fontWeight: 600 }}>📌 Épinglé</div>
       )}
       <div style={{ padding: 16 }}>
         {/* En-tête */}
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12 }}>
           <Avatar profile={author} size={38} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "#f0e8d0" }}>{author?.display_name || "Membre"}</div>
-            <div style={{ fontSize: 11, color: "#555" }}>{timeAgo(post.created_at)}</div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>{author?.display_name || "Membre"}</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{timeAgo(post.created_at)}</div>
           </div>
           {cat && (
-            <span style={{ background: `${cat.color}20`, border: `1px solid ${cat.color}50`, borderRadius: 20, padding: "3px 10px", fontSize: 10, color: cat.color, fontWeight: 600, flexShrink: 0 }}>
+            <span style={{ background: `${cat.color}20`, border: `1px solid ${cat.color}50`, borderRadius: "var(--radius-full)", padding: "3px 10px", fontSize: 10, color: cat.color, fontWeight: 600, flexShrink: 0 }}>
               {cat.icon} {cat.name}
             </span>
           )}
           {(isMyPost || isAdmin) && (
             <div style={{ display: "flex", gap: 4 }}>
               {isAdmin && (
-                <button onClick={onPin} title={post.is_pinned ? "Désépingler" : "Épingler"} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>📌</button>
+                <button onClick={onPin} title={post.is_pinned ? "Désépingler" : "Épingler"} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>📌</button>
               )}
-              <button onClick={onDelete} title="Supprimer" style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>🗑️</button>
+              <button onClick={onDelete} title="Supprimer" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>🗑️</button>
             </div>
           )}
         </div>
 
         {/* Contenu texte */}
-        <p style={{ fontSize: 14, color: "#e0d8c8", lineHeight: 1.6, margin: "0 0 12px", whiteSpace: "pre-wrap" }}>{post.content}</p>
+        <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, margin: "0 0 12px", whiteSpace: "pre-wrap" }}>{post.content}</p>
 
         {/* Médias */}
         {post.post_type === "image" && post.media_url && (
-          <img src={post.media_url} style={{ width: "100%", borderRadius: 10, maxHeight: 400, objectFit: "cover", marginBottom: 12 }} />
+          <img src={post.media_url} style={{ width: "100%", borderRadius: "var(--radius-md)", maxHeight: 400, objectFit: "cover", marginBottom: 12 }} />
         )}
 
         {post.post_type === "video" && (
-          <div style={{ marginBottom: 12, borderRadius: 10, overflow: "hidden", aspectRatio: "16/9" }}>
+          <div style={{ marginBottom: 12, borderRadius: "var(--radius-md)", overflow: "hidden", aspectRatio: "16/9" }}>
             {ytId ? (
               <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}`} style={{ border: "none", display: "block" }} allowFullScreen />
             ) : post.media_url ? (
-              <video src={post.media_url} controls style={{ width: "100%", borderRadius: 10 }} />
+              <video src={post.media_url} controls style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
             ) : null}
           </div>
         )}
 
         {post.post_type === "link" && post.link_url && (
-          <a href={post.link_url} target="_blank" rel="noopener noreferrer" style={{ display: "block", background: "#0a0a0a", border: "1px solid #222", borderRadius: 10, padding: 14, marginBottom: 12, textDecoration: "none" }}>
-            <div style={{ fontSize: 11, color: "#555", marginBottom: 4 }}>🔗 {post.link_url}</div>
-            {post.link_title && <div style={{ fontSize: 14, color: "#d4af37", fontWeight: 600 }}>{post.link_title}</div>}
-            {post.link_description && <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>{post.link_description}</div>}
+          <a href={post.link_url} target="_blank" rel="noopener noreferrer" style={{ display: "block", background: "var(--page-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 14, marginBottom: 12, textDecoration: "none" }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>🔗 {post.link_url}</div>
+            {post.link_title && <div style={{ fontSize: 14, color: "var(--gold)", fontWeight: 600 }}>{post.link_title}</div>}
+            {post.link_description && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{post.link_description}</div>}
           </a>
         )}
 
@@ -354,22 +364,22 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
                 const showResult = localVote !== undefined;
                 return (
                   <button key={i} onClick={() => handleVote(i)} disabled={localVote !== undefined}
-                    style={{ position: "relative", background: showResult ? (isCorrect ? "rgba(74,222,128,0.1)" : isChosen ? "rgba(248,113,113,0.1)" : "#0a0a0a") : "#0a0a0a", border: `1px solid ${showResult ? (isCorrect ? "#4ade80" : isChosen ? "#f87171" : "#222") : "#222"}`, borderRadius: 10, padding: "10px 14px", textAlign: "left", cursor: localVote !== undefined ? "default" : "pointer", overflow: "hidden" }}>
+                    style={{ position: "relative", background: showResult ? (isCorrect ? "rgba(74,222,128,0.1)" : isChosen ? "rgba(248,113,113,0.1)" : "var(--page-bg)") : "var(--page-bg)", border: `1px solid ${showResult ? (isCorrect ? "var(--success)" : isChosen ? "var(--error)" : "var(--border)") : "var(--border)"}`, borderRadius: "var(--radius-md)", padding: "10px 14px", textAlign: "left", cursor: localVote !== undefined ? "default" : "pointer", overflow: "hidden" }}>
                     {showResult && (
                       <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${pct}%`, background: isCorrect ? "rgba(74,222,128,0.15)" : "rgba(212,175,55,0.1)", transition: "width 0.5s ease" }} />
                     )}
                     <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 13, color: showResult ? (isCorrect ? "#4ade80" : isChosen ? "#f87171" : "#888") : "#e0d8c8" }}>
+                      <span style={{ fontSize: 13, color: showResult ? (isCorrect ? "var(--success)" : isChosen ? "var(--error)" : "var(--text-secondary)") : "var(--text-primary)" }}>
                         {post.post_type === "quiz" && showResult && (isCorrect ? "✅ " : isChosen ? "❌ " : "")}
                         {opt.text}
                       </span>
-                      {showResult && <span style={{ fontSize: 12, color: "#666", fontWeight: 600 }}>{pct}%</span>}
+                      {showResult && <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>{pct}%</span>}
                     </div>
                   </button>
                 );
               })}
             </div>
-            <div style={{ fontSize: 11, color: "#555", marginTop: 6 }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
               {totalVotes} vote{totalVotes > 1 ? "s" : ""}
               {localVote === undefined && " · Tapez pour voter"}
             </div>
@@ -377,11 +387,11 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 16, paddingTop: 12, borderTop: "1px solid #1a1a1a" }}>
-          <button onClick={handleLike} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: localLike ? "#f87171" : "#666", fontSize: 13 }}>
+        <div style={{ display: "flex", gap: 16, paddingTop: 12, borderTop: "1px solid var(--border-subtle)" }}>
+          <button onClick={handleLike} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: localLike ? "var(--error)" : "var(--text-muted)", fontSize: 13 }}>
             <span style={{ fontSize: 16 }}>{localLike ? "❤️" : "🤍"}</span> {localLikeCount}
           </button>
-          <button onClick={() => setShowComments(!showComments)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: "#666", fontSize: 13 }}>
+          <button onClick={() => setShowComments(!showComments)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: "var(--text-muted)", fontSize: 13 }}>
             <span style={{ fontSize: 16 }}>💬</span> {post.comments.length}
           </button>
         </div>
@@ -389,13 +399,13 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
 
       {/* Commentaires */}
       {showComments && (
-        <div style={{ background: "#0d0d0d", borderTop: "1px solid #1a1a1a", padding: "12px 16px" }}>
+        <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border-subtle)", padding: "12px 16px" }}>
           {post.comments.map((c) => (
             <div key={c.id} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
               <Avatar profile={c.user_profiles} size={28} />
-              <div style={{ flex: 1, background: "#111", borderRadius: 10, padding: "8px 12px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#f0e8d0", marginBottom: 2 }}>{c.user_profiles?.display_name || "Membre"}</div>
-                <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{c.content}</div>
+              <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: "var(--radius-md)", padding: "8px 12px" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{c.user_profiles?.display_name || "Membre"}</div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{c.content}</div>
               </div>
             </div>
           ))}
@@ -403,9 +413,9 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
             <input value={commentText} onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleComment()}
               placeholder="Écrire un commentaire..."
-              style={{ flex: 1, background: "#111", border: "1px solid #222", borderRadius: 20, padding: "8px 14px", color: "#e8e0d0", fontSize: 13 }}
+              style={{ flex: 1, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "8px 14px", color: "var(--text-primary)", fontSize: 13 }}
             />
-            <button onClick={handleComment} style={{ background: "#d4af37", border: "none", borderRadius: 20, padding: "8px 14px", color: "#000", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>➤</button>
+            <button onClick={handleComment} style={{ background: "var(--gold)", border: "none", borderRadius: "var(--radius-full)", padding: "8px 14px", color: "#000", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>➤</button>
           </div>
         </div>
       )}
@@ -435,30 +445,32 @@ function AdminCategoryManager({ categories, onCategoriesChange }: { categories: 
   }
 
   if (!open) return (
-    <button onClick={() => setOpen(true)} style={{ background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 10, padding: "8px 14px", color: "#a855f7", fontSize: 12, cursor: "pointer", marginBottom: 16 }}>
+    <button onClick={() => setOpen(true)} style={{ background: "rgba(90,44,160,0.1)", border: "1px solid rgba(90,44,160,0.3)", borderRadius: "var(--radius-md)", padding: "8px 14px", color: "var(--violet-light)", fontSize: 12, cursor: "pointer", marginBottom: 16 }}>
       🛡️ Gérer les catégories
     </button>
   );
 
   return (
-    <div style={{ background: "#111", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 14, padding: 16, marginBottom: 16 }}>
+    <div style={{ background: "var(--card-bg)", border: "1px solid rgba(90,44,160,0.3)", borderRadius: "var(--radius-lg)", padding: 16, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#a855f7" }}>🛡️ Gestion des catégories</div>
-        <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 16 }}>✕</button>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--violet-light)" }}>🛡️ Gestion des catégories</div>
+        <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16 }}>✕</button>
       </div>
       {categories.map((c) => (
         <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <span style={{ fontSize: 18 }}>{c.icon}</span>
-          <span style={{ flex: 1, fontSize: 13, color: "#e0d8c8" }}>{c.name}</span>
+          <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)" }}>{c.name}</span>
           <div style={{ width: 16, height: 16, borderRadius: "50%", background: c.color }} />
-          <button onClick={() => deleteCategory(c.id)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 14 }}>🗑️</button>
+          <button onClick={() => deleteCategory(c.id)} style={{ background: "none", border: "none", color: "var(--error)", cursor: "pointer", fontSize: 14 }}>🗑️</button>
         </div>
       ))}
       <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
-        <input value={newIcon} onChange={(e) => setNewIcon(e.target.value)} placeholder="Icône" style={{ width: 50, background: "#0a0a0a", border: "1px solid #222", borderRadius: 8, padding: "8px", color: "#e8e0d0", fontSize: 18, textAlign: "center" }} />
-        <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom de la catégorie" style={{ flex: 1, background: "#0a0a0a", border: "1px solid #222", borderRadius: 8, padding: "8px 12px", color: "#e8e0d0", fontSize: 13 }} />
-        <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} style={{ width: 40, height: 36, border: "none", borderRadius: 8, cursor: "pointer", background: "none" }} />
-        <button onClick={addCategory} disabled={saving} style={{ background: "linear-gradient(135deg,#a855f7,#7c3aed)", border: "none", borderRadius: 8, padding: "8px 14px", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+        <input value={newIcon} onChange={(e) => setNewIcon(e.target.value)} placeholder="Icône"
+          style={{ width: 50, background: "var(--page-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "8px", color: "var(--text-primary)", fontSize: 18, textAlign: "center" }} />
+        <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom de la catégorie"
+          style={{ flex: 1, background: "var(--page-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "8px 12px", color: "var(--text-primary)", fontSize: 13 }} />
+        <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} style={{ width: 40, height: 36, border: "none", borderRadius: "var(--radius-sm)", cursor: "pointer", background: "none" }} />
+        <button onClick={addCategory} disabled={saving} style={{ background: "linear-gradient(135deg, var(--violet-light), var(--violet-dark))", border: "none", borderRadius: "var(--radius-sm)", padding: "8px 14px", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
           + Ajouter
         </button>
       </div>
@@ -471,7 +483,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   posts: Post[]; categories: Category[]; currentUserId: string; currentUserProfile: any;
   isAdmin: boolean; userLikedPostIds: string[]; userVotes: Record<string, number>;
 }) {
-  // Priorite : cache window (resiste aux remounts React) → sinon props serveur
   const [posts, setPosts] = useState<Post[]>(() => {
     const cache = getClientCache();
     return cache && cache.posts.length > 0 ? cache.posts : initialPosts;
@@ -488,21 +499,17 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   });
   const userIdRef = useRef(currentUserId);
 
-  // ── Sync vers cache window (persiste entre remounts) ───────────────────────
   useEffect(() => { const c = getClientCache(); if (c) c.posts = posts; }, [posts]);
   useEffect(() => { const c = getClientCache(); if (c) c.likedIds = likedIds; }, [likedIds]);
   useEffect(() => { const c = getClientCache(); if (c) c.votes = myVotes; }, [myVotes]);
 
-  // ── Source de vérité : Realtime + double-sync pour zéro perte d'événement ──
+  // ── Source de vérité : Realtime + double-sync ──
   useEffect(() => {
     let mounted = true;
     const uid = userIdRef.current;
     const supabase = createClient();
-    // SANS join user_profiles — PostgREST retourne 400 (pas de FK directe).
-    // Les profils sont fetches separement apres.
     const SEL = `id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`;
 
-    // Chargement des posts avec MERGE (ne jamais ecraser les posts optimistes)
     async function loadPosts() {
       if (!mounted) return;
       try {
@@ -515,7 +522,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
 
         const [{ data: lk, error: lkErr }, { data: cm, error: cmErr }, { data: vt }] = await Promise.all([
           supabase.from("post_likes").select("post_id, user_id"),
-          // SANS join user_profiles (pas de FK directe)
           supabase.from("post_comments").select("id, post_id, user_id, content, created_at"),
           supabase.from("poll_votes").select("post_id, user_id, option_index"),
         ]);
@@ -523,7 +529,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         if (lkErr) console.warn("[CCB Feed] likes error:", lkErr.message);
         if (cmErr) console.warn("[CCB Feed] comments error:", cmErr.message);
 
-        // Fetch profils en batch (posts + commentaires)
         const postUserIds = [...new Set(pd.map((p: any) => p.user_id as string))];
         const commentUserIds = [...new Set((cm || []).map((c: any) => c.user_id as string))];
         const allUserIds = [...new Set([...postUserIds, ...commentUserIds])];
@@ -539,7 +544,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         const profilesMap: Record<string, { display_name: string; avatar_url?: string }> = Object.fromEntries(
           rawProfiles.map((p: any) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }])
         );
-        console.log("[CCB Feed] profilesMap:", Object.keys(profilesMap).length, "profils");
 
         const lm: Record<string, number> = {};
         const cm2: Record<string, any[]> = {};
@@ -569,12 +573,9 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         })) as Post[];
 
         const freshIds = new Set(freshPosts.map((p) => p.id));
-
-        // MERGE : conserver les posts crees apres ce fetch (optimistes)
         setPosts((prev) => {
           const extra = prev.filter((p) => !freshIds.has(p.id));
           const merged = [...extra, ...freshPosts];
-          console.log("[CCB Feed] loadPosts merge: DB=" + freshPosts.length + " extra=" + extra.length + " total=" + merged.length);
           const cache = getClientCache();
           if (cache) cache.posts = merged;
           return merged;
@@ -586,27 +587,22 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       }
     }
 
-    // 1. Chargement immédiat au montage
     loadPosts();
 
-    // 2. Realtime : INSERT / DELETE / UPDATE en temps reel
     const channel = supabase
-      .channel("ccb-feed-posts") // canal stable (pas par uid)
+      .channel("ccb-feed-posts")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
         if (!mounted) return;
         const newId = (payload.new as any).id as string;
         const newUserId = (payload.new as any).user_id as string;
-        console.log("[CCB Feed] Realtime INSERT:", newId);
-        // Fetch post + profil en parallele (SANS embedded join)
         const [{ data, error }, { data: profileData }] = await Promise.all([
           supabase.from("posts").select(SEL).eq("id", newId).single(),
           supabase.from("user_profiles").select("display_name, avatar_url").eq("user_id", newUserId).single(),
         ]);
-        if (error) { console.warn("[CCB Feed] Realtime INSERT fetch error:", error.message); return; }
-        if (!data || !mounted) return;
+        if (error || !data || !mounted) return;
         const newPost = { ...(data as any), user_profiles: profileData || null, likeCount: 0, comments: [], voteResults: [] } as Post;
         setPosts((prev) => {
-          if (prev.some((p) => p.id === newPost.id)) return prev; // deja present (optimiste)
+          if (prev.some((p) => p.id === newPost.id)) return prev;
           const next = [newPost, ...prev];
           const cache = getClientCache();
           if (cache) cache.posts = next;
@@ -616,7 +612,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "posts" }, (payload) => {
         if (!mounted) return;
         const deletedId = (payload.old as any).id;
-        console.log("[CCB Feed] Realtime DELETE:", deletedId);
         setPosts((prev) => {
           const next = prev.filter((p) => p.id !== deletedId);
           const cache = getClientCache();
@@ -634,11 +629,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
           return next;
         });
       })
-      .subscribe((status) => {
-        console.log("[CCB Feed] Realtime status:", status);
-        // PAS de loadPosts ici — evite les races avec l'etat optimiste.
-        // Les INSERT manques pendant le gap mount->SUBSCRIBED arrivent via Realtime.
-      });
+      .subscribe();
 
     return () => {
       mounted = false;
@@ -649,7 +640,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   const filtered = filterCat ? posts.filter((p) => p.category_id === filterCat) : posts;
 
   function handlePostCreated(post: Post) {
-    console.log("[CCB Feed] handlePostCreated:", post.id);
     setPosts((prev) => {
       if (prev.some((p) => p.id === post.id)) return prev;
       const next = [post, ...prev];
@@ -676,7 +666,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       .insert({ post_id: postId, user_id: currentUserId, content: text })
       .select("id, user_id, content, created_at").single();
     if (data) {
-      // Attacher le profil courant directement (pas de join necessaire)
       const commentWithProfile = { ...data, user_profiles: currentUserProfile };
       setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments: [...p.comments, commentWithProfile as any] } : p));
     }
@@ -711,7 +700,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       {/* Créer un post */}
       <PostCreator categories={categories} currentUserProfile={currentUserProfile} currentUserId={currentUserId} onPostCreated={handlePostCreated} />
 
-      {/* Filtre catégories — bande horizontale glissante sur mobile */}
+      {/* Filtre catégories */}
       {categories.length > 0 && (
         <div style={{
           display: "flex", gap: 6, marginBottom: 16,
@@ -719,10 +708,10 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
           scrollbarWidth: "none" as any, paddingBottom: 4, paddingTop: 2,
           msOverflowStyle: "none" as any,
         }}>
-          <button onClick={() => setFilterCat("")} style={{ flexShrink: 0, background: !filterCat ? "#d4af37" : "#111", border: `1px solid ${!filterCat ? "#d4af37" : "#222"}`, borderRadius: 20, padding: "6px 16px", color: !filterCat ? "#000" : "#666", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Tous</button>
+          <button onClick={() => setFilterCat("")} style={{ flexShrink: 0, background: !filterCat ? "var(--gold)" : "var(--card-bg)", border: `1px solid ${!filterCat ? "var(--gold)" : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "6px 16px", color: !filterCat ? "#000" : "var(--text-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Tous</button>
           {categories.map((c) => (
             <button key={c.id} onClick={() => setFilterCat(filterCat === c.id ? "" : c.id)}
-              style={{ flexShrink: 0, background: filterCat === c.id ? `${c.color}20` : "#111", border: `1px solid ${filterCat === c.id ? c.color : "#222"}`, borderRadius: 20, padding: "6px 16px", color: filterCat === c.id ? c.color : "#666", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+              style={{ flexShrink: 0, background: filterCat === c.id ? `${c.color}20` : "var(--card-bg)", border: `1px solid ${filterCat === c.id ? c.color : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "6px 16px", color: filterCat === c.id ? c.color : "var(--text-muted)", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
               {c.icon} {c.name}
             </button>
           ))}
@@ -733,7 +722,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       {filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px" }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
-          <div style={{ color: "#555", fontSize: 14 }}>Aucun post pour l'instant. Soyez le premier à partager !</div>
+          <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Aucun post pour l'instant. Soyez le premier à partager !</div>
         </div>
       ) : (
         filtered.map((post) => (
