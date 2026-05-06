@@ -9,9 +9,9 @@ import { IconSearch, IconBell, IconMoon, IconSun, IconMenu, IconUser } from "@/c
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":     "Tableau de bord",
   "/bible":         "Bible",
-  "/prayer":        "Prière",
-  "/community":     "Communauté",
-  "/devotion":      "Dévotion du jour",
+  "/prayer":        "Priere",
+  "/community":     "Communaute",
+  "/devotion":      "Devotion du jour",
   "/jesus-daily":   "Jesus Daily",
   "/classes":       "Salle de classe",
   "/plan-biblique": "Plan biblique",
@@ -20,8 +20,9 @@ const PAGE_TITLES: Record<string, string> = {
   "/premium":       "Premium",
   "/profile":       "Mon profil",
   "/notifications": "Notifications",
-  "/events":        "Événements",
-  "/settings":      "Paramètres",
+  "/events":        "Evenements",
+  "/settings":      "Parametres",
+  "/admin":         "Administration",
 };
 
 export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) {
@@ -38,31 +39,28 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
     setMounted(true);
   }, []);
 
-  // Fetch + subscribe to unread notification count
   useEffect(() => {
     const supabase = createClient();
-    let userId: string | null = null;
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      userId = user.id;
 
       const { count } = await supabase
         .from("notifications")
         .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .eq("is_read", false);
       setUnreadCount(count ?? 0);
 
       channel = supabase
         .channel("notif-badge")
-        .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, async () => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, async () => {
           const { count: c } = await supabase
             .from("notifications")
             .select("id", { count: "exact", head: true })
-            .eq("user_id", userId!)
+            .eq("user_id", user.id)
             .eq("is_read", false);
           setUnreadCount(c ?? 0);
         })
@@ -73,7 +71,6 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
     return () => { if (channel) supabase.removeChannel(channel); };
   }, []);
 
-  // Reset badge when on notifications page
   useEffect(() => {
     if (pathname === "/notifications") setUnreadCount(0);
   }, [pathname]);
@@ -87,11 +84,10 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
 
   const title = Object.entries(PAGE_TITLES).find(([key]) =>
     key === "/dashboard" ? pathname === key : pathname.startsWith(key)
-  )?.[1] ?? "Centre Chrétien Berakah";
+  )?.[1] ?? "Centre Chretien Berakah";
 
   return (
     <header className="topbar">
-      {/* Mobile: menu + title */}
       <div className="topbar-left">
         <button className="topbar-menu-btn" onClick={onMenuToggle} aria-label="Menu">
           <IconMenu size={22} />
@@ -99,32 +95,24 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
         <h1 className="topbar-title">{title}</h1>
       </div>
 
-      {/* Search bar (desktop) */}
       <div className={`topbar-search ${searchOpen ? "open" : ""}`}>
         <IconSearch size={16} className="topbar-search-icon" />
         <input
           type="text"
-          placeholder="Rechercher un verset, une prière…"
+          placeholder="Rechercher un verset, une priere..."
           className="topbar-search-input"
         />
       </div>
 
-      {/* Right actions */}
       <div className="topbar-actions">
-        {/* Search toggle (mobile) */}
-        <button
-          className="topbar-icon-btn"
-          onClick={() => setSearchOpen((v) => !v)}
-          aria-label="Rechercher"
-        >
+        <button className="topbar-icon-btn" onClick={() => setSearchOpen((v) => !v)} aria-label="Rechercher">
           <IconSearch size={20} />
         </button>
 
-        {/* Notifications bell — link with live badge */}
         <Link
           href="/notifications"
           className="topbar-icon-btn topbar-notif-btn"
-          aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} non lues)` : ""}`}
+          aria-label="Notifications"
           style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
         >
           <IconBell size={20} />
@@ -135,18 +123,12 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
           )}
         </Link>
 
-        {/* Theme toggle */}
         {mounted && (
-          <button
-            className="topbar-icon-btn topbar-theme-btn"
-            onClick={toggleTheme}
-            aria-label="Changer de thème"
-          >
+          <button className="topbar-icon-btn topbar-theme-btn" onClick={toggleTheme} aria-label="Changer de theme">
             {dark ? <IconSun size={20} /> : <IconMoon size={20} />}
           </button>
         )}
 
-        {/* Profile avatar */}
         <Link href="/profile" className="topbar-avatar">
           <IconUser size={18} />
         </Link>

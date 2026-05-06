@@ -6,7 +6,6 @@ export const metadata = { title: "Administration — CCB" };
 
 export default async function AdminPage() {
   const supabase = await createClient();
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?redirect=/admin");
 

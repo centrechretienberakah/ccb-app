@@ -11,7 +11,6 @@ export default async function PlanBibliquePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Active plan
   const { data: activePlan } = await supabase
     .from("user_bible_plans")
     .select("*")
@@ -19,13 +18,11 @@ export default async function PlanBibliquePage() {
     .eq("is_active", true)
     .maybeSingle();
 
-  // All user plans (to know which were previously started)
   const { data: userPlans } = await supabase
     .from("user_bible_plans")
     .select("plan_id, start_date, is_active")
     .eq("user_id", user.id);
 
-  // Reading progress for active plan
   let progress: { day_number: number; book_name: string; chapter: number }[] = [];
   if (activePlan) {
     const { data } = await supabase

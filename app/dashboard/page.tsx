@@ -18,7 +18,7 @@ export default async function DashboardPage() {
 
   try {
     const [{ data: p }, { data: up }] = await Promise.all([
-      supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).single(),
+      supabase.from("profiles").select("full_name, avatar_url, role").eq("id", user.id).single(),
       supabase.from("user_profiles").select("display_name, avatar_url, bio").eq("user_id", user.id).single(),
     ]);
     profile = p;
@@ -36,11 +36,14 @@ export default async function DashboardPage() {
     (profile as any)?.avatar_url ||
     null;
 
+  const role = (profile as any)?.role ?? "member";
+
   return (
     <DashboardClient
       displayName={displayName}
       avatarUrl={avatarUrl}
       email={user.email ?? null}
+      role={role}
     />
   );
 }
