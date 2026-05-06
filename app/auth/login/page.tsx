@@ -77,14 +77,16 @@ function LoginForm() {
               right: 12,
               top: "50%",
               transform: "translateY(-50%)",
+              zIndex: 10,
               background: "none",
               border: "none",
               cursor: "pointer",
               padding: 4,
-              color: "var(--text-muted)",
+              color: "var(--text-secondary)",
               display: "flex",
               alignItems: "center",
               lineHeight: 1,
+              opacity: 0.7,
             }}
           >
             {showPassword ? (

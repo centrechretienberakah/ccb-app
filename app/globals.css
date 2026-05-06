@@ -1578,3 +1578,8 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 
 .safe-top    { padding-top:    env(safe-area-inset-top); }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Masquer le toggle mot de passe natif des navigateurs (Edge, Chrome) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear { display: none; }
+input::-webkit-credentials-auto-fill-button { visibility: hidden; }
