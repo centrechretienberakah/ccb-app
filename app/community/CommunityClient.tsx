@@ -78,13 +78,11 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
   return (
     <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
       {/* Onglets sub-nav */}
-      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)", padding: "0 20px" }}>
-        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex" }}>
-            <button style={tabStyle(tab === "feed")} onClick={() => setTab("feed")}>📰 Fil d'actualité</button>
-            <button style={tabStyle(tab === "members")} onClick={() => setTab("members")}>👥 Membres ({members.length})</button>
-          </div>
-          {isAdmin && <span style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700 }}>🛡️ Admin</span>}
+      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", overflowX: "auto" }}>
+          <button style={tabStyle(tab === "feed")} onClick={() => setTab("feed")}>📰 Fil d'actualité</button>
+          <button style={tabStyle(tab === "members")} onClick={() => setTab("members")}>👥 Membres ({members.length})</button>
+          {isAdmin && <span style={{ marginLeft: "auto", padding: "0 16px", fontSize: 11, color: "var(--violet)", fontWeight: 700, flexShrink: 0 }}>🛡️ Admin</span>}
         </div>
       </div>
 

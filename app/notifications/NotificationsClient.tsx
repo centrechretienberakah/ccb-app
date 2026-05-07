@@ -57,55 +57,35 @@ export default function NotificationsClient({ notifications: initial }: { notifi
 
   const filtered = filter === "all" ? notifications : notifications.filter((n) => n.type === filter);
 
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: "13px 16px",
+    background: "none",
+    border: "none",
+    borderBottom: `2px solid ${active ? "var(--gold)" : "transparent"}`,
+    color: active ? "var(--gold)" : "var(--text-muted)",
+    fontWeight: active ? 700 : 400,
+    fontSize: 13,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    fontFamily: "var(--font-body)",
+    transition: "all 0.2s",
+  });
+
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px 16px 100px" }}>
-      {/* Hero */}
-      <div style={{
-        background: "var(--header-gradient)",
-        borderRadius: "var(--radius-xl)",
-        padding: "28px 24px 24px",
-        marginBottom: 20,
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        {/* Glow */}
-        <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <div style={{ fontSize: 36, marginBottom: 10 }}>🔔</div>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "var(--text-primary)", fontFamily: "var(--font-title)" }}>
-          Notifications
-        </h2>
-        <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
-          {notifications.length === 0
-            ? "Aucune notification pour l'instant"
-            : `${notifications.length} notification${notifications.length > 1 ? "s" : ""}`}
-        </p>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
+
+      {/* Sub-nav tabs */}
+      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", display: "flex", overflowX: "auto" }}>
+          {filters.map((f) => (
+            <button key={f.key} style={tabStyle(filter === f.key)} onClick={() => setFilter(f.key)}>
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Filter chips */}
-      {notifications.length > 0 && (
-        <div style={{
-          display: "flex", gap: 6, marginBottom: 16,
-          overflowX: "auto", scrollbarWidth: "none" as any,
-          WebkitOverflowScrolling: "touch" as any,
-          paddingBottom: 4,
-        }}>
-          {filters.map((f) => {
-            const active = filter === f.key;
-            return (
-              <button key={f.key} onClick={() => setFilter(f.key)} style={{
-                flexShrink: 0,
-                background: active ? "var(--gold)" : "var(--card-bg)",
-                border: `1px solid ${active ? "var(--gold)" : "var(--border)"}`,
-                borderRadius: "var(--radius-full)",
-                padding: "6px 14px",
-                color: active ? "#000" : "var(--text-muted)",
-                fontSize: 12, fontWeight: active ? 700 : 400,
-                cursor: "pointer", whiteSpace: "nowrap",
-              }}>{f.label}</button>
-            );
-          })}
-        </div>
-      )}
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 16px 100px" }}>
 
       {/* Notifications list */}
       {filtered.length === 0 ? (
@@ -203,6 +183,7 @@ export default function NotificationsClient({ notifications: initial }: { notifi
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

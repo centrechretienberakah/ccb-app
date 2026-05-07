@@ -461,58 +461,35 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
   const totalPriants = prayers.reduce((acc, p) => acc + p.intercessionsCount, 0);
   const answeredCount = prayers.filter((p) => p.is_answered).length;
 
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: "13px 16px",
+    background: "none",
+    border: "none",
+    borderBottom: `2px solid ${active ? "var(--gold)" : "transparent"}`,
+    color: active ? "var(--gold)" : "var(--text-muted)",
+    fontWeight: active ? 700 : 400,
+    fontSize: 13,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    fontFamily: "var(--font-body)",
+    transition: "all 0.2s",
+  });
+
   return (
     <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
 
-      {/* Hero */}
-      <div style={{
-        background: "var(--header-gradient)",
-        padding: "32px 24px 40px",
-        position: "relative", overflow: "hidden",
-      }}>
-        <div style={{
-          position: "absolute", top: -60, right: -60,
-          width: 260, height: 260, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(212,175,55,0.18) 0%, transparent 65%)",
-          pointerEvents: "none",
-        }} />
-        <div style={{ maxWidth: 680, margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <div style={{ fontSize: 44, marginBottom: 12, lineHeight: 1 }}>🙏</div>
-          <h1 style={{
-            fontFamily: "var(--font-title)",
-            fontSize: "clamp(1.5rem, 4vw, 2rem)",
-            fontWeight: 700, color: "white",
-            margin: "0 0 6px", letterSpacing: "0.02em",
-          }}>
-            Mur d'Intercession
-          </h1>
-          <p style={{ margin: "0 0 16px", fontSize: 14, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
-            Portez-vous les uns les autres dans la prière — Gal 6:2
-          </p>
-          {/* Stats */}
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {totalPriants > 0 && (
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)",
-                borderRadius: "var(--radius-full)", padding: "5px 14px",
-                fontSize: 12, color: "rgba(255,255,255,0.9)", fontWeight: 600,
-              }}>
-                🙏 {totalPriants} intercession{totalPriants > 1 ? "s" : ""}
-              </div>
-            )}
-            {answeredCount > 0 && (
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                background: "rgba(22,163,74,0.2)", backdropFilter: "blur(8px)",
-                border: "1px solid rgba(22,163,74,0.3)",
-                borderRadius: "var(--radius-full)", padding: "5px 14px",
-                fontSize: 12, color: "#4ade80", fontWeight: 600,
-              }}>
-                ✅ {answeredCount} exaucée{answeredCount > 1 ? "s" : ""}
-              </div>
-            )}
-          </div>
+      {/* Sub-nav tabs */}
+      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", overflowX: "auto" }}>
+          <button style={tabStyle(filter === "all")} onClick={() => setFilter("all")}>
+            🙏 Toutes {prayers.length > 0 ? `(${prayers.length})` : ""}
+          </button>
+          <button style={tabStyle(filter === "mine")} onClick={() => setFilter("mine")}>
+            📝 Mes requêtes
+          </button>
+          <button style={tabStyle(filter === "answered")} onClick={() => setFilter("answered")}>
+            ✅ Exaucées {answeredCount > 0 ? `(${answeredCount})` : ""}
+          </button>
         </div>
       </div>
 
@@ -524,24 +501,6 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
           currentUserId={currentUserId}
           onSubmitted={(prayer) => setPrayers((prev) => [prayer, ...prev])}
         />
-
-        {/* Filtres */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-          {([["all", "Toutes"], ["mine", "Mes requêtes"], ["answered", "Exaucées"]] as const).map(([key, label]) => (
-            <button key={key} onClick={() => setFilter(key)} style={{
-              flexShrink: 0,
-              background: filter === key ? "rgba(90,44,160,0.1)" : "var(--surface)",
-              border: `1px solid ${filter === key ? "var(--violet-light)" : "var(--border)"}`,
-              borderRadius: "var(--radius-full)", padding: "6px 14px",
-              color: filter === key ? "var(--violet-light)" : "var(--text-muted)",
-              fontSize: 12, fontWeight: filter === key ? 700 : 400,
-              cursor: "pointer", fontFamily: "var(--font-body)",
-              transition: "all 0.15s",
-            }}>
-              {label}
-            </button>
-          ))}
-        </div>
 
         {/* Liste */}
         {filtered.length === 0 ? (

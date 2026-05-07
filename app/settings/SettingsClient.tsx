@@ -173,14 +173,28 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
   const initials = (displayName || email).split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto", padding: "16px 16px 100px" }}>
-      {/* Hero */}
-      <div style={{ background: "var(--header-gradient)", borderRadius: "var(--radius-xl)", padding: "24px 20px 20px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,175,55,0.18) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <div style={{ fontSize: 34, marginBottom: 8 }}>⚙️</div>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "var(--text-primary)", fontFamily: "var(--font-title)" }}>Paramètres</h2>
-        <p style={{ margin: "5px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>{email}</p>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
+
+      {/* Sub-nav tabs */}
+      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", display: "flex", overflowX: "auto" }}>
+          <span style={{
+            padding: "13px 16px",
+            borderBottom: "2px solid var(--gold)",
+            color: "var(--gold)",
+            fontWeight: 700, fontSize: 13,
+            whiteSpace: "nowrap",
+            fontFamily: "var(--font-body)",
+          }}>⚙️ Paramètres</span>
+          <span style={{
+            marginLeft: "auto", padding: "13px 16px",
+            fontSize: 12, color: "var(--text-muted)",
+            fontFamily: "var(--font-body)", flexShrink: 0,
+          }}>{email}</span>
+        </div>
       </div>
+
+      <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 100px" }}>
 
       {/* ── Section Compte ── */}
       <SectionCard title="Mon compte" icon="👤">
@@ -347,6 +361,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
       {/* App version */}
       <div style={{ textAlign: "center", marginTop: 8, fontSize: 11, color: "var(--text-muted)" }}>
         Centre Chrétien Berakah · v1.0 · 2026
+      </div>
       </div>
     </div>
   );

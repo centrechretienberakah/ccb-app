@@ -381,56 +381,46 @@ export default function EventsClient({ events: initialEvents, userRsvpMap: initi
   const upcomingCount = events.filter((e) => new Date(e.event_date) >= now).length;
   const myCount       = events.filter((e) => !!rsvpMap[e.id]).length;
 
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: "13px 16px",
+    background: "none",
+    border: "none",
+    borderBottom: `2px solid ${active ? "var(--gold)" : "transparent"}`,
+    color: active ? "var(--gold)" : "var(--text-muted)",
+    fontWeight: active ? 700 : 400,
+    fontSize: 13,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    fontFamily: "var(--font-body)",
+    transition: "all 0.2s",
+  });
+
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", padding: "16px 16px 100px" }}>
-      {/* Hero */}
-      <div style={{ background: "var(--header-gradient)", borderRadius: "var(--radius-xl)", padding: "28px 24px 24px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -50, right: -50, width: 180, height: 180, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -30, left: -30, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(90,44,160,0.12) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <div style={{ fontSize: 38, marginBottom: 10 }}>🎉</div>
-        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--text-primary)", fontFamily: "var(--font-title)" }}>Événements CCB</h2>
-        <p style={{ margin: "6px 0 16px", fontSize: 13, color: "var(--text-secondary)" }}>Cultes, retraites, études bibliques et plus</p>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: "var(--radius-full)", padding: "5px 14px", fontSize: 12, color: "var(--gold)", fontWeight: 600 }}>
-            📅 {upcomingCount} à venir
-          </div>
-          {myCount > 0 && (
-            <div style={{ background: "rgba(90,44,160,0.12)", border: "1px solid rgba(90,44,160,0.25)", borderRadius: "var(--radius-full)", padding: "5px 14px", fontSize: 12, color: "var(--violet-light)", fontWeight: 600 }}>
-              ✅ {myCount} inscrit{myCount > 1 ? "s" : ""}
-            </div>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
+
+      {/* Sub-nav tabs */}
+      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", alignItems: "center", overflowX: "auto" }}>
+          <button style={tabStyle(filter === "upcoming")} onClick={() => setFilter("upcoming")}>
+            📅 À venir {upcomingCount > 0 ? `(${upcomingCount})` : ""}
+          </button>
+          <button style={tabStyle(filter === "past")} onClick={() => setFilter("past")}>🕐 Passés</button>
+          <button style={tabStyle(filter === "mine")} onClick={() => setFilter("mine")}>
+            ✅ Mes inscriptions {myCount > 0 ? `(${myCount})` : ""}
+          </button>
+          {isAdmin && (
+            <button onClick={() => setShowModal(true)} style={{
+              marginLeft: "auto", flexShrink: 0,
+              background: "linear-gradient(135deg, var(--violet-dark), var(--violet-light))",
+              border: "none", borderRadius: "var(--radius-full)", padding: "6px 14px",
+              color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer",
+              fontFamily: "var(--font-body)", margin: "8px 16px 8px auto",
+            }}>➕ Créer</button>
           )}
         </div>
       </div>
 
-      {/* Filter tabs + admin button */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 6, flex: 1, overflowX: "auto", scrollbarWidth: "none" as any }}>
-          {([
-            { key: "upcoming", label: "📅 À venir" },
-            { key: "past",     label: "🕐 Passés" },
-            { key: "mine",     label: "✅ Mes inscriptions" },
-          ] as const).map((f) => (
-            <button key={f.key} onClick={() => setFilter(f.key)}
-              style={{
-                flexShrink: 0,
-                background: filter === f.key ? "var(--gold)" : "var(--card-bg)",
-                border: `1px solid ${filter === f.key ? "var(--gold)" : "var(--border)"}`,
-                borderRadius: "var(--radius-full)", padding: "7px 16px",
-                color: filter === f.key ? "#000" : "var(--text-muted)",
-                fontSize: 12, fontWeight: filter === f.key ? 700 : 500,
-                cursor: "pointer", whiteSpace: "nowrap",
-              }}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-        {isAdmin && (
-          <button onClick={() => setShowModal(true)}
-            style={{ flexShrink: 0, background: "linear-gradient(135deg, var(--violet-dark), var(--violet-light))", border: "none", borderRadius: "var(--radius-full)", padding: "7px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-            ➕ Créer
-          </button>
-        )}
-      </div>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 100px" }}>
 
       {/* Events list */}
       {filtered.length === 0 ? (
@@ -463,6 +453,7 @@ export default function EventsClient({ events: initialEvents, userRsvpMap: initi
           onClose={() => setShowModal(false)}
         />
       )}
+      </div>
     </div>
   );
 }

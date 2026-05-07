@@ -167,37 +167,44 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         </div>
       )}
 
-      {/* Actions bar */}
-      <div style={{
-        background: "var(--surface)", borderBottom: "1px solid var(--border)",
-        padding: "12px 20px", display: "flex", alignItems: "center",
-        justifyContent: "flex-end", gap: 8,
-      }}>
-        {!editing ? (
-          <button onClick={() => setEditing(true)} style={{
-            background: "var(--surface-2)", border: "1px solid var(--border)",
-            borderRadius: "var(--radius-md)", padding: "8px 16px",
-            color: "var(--gold)", fontSize: 13, fontWeight: 600, cursor: "pointer",
-            fontFamily: "var(--font-body)",
-          }}>✏️ Modifier</button>
-        ) : (
-          <>
-            <button onClick={() => setEditing(false)} style={{
-              background: "var(--surface-2)", border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)", padding: "8px 16px",
-              color: "var(--text-muted)", fontSize: 13, cursor: "pointer",
-              fontFamily: "var(--font-body)",
-            }}>Annuler</button>
-            <button onClick={handleSave} disabled={saving} style={{
-              background: saving ? "var(--surface-2)" : "linear-gradient(135deg, var(--gold-dark), var(--gold))",
-              border: "none", borderRadius: "var(--radius-md)", padding: "8px 20px",
-              color: saving ? "var(--text-muted)" : "#000",
-              fontSize: 13, fontWeight: 700,
-              cursor: saving ? "not-allowed" : "pointer",
-              fontFamily: "var(--font-body)",
-            }}>{saving ? "Sauvegarde..." : "💾 Sauvegarder"}</button>
-          </>
-        )}
+      {/* Sub-nav tabs */}
+      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", overflowX: "auto" }}>
+          <span style={{
+            padding: "13px 16px",
+            borderBottom: "2px solid var(--gold)",
+            color: "var(--gold)",
+            fontWeight: 700, fontSize: 13,
+            whiteSpace: "nowrap", fontFamily: "var(--font-body)",
+          }}>👤 Mon Profil</span>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, padding: "8px 16px", flexShrink: 0 }}>
+            {!editing ? (
+              <button onClick={() => setEditing(true)} style={{
+                background: "var(--surface-2)", border: "1px solid var(--border)",
+                borderRadius: "var(--radius-md)", padding: "6px 14px",
+                color: "var(--gold)", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                fontFamily: "var(--font-body)",
+              }}>✏️ Modifier</button>
+            ) : (
+              <>
+                <button onClick={() => setEditing(false)} style={{
+                  background: "var(--surface-2)", border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-md)", padding: "6px 14px",
+                  color: "var(--text-muted)", fontSize: 12, cursor: "pointer",
+                  fontFamily: "var(--font-body)",
+                }}>Annuler</button>
+                <button onClick={handleSave} disabled={saving} style={{
+                  background: saving ? "var(--surface-2)" : "linear-gradient(135deg, var(--gold-dark), var(--gold))",
+                  border: "none", borderRadius: "var(--radius-md)", padding: "6px 16px",
+                  color: saving ? "var(--text-muted)" : "#000",
+                  fontSize: 12, fontWeight: 700,
+                  cursor: saving ? "not-allowed" : "pointer",
+                  fontFamily: "var(--font-body)",
+                }}>{saving ? "Sauvegarde..." : "💾 Sauvegarder"}</button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 48px" }}>
