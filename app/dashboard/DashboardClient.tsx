@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   IconBook, IconHeart, IconUsers, IconSun, IconPlay,
   IconGraduationCap, IconBookmark, IconRadio,
-  IconStar, IconTrendingUp, IconCalendar, IconZap, IconBell,
+  IconCalendar, IconZap, IconBell,
 } from "@/components/icons";
 
 interface Props {
@@ -22,13 +22,6 @@ const QUICK_ACTIONS = [
   { emoji: "🎬", label: "Jesus Daily", sub: "Vidéos prophétiques", href: "/jesus-daily", gradient: "linear-gradient(145deg, #3d1a72 0%, #5a2ca0 55%, #a78bfa 100%)", glow: "rgba(167,139,250,0.35)" },
   { emoji: "🎓", label: "Classes", sub: "Formation biblique", href: "/classes", gradient: "linear-gradient(145deg, #164e63 0%, #0891b2 55%, #22d3ee 100%)", glow: "rgba(34,211,238,0.35)" },
   { emoji: "📡", label: "Live", sub: "Cultes en direct", href: "/live", gradient: "linear-gradient(145deg, #1e1b4b 0%, #4338ca 55%, #818cf8 100%)", glow: "rgba(129,140,248,0.35)" },
-];
-
-const STATS = [
-  { icon: IconStar, label: "Jours consécutifs", value: "7", sub: "🔥 Ta série continue !", color: "var(--gold)" },
-  { icon: IconTrendingUp, label: "Chapitres lus", value: "42", sub: "ce mois-ci", color: "var(--violet)" },
-  { icon: IconHeart, label: "Prières partagées", value: "12", sub: "cette semaine", color: "#f87171" },
-  { icon: IconUsers, label: "Membres actifs", value: "148", sub: "dans ta communauté", color: "#34d399" },
 ];
 
 const UPCOMING = [
@@ -77,20 +70,6 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
             <IconBell size={20} />
             <span className="dashboard-notif-badge">3</span>
           </button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="dashboard-section">
-        <div className="dashboard-stats-grid">
-          {STATS.map(({ icon: Icon, label, value, sub, color }) => (
-            <div key={label} className="dashboard-stat-card">
-              <div className="dashboard-stat-icon" style={{ color }}><Icon size={22} /></div>
-              <div className="dashboard-stat-value" style={{ color }}>{value}</div>
-              <div className="dashboard-stat-label">{label}</div>
-              <div className="dashboard-stat-sub">{sub}</div>
-            </div>
-          ))}
         </div>
       </div>
 
