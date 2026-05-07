@@ -918,26 +918,32 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   z-index: 1;
   padding: 8px 10px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%);
 }
 .dashboard-action-emoji {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
-  flex-shrink: 0;
+  margin-bottom: 3px;
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
 }
 .dashboard-action-label {
   font-family: var(--font-title);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: white;
   line-height: 1.2;
   letter-spacing: 0.02em;
 }
 .dashboard-action-sub {
-  display: none;
+  font-size: 9px;
+  color: rgba(255,255,255,0.75);
+  margin-top: 1px;
+  line-height: 1.2;
 }
 
 /* Upcoming */
