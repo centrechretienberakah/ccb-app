@@ -885,7 +885,7 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 }
 .dashboard-action-card {
   position: relative;
-  height: 140px;
+  height: 70px;
   border-radius: var(--radius-lg);
   overflow: hidden;
   text-decoration: none;
@@ -896,8 +896,8 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   box-shadow: var(--shadow-sm);
 }
 .dashboard-action-card:hover {
-  transform: translateY(-3px) scale(1.01);
-  box-shadow: 0 8px 28px var(--card-glow, rgba(0,0,0,0.2));
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 6px 20px var(--card-glow, rgba(0,0,0,0.2));
 }
 .dashboard-action-bg {
   position: absolute;
@@ -907,37 +907,37 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 .dashboard-action-card:hover .dashboard-action-bg { opacity: 0.88; }
 .dashboard-action-orb {
   position: absolute;
-  width: 100px; height: 100px;
+  width: 60px; height: 60px;
   border-radius: 50%;
-  top: -20px; right: -20px;
+  top: -10px; right: -10px;
   opacity: 0.5;
-  filter: blur(30px);
+  filter: blur(18px);
 }
 .dashboard-action-content {
   position: relative;
   z-index: 1;
-  padding: 12px;
-  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
 }
 .dashboard-action-emoji {
-  font-size: 26px;
+  font-size: 18px;
   line-height: 1;
-  display: block;
-  margin-bottom: 5px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
 }
 .dashboard-action-label {
   font-family: var(--font-title);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: white;
   line-height: 1.2;
   letter-spacing: 0.02em;
 }
 .dashboard-action-sub {
-  font-size: 10px;
-  color: rgba(255,255,255,0.75);
-  margin-top: 2px;
+  display: none;
 }
 
 /* Upcoming */
