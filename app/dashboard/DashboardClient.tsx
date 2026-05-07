@@ -61,7 +61,10 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
             ) : (
               <div className="dashboard-avatar-initials">{initials}</div>
             )}
-            <span className="dashboard-avatar-badge">✝</span>
+            <span className="dashboard-avatar-badge">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-officiel.png" alt="" className="dashboard-badge-logo" />
+            </span>
           </div>
           <div className="dashboard-hero-text">
             <p className="dashboard-greeting">{greeting},</p>

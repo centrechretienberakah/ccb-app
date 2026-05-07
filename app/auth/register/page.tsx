@@ -96,7 +96,10 @@ export default function RegisterPage() {
         <div className="auth-panel-orb auth-panel-orb-2" />
 
         <div className="auth-panel-logo">
-          <div className="auth-panel-logo-mark">✝</div>
+          <div className="auth-panel-logo-mark">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
+          </div>
           <div>
             <div className="auth-panel-logo-name">CCB</div>
             <div className="auth-panel-logo-sub">Centre Chretien Berakah</div>
@@ -136,7 +139,10 @@ export default function RegisterPage() {
 
           {/* Header */}
           <div className="auth-form-header">
-            <div className="auth-form-logo-mobile">✝</div>
+            <div className="auth-form-logo-mobile">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
+            </div>
             {step < 3 ? (
               <>
                 <h1 className="auth-form-title">Rejoignez CCB</h1>

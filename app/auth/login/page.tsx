@@ -92,7 +92,10 @@ export default function LoginPage() {
         <div className="auth-panel-orb auth-panel-orb-1" />
         <div className="auth-panel-orb auth-panel-orb-2" />
         <div className="auth-panel-logo">
-          <div className="auth-panel-logo-mark">&#10013;</div>
+          <div className="auth-panel-logo-mark">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
+          </div>
           <div>
             <div className="auth-panel-logo-name">CCB</div>
             <div className="auth-panel-logo-sub">Centre Chretien Berakah</div>

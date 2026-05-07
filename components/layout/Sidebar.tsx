@@ -37,7 +37,8 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-mark">
-          <span className="sidebar-logo-cross">✝</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-officiel.png" alt="CCB" className="sidebar-logo-img" />
         </div>
         <div>
           <div className="sidebar-logo-title">CCB</div>
