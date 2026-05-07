@@ -22,51 +22,31 @@ export default function ComingSoon({
   notifyLabel = "Me notifier au lancement",
 }: Props) {
   return (
-    <div style={{ background: "var(--background)", minHeight: "calc(100dvh - 62px)", paddingBottom: 48 }}>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)", minHeight: "calc(100dvh - 62px)", paddingBottom: 48 }}>
 
-      {/* Hero */}
-      <div style={{
-        background: "var(--header-gradient)",
-        padding: "40px 24px 60px",
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          position: "absolute", top: "-60px", right: "-60px",
-          width: 280, height: 280, borderRadius: "50%",
-          background: `radial-gradient(circle, ${accentGlow} 0%, transparent 65%)`,
-          pointerEvents: "none",
-        }} />
-        <div style={{ maxWidth: 680, margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <div style={{ fontSize: 52, marginBottom: 16, lineHeight: 1 }}>{emoji}</div>
-          <div style={{
-            display: "inline-block",
-            background: "rgba(212,175,55,0.2)",
-            border: "1px solid rgba(212,175,55,0.4)",
-            color: "var(--gold-light)",
-            padding: "4px 14px",
+      {/* Sub-nav tabs */}
+      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", overflowX: "auto" }}>
+          <span style={{
+            padding: "13px 16px",
+            borderBottom: `2px solid ${accentColor}`,
+            color: accentColor,
+            fontWeight: 700, fontSize: 13,
+            whiteSpace: "nowrap", fontFamily: "var(--font-body)",
+          }}>{emoji} {title}</span>
+          <span style={{
+            marginLeft: "auto", padding: "4px 12px", flexShrink: 0,
+            background: "rgba(212,175,55,0.12)",
+            border: "1px solid rgba(212,175,55,0.3)",
             borderRadius: "var(--radius-full)",
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            marginBottom: 12,
-          }}>
-            Bientot disponible
-          </div>
-          <h1 style={{
-            fontFamily: "var(--font-title)",
-            fontSize: "clamp(1.6rem, 4vw, 2.4rem)",
-            fontWeight: 700,
-            color: "white",
-            margin: "0 0 8px",
-            letterSpacing: "0.02em",
-          }}>{title}</h1>
-          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.7)", margin: 0 }}>{subtitle}</p>
+            color: "var(--gold)", fontSize: 11, fontWeight: 700,
+            letterSpacing: "0.08em", textTransform: "uppercase" as const,
+            margin: "auto 16px auto auto",
+          }}>Bientôt</span>
         </div>
       </div>
 
-      <div style={{ maxWidth: 680, margin: "-24px auto 0", padding: "0 20px" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px 48px" }}>
 
         {/* Description card */}
         <div style={{
