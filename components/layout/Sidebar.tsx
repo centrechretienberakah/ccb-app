@@ -5,19 +5,20 @@ import { usePathname } from "next/navigation";
 import {
   IconHome, IconBook, IconHeart, IconUsers, IconSun,
   IconPlay, IconGraduationCap, IconRadio,
-  IconGift, IconCrown, IconUser, IconSettings, IconLogOut, IconBell,
+  IconGift, IconCrown, IconUser, IconSettings, IconLogOut, IconBell, IconBookmark,
 } from "@/components/icons";
 
 const NAV_ITEMS = [
-  { href: "/dashboard",     label: "Accueil",        Icon: IconHome },
-  { href: "/bible",         label: "Bible",          Icon: IconBook },
-  { href: "/prayer",        label: "Prière",         Icon: IconHeart },
-  { href: "/community",     label: "Communauté",     Icon: IconUsers },
-  { href: "/notifications", label: "Notifications",  Icon: IconBell },
-  { href: "/devotion",      label: "Dévotion",       Icon: IconSun },
-  { href: "/jesus-daily",   label: "Jesus Daily",    Icon: IconPlay },
-  { href: "/classes",       label: "Salle de classe",Icon: IconGraduationCap },
-  { href: "/live",          label: "Live",           Icon: IconRadio },
+  { href: "/dashboard",      label: "Accueil",         Icon: IconHome },
+  { href: "/bible",          label: "Bible",           Icon: IconBook },
+  { href: "/plan-biblique",  label: "Plan de Lecture", Icon: IconBookmark },
+  { href: "/prayer",         label: "Prière",          Icon: IconHeart },
+  { href: "/community",      label: "Communauté",      Icon: IconUsers },
+  { href: "/notifications",  label: "Notifications",   Icon: IconBell },
+  { href: "/devotion",       label: "Dévotion",        Icon: IconSun },
+  { href: "/jesus-daily",    label: "Jesus Daily",     Icon: IconPlay },
+  { href: "/classes",        label: "Salle de classe", Icon: IconGraduationCap },
+  { href: "/live",           label: "Live",            Icon: IconRadio },
 ];
 
 const SECONDARY_ITEMS = [

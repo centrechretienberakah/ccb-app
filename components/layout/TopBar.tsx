@@ -8,8 +8,9 @@ import { IconSearch, IconBell, IconMoon, IconSun, IconMenu, IconUser } from "@/c
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":     "Tableau de bord",
-  "/bible":         "Bible",
-  "/prayer":        "Priere",
+  "/bible":          "Bible",
+  "/plan-biblique":  "Plan de Lecture",
+  "/prayer":         "Priere",
   "/community":     "Communaute",
   "/devotion":      "Devotion du jour",
   "/jesus-daily":   "Jesus Daily",
