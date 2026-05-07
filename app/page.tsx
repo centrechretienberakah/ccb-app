@@ -37,8 +37,8 @@ const navLinks = [
 const features = [
   {
     symbol: "✦",
-    title: "Plans de Lecture",
-    description: "Parcourez la Bible avec des plans structurés adaptés à votre niveau spirituel.",
+    title: "Bible",
+    description: "Lisez la Bible en plusieurs versions, sauvegardez vos versets et annotez vos lectures.",
     href: "/bible",
   },
   {
