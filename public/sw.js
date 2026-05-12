@@ -1,45 +1,72 @@
-const CACHE_NAME = "ccb-v1";
+// ─── VERSION — Incrémenter à chaque déploiement important ───────────────────
+const CACHE_VERSION = "v3";
+const CACHE_NAME = "ccb-" + CACHE_VERSION;
+
+// Assets critiques mis en cache à l'installation
 const STATIC_ASSETS = [
-  "/",
-  "/dashboard",
-  "/bible",
-  "/devotion",
-  "/prayer",
   "/manifest.json",
   "/logo-officiel.png",
   "/icon-192x192.png",
   "/icon-512x512.png",
 ];
 
-// Installation — mise en cache des ressources statiques
+// ── INSTALLATION ─────────────────────────────────────────────────────────────
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS).catch(() => {
+        // Ne pas bloquer l'install si une icône manque
+        console.warn("CCB SW: certains assets n'ont pas pu être mis en cache");
+      });
+    })
   );
+  // Prend le contrôle immédiatement sans attendre que les onglets se ferment
   self.skipWaiting();
 });
 
-// Activation — suppression des anciens caches
+// ── ACTIVATION ───────────────────────────────────────────────────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+      Promise.all(
+        keys
+          .filter((k) => k.startsWith("ccb-") && k !== CACHE_NAME)
+          .map((k) => {
+            console.log("CCB SW: suppression ancien cache", k);
+            return caches.delete(k);
+          })
+      )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch — stratégie Network First avec fallback cache
+// ── FETCH — Network First, fallback Cache ────────────────────────────────────
 self.addEventListener("fetch", (event) => {
-  // Ignorer les requêtes non-GET et Supabase API
+  // Ignorer non-GET, Supabase API, extensions
   if (event.request.method !== "GET") return;
   if (event.request.url.includes("supabase.co")) return;
   if (event.request.url.includes("chrome-extension")) return;
+  if (event.request.url.includes("_next/static")) {
+    // Assets Next.js buildés = cache-first (ils ont un hash dans leur nom)
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
 
+  // Pages HTML et autres = Network First (toujours la dernière version)
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Mettre en cache les nouvelles ressources
         if (response && response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
@@ -47,10 +74,8 @@ self.addEventListener("fetch", (event) => {
         return response;
       })
       .catch(() => {
-        // Fallback sur le cache si hors-ligne
         return caches.match(event.request).then((cached) => {
           if (cached) return cached;
-          // Page offline de fallback
           if (event.request.destination === "document") {
             return caches.match("/dashboard");
           }
@@ -59,7 +84,14 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// Notifications push (pour plus tard)
+// ── MESSAGE — permet à la page de forcer la mise à jour ─────────────────────
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
+// ── NOTIFICATIONS PUSH ────────────────────────────────────────────────────────
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   const data = event.data.json();
