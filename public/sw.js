@@ -1,60 +1,64 @@
-// ─── VERSION — Incrémenter à chaque déploiement important ───────────────────
-const CACHE_VERSION = "v3";
-const CACHE_NAME = "ccb-" + CACHE_VERSION;
+// ─── CCB Service Worker — Version v4 ────────────────────────────────────────
+// RÈGLE FONDAMENTALE : les pages HTML ne sont JAMAIS mises en cache par ce SW.
+// Seuls les assets immuables (_next/static/ avec hash de contenu) sont cachés.
+// Cela garantit que chaque déploiement Vercel est immédiatement visible sur
+// tous les appareils, quelle que soit la qualité de la connexion.
 
-// Assets critiques mis en cache à l'installation
-const STATIC_ASSETS = [
-  "/manifest.json",
-  "/logo-officiel.png",
-  "/icon-192x192.png",
-  "/icon-512x512.png",
-];
+const CACHE_VERSION = "v4";
+const CACHE_NAME = "ccb-" + CACHE_VERSION;
 
 // ── INSTALLATION ─────────────────────────────────────────────────────────────
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
-        // Ne pas bloquer l'install si une icône manque
-        console.warn("CCB SW: certains assets n'ont pas pu être mis en cache");
-      });
-    })
-  );
-  // Prend le contrôle immédiatement sans attendre que les onglets se ferment
+  // Prend le contrôle immédiatement, sans attendre la fermeture des onglets
   self.skipWaiting();
 });
 
-// ── ACTIVATION ───────────────────────────────────────────────────────────────
+// ── ACTIVATION — supprime TOUS les anciens caches ───────────────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k.startsWith("ccb-") && k !== CACHE_NAME)
-          .map((k) => {
-            console.log("CCB SW: suppression ancien cache", k);
-            return caches.delete(k);
+    caches.keys()
+      .then((keys) =>
+        Promise.all(
+          keys.map((k) => {
+            if (k !== CACHE_NAME) {
+              console.log("CCB SW: suppression cache obsolète →", k);
+              return caches.delete(k);
+            }
           })
+        )
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim())
   );
 });
 
-// ── FETCH — Network First, fallback Cache ────────────────────────────────────
+// ── FETCH ────────────────────────────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
-  // Ignorer non-GET, Supabase API, extensions
-  if (event.request.method !== "GET") return;
-  if (event.request.url.includes("supabase.co")) return;
-  if (event.request.url.includes("chrome-extension")) return;
-  if (event.request.url.includes("_next/static")) {
-    // Assets Next.js buildés = cache-first (ils ont un hash dans leur nom)
+  const url = event.request.url;
+  const method = event.request.method;
+
+  // Ignorer tout ce qui n'est pas GET
+  if (method !== "GET") return;
+
+  // ❶ Pages HTML → JAMAIS de cache. Toujours depuis le réseau.
+  //    Si hors-ligne, laisse le navigateur gérer (erreur réseau normale).
+  if (event.request.destination === "document") return;
+
+  // ❷ APIs Supabase, API interne → réseau uniquement, pas de cache
+  if (url.includes("supabase.co")) return;
+  if (url.includes("/api/")) return;
+  if (url.includes("chrome-extension")) return;
+
+  // ❸ Assets Next.js avec hash (_next/static/) → Cache First (immuables)
+  if (url.includes("/_next/static/")) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
         return fetch(event.request).then((response) => {
-          if (response && response.status === 200) {
+          if (response && response.ok) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            caches.open(CACHE_NAME).then((cache) =>
+              cache.put(event.request, clone)
+            );
           }
           return response;
         });
@@ -63,28 +67,38 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Pages HTML et autres = Network First (toujours la dernière version)
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request).then((cached) => {
-          if (cached) return cached;
-          if (event.request.destination === "document") {
-            return caches.match("/dashboard");
+  // ❹ Icônes et images statiques → Cache First avec fallback réseau
+  if (
+    url.includes("/icon-") ||
+    url.includes("/logo-") ||
+    url.includes("/apple-touch-icon") ||
+    url.endsWith(".png") ||
+    url.endsWith(".jpg") ||
+    url.endsWith(".webp") ||
+    url.endsWith(".svg")
+  ) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) =>
+              cache.put(event.request, clone)
+            );
           }
+          return response;
         });
       })
-  );
+    );
+    return;
+  }
+
+  // ❺ Tout le reste → réseau uniquement (fonts Google, manifests, etc.)
+  // Pas de mise en cache pour éviter les problèmes de version
 });
 
-// ── MESSAGE — permet à la page de forcer la mise à jour ─────────────────────
+// ── MESSAGE — force la mise à jour depuis la page ────────────────────────────
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
