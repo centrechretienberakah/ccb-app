@@ -85,7 +85,7 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
   });
 
   return (
-    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)", minHeight: "100vh" }}>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
 
       {toast && (
         <div style={{

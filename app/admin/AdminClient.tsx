@@ -181,7 +181,7 @@ export default function AdminClient({
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--text-primary)" }}>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)" }}>
 
       {/* Toast */}
       {toast && (

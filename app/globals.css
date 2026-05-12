@@ -930,12 +930,25 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 }
 
 /* ── PAGE CONTENT CONTAINER ── */
+/* Sécurité globale : empêche tout overflow horizontal dans le contenu */
+.app-content > * {
+  overflow-x: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .page-container {
   max-width: 860px;
   margin: 0 auto;
   padding: 24px 20px;
+  box-sizing: border-box;
+  width: 100%;
 }
-.page-container-wide { padding: 24px 20px; }
+.page-container-wide {
+  padding: 24px 20px;
+  box-sizing: border-box;
+  width: 100%;
+}
 
 @media (max-width: 639px) {
   .page-container { padding: 16px 14px; }
@@ -943,15 +956,7 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 }
 @media (min-width: 640px) and (max-width: 1023px) {
   .page-container { padding: 20px 18px; }
-}
-
-.page-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 28px 24px;
-}
-.page-container-wide {
-  padding: 28px 24px;
+  .page-container-wide { padding: 20px 18px; }
 }
 
 /* ============================================================
@@ -962,6 +967,7 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   background: var(--background);
   min-height: calc(100dvh - 62px);
   padding-bottom: 32px;
+  overflow-x: hidden;
 }
 
 /* Hero */
@@ -1363,6 +1369,7 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   background: var(--background);
   min-height: calc(100dvh - 62px);
   padding-bottom: 40px;
+  overflow-x: hidden;
 }
 
 /* Tab bar header */

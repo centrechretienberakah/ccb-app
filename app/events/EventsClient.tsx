@@ -420,7 +420,7 @@ export default function EventsClient({ events: initialEvents, userRsvpMap: initi
         </div>
       </div>
 
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 100px" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 32px" }}>
 
       {/* Events list */}
       {filtered.length === 0 ? (

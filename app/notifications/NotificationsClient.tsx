@@ -85,7 +85,7 @@ export default function NotificationsClient({ notifications: initial }: { notifi
         </div>
       </div>
 
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 16px 100px" }}>
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 16px 32px" }}>
 
       {/* Notifications list */}
       {filtered.length === 0 ? (

@@ -194,7 +194,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
         </div>
       </div>
 
-      <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 100px" }}>
+      <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 32px" }}>
 
       {/* ── Section Compte ── */}
       <SectionCard title="Mon compte" icon="👤">

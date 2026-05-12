@@ -180,7 +180,7 @@ export default function EnseignementsClient({ sermons, isPremiumUser, isAdmin }:
   });
 
   return (
-    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)", minHeight: "100vh" }}>
+    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
 
       {/* Hero */}
       <div style={{ background: "linear-gradient(135deg, #1d4ed8, #1e3a8a)", padding: "28px 20px 24px", textAlign: "center" }}>
@@ -213,7 +213,7 @@ export default function EnseignementsClient({ sermons, isPremiumUser, isAdmin }:
         </div>
       </div>
 
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 16px 100px" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 16px 32px" }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 20px" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🎙️</div>

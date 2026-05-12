@@ -140,7 +140,7 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
       </div>
 
       {/* CTA Banner */}
-      <div className="dashboard-section" style={{ paddingBottom: 100 }}>
+      <div className="dashboard-section" style={{ paddingBottom: 32 }}>
         <div className="dashboard-cta-banner">
           <IconZap size={20} />
           <div>

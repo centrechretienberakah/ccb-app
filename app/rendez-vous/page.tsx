@@ -84,7 +84,7 @@ export default function RendezVousPage() {
 
   if (sent) {
     return (
-      <div style={{ background: "var(--page-bg)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "var(--font-body)" }}>
+      <div style={{ background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px", fontFamily: "var(--font-body)" }}>
         <div style={{ textAlign: "center", maxWidth: 400 }}>
           <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(124,58,237,0.15)", border: "2px solid var(--violet-light)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 36 }}>
             🗓️
@@ -111,7 +111,7 @@ export default function RendezVousPage() {
   }
 
   return (
-    <div style={{ background: "var(--page-bg)", minHeight: "100vh", fontFamily: "var(--font-body)", color: "var(--text-primary)" }}>
+    <div style={{ background: "var(--page-bg)", fontFamily: "var(--font-body)", color: "var(--text-primary)" }}>
       <div style={{ background: "linear-gradient(135deg, #7c3aed20, #7c3aed40)", borderBottom: "1px solid var(--border)", padding: "28px 20px 24px", textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>🗓️</div>
         <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 800, color: "var(--text-primary)", fontFamily: "var(--font-title)" }}>
@@ -138,7 +138,7 @@ export default function RendezVousPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 560, margin: "0 auto", padding: "0 16px 100px" }}>
+      <div style={{ maxWidth: 560, margin: "0 auto", padding: "0 16px 32px" }}>
         <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "24px 20px" }}>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
