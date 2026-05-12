@@ -1,22 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Routes that require authentication
 const PROTECTED_ROUTES = [
-  "/dashboard",
-  "/courses",
-  "/bible",
-  "/devotion",
-  "/community",
-  "/prayer",
-  "/profile",
-  "/settings",
+  "/dashboard", "/courses", "/bible", "/devotion",
+  "/community", "/prayer", "/profile", "/settings",
+  "/plan-biblique", "/events", "/notifications",
+  "/enseignements", "/contact", "/rendez-vous",
 ];
-
-// Routes only accessible to admins
-const ADMIN_ROUTES = ["/admin"];
-
-// Routes only accessible to premium members
+const ADMIN_ROUTES   = ["/admin"];
 const PREMIUM_ROUTES = ["/premium"];
 
 export async function middleware(request: NextRequest) {
@@ -27,13 +18,9 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
+        getAll() { return request.cookies.getAll(); },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -43,60 +30,52 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  // Redirect unauthenticated users trying to access protected routes
-  const isProtected = PROTECTED_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  );
+  // Redirige les non-connectés vers login
+  const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));
   if (isProtected && !user) {
-    const redirectUrl = new URL("/auth/login", request.url);
-    redirectUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(redirectUrl);
+    const url = new URL("/auth/login", request.url);
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
   }
 
-  // Redirect already-authenticated users away from auth pages
-  if (
-    user &&
-    (pathname.startsWith("/auth/login") ||
-      pathname.startsWith("/auth/register"))
-  ) {
+  // Redirige les connectés hors des pages auth
+  if (user && (pathname.startsWith("/auth/login") || pathname.startsWith("/auth/register"))) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Admin route protection
-  const isAdminRoute = ADMIN_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  );
-  if (isAdminRoute && user) {
-    const { data: profile } = await supabase
-      .from("profiles")
+  // Protection routes admin → vérifie user_roles (bonne table)
+  const isAdminRoute = ADMIN_ROUTES.some((r) => pathname.startsWith(r));
+  if (isAdminRoute) {
+    if (!user) {
+      const url = new URL("/auth/login", request.url);
+      url.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(url);
+    }
+    const { data: roleRow } = await supabase
+      .from("user_roles")
       .select("role")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
 
-    if (profile?.role !== "admin") {
+    if (roleRow?.role !== "admin" && roleRow?.role !== "leader") {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
-  // Premium route protection
-  const isPremiumRoute = PREMIUM_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  );
+  // Protection routes premium → vérifie user_profiles (bonne table)
+  const isPremiumRoute = PREMIUM_ROUTES.some((r) => pathname.startsWith(r));
   if (isPremiumRoute && user) {
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: prof } = await supabase
+      .from("user_profiles")
       .select("is_premium")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
 
-    if (!profile?.is_premium) {
-      return NextResponse.redirect(new URL("/upgrade", request.url));
+    if (!prof?.is_premium) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
@@ -105,6 +84,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

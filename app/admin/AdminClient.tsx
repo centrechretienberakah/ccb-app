@@ -101,7 +101,10 @@ export default function AdminClient({
 
   const changeRole = async (memberId: string, newRole: string) => {
     const sb = createClient();
-    const { error } = await sb.from("profiles").update({ role: newRole }).eq("id", memberId);
+    const { error } = await sb.from("user_roles").upsert(
+      { user_id: memberId, role: newRole },
+      { onConflict: "user_id" }
+    );
     if (!error) {
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
       showToast("Role mis a jour ✓");
@@ -120,7 +123,7 @@ export default function AdminClient({
 
   const closePrayer = async (prayerId: string) => {
     const sb = createClient();
-    const { error } = await sb.from("prayer_requests").update({ is_answered: true }).eq("id", prayerId);
+    const { error } = await sb.from("prayer_request").update({ is_answered: true }).eq("id", prayerId);
     if (!error) {
       setPrayers(prev => prev.map(p => p.id === prayerId ? { ...p, is_answered: true } : p));
       showToast("Priere marquee repondue ✓");
@@ -134,7 +137,7 @@ export default function AdminClient({
     }
     setSaving(true); setDevMsg(null);
     const sb = createClient();
-    const { data, error } = await sb.from("daily_devotions").insert({
+    const { data, error } = await sb.from("devotions").insert({
       devotion_date: form.devotion_date,
       title: form.title,
       verse_reference: form.verse_reference,
@@ -498,9 +501,4 @@ export default function AdminClient({
               )}
             </div>
           </div>
-        )}
-
-      </div>
-    </div>
-  );
-}
+   
