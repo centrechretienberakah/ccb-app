@@ -23,6 +23,17 @@ const PAGE_TITLES: Record<string, string> = {
   "/events":        "Evenements",
   "/settings":      "Parametres",
   "/admin":         "Administration",
+  "/annonces":      "Annonces",
+  "/galerie":       "Galerie Photos",
+  "/bibliotheque":  "Bibliothèque",
+  "/rendez-vous":   "Rendez-vous Pastoral",
+  "/temoignages":   "Témoignages",
+  "/enseignements": "Enseignements",
+  "/contact":       "Contact",
+  "/nous-suivre":   "Nous Suivre",
+  "/a-propos":      "À Propos",
+  "/dons":          "Faire un Don",
+  "/groupes":       "Groupes de Travail",
 };
 
 export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) {
