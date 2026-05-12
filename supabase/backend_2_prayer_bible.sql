@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS public.events_rsvp (
 
 DO $$
 BEGIN
-  BEGIN ALTER TABLE public.events_rsvp ADD COLUMN status TEXT NOT NULL DEFAULT 'attending'; EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.events_rsvp ADD COLUMN status TEXT NOT NULL DEFAULT 'attending'; EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_events_rsvp_event ON public.events_rsvp(event_id);
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS public.user_saved_verses (
 
 DO $$
 BEGIN
-  BEGIN ALTER TABLE public.user_saved_verses ADD COLUMN note TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_saved_verses ADD COLUMN note TEXT; EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
 END $$;
 
 DO $$ BEGIN CREATE INDEX IF NOT EXISTS idx_saved_verses_user ON public.user_saved_verses(user_id, created_at DESC); EXCEPTION WHEN undefined_column THEN NULL; WHEN duplicate_table THEN NULL; WHEN others THEN NULL; END $$;
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS public.user_bible_notes (
 
 DO $$
 BEGIN
-  BEGIN ALTER TABLE public.user_bible_notes ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_bible_notes ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_bible_notes_user ON public.user_bible_notes(user_id);

@@ -13,24 +13,24 @@
 -- =====================================================================
 DO $$
 BEGIN
-  BEGIN ALTER TABLE public.posts              ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.post_comments      ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.post_likes         ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.post_categories    ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.prayer_request     ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.prayer_intercessions ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.prayer_comments    ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.events             ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.events_rsvp        ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_profiles      ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_roles         ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.spiritual_milestones ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_saved_verses  ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_bible_notes   ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_reading_progress ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_roles         ADD COLUMN granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.courses            ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.notifications      ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.posts              ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.post_comments      ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.post_likes         ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.post_categories    ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.prayer_request     ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.prayer_intercessions ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.prayer_comments    ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.events             ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.events_rsvp        ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles      ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_roles         ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.spiritual_milestones ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_saved_verses  ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_bible_notes   ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_reading_progress ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_roles         ADD COLUMN granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.courses            ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.notifications      ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
 END $$;
 
 -- =====================================================================
@@ -50,14 +50,14 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
 -- Ajouter les colonnes manquantes
 DO $$
 BEGIN
-  BEGIN ALTER TABLE public.user_profiles ADD COLUMN phone           TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_profiles ADD COLUMN city            TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_profiles ADD COLUMN country         TEXT DEFAULT 'Cameroun';           EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_profiles ADD COLUMN bio             TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_profiles ADD COLUMN cell_group      TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_profiles ADD COLUMN spiritual_level TEXT DEFAULT 'Nouveau croyant';   EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_profiles ADD COLUMN is_premium      BOOLEAN NOT NULL DEFAULT false;    EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_profiles ADD COLUMN updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW();EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN phone           TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN city            TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN country         TEXT DEFAULT 'Cameroun';           EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN bio             TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN cell_group      TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN spiritual_level TEXT DEFAULT 'Nouveau croyant';   EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN is_premium      BOOLEAN NOT NULL DEFAULT false;    EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW();EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON public.user_profiles(user_id);
@@ -108,8 +108,8 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
 
 DO $$
 BEGIN
-  BEGIN ALTER TABLE public.user_roles ADD COLUMN granted_by UUID REFERENCES auth.users(id); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.user_roles ADD COLUMN granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_roles ADD COLUMN granted_by UUID REFERENCES auth.users(id); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.user_roles ADD COLUMN granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_user_roles_user ON public.user_roles(user_id);
@@ -162,10 +162,10 @@ CREATE TABLE IF NOT EXISTS public.post_categories (
 DO $$
 BEGIN
   BEGIN ALTER TABLE public.post_categories ALTER COLUMN name DROP NOT NULL; EXCEPTION WHEN undefined_column THEN NULL; WHEN others THEN NULL; END;
-  BEGIN ALTER TABLE public.post_categories ADD COLUMN slug  TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.post_categories ADD COLUMN label TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.post_categories ADD COLUMN emoji TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.post_categories ADD COLUMN color TEXT DEFAULT 'var(--violet)'; EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.post_categories ADD COLUMN slug  TEXT; EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.post_categories ADD COLUMN label TEXT; EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.post_categories ADD COLUMN emoji TEXT; EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.post_categories ADD COLUMN color TEXT DEFAULT 'var(--violet)'; EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
   DELETE FROM public.post_categories WHERE slug IS NULL;
   BEGIN
     ALTER TABLE public.post_categories ADD CONSTRAINT post_categories_slug_key UNIQUE (slug);
@@ -201,13 +201,13 @@ CREATE TABLE IF NOT EXISTS public.posts (
 
 DO $$
 BEGIN
-  BEGIN ALTER TABLE public.posts ADD COLUMN category_id   UUID REFERENCES public.post_categories(id); EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.posts ADD COLUMN image_url     TEXT;                                        EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.posts ADD COLUMN is_pinned     BOOLEAN NOT NULL DEFAULT false;              EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.posts ADD COLUMN is_approved   BOOLEAN NOT NULL DEFAULT true;               EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.posts ADD COLUMN like_count    INTEGER NOT NULL DEFAULT 0;                  EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.posts ADD COLUMN comment_count INTEGER NOT NULL DEFAULT 0;                  EXCEPTION WHEN duplicate_column THEN NULL; END;
-  BEGIN ALTER TABLE public.posts ADD COLUMN updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW();          EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN category_id   UUID REFERENCES public.post_categories(id); EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN image_url     TEXT;                                        EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN is_pinned     BOOLEAN NOT NULL DEFAULT false;              EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN is_approved   BOOLEAN NOT NULL DEFAULT true;               EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN like_count    INTEGER NOT NULL DEFAULT 0;                  EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN comment_count INTEGER NOT NULL DEFAULT 0;                  EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW();          EXCEPTION WHEN duplicate_column THEN NULL; WHEN undefined_table THEN NULL; WHEN others THEN NULL; END;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_posts_user     ON public.posts(user_id);
