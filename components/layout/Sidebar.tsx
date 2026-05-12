@@ -150,4 +150,25 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
       {/* Footer */}
       <div className="sidebar-footer">
         {isAdmin && (
-          <Link href="/admin" className="sidebar-footer-lin
+          <Link href="/admin" className="sidebar-footer-link" data-label="Administration" onClick={onLinkClick}
+            style={{ color: "var(--gold)", fontWeight: 700 }}>
+            <span style={{ fontSize: 16, width: 16, textAlign: "center" }}>⚙️</span>
+            <span>Administration</span>
+          </Link>
+        )}
+        <Link href="/profile" className="sidebar-footer-link" data-label="Profil" onClick={onLinkClick}>
+          <IconUser size={16} />
+          <span>Mon profil</span>
+        </Link>
+        <Link href="/settings" className="sidebar-footer-link" data-label="Paramètres" onClick={onLinkClick}>
+          <IconSettings size={16} />
+          <span>Paramètres</span>
+        </Link>
+        <button className="sidebar-footer-link sidebar-footer-btn">
+          <IconLogOut size={16} />
+          <span>Déconnexion</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
