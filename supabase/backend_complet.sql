@@ -162,6 +162,18 @@ CREATE TABLE IF NOT EXISTS public.posts (
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Migration : ajouter colonnes manquantes si table posts existait avec ancien schema
+DO $$
+BEGIN
+  BEGIN ALTER TABLE public.posts ADD COLUMN category_id   UUID REFERENCES public.post_categories(id); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN image_url     TEXT;                                        EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN is_pinned     BOOLEAN NOT NULL DEFAULT false;              EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN is_approved   BOOLEAN NOT NULL DEFAULT true;               EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN like_count    INTEGER NOT NULL DEFAULT 0;                  EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN comment_count INTEGER NOT NULL DEFAULT 0;                  EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.posts ADD COLUMN updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW();          EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_posts_user     ON public.posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_posts_created  ON public.posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_category ON public.posts(category_id);
