@@ -30,12 +30,17 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON public.user_profiles(use
 
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "user_profiles_select_all" ON public.user_profiles;
 CREATE POLICY "user_profiles_select_all"  ON public.user_profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "user_profiles_insert_own" ON public.user_profiles;
 CREATE POLICY "user_profiles_insert_own"  ON public.user_profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "user_profiles_update_own" ON public.user_profiles;
 CREATE POLICY "user_profiles_update_own"  ON public.user_profiles FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "user_profiles_delete_own" ON public.user_profiles;
 CREATE POLICY "user_profiles_delete_own"  ON public.user_profiles FOR DELETE USING (auth.uid() = user_id);
 
 -- Trigger updated_at
+DROP TRIGGER IF EXISTS user_profiles_updated_at ON public.user_profiles;
 CREATE TRIGGER user_profiles_updated_at
   BEFORE UPDATE ON public.user_profiles
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
@@ -78,7 +83,9 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_role  ON public.user_roles(role);
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "user_roles_select_all" ON public.user_roles;
 CREATE POLICY "user_roles_select_all"    ON public.user_roles FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "user_roles_admin_manage" ON public.user_roles;
 CREATE POLICY "user_roles_admin_manage"  ON public.user_roles FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );
@@ -99,9 +106,13 @@ CREATE INDEX IF NOT EXISTS idx_milestones_user ON public.spiritual_milestones(us
 
 ALTER TABLE public.spiritual_milestones ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "milestones_select_own" ON public.spiritual_milestones;
 CREATE POLICY "milestones_select_own"  ON public.spiritual_milestones FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "milestones_insert_own" ON public.spiritual_milestones;
 CREATE POLICY "milestones_insert_own"  ON public.spiritual_milestones FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "milestones_delete_own" ON public.spiritual_milestones;
 CREATE POLICY "milestones_delete_own"  ON public.spiritual_milestones FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "milestones_select_all" ON public.spiritual_milestones;
 CREATE POLICY "milestones_select_all"  ON public.spiritual_milestones FOR SELECT USING (true);
 
 -- =====================================================================
@@ -128,6 +139,7 @@ INSERT INTO public.post_categories (slug, label, emoji) VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 ALTER TABLE public.post_categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "post_categories_public" ON public.post_categories;
 CREATE POLICY "post_categories_public" ON public.post_categories FOR SELECT USING (true);
 
 CREATE TABLE IF NOT EXISTS public.posts (
@@ -150,14 +162,19 @@ CREATE INDEX IF NOT EXISTS idx_posts_category  ON public.posts(category_id);
 
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "posts_select_approved" ON public.posts;
 CREATE POLICY "posts_select_approved" ON public.posts FOR SELECT USING (is_approved = true OR auth.uid() = user_id);
+DROP POLICY IF EXISTS "posts_insert_auth" ON public.posts;
 CREATE POLICY "posts_insert_auth"     ON public.posts FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "posts_update_own" ON public.posts;
 CREATE POLICY "posts_update_own"      ON public.posts FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "posts_delete_own" ON public.posts;
 CREATE POLICY "posts_delete_own"      ON public.posts FOR DELETE USING (
   auth.uid() = user_id OR
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','moderator'))
 );
 
+DROP TRIGGER IF EXISTS posts_updated_at ON public.posts;
 CREATE TRIGGER posts_updated_at
   BEFORE UPDATE ON public.posts
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
@@ -175,8 +192,11 @@ CREATE INDEX IF NOT EXISTS idx_post_comments_user ON public.post_comments(user_i
 
 ALTER TABLE public.post_comments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "post_comments_select" ON public.post_comments;
 CREATE POLICY "post_comments_select"  ON public.post_comments FOR SELECT USING (true);
+DROP POLICY IF EXISTS "post_comments_insert" ON public.post_comments;
 CREATE POLICY "post_comments_insert"  ON public.post_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "post_comments_delete" ON public.post_comments;
 CREATE POLICY "post_comments_delete"  ON public.post_comments FOR DELETE USING (
   auth.uid() = user_id OR
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','moderator'))
@@ -195,8 +215,11 @@ CREATE INDEX IF NOT EXISTS idx_post_likes_user ON public.post_likes(user_id);
 
 ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "post_likes_select" ON public.post_likes;
 CREATE POLICY "post_likes_select" ON public.post_likes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "post_likes_insert" ON public.post_likes;
 CREATE POLICY "post_likes_insert" ON public.post_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "post_likes_delete" ON public.post_likes;
 CREATE POLICY "post_likes_delete" ON public.post_likes FOR DELETE USING (auth.uid() = user_id);
 
 -- Trigger: sync like_count sur posts
@@ -212,6 +235,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS post_likes_sync_count ON public.post_likes;
 CREATE TRIGGER post_likes_sync_count
   AFTER INSERT OR DELETE ON public.post_likes
   FOR EACH ROW EXECUTE FUNCTION public.sync_post_like_count();
@@ -229,6 +253,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS post_comments_sync_count ON public.post_comments;
 CREATE TRIGGER post_comments_sync_count
   AFTER INSERT OR DELETE ON public.post_comments
   FOR EACH ROW EXECUTE FUNCTION public.sync_post_comment_count();
@@ -244,14 +269,17 @@ CREATE TABLE IF NOT EXISTS public.poll_votes (
 );
 
 ALTER TABLE public.poll_votes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "poll_votes_select" ON public.poll_votes;
 CREATE POLICY "poll_votes_select" ON public.poll_votes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "poll_votes_insert" ON public.poll_votes;
 CREATE POLICY "poll_votes_insert" ON public.poll_votes FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "poll_votes_delete" ON public.poll_votes;
 CREATE POLICY "poll_votes_delete" ON public.poll_votes FOR DELETE USING (auth.uid() = user_id);
 
 -- Realtime pour posts
-ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.post_comments;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.post_likes;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.posts; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.post_comments; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.post_likes; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- =====================================================================
 -- 5. PRIÈRE — INTERCESSIONS & COMMENTAIRES
@@ -270,8 +298,11 @@ CREATE INDEX IF NOT EXISTS idx_intercessions_user   ON public.prayer_intercessio
 
 ALTER TABLE public.prayer_intercessions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "intercessions_select" ON public.prayer_intercessions;
 CREATE POLICY "intercessions_select" ON public.prayer_intercessions FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "intercessions_insert" ON public.prayer_intercessions;
 CREATE POLICY "intercessions_insert" ON public.prayer_intercessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "intercessions_delete" ON public.prayer_intercessions;
 CREATE POLICY "intercessions_delete" ON public.prayer_intercessions FOR DELETE USING (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.prayer_comments (
@@ -286,8 +317,11 @@ CREATE INDEX IF NOT EXISTS idx_prayer_comments_prayer ON public.prayer_comments(
 
 ALTER TABLE public.prayer_comments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "prayer_comments_select" ON public.prayer_comments;
 CREATE POLICY "prayer_comments_select" ON public.prayer_comments FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "prayer_comments_insert" ON public.prayer_comments;
 CREATE POLICY "prayer_comments_insert" ON public.prayer_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "prayer_comments_delete" ON public.prayer_comments;
 CREATE POLICY "prayer_comments_delete" ON public.prayer_comments FOR DELETE USING (auth.uid() = user_id);
 
 -- =====================================================================
@@ -308,9 +342,13 @@ CREATE INDEX IF NOT EXISTS idx_event_rsvp_user  ON public.event_rsvp(user_id);
 
 ALTER TABLE public.event_rsvp ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "event_rsvp_select" ON public.event_rsvp;
 CREATE POLICY "event_rsvp_select"     ON public.event_rsvp FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "event_rsvp_insert" ON public.event_rsvp;
 CREATE POLICY "event_rsvp_insert"     ON public.event_rsvp FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "event_rsvp_update_own" ON public.event_rsvp;
 CREATE POLICY "event_rsvp_update_own" ON public.event_rsvp FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "event_rsvp_delete_own" ON public.event_rsvp;
 CREATE POLICY "event_rsvp_delete_own" ON public.event_rsvp FOR DELETE USING (auth.uid() = user_id);
 
 -- =====================================================================
@@ -333,6 +371,7 @@ CREATE INDEX IF NOT EXISTS idx_saved_verses_user ON public.user_saved_verses(use
 
 ALTER TABLE public.user_saved_verses ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "saved_verses_own" ON public.user_saved_verses;
 CREATE POLICY "saved_verses_own" ON public.user_saved_verses FOR ALL USING (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.user_bible_notes (
@@ -349,8 +388,10 @@ CREATE TABLE IF NOT EXISTS public.user_bible_notes (
 CREATE INDEX IF NOT EXISTS idx_bible_notes_user ON public.user_bible_notes(user_id);
 
 ALTER TABLE public.user_bible_notes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "bible_notes_own" ON public.user_bible_notes;
 CREATE POLICY "bible_notes_own" ON public.user_bible_notes FOR ALL USING (auth.uid() = user_id);
 
+DROP TRIGGER IF EXISTS bible_notes_updated_at ON public.user_bible_notes;
 CREATE TRIGGER bible_notes_updated_at
   BEFORE UPDATE ON public.user_bible_notes
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
@@ -367,6 +408,7 @@ CREATE TABLE IF NOT EXISTS public.user_reading_progress (
 CREATE INDEX IF NOT EXISTS idx_reading_progress_user ON public.user_reading_progress(user_id);
 
 ALTER TABLE public.user_reading_progress ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "reading_progress_own" ON public.user_reading_progress;
 CREATE POLICY "reading_progress_own" ON public.user_reading_progress FOR ALL USING (auth.uid() = user_id);
 
 -- =====================================================================
@@ -387,7 +429,9 @@ CREATE TABLE IF NOT EXISTS public.photo_albums (
 CREATE INDEX IF NOT EXISTS idx_albums_created ON public.photo_albums(created_at DESC);
 
 ALTER TABLE public.photo_albums ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "albums_public_read" ON public.photo_albums;
 CREATE POLICY "albums_public_read"  ON public.photo_albums FOR SELECT USING (is_public = true);
+DROP POLICY IF EXISTS "albums_admin_write" ON public.photo_albums;
 CREATE POLICY "albums_admin_write"  ON public.photo_albums FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','leader'))
 );
@@ -405,7 +449,9 @@ CREATE TABLE IF NOT EXISTS public.photos (
 CREATE INDEX IF NOT EXISTS idx_photos_album ON public.photos(album_id, created_at DESC);
 
 ALTER TABLE public.photos ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "photos_public_read" ON public.photos;
 CREATE POLICY "photos_public_read"  ON public.photos FOR SELECT USING (true);
+DROP POLICY IF EXISTS "photos_admin_write" ON public.photos;
 CREATE POLICY "photos_admin_write"  ON public.photos FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','leader'))
 );
@@ -436,11 +482,14 @@ CREATE INDEX IF NOT EXISTS idx_media_created  ON public.media_library(created_at
 CREATE INDEX IF NOT EXISTS idx_media_published ON public.media_library(is_published);
 
 ALTER TABLE public.media_library ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "media_public_read" ON public.media_library;
 CREATE POLICY "media_public_read"   ON public.media_library FOR SELECT USING (is_published = true);
+DROP POLICY IF EXISTS "media_premium_read" ON public.media_library;
 CREATE POLICY "media_premium_read"  ON public.media_library FOR SELECT USING (
   is_premium = false OR
   EXISTS (SELECT 1 FROM public.user_profiles WHERE user_id = auth.uid() AND is_premium = true)
 );
+DROP POLICY IF EXISTS "media_admin_write" ON public.media_library;
 CREATE POLICY "media_admin_write"   ON public.media_library FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );
@@ -470,8 +519,11 @@ CREATE INDEX IF NOT EXISTS idx_appointments_user   ON public.pastoral_appointmen
 CREATE INDEX IF NOT EXISTS idx_appointments_status ON public.pastoral_appointments(status, preferred_date);
 
 ALTER TABLE public.pastoral_appointments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "appointments_own" ON public.pastoral_appointments;
 CREATE POLICY "appointments_own"       ON public.pastoral_appointments FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "appointments_insert" ON public.pastoral_appointments;
 CREATE POLICY "appointments_insert"    ON public.pastoral_appointments FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "appointments_admin_all" ON public.pastoral_appointments;
 CREATE POLICY "appointments_admin_all" ON public.pastoral_appointments FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','leader'))
 );
@@ -502,7 +554,9 @@ CREATE INDEX IF NOT EXISTS idx_sermons_published ON public.sermons(is_published,
 CREATE INDEX IF NOT EXISTS idx_sermons_series    ON public.sermons(series);
 
 ALTER TABLE public.sermons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "sermons_public_read" ON public.sermons;
 CREATE POLICY "sermons_public_read" ON public.sermons FOR SELECT USING (is_published = true);
+DROP POLICY IF EXISTS "sermons_admin_write" ON public.sermons;
 CREATE POLICY "sermons_admin_write" ON public.sermons FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );
@@ -524,10 +578,13 @@ CREATE TABLE IF NOT EXISTS public.groups (
 );
 
 ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "groups_public_read" ON public.groups;
 CREATE POLICY "groups_public_read" ON public.groups FOR SELECT USING (is_private = false);
+DROP POLICY IF EXISTS "groups_member_read" ON public.groups;
 CREATE POLICY "groups_member_read" ON public.groups FOR SELECT USING (
   EXISTS (SELECT 1 FROM public.group_members WHERE group_id = groups.id AND user_id = auth.uid())
 );
+DROP POLICY IF EXISTS "groups_admin_write" ON public.groups;
 CREATE POLICY "groups_admin_write" ON public.groups FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','leader'))
 );
@@ -545,7 +602,9 @@ CREATE INDEX IF NOT EXISTS idx_group_members_group ON public.group_members(group
 CREATE INDEX IF NOT EXISTS idx_group_members_user  ON public.group_members(user_id);
 
 ALTER TABLE public.group_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "group_members_select" ON public.group_members;
 CREATE POLICY "group_members_select" ON public.group_members FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "group_members_admin" ON public.group_members;
 CREATE POLICY "group_members_admin"  ON public.group_members FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','leader'))
 );
@@ -570,10 +629,12 @@ CREATE TABLE IF NOT EXISTS public.course_lessons (
 CREATE INDEX IF NOT EXISTS idx_lessons_course ON public.course_lessons(course_id, order_index);
 
 ALTER TABLE public.course_lessons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "lessons_public_read" ON public.course_lessons;
 CREATE POLICY "lessons_public_read" ON public.course_lessons FOR SELECT USING (
   is_free = true OR
   EXISTS (SELECT 1 FROM public.user_profiles WHERE user_id = auth.uid() AND is_premium = true)
 );
+DROP POLICY IF EXISTS "lessons_admin_write" ON public.course_lessons;
 CREATE POLICY "lessons_admin_write" ON public.course_lessons FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );
@@ -590,6 +651,7 @@ CREATE TABLE IF NOT EXISTS public.user_course_progress (
 CREATE INDEX IF NOT EXISTS idx_course_progress_user ON public.user_course_progress(user_id, course_id);
 
 ALTER TABLE public.user_course_progress ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "course_progress_own" ON public.user_course_progress;
 CREATE POLICY "course_progress_own" ON public.user_course_progress FOR ALL USING (auth.uid() = user_id);
 
 -- =====================================================================
@@ -613,8 +675,11 @@ CREATE INDEX IF NOT EXISTS idx_contact_created ON public.contact_messages(create
 CREATE INDEX IF NOT EXISTS idx_contact_unread  ON public.contact_messages(is_read) WHERE is_read = false;
 
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "contact_insert_all" ON public.contact_messages;
 CREATE POLICY "contact_insert_all"  ON public.contact_messages FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "contact_own_select" ON public.contact_messages;
 CREATE POLICY "contact_own_select"  ON public.contact_messages FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "contact_admin_all" ON public.contact_messages;
 CREATE POLICY "contact_admin_all"   ON public.contact_messages FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );
@@ -656,6 +721,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_notify_post_like ON public.post_likes;
 CREATE TRIGGER trg_notify_post_like
   AFTER INSERT ON public.post_likes
   FOR EACH ROW EXECUTE FUNCTION public.notify_on_post_like();
@@ -677,6 +743,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_notify_post_comment ON public.post_comments;
 CREATE TRIGGER trg_notify_post_comment
   AFTER INSERT ON public.post_comments
   FOR EACH ROW EXECUTE FUNCTION public.notify_on_post_comment();
@@ -698,6 +765,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_notify_intercession ON public.prayer_intercessions;
 CREATE TRIGGER trg_notify_intercession
   AFTER INSERT ON public.prayer_intercessions
   FOR EACH ROW EXECUTE FUNCTION public.notify_on_intercession();
@@ -726,10 +794,10 @@ CREATE TRIGGER trg_notify_intercession
 -- 17. REALTIME — ACTIVER LES TABLES MANQUANTES
 -- =====================================================================
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.prayer_requests;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.prayer_comments;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.events;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.event_rsvp;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.prayer_requests; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.prayer_comments; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.events; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.event_rsvp; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- =====================================================================
 -- FIN DU FICHIER — BACKEND CCB COMPLET
