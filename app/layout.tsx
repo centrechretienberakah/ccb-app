@@ -3,6 +3,7 @@ import { Cinzel, Montserrat } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 import RegisterSW from "@/components/pwa/RegisterSW";
+import BuildCheck from "@/components/pwa/BuildCheck";
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
@@ -78,6 +79,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
       </head>
       <body className="min-h-full bg-background text-foreground antialiased">
+        <BuildCheck />
         <AppShell>{children}</AppShell>
         <RegisterSW />
       </body>
