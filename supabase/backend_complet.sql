@@ -121,6 +121,8 @@ BEGIN
   BEGIN ALTER TABLE public.post_categories ADD COLUMN label TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
   BEGIN ALTER TABLE public.post_categories ADD COLUMN emoji TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
   BEGIN ALTER TABLE public.post_categories ADD COLUMN color TEXT DEFAULT 'var(--violet)'; EXCEPTION WHEN duplicate_column THEN NULL; END;
+  -- Supprimer la contrainte NOT NULL sur l'ancienne colonne 'name' si elle existe
+  BEGIN ALTER TABLE public.post_categories ALTER COLUMN name DROP NOT NULL; EXCEPTION WHEN undefined_column THEN NULL; WHEN others THEN NULL; END;
   -- Supprimer lignes invalides avant contrainte UNIQUE
   DELETE FROM public.post_categories WHERE slug IS NULL;
   -- Ajouter contrainte UNIQUE sur slug si absente
