@@ -9,14 +9,12 @@ export default async function EnseignementsPage() {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Sermons publiés
   const { data: sermons } = await supabase
     .from("sermons")
     .select("*")
     .eq("is_published", true)
     .order("published_at", { ascending: false });
 
-  // Vérifier premium + admin
   let isPremiumUser = false;
   let isAdmin = false;
 

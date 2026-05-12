@@ -4,7 +4,6 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
 
-  // Headers pour le Service Worker PWA
   async headers() {
     return [
       {

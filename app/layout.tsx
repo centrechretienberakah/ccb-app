@@ -23,8 +23,7 @@ export const metadata: Metadata = {
     default: "Centre Chretien Berakah",
     template: "%s | Centre Chretien Berakah",
   },
-  description:
-    "Former des disciples, Transformer des vies, Manifester la benediction.",
+  description: "Former des disciples, Transformer des vies, Manifester la benediction.",
   keywords: ["eglise", "chretien", "berakah", "disciple", "foi", "Cameroun"],
   authors: [{ name: "Centre Chretien Berakah" }],
   creator: "Centre Chretien Berakah",
