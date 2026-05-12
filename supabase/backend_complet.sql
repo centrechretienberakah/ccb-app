@@ -1,10 +1,13 @@
 -- =====================================================================
--- CCB APP — BACKEND COMPLET v4 (idempotent — safe to run multiple times)
--- À exécuter dans : Supabase Dashboard → SQL Editor → Run and enable RLS
+-- CCB APP — BACKEND COMPLET v5
+-- Adapte aux tables existantes dans Supabase
+-- Idempotent — safe to run multiple times
+-- Run and enable RLS
 -- =====================================================================
 
 -- =====================================================================
--- 1. PROFILS UTILISATEUR ÉTENDUS
+-- 1. PROFILS UTILISATEUR — migration colonnes manquantes
+--    (table user_profiles existe deja)
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.user_profiles (
@@ -12,16 +15,22 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   user_id         UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name       TEXT,
   avatar_url      TEXT,
-  phone           TEXT,
-  city            TEXT,
-  country         TEXT DEFAULT 'Cameroun',
-  bio             TEXT,
-  cell_group      TEXT,
-  spiritual_level TEXT DEFAULT 'Nouveau croyant',
-  is_premium      BOOLEAN NOT NULL DEFAULT false,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Ajouter les colonnes manquantes
+DO $$
+BEGIN
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN phone           TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN city            TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN country         TEXT DEFAULT 'Cameroun';           EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN bio             TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN cell_group      TEXT;                              EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN spiritual_level TEXT DEFAULT 'Nouveau croyant';   EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN is_premium      BOOLEAN NOT NULL DEFAULT false;    EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles ADD COLUMN updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW();EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON public.user_profiles(user_id);
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
@@ -69,6 +78,12 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
   granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+DO $$
+BEGIN
+  BEGIN ALTER TABLE public.user_roles ADD COLUMN granted_by UUID REFERENCES auth.users(id); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_roles ADD COLUMN granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_user_roles_user ON public.user_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles(role);
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
@@ -76,12 +91,13 @@ ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "user_roles_select_all"   ON public.user_roles;
 DROP POLICY IF EXISTS "user_roles_admin_manage" ON public.user_roles;
 CREATE POLICY "user_roles_select_all"   ON public.user_roles FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "user_roles_admin_manage" ON public.user_roles FOR ALL    USING (
+CREATE POLICY "user_roles_admin_manage" ON public.user_roles FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );
 
 -- =====================================================================
 -- 3. JALONS SPIRITUELS
+--    (table spiritual_milestones existe deja)
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.spiritual_milestones (
@@ -103,7 +119,8 @@ CREATE POLICY "milestones_insert_own" ON public.spiritual_milestones FOR INSERT 
 CREATE POLICY "milestones_delete_own" ON public.spiritual_milestones FOR DELETE USING (auth.uid() = user_id);
 
 -- =====================================================================
--- 4. COMMUNAUTE — CATEGORIES, POSTS, COMMENTAIRES, LIKES
+-- 4. COMMUNAUTE — POST CATEGORIES
+--    (table post_categories existe deja)
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.post_categories (
@@ -114,18 +131,14 @@ CREATE TABLE IF NOT EXISTS public.post_categories (
   color TEXT DEFAULT 'var(--violet)'
 );
 
--- Migration : ajouter colonnes manquantes si table avait un ancien schema
 DO $$
 BEGIN
+  BEGIN ALTER TABLE public.post_categories ALTER COLUMN name DROP NOT NULL; EXCEPTION WHEN undefined_column THEN NULL; WHEN others THEN NULL; END;
   BEGIN ALTER TABLE public.post_categories ADD COLUMN slug  TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
   BEGIN ALTER TABLE public.post_categories ADD COLUMN label TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
   BEGIN ALTER TABLE public.post_categories ADD COLUMN emoji TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
   BEGIN ALTER TABLE public.post_categories ADD COLUMN color TEXT DEFAULT 'var(--violet)'; EXCEPTION WHEN duplicate_column THEN NULL; END;
-  -- Supprimer la contrainte NOT NULL sur l'ancienne colonne 'name' si elle existe
-  BEGIN ALTER TABLE public.post_categories ALTER COLUMN name DROP NOT NULL; EXCEPTION WHEN undefined_column THEN NULL; WHEN others THEN NULL; END;
-  -- Supprimer lignes invalides avant contrainte UNIQUE
   DELETE FROM public.post_categories WHERE slug IS NULL;
-  -- Ajouter contrainte UNIQUE sur slug si absente
   BEGIN
     ALTER TABLE public.post_categories ADD CONSTRAINT post_categories_slug_key UNIQUE (slug);
   EXCEPTION WHEN duplicate_table THEN NULL; WHEN others THEN NULL;
@@ -136,33 +149,28 @@ ALTER TABLE public.post_categories ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "post_categories_public" ON public.post_categories;
 CREATE POLICY "post_categories_public" ON public.post_categories FOR SELECT USING (true);
 
--- Seed categories (idempotent)
 INSERT INTO public.post_categories (slug, label, emoji) VALUES
-  ('general',       'General',         '💬'),
-  ('testimony',     'Temoignage',       '✨'),
-  ('prayer',        'Priere',           '🙏'),
-  ('encouragement', 'Encouragement',    '💪'),
-  ('question',      'Question',         '❓'),
-  ('praise',        'Louange',          '🎉'),
-  ('announcement',  'Annonce',          '📢')
+  ('general',       'General',      '💬'),
+  ('testimony',     'Temoignage',   '✨'),
+  ('prayer',        'Priere',       '🙏'),
+  ('encouragement', 'Encouragement','💪'),
+  ('question',      'Question',     '❓'),
+  ('praise',        'Louange',      '🎉'),
+  ('announcement',  'Annonce',      '📢')
 ON CONFLICT DO NOTHING;
 
--- ───────────────────────────────────────────────────────────────────
+-- =====================================================================
+-- 4b. POSTS — migration colonnes manquantes
+--     (table posts existe deja)
+-- =====================================================================
+
 CREATE TABLE IF NOT EXISTS public.posts (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  content       TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 2000),
-  category_id   UUID REFERENCES public.post_categories(id),
-  image_url     TEXT,
-  is_pinned     BOOLEAN NOT NULL DEFAULT false,
-  is_approved   BOOLEAN NOT NULL DEFAULT true,
-  like_count    INTEGER NOT NULL DEFAULT 0,
-  comment_count INTEGER NOT NULL DEFAULT 0,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  content    TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Migration : ajouter colonnes manquantes si table posts existait avec ancien schema
 DO $$
 BEGIN
   BEGIN ALTER TABLE public.posts ADD COLUMN category_id   UUID REFERENCES public.post_categories(id); EXCEPTION WHEN duplicate_column THEN NULL; END;
@@ -196,12 +204,16 @@ CREATE TRIGGER posts_updated_at
   BEFORE UPDATE ON public.posts
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
--- ───────────────────────────────────────────────────────────────────
+-- =====================================================================
+-- 4c. POST COMMENTS & LIKES
+--     (tables existent deja)
+-- =====================================================================
+
 CREATE TABLE IF NOT EXISTS public.post_comments (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   post_id    UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  content    TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 500),
+  content    TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -219,7 +231,6 @@ CREATE POLICY "post_comments_delete" ON public.post_comments FOR DELETE USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','moderator'))
 );
 
--- ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.post_likes (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   post_id    UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
@@ -269,35 +280,19 @@ CREATE TRIGGER post_comments_sync_count
   AFTER INSERT OR DELETE ON public.post_comments
   FOR EACH ROW EXECUTE FUNCTION public.sync_post_comment_count();
 
--- ───────────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.poll_votes (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id    UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
-  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  option_idx INTEGER NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (post_id, user_id)
-);
-
-ALTER TABLE public.poll_votes ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "poll_votes_select" ON public.poll_votes;
-DROP POLICY IF EXISTS "poll_votes_insert" ON public.poll_votes;
-DROP POLICY IF EXISTS "poll_votes_delete" ON public.poll_votes;
-CREATE POLICY "poll_votes_select" ON public.poll_votes FOR SELECT USING (true);
-CREATE POLICY "poll_votes_insert" ON public.poll_votes FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "poll_votes_delete" ON public.poll_votes FOR DELETE USING (auth.uid() = user_id);
-
 DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;         EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
 DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.post_comments; EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
 DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.post_likes;    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
 
 -- =====================================================================
 -- 5. PRIERE — INTERCESSIONS & COMMENTAIRES
+--    NOTE: table reelle = prayer_request (sans 's')
+--    Tables existent deja
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.prayer_intercessions (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  prayer_id  UUID NOT NULL REFERENCES public.prayer_requests(id) ON DELETE CASCADE,
+  prayer_id  UUID NOT NULL REFERENCES public.prayer_request(id) ON DELETE CASCADE,
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (prayer_id, user_id)
@@ -314,12 +309,11 @@ CREATE POLICY "intercessions_select" ON public.prayer_intercessions FOR SELECT U
 CREATE POLICY "intercessions_insert" ON public.prayer_intercessions FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "intercessions_delete" ON public.prayer_intercessions FOR DELETE USING (auth.uid() = user_id);
 
--- ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.prayer_comments (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  prayer_id  UUID NOT NULL REFERENCES public.prayer_requests(id) ON DELETE CASCADE,
+  prayer_id  UUID NOT NULL REFERENCES public.prayer_request(id) ON DELETE CASCADE,
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  content    TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 500),
+  content    TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -333,34 +327,49 @@ CREATE POLICY "prayer_comments_select" ON public.prayer_comments FOR SELECT USIN
 CREATE POLICY "prayer_comments_insert" ON public.prayer_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "prayer_comments_delete" ON public.prayer_comments FOR DELETE USING (auth.uid() = user_id);
 
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.prayer_request;    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.prayer_comments;   EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.prayer_intercessions; EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
+
 -- =====================================================================
 -- 6. EVENEMENTS — RSVP
+--    NOTE: table reelle = events_rsvp (avec 's')
+--    On ajoute les colonnes manquantes + policies
 -- =====================================================================
 
-CREATE TABLE IF NOT EXISTS public.event_rsvp (
+CREATE TABLE IF NOT EXISTS public.events_rsvp (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id   UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  status     TEXT NOT NULL DEFAULT 'attending' CHECK (status IN ('attending','maybe','declined')),
+  status     TEXT NOT NULL DEFAULT 'attending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (event_id, user_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_event_rsvp_event ON public.event_rsvp(event_id);
-CREATE INDEX IF NOT EXISTS idx_event_rsvp_user  ON public.event_rsvp(user_id);
-ALTER TABLE public.event_rsvp ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  BEGIN ALTER TABLE public.events_rsvp ADD COLUMN status TEXT NOT NULL DEFAULT 'attending'; EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
 
-DROP POLICY IF EXISTS "event_rsvp_select"     ON public.event_rsvp;
-DROP POLICY IF EXISTS "event_rsvp_insert"     ON public.event_rsvp;
-DROP POLICY IF EXISTS "event_rsvp_update_own" ON public.event_rsvp;
-DROP POLICY IF EXISTS "event_rsvp_delete_own" ON public.event_rsvp;
-CREATE POLICY "event_rsvp_select"     ON public.event_rsvp FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "event_rsvp_insert"     ON public.event_rsvp FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "event_rsvp_update_own" ON public.event_rsvp FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "event_rsvp_delete_own" ON public.event_rsvp FOR DELETE USING (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS idx_events_rsvp_event ON public.events_rsvp(event_id);
+CREATE INDEX IF NOT EXISTS idx_events_rsvp_user  ON public.events_rsvp(user_id);
+ALTER TABLE public.events_rsvp ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "events_rsvp_select"     ON public.events_rsvp;
+DROP POLICY IF EXISTS "events_rsvp_insert"     ON public.events_rsvp;
+DROP POLICY IF EXISTS "events_rsvp_update_own" ON public.events_rsvp;
+DROP POLICY IF EXISTS "events_rsvp_delete_own" ON public.events_rsvp;
+CREATE POLICY "events_rsvp_select"     ON public.events_rsvp FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "events_rsvp_insert"     ON public.events_rsvp FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "events_rsvp_update_own" ON public.events_rsvp FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "events_rsvp_delete_own" ON public.events_rsvp FOR DELETE USING (auth.uid() = user_id);
+
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.events;      EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.events_rsvp; EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
 
 -- =====================================================================
 -- 7. BIBLE — VERSETS SAUVEGARDES, NOTES, PROGRESSION
+--    (tables existent deja)
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.user_saved_verses (
@@ -375,12 +384,16 @@ CREATE TABLE IF NOT EXISTS public.user_saved_verses (
   UNIQUE (user_id, book, chapter, verse)
 );
 
+DO $$
+BEGIN
+  BEGIN ALTER TABLE public.user_saved_verses ADD COLUMN note TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_saved_verses_user ON public.user_saved_verses(user_id, created_at DESC);
 ALTER TABLE public.user_saved_verses ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "saved_verses_own" ON public.user_saved_verses;
 CREATE POLICY "saved_verses_own" ON public.user_saved_verses FOR ALL USING (auth.uid() = user_id);
 
--- ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.user_bible_notes (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -392,6 +405,11 @@ CREATE TABLE IF NOT EXISTS public.user_bible_notes (
   UNIQUE (user_id, book, chapter)
 );
 
+DO $$
+BEGIN
+  BEGIN ALTER TABLE public.user_bible_notes ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_bible_notes_user ON public.user_bible_notes(user_id);
 ALTER TABLE public.user_bible_notes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "bible_notes_own" ON public.user_bible_notes;
@@ -402,7 +420,6 @@ CREATE TRIGGER bible_notes_updated_at
   BEFORE UPDATE ON public.user_bible_notes
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
--- ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.user_reading_progress (
   id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -418,7 +435,7 @@ DROP POLICY IF EXISTS "reading_progress_own" ON public.user_reading_progress;
 CREATE POLICY "reading_progress_own" ON public.user_reading_progress FOR ALL USING (auth.uid() = user_id);
 
 -- =====================================================================
--- 8. GALERIE PHOTOS
+-- 8. GALERIE PHOTOS — NOUVELLES TABLES
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.photo_albums (
@@ -441,7 +458,6 @@ CREATE POLICY "albums_admin_write" ON public.photo_albums FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','leader'))
 );
 
--- ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.photos (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   album_id    UUID NOT NULL REFERENCES public.photo_albums(id) ON DELETE CASCADE,
@@ -462,7 +478,7 @@ CREATE POLICY "photos_admin_write" ON public.photos FOR ALL USING (
 );
 
 -- =====================================================================
--- 9. BIBLIOTHEQUE DIGITALE
+-- 9. BIBLIOTHEQUE DIGITALE — NOUVELLE TABLE
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.media_library (
@@ -486,7 +502,6 @@ CREATE INDEX IF NOT EXISTS idx_media_type      ON public.media_library(type);
 CREATE INDEX IF NOT EXISTS idx_media_created   ON public.media_library(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_media_published ON public.media_library(is_published);
 ALTER TABLE public.media_library ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "media_public_read"  ON public.media_library;
 DROP POLICY IF EXISTS "media_premium_read" ON public.media_library;
 DROP POLICY IF EXISTS "media_admin_write"  ON public.media_library;
@@ -502,7 +517,7 @@ CREATE POLICY "media_admin_write"  ON public.media_library FOR ALL USING (
 );
 
 -- =====================================================================
--- 10. RENDEZ-VOUS PASTORAL
+-- 10. RENDEZ-VOUS PASTORAL — NOUVELLE TABLE
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.pastoral_appointments (
@@ -525,7 +540,6 @@ CREATE TABLE IF NOT EXISTS public.pastoral_appointments (
 CREATE INDEX IF NOT EXISTS idx_appointments_user   ON public.pastoral_appointments(user_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_status ON public.pastoral_appointments(status, preferred_date);
 ALTER TABLE public.pastoral_appointments ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "appointments_own"       ON public.pastoral_appointments;
 DROP POLICY IF EXISTS "appointments_insert"    ON public.pastoral_appointments;
 DROP POLICY IF EXISTS "appointments_admin_all" ON public.pastoral_appointments;
@@ -536,7 +550,7 @@ CREATE POLICY "appointments_admin_all" ON public.pastoral_appointments FOR ALL U
 );
 
 -- =====================================================================
--- 11. ENSEIGNEMENTS / SERMONS
+-- 11. SERMONS / ENSEIGNEMENTS — NOUVELLE TABLE
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.sermons (
@@ -558,9 +572,7 @@ CREATE TABLE IF NOT EXISTS public.sermons (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sermons_published ON public.sermons(is_published, published_at DESC);
-CREATE INDEX IF NOT EXISTS idx_sermons_series    ON public.sermons(series);
 ALTER TABLE public.sermons ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "sermons_public_read" ON public.sermons;
 DROP POLICY IF EXISTS "sermons_admin_write" ON public.sermons;
 CREATE POLICY "sermons_public_read" ON public.sermons FOR SELECT USING (is_published = true);
@@ -569,7 +581,7 @@ CREATE POLICY "sermons_admin_write" ON public.sermons FOR ALL USING (
 );
 
 -- =====================================================================
--- 12. GROUPES DE TRAVAIL / CELLULES
+-- 12. GROUPES / CELLULES — NOUVELLES TABLES
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.groups (
@@ -596,7 +608,6 @@ CREATE POLICY "groups_admin_write" ON public.groups FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','leader'))
 );
 
--- ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.group_members (
   id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id  UUID NOT NULL REFERENCES public.groups(id) ON DELETE CASCADE,
@@ -609,7 +620,6 @@ CREATE TABLE IF NOT EXISTS public.group_members (
 CREATE INDEX IF NOT EXISTS idx_group_members_group ON public.group_members(group_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_user  ON public.group_members(user_id);
 ALTER TABLE public.group_members ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "group_members_select" ON public.group_members;
 DROP POLICY IF EXISTS "group_members_admin"  ON public.group_members;
 CREATE POLICY "group_members_select" ON public.group_members FOR SELECT USING (auth.uid() = user_id);
@@ -619,6 +629,7 @@ CREATE POLICY "group_members_admin"  ON public.group_members FOR ALL USING (
 
 -- =====================================================================
 -- 13. SALLE DE CLASSE — LECONS & PROGRESSION
+--     (table courses existe deja)
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.course_lessons (
@@ -636,7 +647,6 @@ CREATE TABLE IF NOT EXISTS public.course_lessons (
 
 CREATE INDEX IF NOT EXISTS idx_lessons_course ON public.course_lessons(course_id, order_index);
 ALTER TABLE public.course_lessons ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "lessons_public_read" ON public.course_lessons;
 DROP POLICY IF EXISTS "lessons_admin_write" ON public.course_lessons;
 CREATE POLICY "lessons_public_read" ON public.course_lessons FOR SELECT USING (
@@ -647,7 +657,6 @@ CREATE POLICY "lessons_admin_write" ON public.course_lessons FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );
 
--- ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.user_course_progress (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -663,7 +672,7 @@ DROP POLICY IF EXISTS "course_progress_own" ON public.user_course_progress;
 CREATE POLICY "course_progress_own" ON public.user_course_progress FOR ALL USING (auth.uid() = user_id);
 
 -- =====================================================================
--- 14. FORMULAIRE DE CONTACT
+-- 14. CONTACT — NOUVELLE TABLE
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS public.contact_messages (
@@ -680,9 +689,7 @@ CREATE TABLE IF NOT EXISTS public.contact_messages (
 );
 
 CREATE INDEX IF NOT EXISTS idx_contact_created ON public.contact_messages(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_contact_unread  ON public.contact_messages(is_read) WHERE is_read = false;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "contact_insert_all" ON public.contact_messages;
 DROP POLICY IF EXISTS "contact_own_select" ON public.contact_messages;
 DROP POLICY IF EXISTS "contact_admin_all"  ON public.contact_messages;
@@ -693,7 +700,8 @@ CREATE POLICY "contact_admin_all"  ON public.contact_messages FOR ALL USING (
 );
 
 -- =====================================================================
--- 15. NOTIFICATIONS — TRIGGERS AUTOMATIQUES
+-- 15. NOTIFICATIONS — TRIGGERS
+--     NOTE: prayer_request (sans 's') = nom reel de la table
 -- =====================================================================
 
 CREATE OR REPLACE FUNCTION public.insert_notification(
@@ -739,7 +747,7 @@ CREATE OR REPLACE FUNCTION public.notify_on_intercession()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v_author UUID;
 BEGIN
-  SELECT user_id INTO v_author FROM public.prayer_requests WHERE id = NEW.prayer_id;
+  SELECT user_id INTO v_author FROM public.prayer_request WHERE id = NEW.prayer_id;
   IF v_author IS NOT NULL AND v_author <> NEW.user_id THEN
     PERFORM public.insert_notification(v_author, 'intercession', 'Quelqu''un prie pour vous', NULL, '/prayer');
   END IF; RETURN NEW;
@@ -750,18 +758,10 @@ CREATE TRIGGER trg_notify_intercession
   AFTER INSERT ON public.prayer_intercessions
   FOR EACH ROW EXECUTE FUNCTION public.notify_on_intercession();
 
--- =====================================================================
--- 16. REALTIME — TABLES SUPPLEMENTAIRES
--- =====================================================================
-
-DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.prayer_requests;    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
-DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.prayer_comments;    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
-DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.events;             EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
-DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.event_rsvp;         EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
-DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;      EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications; EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
 
 -- =====================================================================
--- FIN — BACKEND CCB COMPLET v4
--- Tables : 24 | RLS policies : 57 | Triggers : 9 | Index : 25+
--- Ce fichier est idempotent — peut etre execute plusieurs fois sans erreur
+-- FIN — BACKEND CCB COMPLET v5
+-- Adapte aux vrais noms de tables existantes dans Supabase
+-- Idempotent — peut etre execute plusieurs fois sans erreur
 -- =====================================================================
