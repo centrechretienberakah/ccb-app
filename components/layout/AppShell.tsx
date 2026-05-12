@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
 import TopBar from "./TopBar";
-
-// Routes where the AppShell (sidebar + nav) should NOT render
-const NO_SHELL_PREFIXES = ["/auth", "/"];
 
 function shouldShowShell(pathname: string): boolean {
   if (pathname === "/") return false;
@@ -20,13 +17,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const showShell = shouldShowShell(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (!showShell) {
-    return <>{children}</>;
-  }
+  // Ferme la sidebar sur mobile quand on change de page
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Ferme la sidebar si on redimensionne vers desktop
+  useEffect(() => {
+    const handler = () => {
+      if (window.innerWidth >= 640) setSidebarOpen(false);
+    };
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
+  if (!showShell) return <>{children}</>;
 
   return (
     <div className="app-shell">
-      {/* Sidebar overlay (mobile) */}
+      {/* Overlay mobile (< 640px uniquement) */}
       {sidebarOpen && (
         <div
           className="sidebar-overlay"
@@ -34,12 +43,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Desktop + mobile-drawer sidebar */}
+      {/* Sidebar */}
       <div className={`sidebar-wrapper ${sidebarOpen ? "mobile-open" : ""}`}>
-        <Sidebar />
+        <Sidebar onLinkClick={() => setSidebarOpen(false)} />
       </div>
 
-      {/* Main area */}
+      {/* Main */}
       <div className="app-main">
         <TopBar onMenuToggle={() => setSidebarOpen((v) => !v)} />
         <main className="app-content">
@@ -47,7 +56,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Mobile bottom nav */}
+      {/* Bottom nav (mobile seulement via CSS) */}
       <BottomNav />
     </div>
   );

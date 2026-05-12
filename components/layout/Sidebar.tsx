@@ -5,28 +5,40 @@ import { usePathname } from "next/navigation";
 import {
   IconHome, IconBook, IconHeart, IconUsers, IconSun,
   IconPlay, IconGraduationCap, IconRadio,
-  IconGift, IconCrown, IconUser, IconSettings, IconLogOut, IconBell, IconBookmark,
+  IconUser, IconSettings, IconLogOut, IconBell, IconBookmark,
 } from "@/components/icons";
 
 const NAV_ITEMS = [
-  { href: "/dashboard",      label: "Accueil",         Icon: IconHome },
-  { href: "/bible",          label: "Bible",           Icon: IconBook },
-  { href: "/plan-biblique",  label: "Plan de Lecture", Icon: IconBookmark },
-  { href: "/prayer",         label: "Prière",          Icon: IconHeart },
-  { href: "/community",      label: "Communauté",      Icon: IconUsers },
-  { href: "/notifications",  label: "Notifications",   Icon: IconBell },
-  { href: "/devotion",       label: "Dévotion",        Icon: IconSun },
-  { href: "/jesus-daily",    label: "Jesus Daily",     Icon: IconPlay },
-  { href: "/classes",        label: "Salle de classe", Icon: IconGraduationCap },
-  { href: "/live",           label: "Live",            Icon: IconRadio },
+  { href: "/dashboard",     label: "Accueil",         Icon: IconHome },
+  { href: "/bible",         label: "Bible",           Icon: IconBook },
+  { href: "/plan-biblique", label: "Plan de Lecture", Icon: IconBookmark },
+  { href: "/prayer",        label: "Prière",          Icon: IconHeart },
+  { href: "/community",     label: "Communauté",      Icon: IconUsers },
+  { href: "/notifications", label: "Notifications",   Icon: IconBell },
+  { href: "/devotion",      label: "Dévotion",        Icon: IconSun },
+  { href: "/jesus-daily",   label: "Jesus Daily",     Icon: IconPlay },
+  { href: "/classes",       label: "Salle de classe", Icon: IconGraduationCap },
+  { href: "/live",          label: "Live",            Icon: IconRadio },
 ];
 
-const SECONDARY_ITEMS = [
-  { href: "/dons",    label: "Dons",    Icon: IconGift },
-  { href: "/premium", label: "Premium", Icon: IconCrown },
+const MINISTRY_ITEMS = [
+  { href: "/events",        label: "Événements",    emoji: "📅" },
+  { href: "/enseignements", label: "Enseignements", emoji: "🎙️" },
+  { href: "/annonces",      label: "Annonces",      emoji: "📢" },
+  { href: "/galerie",       label: "Galerie",       emoji: "🖼️" },
+  { href: "/bibliotheque",  label: "Bibliothèque",  emoji: "📚" },
+  { href: "/temoignages",   label: "Témoignages",   emoji: "✨" },
+  { href: "/groupes",       label: "Groupes",       emoji: "👥" },
 ];
 
-export default function Sidebar() {
+const SERVICE_ITEMS = [
+  { href: "/rendez-vous", label: "Rendez-vous",  emoji: "🗓️" },
+  { href: "/contact",     label: "Contact",      emoji: "📬" },
+  { href: "/dons",        label: "Faire un Don", emoji: "🙌" },
+  { href: "/premium",     label: "Premium",      emoji: "👑" },
+];
+
+export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
@@ -52,7 +64,12 @@ export default function Sidebar() {
         {NAV_ITEMS.map(({ href, label, Icon }) => {
           const active = isActive(href);
           return (
-            <Link key={href} href={href} className={`sidebar-link ${active ? "active" : ""}`}>
+            <Link
+              key={href} href={href}
+              className={`sidebar-link ${active ? "active" : ""}`}
+              data-label={label}
+              onClick={onLinkClick}
+            >
               <Icon size={18} className="sidebar-link-icon" />
               <span>{label}</span>
               {active && <span className="sidebar-active-dot" />}
@@ -61,17 +78,43 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Séparateur */}
       <div className="sidebar-separator" />
 
-      {/* Secondaire */}
+      {/* Ministère */}
       <nav className="sidebar-nav">
-        <div className="sidebar-nav-label">COMMUNAUTÉ</div>
-        {SECONDARY_ITEMS.map(({ href, label, Icon }) => {
+        <div className="sidebar-nav-label">MINISTÈRE</div>
+        {MINISTRY_ITEMS.map(({ href, label, emoji }) => {
           const active = isActive(href);
           return (
-            <Link key={href} href={href} className={`sidebar-link ${active ? "active" : ""}`}>
-              <Icon size={18} className="sidebar-link-icon" />
+            <Link
+              key={href} href={href}
+              className={`sidebar-link ${active ? "active" : ""}`}
+              data-label={label}
+              onClick={onLinkClick}
+            >
+              <span style={{ fontSize: 16, width: 18, textAlign: "center", flexShrink: 0 }}>{emoji}</span>
+              <span>{label}</span>
+              {active && <span className="sidebar-active-dot" />}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="sidebar-separator" />
+
+      {/* Services */}
+      <nav className="sidebar-nav">
+        <div className="sidebar-nav-label">SERVICES</div>
+        {SERVICE_ITEMS.map(({ href, label, emoji }) => {
+          const active = isActive(href);
+          return (
+            <Link
+              key={href} href={href}
+              className={`sidebar-link ${active ? "active" : ""}`}
+              data-label={label}
+              onClick={onLinkClick}
+            >
+              <span style={{ fontSize: 16, width: 18, textAlign: "center", flexShrink: 0 }}>{emoji}</span>
               <span>{label}</span>
               {active && <span className="sidebar-active-dot" />}
             </Link>
@@ -90,13 +133,13 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Footer links */}
+      {/* Footer */}
       <div className="sidebar-footer">
-        <Link href="/profile" className="sidebar-footer-link">
+        <Link href="/profile" className="sidebar-footer-link" data-label="Profil" onClick={onLinkClick}>
           <IconUser size={16} />
           <span>Mon profil</span>
         </Link>
-        <Link href="/settings" className="sidebar-footer-link">
+        <Link href="/settings" className="sidebar-footer-link" data-label="Paramètres" onClick={onLinkClick}>
           <IconSettings size={16} />
           <span>Paramètres</span>
         </Link>
