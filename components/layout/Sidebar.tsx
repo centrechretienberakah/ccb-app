@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   IconHome, IconBook, IconHeart, IconUsers, IconSun,
   IconPlay, IconGraduationCap, IconRadio,
@@ -40,6 +42,18 @@ const SERVICE_ITEMS = [
 
 export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const sb = createClient();
+    sb.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      sb.from("user_roles").select("role").eq("user_id", user.id).single()
+        .then(({ data }) => {
+          if (data?.role === "admin" || data?.role === "leader") setIsAdmin(true);
+        });
+    });
+  }, []);
 
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === href : pathname.startsWith(href);
@@ -135,19 +149,5 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <Link href="/profile" className="sidebar-footer-link" data-label="Profil" onClick={onLinkClick}>
-          <IconUser size={16} />
-          <span>Mon profil</span>
-        </Link>
-        <Link href="/settings" className="sidebar-footer-link" data-label="Paramètres" onClick={onLinkClick}>
-          <IconSettings size={16} />
-          <span>Paramètres</span>
-        </Link>
-        <button className="sidebar-footer-link sidebar-footer-btn">
-          <IconLogOut size={16} />
-          <span>Déconnexion</span>
-        </button>
-      </div>
-    </aside>
-  );
-}
+        {isAdmin && (
+          <Link href="/admin" className="sidebar-footer-lin
