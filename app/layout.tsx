@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cinzel, Montserrat } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
+import RegisterSW from "@/components/pwa/RegisterSW";
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
@@ -38,7 +39,19 @@ export const metadata: Metadata = {
     images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "CCB" }],
   },
   manifest: "/manifest.json",
-  icons: { icon: "/favicon.ico", apple: "/apple-touch-icon.png" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "CCB",
+  },
+  formatDetection: { telephone: false },
 };
 
 const themeScript = `(function(){try{var s=localStorage.getItem('ccb-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',s||(d?'dark':'light'));}catch(e){}})();`;
@@ -54,9 +67,20 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="CCB" />
+        <meta name="theme-color" content="#5a2ca0" />
+        <meta name="msapplication-TileColor" content="#0f0a1e" />
+        <meta name="msapplication-TileImage" content="/icon-144x144.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
       </head>
       <body className="min-h-full bg-background text-foreground antialiased">
         <AppShell>{children}</AppShell>
+        <RegisterSW />
       </body>
     </html>
   );

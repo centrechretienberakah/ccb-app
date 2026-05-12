@@ -1,0 +1,48 @@
+{
+  "name": "Centre Chrétien Berakah",
+  "short_name": "CCB",
+  "description": "Former des disciples, Transformer des vies, Manifester la bénédiction.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0f0a1e",
+  "theme_color": "#5a2ca0",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "categories": ["lifestyle", "religion"],
+  "icons": [
+    { "src": "/icon-72x72.png",   "sizes": "72x72",   "type": "image/png" },
+    { "src": "/icon-96x96.png",   "sizes": "96x96",   "type": "image/png" },
+    { "src": "/icon-128x128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/icon-144x144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/icon-152x152.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-384x384.png", "sizes": "384x384", "type": "image/png" },
+    { "src": "/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dévotion du jour",
+      "url": "/devotion",
+      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Prière",
+      "url": "/prayer",
+      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Bible",
+      "url": "/bible",
+      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo-officiel.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "CCB App"
+    }
+  ]
+}
