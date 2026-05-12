@@ -32,7 +32,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/contact":       "Contact",
   "/nous-suivre":   "Nous Suivre",
   "/a-propos":      "À Propos",
-  "/dons":          "Faire un Don",
   "/groupes":       "Groupes de Travail",
 };
 

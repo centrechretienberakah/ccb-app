@@ -11,32 +11,32 @@ interface Props {
 }
 
 const QUICK_ACTIONS = [
-  { emoji: "☀️", label: "Dévotion du jour", sub: "Commence ta journée", href: "/devotion", gradient: "linear-gradient(145deg, #92400e 0%, #d97706 55%, #fbbf24 100%)", glow: "rgba(251,191,36,0.35)" },
-  { emoji: "📖", label: "Bible", sub: "Lire les Écritures", href: "/bible", gradient: "linear-gradient(145deg, #1e3a5f 0%, #1e40af 55%, #3b82f6 100%)", glow: "rgba(59,130,246,0.35)" },
-  { emoji: "🙏", label: "Prière", sub: "Intercession & demandes", href: "/prayer", gradient: "linear-gradient(145deg, #4c0519 0%, #9f1239 55%, #fb7185 100%)", glow: "rgba(251,113,133,0.35)" },
-  { emoji: "👥", label: "Communauté", sub: "Échanges & partages", href: "/community", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #4ade80 100%)", glow: "rgba(74,222,128,0.35)" },
-  { emoji: "🎬", label: "Jesus Daily", sub: "Vidéos prophétiques", href: "/jesus-daily", gradient: "linear-gradient(145deg, #3d1a72 0%, #5a2ca0 55%, #a78bfa 100%)", glow: "rgba(167,139,250,0.35)" },
+  { emoji: "☀️", label: "Devotion du jour", sub: "Commence ta journee", href: "/devotion", gradient: "linear-gradient(145deg, #92400e 0%, #d97706 55%, #fbbf24 100%)", glow: "rgba(251,191,36,0.35)" },
+  { emoji: "📖", label: "Bible", sub: "Lire les Ecritures", href: "/bible", gradient: "linear-gradient(145deg, #1e3a5f 0%, #1e40af 55%, #3b82f6 100%)", glow: "rgba(59,130,246,0.35)" },
+  { emoji: "🙏", label: "Priere", sub: "Intercession & demandes", href: "/prayer", gradient: "linear-gradient(145deg, #4c0519 0%, #9f1239 55%, #fb7185 100%)", glow: "rgba(251,113,133,0.35)" },
+  { emoji: "👥", label: "Communaute", sub: "Echanges & partages", href: "/community", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #4ade80 100%)", glow: "rgba(74,222,128,0.35)" },
+  { emoji: "🎬", label: "Jesus Daily", sub: "Videos prophetiques", href: "/jesus-daily", gradient: "linear-gradient(145deg, #3d1a72 0%, #5a2ca0 55%, #a78bfa 100%)", glow: "rgba(167,139,250,0.35)" },
   { emoji: "🎓", label: "Classes", sub: "Formation biblique", href: "/classes", gradient: "linear-gradient(145deg, #164e63 0%, #0891b2 55%, #22d3ee 100%)", glow: "rgba(34,211,238,0.35)" },
   { emoji: "📡", label: "Live", sub: "Cultes en direct", href: "/live", gradient: "linear-gradient(145deg, #1e1b4b 0%, #4338ca 55%, #818cf8 100%)", glow: "rgba(129,140,248,0.35)" },
-  { emoji: "📅", label: "Événements", sub: "Calendrier CCB", href: "/events", gradient: "linear-gradient(145deg, #064e3b 0%, #059669 55%, #34d399 100%)", glow: "rgba(52,211,153,0.35)" },
+  { emoji: "📅", label: "Evenements", sub: "Calendrier CCB", href: "/events", gradient: "linear-gradient(145deg, #064e3b 0%, #059669 55%, #34d399 100%)", glow: "rgba(52,211,153,0.35)" },
   { emoji: "📖", label: "Plan de lecture", sub: "Lis la Bible en 1 an", href: "/plan-biblique", gradient: "linear-gradient(145deg, #1e3a5f 0%, #1e40af 55%, #60a5fa 100%)", glow: "rgba(96,165,250,0.35)" },
-  { emoji: "💝", label: "Faire un don", sub: "Soutenir le ministère", href: "/dons", gradient: "linear-gradient(145deg, #7f1d1d 0%, #dc2626 55%, #f87171 100%)", glow: "rgba(248,113,113,0.35)" },
-  { emoji: "📢", label: "Annonces", sub: "Actualités CCB", href: "/annonces", gradient: "linear-gradient(145deg, #78350f 0%, #d97706 55%, #fcd34d 100%)", glow: "rgba(252,211,77,0.35)" },
+  { emoji: "💝", label: "Faire un don", sub: "Soutenir le ministere", href: "/dons", gradient: "linear-gradient(145deg, #7f1d1d 0%, #dc2626 55%, #f87171 100%)", glow: "rgba(248,113,113,0.35)" },
+  { emoji: "📢", label: "Annonces", sub: "Actualites CCB", href: "/annonces", gradient: "linear-gradient(145deg, #78350f 0%, #d97706 55%, #fcd34d 100%)", glow: "rgba(252,211,77,0.35)" },
   { emoji: "🖼️", label: "Galerie", sub: "Photos & souvenirs", href: "/galerie", gradient: "linear-gradient(145deg, #831843 0%, #db2777 55%, #f9a8d4 100%)", glow: "rgba(249,168,212,0.35)" },
-  { emoji: "📚", label: "Bibliothèque", sub: "Ressources digitales", href: "/bibliotheque", gradient: "linear-gradient(145deg, #164e63 0%, #0891b2 55%, #67e8f9 100%)", glow: "rgba(103,232,249,0.35)" },
+  { emoji: "📚", label: "Bibliotheque", sub: "Ressources digitales", href: "/bibliotheque", gradient: "linear-gradient(145deg, #164e63 0%, #0891b2 55%, #67e8f9 100%)", glow: "rgba(103,232,249,0.35)" },
   { emoji: "🗓️", label: "Rendez-vous", sub: "Conseil pastoral", href: "/rendez-vous", gradient: "linear-gradient(145deg, #4c1d95 0%, #7c3aed 55%, #c4b5fd 100%)", glow: "rgba(196,181,253,0.35)" },
-  { emoji: "✨", label: "Témoignages", sub: "Gloire à Dieu", href: "/temoignages", gradient: "linear-gradient(145deg, #713f12 0%, #ca8a04 55%, #fde047 100%)", glow: "rgba(253,224,71,0.35)" },
-  { emoji: "🎙️", label: "Enseignements", sub: "Sermons & prédications", href: "/enseignements", gradient: "linear-gradient(145deg, #1e3a8a 0%, #1d4ed8 55%, #93c5fd 100%)", glow: "rgba(147,197,253,0.35)" },
+  { emoji: "✨", label: "Temoignages", sub: "Gloire a Dieu", href: "/temoignages", gradient: "linear-gradient(145deg, #713f12 0%, #ca8a04 55%, #fde047 100%)", glow: "rgba(253,224,71,0.35)" },
+  { emoji: "🎙️", label: "Enseignements", sub: "Sermons & predications", href: "/enseignements", gradient: "linear-gradient(145deg, #1e3a8a 0%, #1d4ed8 55%, #93c5fd 100%)", glow: "rgba(147,197,253,0.35)" },
   { emoji: "📬", label: "Contact", sub: "Nous joindre", href: "/contact", gradient: "linear-gradient(145deg, #064e3b 0%, #059669 55%, #6ee7b7 100%)", glow: "rgba(110,231,183,0.35)" },
   { emoji: "🤝", label: "Groupes", sub: "Cellules & mentorat", href: "/groupes", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #86efac 100%)", glow: "rgba(134,239,172,0.35)" },
-  { emoji: "📡", label: "Nous suivre", sub: "Réseaux sociaux", href: "/nous-suivre", gradient: "linear-gradient(145deg, #0c4a6e 0%, #0ea5e9 55%, #7dd3fc 100%)", glow: "rgba(125,211,252,0.35)" },
-  { emoji: "⛪", label: "À propos", sub: "Notre histoire", href: "/a-propos", gradient: "linear-gradient(145deg, #431407 0%, #b45309 55%, #fcd34d 100%)", glow: "rgba(180,83,9,0.35)" },
+  { emoji: "📡", label: "Nous suivre", sub: "Reseaux sociaux", href: "/nous-suivre", gradient: "linear-gradient(145deg, #0c4a6e 0%, #0ea5e9 55%, #7dd3fc 100%)", glow: "rgba(125,211,252,0.35)" },
+  { emoji: "⛪", label: "A propos", sub: "Notre histoire", href: "/a-propos", gradient: "linear-gradient(145deg, #431407 0%, #b45309 55%, #fcd34d 100%)", glow: "rgba(180,83,9,0.35)" },
 ];
 
 const UPCOMING = [
   { icon: "⛪", title: "Culte dominical", time: "Dimanche 10h00", tag: "LIVE" },
-  { icon: "📖", title: "Étude biblique", time: "Mercredi 19h30", tag: "Classe" },
-  { icon: "🙏", title: "Nuit de prière", time: "Vendredi 22h00", tag: "Prière" },
+  { icon: "📖", title: "Etude biblique", time: "Mercredi 19h30", tag: "Classe" },
+  { icon: "🙏", title: "Nuit de priere", time: "Vendredi 22h00", tag: "Priere" },
 ];
 
 export default function DashboardClient({ displayName, avatarUrl, email, role }: Props) {
@@ -44,7 +44,7 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return "Bonjour";
-    if (h < 18) return "Bon après-midi";
+    if (h < 18) return "Bon apres-midi";
     return "Bonsoir";
   })();
 
@@ -103,7 +103,7 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
       <div className="dashboard-section">
         <div className="dashboard-section-header">
           <h3 className="dashboard-section-title">A venir</h3>
-          <Link href="/events" className="dashboard-see-all">Voir tout →</Link>
+          <Link href="/events" className="dashboard-see-all">Voir tout</Link>
         </div>
         <div className="dashboard-upcoming-list">
           {UPCOMING.map(({ icon, title, time, tag }) => (
@@ -111,7 +111,10 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
               <div className="dashboard-upcoming-icon">{icon}</div>
               <div className="dashboard-upcoming-info">
                 <div className="dashboard-upcoming-title">{title}</div>
-                <div className="dashboard-upcoming-time"><IconCalendar size={12} />{time}</div>
+                <div className="dashboard-upcoming-time">
+                  <IconCalendar size={12} />
+                  {time}
+                </div>
               </div>
               <span className="dashboard-upcoming-tag">{tag}</span>
             </div>
@@ -119,49 +122,32 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
         </div>
       </div>
 
-      {/* Admin shortcut — admin uniquement */}
-      {role === "admin" && (
-        <div className="dashboard-section">
-          <Link
-            href="/admin"
-            style={{
-              display: "flex", alignItems: "center", gap: "1rem",
-              padding: "1rem 1.25rem", borderRadius: "var(--radius-lg)",
-              background: "linear-gradient(135deg, rgba(212,175,55,0.12), rgba(124,58,237,0.12))",
-              border: "1px solid rgba(212,175,55,0.3)", textDecoration: "none",
-            }}
-          >
-            <span style={{ fontSize: "1.5rem" }}>⚙️</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--gold)" }}>
-                Dashboard Admin
-              </div>
-              <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                Membres · Publications · Prieres · Devotions
-              </div>
-            </div>
-            <span style={{ color: "var(--gold)", fontSize: "1.1rem" }}>→</span>
-          </Link>
-        </div>
-      )}
-
-      {/* Premium CTA */}
+      {/* Stats row */}
       <div className="dashboard-section">
-        <div className="dashboard-premium-cta">
-          <div className="dashboard-premium-cta-orb" />
-          <div className="dashboard-premium-cta-left">
-            <span className="dashboard-premium-cta-crown">👑</span>
-            <div>
-              <div className="dashboard-premium-cta-title">Passe au Premium</div>
-              <div className="dashboard-premium-cta-desc">
-                Acces illimite · Classes exclusives · Groupes prives
-              </div>
+        <div className="dashboard-stats-row">
+          {[
+            { icon: "🔥", value: "7", label: "Jours actif" },
+            { icon: "📖", value: "12", label: "Devos lus" },
+            { icon: "🙏", value: "5", label: "Prieres" },
+          ].map(({ icon, value, label }) => (
+            <div key={label} className="dashboard-stat-card">
+              <div className="dashboard-stat-icon">{icon}</div>
+              <div className="dashboard-stat-value">{value}</div>
+              <div className="dashboard-stat-label">{label}</div>
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA Banner */}
+      <div className="dashboard-section" style={{ paddingBottom: 100 }}>
+        <div className="dashboard-cta-banner">
+          <IconZap size={20} />
+          <div>
+            <div className="dashboard-cta-title">Pret pour la Parole ?</div>
+            <div className="dashboard-cta-sub">Commence ta devotion du jour</div>
           </div>
-          <Link href="/premium" className="dashboard-premium-cta-btn">
-            <IconZap size={14} />
-            Debloquer
-          </Link>
+          <Link href="/devotion" className="dashboard-cta-btn">Commencer</Link>
         </div>
       </div>
 
