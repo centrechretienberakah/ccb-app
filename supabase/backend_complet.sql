@@ -131,6 +131,27 @@ CREATE TABLE IF NOT EXISTS public.post_categories (
   color TEXT DEFAULT 'var(--violet)'
 );
 
+-- Migration : ajouter les colonnes manquantes si la table existait déjà sans elles
+ALTER TABLE public.post_categories ADD COLUMN IF NOT EXISTS slug  TEXT;
+ALTER TABLE public.post_categories ADD COLUMN IF NOT EXISTS label TEXT;
+ALTER TABLE public.post_categories ADD COLUMN IF NOT EXISTS emoji TEXT;
+ALTER TABLE public.post_categories ADD COLUMN IF NOT EXISTS color TEXT DEFAULT 'var(--violet)';
+
+-- Ajouter la contrainte UNIQUE sur slug si elle n'existe pas
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'post_categories_slug_key' AND conrelid = 'public.post_categories'::regclass
+  ) THEN
+    ALTER TABLE public.post_categories ADD CONSTRAINT post_categories_slug_key UNIQUE (slug);
+  END IF;
+END $$;
+
+-- Renseigner NOT NULL après avoir ajouté les colonnes (UPDATE les lignes NULL en premier)
+UPDATE public.post_categories SET slug = 'general' WHERE slug IS NULL;
+UPDATE public.post_categories SET label = 'Général' WHERE label IS NULL;
+
 INSERT INTO public.post_categories (slug, label, emoji) VALUES
   ('general',       'Général',         '💬'),
   ('testimony',     'Témoignage',       '✨'),
