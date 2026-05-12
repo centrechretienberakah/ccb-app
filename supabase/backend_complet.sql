@@ -6,6 +6,31 @@
 -- =====================================================================
 
 -- =====================================================================
+-- 0. MIGRATION GLOBALE — created_at pour tables existantes sans cette colonne
+-- =====================================================================
+DO $$
+BEGIN
+  BEGIN ALTER TABLE public.posts              ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.post_comments      ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.post_likes         ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.post_categories    ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.prayer_request     ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.prayer_intercessions ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.prayer_comments    ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.events             ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.events_rsvp        ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_profiles      ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_roles         ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.spiritual_milestones ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_saved_verses  ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_bible_notes   ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_reading_progress ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.user_roles         ADD COLUMN granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.courses            ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE public.notifications      ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
+
+-- =====================================================================
 -- 1. PROFILS UTILISATEUR — migration colonnes manquantes
 --    (table user_profiles existe deja)
 -- =====================================================================
@@ -217,7 +242,7 @@ CREATE TABLE IF NOT EXISTS public.post_comments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_post_comments_post ON public.post_comments(post_id, created_at);
+DO $$ BEGIN CREATE INDEX IF NOT EXISTS idx_post_comments_post ON public.post_comments(post_id, created_at); EXCEPTION WHEN undefined_column THEN NULL; WHEN duplicate_table THEN NULL; WHEN others THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS idx_post_comments_user ON public.post_comments(user_id);
 ALTER TABLE public.post_comments ENABLE ROW LEVEL SECURITY;
 
@@ -317,7 +342,7 @@ CREATE TABLE IF NOT EXISTS public.prayer_comments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_prayer_comments_prayer ON public.prayer_comments(prayer_id, created_at);
+DO $$ BEGIN CREATE INDEX IF NOT EXISTS idx_prayer_comments_prayer ON public.prayer_comments(prayer_id, created_at); EXCEPTION WHEN undefined_column THEN NULL; WHEN duplicate_table THEN NULL; WHEN others THEN NULL; END $$;
 ALTER TABLE public.prayer_comments ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "prayer_comments_select" ON public.prayer_comments;
@@ -389,7 +414,7 @@ BEGIN
   BEGIN ALTER TABLE public.user_saved_verses ADD COLUMN note TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
 END $$;
 
-CREATE INDEX IF NOT EXISTS idx_saved_verses_user ON public.user_saved_verses(user_id, created_at DESC);
+DO $$ BEGIN CREATE INDEX IF NOT EXISTS idx_saved_verses_user ON public.user_saved_verses(user_id, created_at DESC); EXCEPTION WHEN undefined_column THEN NULL; WHEN duplicate_table THEN NULL; WHEN others THEN NULL; END $$;
 ALTER TABLE public.user_saved_verses ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "saved_verses_own" ON public.user_saved_verses;
 CREATE POLICY "saved_verses_own" ON public.user_saved_verses FOR ALL USING (auth.uid() = user_id);
@@ -449,7 +474,7 @@ CREATE TABLE IF NOT EXISTS public.photo_albums (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_albums_created ON public.photo_albums(created_at DESC);
+DO $$ BEGIN CREATE INDEX IF NOT EXISTS idx_albums_created ON public.photo_albums(created_at DESC); EXCEPTION WHEN undefined_column THEN NULL; WHEN duplicate_table THEN NULL; WHEN others THEN NULL; END $$;
 ALTER TABLE public.photo_albums ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "albums_public_read" ON public.photo_albums;
 DROP POLICY IF EXISTS "albums_admin_write" ON public.photo_albums;
@@ -468,7 +493,7 @@ CREATE TABLE IF NOT EXISTS public.photos (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_photos_album ON public.photos(album_id, created_at DESC);
+DO $$ BEGIN CREATE INDEX IF NOT EXISTS idx_photos_album ON public.photos(album_id, created_at DESC); EXCEPTION WHEN undefined_column THEN NULL; WHEN duplicate_table THEN NULL; WHEN others THEN NULL; END $$;
 ALTER TABLE public.photos ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "photos_public_read" ON public.photos;
 DROP POLICY IF EXISTS "photos_admin_write" ON public.photos;
@@ -688,7 +713,7 @@ CREATE TABLE IF NOT EXISTS public.contact_messages (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_contact_created ON public.contact_messages(created_at DESC);
+DO $$ BEGIN CREATE INDEX IF NOT EXISTS idx_contact_created ON public.contact_messages(created_at DESC); EXCEPTION WHEN undefined_column THEN NULL; WHEN duplicate_table THEN NULL; WHEN others THEN NULL; END $$;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "contact_insert_all" ON public.contact_messages;
 DROP POLICY IF EXISTS "contact_own_select" ON public.contact_messages;
@@ -751,17 +776,4 @@ BEGIN
   IF v_author IS NOT NULL AND v_author <> NEW.user_id THEN
     PERFORM public.insert_notification(v_author, 'intercession', 'Quelqu''un prie pour vous', NULL, '/prayer');
   END IF; RETURN NEW;
-END; $$;
-
-DROP TRIGGER IF EXISTS trg_notify_intercession ON public.prayer_intercessions;
-CREATE TRIGGER trg_notify_intercession
-  AFTER INSERT ON public.prayer_intercessions
-  FOR EACH ROW EXECUTE FUNCTION public.notify_on_intercession();
-
-DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications; EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
-
--- =====================================================================
--- FIN — BACKEND CCB COMPLET v5
--- Adapte aux vrais noms de tables existantes dans Supabase
--- Idempotent — peut etre execute plusieurs fois sans erreur
--- =====================================================================
+E
