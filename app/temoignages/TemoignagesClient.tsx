@@ -1,10 +1,55 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 interface Temoignage { id: string; content: string; user_id: string; created_at: string; likes_count: number; category?: string; }
 
 const CATEGORIES = ["Guérison", "Délivrance", "Protection", "Provision", "Famille", "Travail", "Autre"];
+
+// ─── Témoignages vedettes (Bootcamp 2025 — landing page) ──────
+const FEATURED = [
+  {
+    name: "Kévin Bouna",
+    text: "J'ai compris que je ne suis pas appelé à répéter les erreurs du passé, mais à devenir un instrument de transformation. Ce camp m'a révélé que les cycles négatifs peuvent être brisés en Dieu — par l'obéissance et une relation sincère avec Lui. Je repars avec une vision claire : être un canal de bénédiction pour ma génération.",
+    role: "Membre CCB · Canada",
+    initial: "K",
+    country: "🇨🇦",
+    photo: "/testimonie-kevin.jpg",
+  },
+  {
+    name: "Djeumo Daïna",
+    text: "La retraite 2025 a été un tournant dans ma vie. En seulement quelques jours, j'ai découvert qui je suis réellement en Christ. J'ai ressenti une véritable atmosphère de famille, une présence réelle de Jésus-Christ… et même vécu un miracle. Dieu m'a protégée. Je ne suis plus la même.",
+    role: "Membre CCB · Yaoundé",
+    initial: "D",
+    country: "🇨🇲",
+    photo: "/testimonie-daina.jpg",
+  },
+  {
+    name: "Cabrelle Djontso",
+    text: "Un cadre magnifique, une atmosphère de joie et de partage de la Parole… J'ai découvert une nouvelle version de moi-même. J'ai appris à poser des limites, à me connaître, et compris que les limites générationnelles peuvent être brisées. Je t'invite à nous rejoindre — tu ne regretteras pas !",
+    role: "Membre CCB · Yaoundé",
+    initial: "C",
+    country: "🇨🇲",
+    photo: "/testimonie-cabrelle.jpg",
+  },
+  {
+    name: "MD Merveille Djambong",
+    text: "Une retraite bien organisée, un programme respecté, et surtout une présence de Dieu tangible au milieu de nous. J'ai été touchée par l'esprit de famille qui régnait. C'était formidable — et j'ai hâte de vivre ça à nouveau avec de nouveaux visages !",
+    role: "Membre CCB · Douala",
+    initial: "M",
+    country: "🇨🇲",
+    photo: null,
+  },
+  {
+    name: "Christiana Nguiffo",
+    text: "Ce fut un moment de communion fraternelle intense — louange, adoration, détente, et une Parole qui transforme. Nous avons appris que si nous sommes en Christ, il n'y a plus de malédiction : chaque bienfait devient une bénédiction générationnelle. J'ai hâte d'être à la retraite 2026 !",
+    role: "Co-Hôte · Membre CCB · Belgique",
+    initial: "C",
+    country: "🇧🇪",
+    photo: "/testimonie-christiana.jpg",
+  },
+];
 
 function fmtDate(d: string) { return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); }
 
@@ -34,6 +79,60 @@ export default function TemoignagesClient({ temoignages, userId }: { temoignages
           Espace Témoignages
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>Gloire à Dieu ! Partagez ce qu&apos;il a accompli dans votre vie</p>
+      </div>
+
+      {/* ── Témoignages vedettes — Bootcamp 2025 ── */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+          <span style={{ background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.35)", borderRadius: "var(--radius-full)", padding: "4px 14px", fontSize: 11, fontWeight: 700, color: "var(--gold)", letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap" }}>
+            ✦ Bootcamp 2025 — Des vies transformées
+          </span>
+          <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {FEATURED.map((t) => (
+            <div key={t.name} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "18px 20px", position: "relative", overflow: "hidden" }}>
+              {/* Accent bar */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #ca8a04, #f59e0b, transparent)" }} />
+              {/* Badge + stars */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--gold)", background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: "var(--radius-full)", padding: "3px 10px" }}>✦ Bootcamp 2025</span>
+                <span style={{ color: "var(--gold)", fontSize: 12, letterSpacing: 2 }}>★★★★★</span>
+              </div>
+              {/* Text */}
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.75, fontStyle: "italic", margin: "0 0 14px" }}>
+                &ldquo;{t.text}&rdquo;
+              </p>
+              {/* Author */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {t.photo ? (
+                  <Image src={t.photo} alt={t.name} width={40} height={40}
+                    style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid rgba(212,175,55,0.3)" }} />
+                ) : (
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #5a2ca0, #7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
+                    {t.initial}
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)" }}>{t.name} <span style={{ fontSize: 14 }}>{t.country}</span></div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA Bootcamp 2026 */}
+        <a href="https://bootcamp.centrechretienberakah.com" target="_blank" rel="noopener noreferrer"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16, background: "linear-gradient(135deg, rgba(212,175,55,0.08), rgba(212,175,55,0.12))", border: "1px solid rgba(212,175,55,0.3)", borderRadius: "var(--radius-xl)", padding: "14px 20px", textDecoration: "none" }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--gold)" }}>🎓 Rejoindre le Bootcamp 2026 — 26 au 28 Juin · Douala & En ligne</span>
+          <span style={{ color: "var(--gold)", fontSize: 14 }}>→</span>
+        </a>
+
+        <div style={{ borderBottom: "1px solid var(--border-subtle)", margin: "28px 0 0" }} />
+        <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", margin: "14px 0 0" }}>💬 Témoignages de la communauté</p>
       </div>
 
       {success && (
