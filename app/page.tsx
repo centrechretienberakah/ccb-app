@@ -93,54 +93,49 @@ export default function HomePage() {
           Former · Transformer · Bénir
         </div>
 
-        {/* Titre — 2 lignes */}
+        {/* Titre — 2 lignes exactes sur mobile */}
         <div>
           <div style={{
             fontFamily: "var(--font-title)",
             fontWeight: 700,
-            fontSize: "clamp(1.9rem, 7vw, 3.2rem)",
+            fontSize: "clamp(1.35rem, 5.5vw, 3.2rem)",
             lineHeight: 1.1,
             letterSpacing: "0.06em",
             color: "var(--text-primary)",
             textTransform: "uppercase",
+            whiteSpace: "nowrap",
           }}>
             Centre Chrétien
           </div>
           <div style={{
             fontFamily: "var(--font-title)",
             fontWeight: 700,
-            fontSize: "clamp(2.4rem, 9vw, 4.4rem)",
+            fontSize: "clamp(2.2rem, 8.5vw, 4.4rem)",
             lineHeight: 1.1,
             letterSpacing: "0.1em",
             color: "#5A2CA0",
             textTransform: "uppercase",
             textShadow: "0 0 40px rgba(90,44,160,0.5)",
+            whiteSpace: "nowrap",
           }}>
             Berakah
           </div>
         </div>
 
-        {/* Vision — 2 lignes */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <p style={{
-            color: "var(--text-secondary)",
-            fontSize: "clamp(0.9rem, 2.5vw, 1.05rem)",
-            fontWeight: 300,
-            lineHeight: 1.7,
-            margin: 0,
-          }}>
-            Former des disciples, transformer les vies,
-          </p>
-          <p style={{
-            color: "#9b6dff",
-            fontSize: "clamp(0.9rem, 2.5vw, 1.05rem)",
-            fontWeight: 500,
-            fontStyle: "italic",
-            margin: 0,
-          }}>
-            Manifester la Bénédiction
-          </p>
-        </div>
+        {/* Vision — une seule ligne */}
+        <p style={{
+          color: "var(--text-secondary)",
+          fontSize: "clamp(0.72rem, 3vw, 1rem)",
+          fontWeight: 300,
+          lineHeight: 1.6,
+          margin: 0,
+          whiteSpace: "nowrap",
+        }}>
+          Former des disciples, transformer les vies,{" "}
+          <span style={{ color: "#9b6dff", fontStyle: "italic", fontWeight: 500 }}>
+            manifester la Bénédiction
+          </span>
+        </p>
 
         {/* CTA — une seule ligne */}
         <Link
