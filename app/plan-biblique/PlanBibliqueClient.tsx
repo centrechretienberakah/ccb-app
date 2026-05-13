@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -30,6 +30,87 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
   const [selectedPlan, setSelectedPlan] = useState<ReadingPlan | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // ── Reading reminder ──────────────────────────────────────────────────────
+  const [reminderTime, setReminderTime] = useState<string>("");
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("ccb-reading-reminder");
+    if (saved) {
+      const { time, enabled } = JSON.parse(saved);
+      setReminderTime(time || "07:00");
+      setReminderEnabled(enabled ?? false);
+    } else {
+      setReminderTime("07:00");
+    }
+    if ("Notification" in window) {
+      setNotifPermission(Notification.permission);
+    }
+    // Check if it's time to remind today
+    checkAndFireReminder();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function checkAndFireReminder() {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    const saved = localStorage.getItem("ccb-reading-reminder");
+    if (!saved) return;
+    const { time, enabled } = JSON.parse(saved);
+    if (!enabled || !time) return;
+    const today = new Date().toISOString().split("T")[0];
+    const lastFired = localStorage.getItem("ccb-reminder-last-fired");
+    if (lastFired === today) return; // already fired today
+    const [hh, mm] = time.split(":").map(Number);
+    const now = new Date();
+    if (now.getHours() >= hh && now.getMinutes() >= mm) {
+      new Notification("📖 Rappel de lecture CCB", {
+        body: "C'est l'heure de votre lecture biblique quotidienne ! Continuez votre plan de lecture.",
+        icon: "/logo-officiel.png",
+        badge: "/logo-officiel.png",
+      });
+      localStorage.setItem("ccb-reminder-last-fired", today);
+    }
+  }
+
+  async function requestNotifPermission(): Promise<NotificationPermission> {
+    if (!("Notification" in window)) return "denied";
+    if (Notification.permission === "granted") return "granted";
+    const result = await Notification.requestPermission();
+    setNotifPermission(result);
+    return result;
+  }
+
+  async function saveReminder(time: string) {
+    const permission = await requestNotifPermission();
+    if (permission !== "granted") {
+      showToast("⚠️ Autorisez les notifications dans votre navigateur");
+      return;
+    }
+    const data = { time, enabled: true };
+    localStorage.setItem("ccb-reading-reminder", JSON.stringify(data));
+    setReminderTime(time);
+    setReminderEnabled(true);
+    setShowReminderModal(false);
+    showToast(`⏰ Rappel programmé à ${time} chaque jour !`);
+    // Fire a confirmation notification
+    new Notification("⏰ Rappel de lecture activé", {
+      body: `Vous serez rappelé chaque jour à ${time} pour votre lecture biblique.`,
+      icon: "/logo-officiel.png",
+    });
+  }
+
+  function clearReminder() {
+    localStorage.removeItem("ccb-reading-reminder");
+    setReminderEnabled(false);
+    setShowReminderModal(false);
+    showToast("Rappel désactivé");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   function showToast(msg: string) {
     setToast(msg);
@@ -96,14 +177,68 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
         }}>{toast}</div>
       )}
 
+      {/* ── Reading Reminder Modal ── */}
+      {showReminderModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: 28, maxWidth: 360, width: "100%" }}>
+            <div style={{ fontSize: 36, textAlign: "center", marginBottom: 12 }}>⏰</div>
+            <h3 style={{ margin: "0 0 8px", fontFamily: "var(--font-title)", fontSize: 18, fontWeight: 800, textAlign: "center", color: "var(--text-primary)" }}>
+              Rappel de lecture
+            </h3>
+            <p style={{ margin: "0 0 20px", color: "var(--text-muted)", fontSize: 13, textAlign: "center", lineHeight: 1.5 }}>
+              Choisissez l&apos;heure à laquelle vous souhaitez être rappelé chaque jour.
+            </p>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+                Heure du rappel
+              </label>
+              <input
+                type="time"
+                value={reminderTime}
+                onChange={(e) => setReminderTime(e.target.value)}
+                style={{ width: "100%", padding: "12px 14px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 18, fontWeight: 700, textAlign: "center", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+              />
+            </div>
+            {notifPermission === "denied" && (
+              <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius-md)", padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "var(--error, #ef4444)" }}>
+                ⚠️ Les notifications sont bloquées dans votre navigateur. Activez-les dans les paramètres.
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setShowReminderModal(false)} style={{ flex: 1, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "11px", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                Annuler
+              </button>
+              {reminderEnabled && (
+                <button onClick={clearReminder} style={{ flex: 1, background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius-md)", padding: "11px", color: "#ef4444", fontSize: 13, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>
+                  Désactiver
+                </button>
+              )}
+              <button onClick={() => saveReminder(reminderTime)} style={{ flex: 1, background: "var(--gold)", color: "#000", border: "none", borderRadius: "var(--radius-md)", padding: "11px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                ✓ Activer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", display: "flex", overflowX: "auto" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", display: "flex", overflowX: "auto", alignItems: "center" }}>
           <button style={tabStyle(tab === "active")} onClick={() => setTab("active")}>
             📖 Mes plans ({activePlans.length})
           </button>
           <button style={tabStyle(tab === "browse")} onClick={() => setTab("browse")}>
             🔍 Choisir un plan
+          </button>
+          <div style={{ flex: 1 }} />
+          <button onClick={() => setShowReminderModal(true)} title="Programmer un rappel de lecture" style={{
+            background: reminderEnabled ? "rgba(212,175,55,0.15)" : "transparent",
+            border: reminderEnabled ? "1px solid rgba(212,175,55,0.4)" : "1px solid transparent",
+            borderRadius: "var(--radius-md)", padding: "6px 12px", cursor: "pointer",
+            fontSize: 12, fontWeight: 600, color: reminderEnabled ? "var(--gold)" : "var(--text-muted)",
+            fontFamily: "inherit", marginRight: 8, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4,
+          }}>
+            ⏰ {reminderEnabled ? `Rappel ${reminderTime}` : "Rappel"}
           </button>
         </div>
       </div>

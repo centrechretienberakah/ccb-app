@@ -97,7 +97,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
   // ── Notifications prefs (local only — stored in localStorage) ──
   const [notifPrefs, setNotifPrefs] = useState({
     likes: true, comments: true, prayer_reply: true,
-    new_post: false, system: true,
+    new_post: true, system: true,
   });
   useEffect(() => {
     try {

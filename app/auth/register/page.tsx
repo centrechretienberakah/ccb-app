@@ -83,6 +83,13 @@ export default function RegisterPage() {
       });
     }
 
+    // Initialize notification preferences — all ON by default
+    try {
+      localStorage.setItem("ccb-notif-prefs", JSON.stringify({
+        likes: true, comments: true, prayer_reply: true, new_post: true, system: true,
+      }));
+    } catch {}
+
     setStep(3);
     setLoading(false);
   }

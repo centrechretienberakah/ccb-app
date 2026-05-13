@@ -26,13 +26,16 @@ export default function AdminPage() {
       const [
         { count: totalMembers }, { count: newMembersWeek }, { count: totalPosts },
         { count: openPrayers }, { count: totalEvents }, { count: totalDevotions },
+        { count: newContacts }, { count: pendingRdv },
       ] = await Promise.all([
         sb.from("user_profiles").select("*", { count: "exact", head: true }),
         sb.from("user_profiles").select("*", { count: "exact", head: true }).gte("created_at", weekAgo),
         sb.from("posts").select("*", { count: "exact", head: true }),
-        sb.from("prayer_request").select("*", { count: "exact", head: true }).eq("is_answered", false),
+        sb.from("prayer_requests").select("*", { count: "exact", head: true }).eq("is_answered", false),
         sb.from("events").select("*", { count: "exact", head: true }).gte("event_date", monthStart),
         sb.from("devotions").select("*", { count: "exact", head: true }),
+        sb.from("contact_messages").select("*", { count: "exact", head: true }).eq("is_read", false),
+        sb.from("pastoral_appointments").select("*", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
       const { data: members } = await sb.from("user_profiles")
@@ -47,7 +50,7 @@ export default function AdminPage() {
         .select("id, content, created_at, user_id, is_pinned, post_type")
         .order("created_at", { ascending: false }).limit(30);
 
-      const { data: recentPrayers } = await sb.from("prayer_request")
+      const { data: recentPrayers } = await sb.from("prayer_requests")
         .select("id, title, content, is_answered, created_at, user_id, is_anonymous, category")
         .order("created_at", { ascending: false }).limit(30);
 
@@ -58,6 +61,15 @@ export default function AdminPage() {
       const { data: events } = await sb.from("events")
         .select("id, title, event_date, event_type, is_published, status")
         .order("event_date", { ascending: false }).limit(20);
+
+      // NEW: fetch contact messages and RDV
+      const { data: contacts } = await sb.from("contact_messages")
+        .select("id, full_name, email, phone, subject, message, is_read, created_at, user_id")
+        .order("created_at", { ascending: false }).limit(50);
+
+      const { data: rdvList } = await sb.from("pastoral_appointments")
+        .select("id, full_name, phone, email, subject, message, preferred_date, preferred_time, modality, status, created_at, user_id")
+        .order("created_at", { ascending: false }).limit(50);
 
       const postUserIds = [...new Set((recentPosts ?? []).map((p: any) => p.user_id))];
       const { data: postProfiles } = postUserIds.length > 0
@@ -73,7 +85,12 @@ export default function AdminPage() {
 
       setData({
         adminName,
-        stats: { totalMembers: totalMembers ?? 0, newMembersWeek: newMembersWeek ?? 0, totalPosts: totalPosts ?? 0, openPrayers: openPrayers ?? 0, totalEvents: totalEvents ?? 0, totalDevotions: totalDevotions ?? 0 },
+        stats: {
+          totalMembers: totalMembers ?? 0, newMembersWeek: newMembersWeek ?? 0,
+          totalPosts: totalPosts ?? 0, openPrayers: openPrayers ?? 0,
+          totalEvents: totalEvents ?? 0, totalDevotions: totalDevotions ?? 0,
+          newContacts: newContacts ?? 0, pendingRdv: pendingRdv ?? 0,
+        },
         members: (members || []).map((m: any) => ({ ...m, id: m.user_id, full_name: m.display_name || m.full_name || "—", role: rolesMap[m.user_id] || "member" })),
         posts: recentPosts ?? [],
         postProfiles: norm(postProfiles ?? []),
@@ -81,6 +98,8 @@ export default function AdminPage() {
         prayerProfiles: norm(prayerProfiles ?? []),
         devotions: (devotions ?? []).map((d: any) => ({ ...d, devotion_date: d.date })),
         events: events ?? [],
+        contacts: contacts ?? [],
+        rdvList: rdvList ?? [],
       });
       setLoading(false);
     }
