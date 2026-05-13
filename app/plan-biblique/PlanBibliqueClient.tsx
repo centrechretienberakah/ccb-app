@@ -403,7 +403,7 @@ function PlanGrid({ plans, activePlanIds, onSelect }: {
       {/* Filtres niveau */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {levels.map((l) => (
-          <button key={l.id} onClick={() => setFilterLevel(l.id)} styll(l.id)} style={{
+          <button key={l.id} onClick={() => setFilterLevel(l.id)} style={{
             padding: "7px 16px",
             background: filterLevel === l.id ? "var(--gold)" : "var(--card-bg)",
             color: filterLevel === l.id ? "#000" : "var(--text-secondary)",

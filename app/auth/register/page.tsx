@@ -334,7 +334,6 @@ export default function RegisterPage() {
                 <p className="auth-switch">
                   Deja un compte ?{" "}
                   <Link href="/auth/login">Se connecter</Link>
-               /login">Se connecter</Link>
                 </p>
               </>
             )}
