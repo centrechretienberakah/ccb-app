@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AdminClient from "./AdminClient";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Administration — CCB" };
 
 export default async function AdminPage() {
