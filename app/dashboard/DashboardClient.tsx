@@ -124,23 +124,6 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="dashboard-section">
-        <div className="dashboard-stats-row">
-          {[
-            { icon: "🔥", value: "7", label: "Jours actif" },
-            { icon: "📖", value: "12", label: "Devos lus" },
-            { icon: "🙏", value: "5", label: "Prieres" },
-          ].map(({ icon, value, label }) => (
-            <div key={label} className="dashboard-stat-card">
-              <div className="dashboard-stat-icon">{icon}</div>
-              <div className="dashboard-stat-value">{value}</div>
-              <div className="dashboard-stat-label">{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* CTA Banner */}
       <div className="dashboard-section" style={{ paddingBottom: 32 }}>
         <div className="dashboard-cta-banner">
