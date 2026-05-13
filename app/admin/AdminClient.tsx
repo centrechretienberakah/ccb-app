@@ -258,12 +258,12 @@ export default function AdminClient({
               {filteredMembers.map(m => (
                 <div key={m.id} style={{ ...card, display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
                   <div style={{ width: 42, height: 42, borderRadius: "50%", background: m.role === "admin" ? "var(--gold)" : "var(--violet, #7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1rem", color: m.role === "admin" ? "#1a0a00" : "white", flexShrink: 0 }}>{(m.full_name?.[0] ?? "?").toUpperCase()}</div>
-                  <div style={{ flex: 1, minWidth: 150 }}>
-                    <div style={{ fontWeight: 700, fontSize: "0.92rem" }}>{m.full_name || "Sans nom"}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.full_name || "Sans nom"}</div>
                     <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{m.country || m.city || "—"} · {m.spiritual_level || "Nouveau croyant"}</div>
                   </div>
                   <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>Inscrit {timeAgo(m.created_at)}</div>
-                  <select value={m.role} onChange={e => changeRole(m.id, e.target.value)} style={{ ...inputStyle, width: "auto", minWidth: 120, padding: "0.4rem 0.75rem", fontSize: "0.8rem" }}>
+                  <select value={m.role} onChange={e => changeRole(m.id, e.target.value)} style={{ ...inputStyle, width: "auto", minWidth: 0, padding: "0.4rem 0.75rem", fontSize: "0.8rem" }}>
                     <option value="member">Membre</option>
                     <option value="leader">Leader</option>
                     <option value="admin">Admin</option>

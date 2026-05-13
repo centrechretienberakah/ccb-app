@@ -156,7 +156,7 @@ export default function ContactPage() {
         <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "24px 20px" }}>
           <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-title)" }}>✉️ Formulaire de contact</h2>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
               <div>
                 <label style={labelStyle}>Nom complet *</label>
                 <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Jean Dupont" style={inputStyle} required />
