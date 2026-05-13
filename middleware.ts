@@ -6,8 +6,8 @@ const PROTECTED_ROUTES = [
   "/community", "/prayer", "/profile", "/settings",
   "/plan-biblique", "/events", "/notifications",
   "/enseignements", "/contact", "/rendez-vous",
+  "/admin",
 ];
-const ADMIN_ROUTES   = ["/admin"];
 const PREMIUM_ROUTES = ["/premium"];
 
 export async function middleware(request: NextRequest) {
@@ -46,26 +46,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Protection routes admin → vérifie user_roles (bonne table)
-  const isAdminRoute = ADMIN_ROUTES.some((r) => pathname.startsWith(r));
-  if (isAdminRoute) {
-    if (!user) {
-      const url = new URL("/auth/login", request.url);
-      url.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(url);
-    }
-    const { data: roleRow } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
-    if (roleRow?.role !== "admin" && roleRow?.role !== "leader") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-  }
-
-  // Protection routes premium → vérifie user_profiles (bonne table)
+  // Protection premium → vérifie user_profiles
   const isPremiumRoute = PREMIUM_ROUTES.some((r) => pathname.startsWith(r));
   if (isPremiumRoute && user) {
     const { data: prof } = await supabase
@@ -73,7 +54,6 @@ export async function middleware(request: NextRequest) {
       .select("is_premium")
       .eq("user_id", user.id)
       .single();
-
     if (!prof?.is_premium) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
