@@ -25,7 +25,7 @@ export default function JesusDailyClient({ videos }: { videos: Video[] }) {
         <h1 style={{ fontSize: 26, fontWeight: 800, background: "linear-gradient(135deg, var(--gold), #f59e0b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", margin: "0 0 4px" }}>
           Jesus Daily
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>Une parole prophétique chaque matin</p>
+        <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>Un message d&apos;évangélisation chaque matin — 45 secondes pour partager l&apos;Évangile</p>
       </div>
 
       {/* Featured Card */}

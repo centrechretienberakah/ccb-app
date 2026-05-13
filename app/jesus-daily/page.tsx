@@ -5,11 +5,11 @@ export const metadata: Metadata = { title: "Jesus Daily — CCB" };
 
 // Contenu statique pour commencer — peut être migré en DB plus tard
 const VIDEOS = [
-  { id: "1", date: "2026-05-13", title: "La puissance de la Parole", scripture: "Jean 1:1", theme: "Parole de Dieu", youtubeId: "", tiktokUrl: "", content: "Au commencement était la Parole, et la Parole était avec Dieu. Chaque matin, aligne ta bouche avec le ciel. Parle, déclare, proclame — car la Parole crée !", emoji: "⚡" },
-  { id: "2", date: "2026-05-12", title: "Marchons par la foi", scripture: "2 Corinthiens 5:7", theme: "Foi", youtubeId: "", tiktokUrl: "", content: "Nous marchons par la foi et non par la vue. Ce que tu ne vois pas encore, Dieu l'a déjà préparé. Avance, il tient ta main !", emoji: "🔥" },
-  { id: "3", date: "2026-05-11", title: "Tu es la lumière", scripture: "Matthieu 5:14", theme: "Identité", youtubeId: "", tiktokUrl: "", content: "Vous êtes la lumière du monde. Tu n'as pas besoin de permission pour briller. Ton seul devoir : ne pas te cacher !", emoji: "✨" },
-  { id: "4", date: "2026-05-10", title: "Grâce sur grâce", scripture: "Jean 1:16", theme: "Grâce", youtubeId: "", tiktokUrl: "", content: "De sa plénitude, nous avons tous reçu grâce sur grâce. Il ne t'a pas donné juste assez — il t'a comblé !", emoji: "🌊" },
-  { id: "5", date: "2026-05-09", title: "La paix qui dépasse", scripture: "Philippiens 4:7", theme: "Paix", youtubeId: "", tiktokUrl: "", content: "La paix de Dieu qui surpasse toute intelligence gardera votre cœur. Cette paix-là ne dépend pas des circonstances !", emoji: "🕊️" },
+  { id: "1", date: "2026-05-13", title: "Jésus : la seule voie", scripture: "Jean 14:6", theme: "Évangile", youtubeId: "", tiktokUrl: "", content: "Jésus lui dit : Je suis le chemin, la vérité et la vie. Nul ne vient au Père que par moi. Le salut n'est pas une religion — c'est une relation avec une personne : Jésus-Christ.", emoji: "✝️" },
+  { id: "2", date: "2026-05-12", title: "Dieu t'a tant aimé", scripture: "Jean 3:16", theme: "Amour de Dieu", youtubeId: "", tiktokUrl: "", content: "Car Dieu a tant aimé le monde qu'il a donné son Fils unique. Avant que tu ne le cherches, il t'a déjà aimé. L'Évangile commence par cet amour inconditionnel.", emoji: "❤️" },
+  { id: "3", date: "2026-05-11", title: "La grâce suffit", scripture: "Éphésiens 2:8-9", theme: "Salut", youtubeId: "", tiktokUrl: "", content: "C'est par la grâce que vous êtes sauvés, par le moyen de la foi. Le salut est un don — pas une récompense. Tu n'as pas à le mériter : tu n'as qu'à le recevoir.", emoji: "🎁" },
+  { id: "4", date: "2026-05-10", title: "Une vie nouvelle", scripture: "2 Corinthiens 5:17", theme: "Nouvelle naissance", youtubeId: "", tiktokUrl: "", content: "Si quelqu'un est en Christ, il est une nouvelle créature. L'Évangile ne t'améliore pas — il te renouvelle. Jésus ne colmate pas les fissures, il refait tout à neuf.", emoji: "🌱" },
+  { id: "5", date: "2026-05-09", title: "Réconciliés avec Dieu", scripture: "Romains 5:1", theme: "Réconciliation", youtubeId: "", tiktokUrl: "", content: "Étant donc justifiés par la foi, nous avons la paix avec Dieu par notre Seigneur Jésus-Christ. Le péché creusait un fossé — la croix l'a comblé. Tu peux t'approcher de Dieu aujourd'hui.", emoji: "🕊️" },
 ];
 
 export default function JesusDailyPage() {
