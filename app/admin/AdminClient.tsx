@@ -194,7 +194,7 @@ export default function AdminClient({
       )}
 
       {/* Header + onglets */}
-      <div style={{ background: "var(--header-gradient)", borderBottom: "1px solid var(--border)", backdropFilter: "blur(20px)" }}>
+      <div style={{ background: "#f5f0e8", borderBottom: "1px solid #d9cdb8", backdropFilter: "blur(20px)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "1.25rem 1.5rem 0" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}>
             <div>
