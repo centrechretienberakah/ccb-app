@@ -66,10 +66,36 @@ export default function LiveClient({ upcomingEvents }: { upcomingEvents: Event[]
         📅 Prochains Cultes
       </h2>
 
+      {/* Programme régulier — toujours visible */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+        {[
+          { icon: "⛪", title: "Culte du Dimanche", time: "Tous les dimanches · 17h30 (Belgique)", sub: "En ligne — partout dans le monde", accent: "#ef4444", href: null },
+          { icon: "🌙", title: "Nuit de Prière", time: "Dernier vendredi du mois · 23h30 (Belgique)", sub: "Prochain : 29 Mai 2026 · Intercession collective", accent: "var(--gold)", href: "/prayer" },
+          { icon: "🎓", title: "Bootcamp Annuel CCB 2026", time: "26 – 28 Juin 2026 · Douala, Cameroun & En ligne", sub: "SEMBLABLE À CHRIST · Romains 8:29", accent: "var(--gold)", href: "https://bootcamp.centrechretienberakah.com" },
+        ].map((item) => (
+          <div key={item.title} style={{ display: "flex", gap: 16, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "14px 18px", alignItems: "center" }}>
+            <div style={{ background: `${item.accent}18`, border: `1px solid ${item.accent}40`, borderRadius: "var(--radius-lg)", padding: "10px 12px", textAlign: "center", flexShrink: 0, fontSize: 22 }}>
+              {item.icon}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)", marginBottom: 2 }}>{item.title}</div>
+              <div style={{ fontSize: 12, color: item.accent, fontWeight: 600, marginBottom: 2 }}>{item.time}</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{item.sub}</div>
+            </div>
+            {item.href && (
+              <a href={item.href} target={item.href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer"
+                style={{ background: `${item.accent}18`, border: `1px solid ${item.accent}40`, color: item.accent, borderRadius: "var(--radius-full)", padding: "6px 14px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, whiteSpace: "nowrap" }}>
+                Rejoindre →
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+
       {upcomingEvents.length === 0 ? (
         <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: 32, textAlign: "center" }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>📅</div>
-          <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>Aucun culte programmé pour le moment.<br/>Les cultes sont en général le dimanche à 9h et 11h.</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>Aucun événement ponctuel programmé en ce moment.<br/>Rejoignez-nous le dimanche à 17h30 (heure Belgique) pour le culte hebdomadaire.</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

@@ -422,12 +422,86 @@ export default function EventsClient({ events: initialEvents, userRsvpMap: initi
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 32px" }}>
 
+      {/* Programme régulier — toujours visible dans l'onglet "À venir" */}
+      {filter === "upcoming" && (
+        <div style={{ marginBottom: 28 }}>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
+            📆 Programme régulier
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[
+              {
+                icon: "⛪",
+                title: "Culte du Dimanche",
+                time: "Tous les dimanches · 17h30 (Belgique)",
+                sub: "En ligne — partout dans le monde",
+                accent: "#ef4444",
+                href: "/live",
+                tag: "LIVE",
+              },
+              {
+                icon: "🌙",
+                title: "Nuit de Prière",
+                time: "Dernier vendredi du mois · 23h30 (Belgique)",
+                sub: "Prochain : 29 Mai 2026 · Intercession collective",
+                accent: "var(--gold)",
+                href: "/prayer",
+                tag: "Prière",
+              },
+              {
+                icon: "🎓",
+                title: "Bootcamp Annuel CCB 2026",
+                time: "26 – 28 Juin 2026 · Douala, Cameroun & En ligne",
+                sub: "SEMBLABLE À CHRIST · Romains 8:29",
+                accent: "var(--gold)",
+                href: "https://bootcamp.centrechretienberakah.com",
+                tag: "Bootcamp",
+              },
+            ].map((item) => (
+              <div key={item.title} style={{
+                display: "flex", gap: 14, alignItems: "center",
+                background: "var(--card-bg)", border: "1px solid var(--border)",
+                borderRadius: "var(--radius-xl)", padding: "14px 16px",
+              }}>
+                <div style={{
+                  background: `${item.accent}18`, border: `1px solid ${item.accent}40`,
+                  borderRadius: "var(--radius-lg)", padding: "10px 12px",
+                  textAlign: "center", flexShrink: 0, fontSize: 22,
+                }}>
+                  {item.icon}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)", marginBottom: 2 }}>{item.title}</div>
+                  <div style={{ fontSize: 12, color: item.accent, fontWeight: 600, marginBottom: 2 }}>{item.time}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{item.sub}</div>
+                </div>
+                <a href={item.href} target={item.href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer"
+                  style={{
+                    background: `${item.accent}18`, border: `1px solid ${item.accent}40`,
+                    color: item.accent, borderRadius: "var(--radius-full)", padding: "6px 14px",
+                    fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, whiteSpace: "nowrap",
+                  }}>
+                  Rejoindre →
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ borderBottom: "1px solid var(--border-subtle)", margin: "20px 0 0" }} />
+          {upcomingCount > 0 && (
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 12px" }}>
+              🎉 Événements ponctuels
+            </h2>
+          )}
+        </div>
+      )}
+
       {/* Events list */}
       {filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px" }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>{filter === "mine" ? "🎟️" : filter === "past" ? "📂" : "🎉"}</div>
           <div style={{ color: "var(--text-muted)", fontSize: 14 }}>
-            {filter === "mine" ? "Vous n'êtes inscrit à aucun événement." : filter === "past" ? "Aucun événement passé." : "Aucun événement à venir pour l'instant."}
+            {filter === "mine" ? "Vous n'êtes inscrit à aucun événement." : filter === "past" ? "Aucun événement passé." : "Aucun événement ponctuel programmé. Consultez le programme régulier ci-dessus."}
           </div>
         </div>
       ) : (

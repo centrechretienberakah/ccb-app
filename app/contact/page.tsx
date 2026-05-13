@@ -192,9 +192,9 @@ export default function ContactPage() {
         <div style={{ marginTop: 20, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "20px" }}>
           <h3 style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-title)" }}>🕐 Horaires des cultes</h3>
           {[
-            { jour: "Dimanche", heure: "9h00 — Culte principal" },
-            { jour: "Mercredi", heure: "18h30 — Étude biblique" },
-            { jour: "Vendredi", heure: "18h30 — Prière & Intercession" },
+            { jour: "Dimanche", heure: "17h30 — Culte en ligne (heure Belgique)" },
+            { jour: "Vendredi soir (dernier du mois)", heure: "23h30 — Nuit de Prière" },
+            { jour: "26 – 28 Juin 2026", heure: "🎓 Bootcamp Annuel CCB" },
           ].map((h) => (
             <div key={h.jour} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border-subtle)" }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>{h.jour}</span>

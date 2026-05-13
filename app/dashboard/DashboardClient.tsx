@@ -34,9 +34,9 @@ const QUICK_ACTIONS = [
 ];
 
 const UPCOMING = [
-  { icon: "⛪", title: "Culte dominical", time: "Dimanche 10h00", tag: "LIVE" },
-  { icon: "📖", title: "Etude biblique", time: "Mercredi 19h30", tag: "Classe" },
-  { icon: "🙏", title: "Nuit de priere", time: "Vendredi 22h00", tag: "Priere" },
+  { icon: "⛪", title: "Culte du Dimanche", time: "Tous les dim. · 17h30 (Belgique)", tag: "LIVE", href: "/live" },
+  { icon: "🌙", title: "Nuit de Priere", time: "Prochain : 29 Mai · 23h30", tag: "Priere", href: "/prayer" },
+  { icon: "🎓", title: "Bootcamp CCB 2026", time: "26 – 28 Juin 2026 · Douala & Online", tag: "Bootcamp", href: "https://bootcamp.centrechretienberakah.com" },
 ];
 
 export default function DashboardClient({ displayName, avatarUrl, email, role }: Props) {
@@ -106,18 +106,20 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
           <Link href="/events" className="dashboard-see-all">Voir tout</Link>
         </div>
         <div className="dashboard-upcoming-list">
-          {UPCOMING.map(({ icon, title, time, tag }) => (
-            <div key={title} className="dashboard-upcoming-item">
-              <div className="dashboard-upcoming-icon">{icon}</div>
-              <div className="dashboard-upcoming-info">
-                <div className="dashboard-upcoming-title">{title}</div>
-                <div className="dashboard-upcoming-time">
-                  <IconCalendar size={12} />
-                  {time}
+          {UPCOMING.map(({ icon, title, time, tag, href }) => (
+            <Link key={title} href={href} style={{ textDecoration: "none" }}>
+              <div className="dashboard-upcoming-item">
+                <div className="dashboard-upcoming-icon">{icon}</div>
+                <div className="dashboard-upcoming-info">
+                  <div className="dashboard-upcoming-title">{title}</div>
+                  <div className="dashboard-upcoming-time">
+                    <IconCalendar size={12} />
+                    {time}
+                  </div>
                 </div>
+                <span className="dashboard-upcoming-tag">{tag}</span>
               </div>
-              <span className="dashboard-upcoming-tag">{tag}</span>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
