@@ -86,9 +86,7 @@ DROP POLICY IF EXISTS "groups_public_read" ON public.groups;
 DROP POLICY IF EXISTS "groups_member_read" ON public.groups;
 DROP POLICY IF EXISTS "groups_admin_write" ON public.groups;
 CREATE POLICY "groups_public_read" ON public.groups FOR SELECT USING (is_private = false);
-CREATE POLICY "groups_member_read" ON public.groups FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.group_members WHERE group_id = groups.id AND user_id = auth.uid())
-);
+-- groups_member_read sera ajoutée APRES la création de group_members (voir ci-dessous)
 CREATE POLICY "groups_admin_write" ON public.groups FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','leader'))
 );
@@ -110,6 +108,12 @@ DROP POLICY IF EXISTS "group_members_admin"  ON public.group_members;
 CREATE POLICY "group_members_select" ON public.group_members FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "group_members_admin"  ON public.group_members FOR ALL USING (
   EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin','leader'))
+);
+
+-- Ajout de la politique groups_member_read ICI (après que group_members existe)
+DROP POLICY IF EXISTS "groups_member_read" ON public.groups;
+CREATE POLICY "groups_member_read" ON public.groups FOR SELECT USING (
+  EXISTS (SELECT 1 FROM public.group_members WHERE group_id = groups.id AND user_id = auth.uid())
 );
 
 -- =====================================================================
@@ -236,4 +240,19 @@ BEGIN
   IF v_author IS NOT NULL AND v_author <> NEW.user_id THEN
     PERFORM public.insert_notification(v_author, 'intercession', 'Quelqu''un prie pour vous', NULL, '/prayer');
   END IF; RETURN NEW;
-E
+END; $$;
+
+DROP TRIGGER IF EXISTS trg_notify_intercession ON public.prayer_intercessions;
+CREATE TRIGGER trg_notify_intercession
+  AFTER INSERT ON public.prayer_intercessions
+  FOR EACH ROW EXECUTE FUNCTION public.notify_on_intercession();
+
+-- =====================================================================
+-- 16. REALTIME — NOTIFICATIONS + AUTRES MODULES
+-- =====================================================================
+
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;          EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.sermons;                EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.groups;                 EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.group_members;          EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.pastoral_appointments;  EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END $$;

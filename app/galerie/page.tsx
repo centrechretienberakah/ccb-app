@@ -1,24 +1,19 @@
 import { Metadata } from "next";
-import ComingSoon from "@/components/ComingSoon";
-export const metadata: Metadata = { title: "Galerie CCB" };
-export default function GaleriePage() {
-  return (
-    <ComingSoon
-      emoji="🖼️"
-      title="Galerie Photos"
-      subtitle="Moments & Souvenirs"
-      description="Revivez les plus beaux moments du ministère : cultes, événements, baptêmes, et toutes les occasions de grâce."
-      accentColor="#ec4899"
-      accentGlow="rgba(236,72,153,0.2)"
-      features={[
-        { icon: "📸", label: "Albums par événement" },
-        { icon: "❤️", label: "Aimer & partager" },
-        { icon: "🔍", label: "Recherche avancée" },
-        { icon: "⬇️", label: "Téléchargement HD" },
-        { icon: "🎞️", label: "Diaporama" },
-        { icon: "🗓️", label: "Fil chronologique" },
-      ]}
-      notifyLabel="Me notifier des nouveaux albums"
-    />
-  );
+import { createClient } from "@/lib/supabase/server";
+import GalerieClient from "./GalerieClient";
+
+export const metadata: Metadata = { title: "Galerie — CCB" };
+
+export default async function GaleriePage() {
+  const supabase = await createClient();
+  const { data: albums } = await supabase
+    .from("photo_albums")
+    .select("id, title, description, cover_url, created_at")
+    .order("created_at", { ascending: false });
+  const { data: photos } = await supabase
+    .from("photos")
+    .select("id, url, caption, album_id, created_at")
+    .order("created_at", { ascending: false })
+    .limit(60);
+  return <GalerieClient albums={albums ?? []} photos={photos ?? []} />;
 }

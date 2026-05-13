@@ -1,24 +1,26 @@
 import { Metadata } from "next";
-import ComingSoon from "@/components/ComingSoon";
-export const metadata: Metadata = { title: "Groupes Privés CCB" };
-export default function GroupesPage() {
-  return (
-    <ComingSoon
-      emoji="🤝"
-      title="Groupes de Travail"
-      subtitle="Cellules & Mentorat"
-      description="Rejoignez des groupes privés de croissance spirituelle, des cellules de prière, des équipes de mentorat et des communautés thématiques."
-      accentColor="#16a34a"
-      accentGlow="rgba(22,163,74,0.2)"
-      features={[
-        { icon: "🔒", label: "Groupes privés" },
-        { icon: "💬", label: "Discussions internes" },
-        { icon: "📁", label: "Partage de fichiers" },
-        { icon: "📈", label: "Suivi progression" },
-        { icon: "🙏", label: "Cellules de prière" },
-        { icon: "👨‍🏫", label: "Mentorat personnalisé" },
-      ]}
-      notifyLabel="Rejoindre un groupe"
-    />
-  );
+import { createClient } from "@/lib/supabase/server";
+import GroupesClient from "./GroupesClient";
+
+export const metadata: Metadata = { title: "Groupes — CCB" };
+
+export default async function GroupesPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data: groups } = await supabase
+    .from("groups")
+    .select("id, name, description, type, member_count, is_private, cover_url, created_at")
+    .order("member_count", { ascending: false });
+
+  let myGroupIds: string[] = [];
+  if (user) {
+    const { data: memberships } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", user.id);
+    myGroupIds = (memberships ?? []).map(m => m.group_id);
+  }
+
+  return <GroupesClient groups={groups ?? []} myGroupIds={myGroupIds} userId={user?.id ?? null} />;
 }

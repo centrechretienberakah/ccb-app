@@ -1,26 +1,17 @@
 import { Metadata } from "next";
-import ComingSoon from "@/components/ComingSoon";
+import { createClient } from "@/lib/supabase/server";
+import LiveClient from "./LiveClient";
 
-export const metadata: Metadata = { title: "Live — Cultes en direct" };
+export const metadata: Metadata = { title: "Live — Cultes en Direct · CCB" };
 
-export default function LivePage() {
-  return (
-    <ComingSoon
-      emoji="📡"
-      title="Cultes en Direct"
-      subtitle="Worship Live"
-      description="Rejoignez les cultes du Centre Chrétien Berakah en temps réel, où que vous soyez dans le monde."
-      accentColor="#e53e3e"
-      accentGlow="rgba(229,62,62,0.2)"
-      features={[
-        { icon: "🔴", label: "Stream HD" },
-        { icon: "💬", label: "Chat en direct" },
-        { icon: "🙏", label: "Mur de prière" },
-        { icon: "📅", label: "Programme des cultes" },
-        { icon: "🔔", label: "Rappels automatiques" },
-        { icon: "📼", label: "Rediffusions" },
-      ]}
-      notifyLabel="M'alerter avant le prochain culte"
-    />
-  );
+export default async function LivePage() {
+  const supabase = await createClient();
+  const { data: events } = await supabase
+    .from("events")
+    .select("id, title, description, event_date, location, cover_image_url")
+    .gte("event_date", new Date().toISOString())
+    .order("event_date", { ascending: true })
+    .limit(5);
+
+  return <LiveClient upcomingEvents={events ?? []} />;
 }

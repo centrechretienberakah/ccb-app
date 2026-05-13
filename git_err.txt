@@ -1,0 +1,3 @@
+warning: in the working copy of 'app/community/FeedClient.tsx', LF will be replaced by CRLF the next time Git touches it
+To https://github.com/centrechretienberakah/ccb-app.git
+   059dc6c..5329f98  main -> main
