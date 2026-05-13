@@ -93,6 +93,9 @@ export default function JesusDailyClient({ videos }: { videos: Video[] }) {
           Nous suivre sur TikTok →
         </a>
       </div>
+    </divur TikTok →
+        </a>
+      </div>
     </div>
   );
 }

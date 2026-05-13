@@ -403,7 +403,7 @@ function PlanGrid({ plans, activePlanIds, onSelect }: {
       {/* Filtres niveau */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {levels.map((l) => (
-          <button key={l.id} onClick={() => setFilterLevel(l.id)} style={{
+          <button key={l.id} onClick={() => setFilterLevel(l.id)} styll(l.id)} style={{
             padding: "7px 16px",
             background: filterLevel === l.id ? "var(--gold)" : "var(--card-bg)",
             color: filterLevel === l.id ? "#000" : "var(--text-secondary)",
@@ -462,21 +462,24 @@ function PlanGrid({ plans, activePlanIds, onSelect }: {
   );
 }
 
-// ─── Détail d'un plan ─────────────────────────────────────────────────────────
+// ─── Détail d’un plan ────────────────────────────────────────────────────────────────────────────
 function PlanDetail({ plan, onStart, onBack, loading }: {
-  plan: ReadingPlan; onStart: () => void; onBack: () => void; loading: boolean;
+  plan: ReadingPlan;
+  onStart: () => void;
+  onBack: () => void;
+  loading: boolean;
 }) {
   const router = useRouter();
-  const previewDays = [1, 2, 3];
+  const previewDays = [1, 2, 3].filter((d) => d <= plan.totalDays);
 
   return (
     <div>
       <button onClick={onBack} style={{
-        background: "none", border: "none", color: "var(--gold)", fontSize: 13,
-        fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)", marginBottom: 20,
-        display: "flex", alignItems: "center", gap: 6,
+        background: "none", border: "none", color: "var(--text-secondary)",
+        fontSize: 14, cursor: "pointer", padding: "0 0 16px",
+        fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 6,
       }}>
-        ← Retour
+        ← Retour aux plans
       </button>
 
       <div style={{
