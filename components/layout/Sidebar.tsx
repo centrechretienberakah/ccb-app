@@ -5,39 +5,32 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  IconHome, IconBook, IconHeart, IconUsers, IconSun,
-  IconPlay, IconGraduationCap, IconRadio,
-  IconUser, IconSettings, IconLogOut, IconBell, IconBookmark,
+  IconUser, IconSettings, IconLogOut,
 } from "@/components/icons";
 
-const NAV_ITEMS = [
-  { href: "/dashboard",     label: "Accueil",         Icon: IconHome },
-  { href: "/bible",         label: "Bible",           Icon: IconBook },
-  { href: "/plan-biblique", label: "Plan de Lecture", Icon: IconBookmark },
-  { href: "/prayer",        label: "Prière",          Icon: IconHeart },
-  { href: "/community",     label: "Communauté",      Icon: IconUsers },
-  { href: "/notifications", label: "Notifications",   Icon: IconBell },
-  { href: "/devotion",      label: "Dévotion",        Icon: IconSun },
-  { href: "/jesus-daily",   label: "Jesus Daily",     Icon: IconPlay },
-  { href: "/classes",       label: "Salle de classe", Icon: IconGraduationCap },
-  { href: "/live",          label: "Live",            Icon: IconRadio },
-];
-
-const MINISTRY_ITEMS = [
-  { href: "/events",        label: "Événements",    emoji: "📅" },
-  { href: "/enseignements", label: "Enseignements", emoji: "🎙️" },
-  { href: "/annonces",      label: "Annonces",      emoji: "📢" },
-  { href: "/galerie",       label: "Galerie",       emoji: "🖼️" },
-  { href: "/bibliotheque",  label: "Bibliothèque",  emoji: "📚" },
-  { href: "/temoignages",   label: "Témoignages",   emoji: "✨" },
-  { href: "/groupes",       label: "Groupes",       emoji: "👥" },
-];
-
-const SERVICE_ITEMS = [
-  { href: "/rendez-vous", label: "Rendez-vous",  emoji: "🗓️" },
-  { href: "/contact",     label: "Contact",      emoji: "📬" },
-  { href: "/dons",        label: "Faire un Don", emoji: "🙌" },
-  { href: "/premium",     label: "Premium",      emoji: "👑" },
+// Toutes les rubriques — ordre alphabétique (Accueil en premier)
+const ALL_ITEMS = [
+  { href: "/dashboard",     label: "Accueil",           emoji: "🏠" },
+  { href: "/annonces",      label: "Annonces",          emoji: "📢" },
+  { href: "/bible",         label: "Bible",             emoji: "📖" },
+  { href: "/bibliotheque",  label: "Bibliothèque",      emoji: "📚" },
+  { href: "/community",     label: "Communauté",        emoji: "👥" },
+  { href: "/contact",       label: "Contact",           emoji: "📬" },
+  { href: "/devotion",      label: "Dévotion",          emoji: "☀️" },
+  { href: "/enseignements", label: "Enseignements",     emoji: "🎙️" },
+  { href: "/events",        label: "Événements",        emoji: "📅" },
+  { href: "/dons",          label: "Faire un Don",      emoji: "💝" },
+  { href: "/galerie",       label: "Galerie",           emoji: "🖼️" },
+  { href: "/groupes",       label: "Groupes",           emoji: "🤝" },
+  { href: "/jesus-daily",   label: "Jesus Daily",       emoji: "🎬" },
+  { href: "/live",          label: "Live",              emoji: "📡" },
+  { href: "/notifications", label: "Notifications",     emoji: "🔔" },
+  { href: "/plan-biblique", label: "Plan de Lecture",   emoji: "📖" },
+  { href: "/premium",       label: "Premium",           emoji: "👑" },
+  { href: "/prayer",        label: "Prière",            emoji: "🙏" },
+  { href: "/rendez-vous",   label: "Rendez-vous",       emoji: "🗓️" },
+  { href: "/classes",       label: "Salle de classe",   emoji: "🎓" },
+  { href: "/temoignages",   label: "Témoignages",       emoji: "✨" },
 ];
 
 export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
@@ -72,54 +65,10 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
         </div>
       </div>
 
-      {/* Nav principale */}
+      {/* Menu — ordre alphabétique */}
       <nav className="sidebar-nav">
-        <div className="sidebar-nav-label">NAVIGATION</div>
-        {NAV_ITEMS.map(({ href, label, Icon }) => {
-          const active = isActive(href);
-          return (
-            <Link
-              key={href} href={href}
-              className={`sidebar-link ${active ? "active" : ""}`}
-              data-label={label}
-              onClick={onLinkClick}
-            >
-              <Icon size={18} className="sidebar-link-icon" />
-              <span>{label}</span>
-              {active && <span className="sidebar-active-dot" />}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="sidebar-separator" />
-
-      {/* Ministère */}
-      <nav className="sidebar-nav">
-        <div className="sidebar-nav-label">MINISTÈRE</div>
-        {MINISTRY_ITEMS.map(({ href, label, emoji }) => {
-          const active = isActive(href);
-          return (
-            <Link
-              key={href} href={href}
-              className={`sidebar-link ${active ? "active" : ""}`}
-              data-label={label}
-              onClick={onLinkClick}
-            >
-              <span style={{ fontSize: 16, width: 18, textAlign: "center", flexShrink: 0 }}>{emoji}</span>
-              <span>{label}</span>
-              {active && <span className="sidebar-active-dot" />}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="sidebar-separator" />
-
-      {/* Services */}
-      <nav className="sidebar-nav">
-        <div className="sidebar-nav-label">SERVICES</div>
-        {SERVICE_ITEMS.map(({ href, label, emoji }) => {
+        <div className="sidebar-nav-label">MENU</div>
+        {ALL_ITEMS.map(({ href, label, emoji }) => {
           const active = isActive(href);
           return (
             <Link
