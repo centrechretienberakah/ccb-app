@@ -12,7 +12,7 @@ import {
 const ALL_ITEMS = [
   { href: "/dashboard",     label: "Accueil",           emoji: "🏠" },
   { href: "/annonces",      label: "Annonces",          emoji: "📢" },
-  { href: "/bible",         label: "Bible",             emoji: "📖" },
+  { href: "/bible",         label: "Ma Bible",          emoji: "📖" },
   { href: "/bibliotheque",  label: "Bibliothèque",      emoji: "📚" },
   { href: "/community",     label: "Communauté",        emoji: "👥" },
   { href: "/contact",       label: "Contact",           emoji: "📬" },
