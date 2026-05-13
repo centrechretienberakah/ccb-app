@@ -10,7 +10,7 @@ export default async function AdminPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?redirect=/admin");
 
-  // Vérification rôle admin via user_roles (bonne table)
+  // Vérification rôle admin via user_roles
   const { data: roleRow } = await supabase
     .from("user_roles")
     .select("role")
@@ -121,11 +121,11 @@ export default async function AdminPage() {
     <AdminClient
       adminName={adminName}
       stats={{
-        totalMembers:  totalMembers  ?? 0,
+        totalMembers:   totalMembers   ?? 0,
         newMembersWeek: newMembersWeek ?? 0,
-        totalPosts:    totalPosts    ?? 0,
-        openPrayers:   openPrayers   ?? 0,
-        totalEvents:   totalEvents   ?? 0,
+        totalPosts:     totalPosts     ?? 0,
+        openPrayers:    openPrayers    ?? 0,
+        totalEvents:    totalEvents    ?? 0,
         totalDevotions: totalDevotions ?? 0,
       }}
       members={membersWithRole}
