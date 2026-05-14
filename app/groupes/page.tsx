@@ -8,10 +8,38 @@ export default async function GroupesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: groups } = await supabase
-    .from("groups")
-    .select("id, name, description, type, member_count, is_private, cover_url, created_at")
-    .order("member_count", { ascending: false });
+  // Tente avec member_count (si colonne dénormalisée existe), sinon fallback
+  let groups: any[] = [];
+  {
+    const full = await supabase
+      .from("groups")
+      .select("id, name, description, type, member_count, is_private, cover_url, created_at, max_members")
+      .order("created_at", { ascending: false });
+    if (!full.error && full.data) {
+      groups = full.data;
+    } else {
+      const basic = await supabase
+        .from("groups")
+        .select("id, name, description, type, is_private, cover_url, created_at, max_members")
+        .order("created_at", { ascending: false });
+      groups = basic.data ?? [];
+    }
+  }
+
+  // Compte les membres par groupe (si on n'a pas la colonne dénormalisée)
+  if (groups.length > 0 && groups[0].member_count === undefined) {
+    const groupIds = groups.map((g: any) => g.id);
+    const { data: members } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .in("group_id", groupIds);
+    const counts: Record<string, number> = {};
+    for (const m of members ?? []) counts[m.group_id] = (counts[m.group_id] || 0) + 1;
+    groups = groups.map((g: any) => ({ ...g, member_count: counts[g.id] || 0 }));
+  }
+
+  // Tri par nombre de membres décroissant
+  groups.sort((a: any, b: any) => (b.member_count || 0) - (a.member_count || 0));
 
   let myGroupIds: string[] = [];
   if (user) {
