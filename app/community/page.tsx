@@ -51,7 +51,7 @@ export default async function CommunityPage() {
       .select("role")
       .eq("user_id", user.id)
       .single();
-    isAdmin = roleData?.role === "admin";
+    isAdmin = roleData?.role === "admin" || roleData?.role === "owner";
 
     // Categories
     const { data: catData } = await supabase

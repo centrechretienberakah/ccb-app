@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { isModerator } from "@/lib/rbac";
 import {
   IconUser, IconSettings, IconLogOut,
 } from "@/components/icons";
@@ -41,7 +42,7 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
       if (!user) return;
       sb.from("user_roles").select("role").eq("user_id", user.id).single()
         .then(({ data }) => {
-          if (data?.role === "admin" || data?.role === "leader") setIsAdmin(true);
+          if (isModerator(data?.role)) setIsAdmin(true);
         });
     });
   }, []);

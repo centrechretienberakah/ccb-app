@@ -53,7 +53,7 @@ export default async function ProfilePage() {
       .select("role")
       .eq("user_id", user.id)
       .single();
-    isAdmin = roleData?.role === "admin";
+    isAdmin = roleData?.role === "admin" || roleData?.role === "owner";
   } catch {
     // Tables may not exist yet
   }

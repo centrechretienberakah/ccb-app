@@ -31,7 +31,7 @@ export default async function EnseignementsPage() {
       .select("role")
       .eq("user_id", user.id)
       .single();
-    isAdmin = role?.role === "admin" || role?.role === "leader";
+    isAdmin = ["owner", "admin", "moderator", "leader"].includes(role?.role ?? "");
   }
 
   return (
