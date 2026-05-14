@@ -158,11 +158,13 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
   }
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
-    padding: "12px 20px", background: "none", border: "none",
+    flex: 1, padding: "13px 8px", background: "none", border: "none",
     borderBottom: `2px solid ${active ? "var(--gold)" : "transparent"}`,
     color: active ? "var(--gold)" : "var(--text-muted)",
     fontWeight: active ? 700 : 400, fontSize: 13, cursor: "pointer",
-    fontFamily: "var(--font-body)", transition: "all 0.2s", whiteSpace: "nowrap",
+    fontFamily: "var(--font-body)", transition: "all 0.2s",
+    textAlign: "center", whiteSpace: "nowrap", overflow: "hidden",
+    textOverflow: "ellipsis",
   });
 
   return (
@@ -223,22 +225,28 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
 
       {/* Tabs */}
       <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", display: "flex", overflowX: "auto", alignItems: "center" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", display: "flex", alignItems: "stretch", width: "100%" }}>
           <button style={tabStyle(tab === "active")} onClick={() => setTab("active")}>
             📖 Mes plans ({activePlans.length})
           </button>
           <button style={tabStyle(tab === "browse")} onClick={() => setTab("browse")}>
             🔍 Choisir un plan
           </button>
-          <div style={{ flex: 1 }} />
-          <button onClick={() => setShowReminderModal(true)} title="Programmer un rappel de lecture" style={{
-            background: reminderEnabled ? "rgba(212,175,55,0.15)" : "transparent",
-            border: reminderEnabled ? "1px solid rgba(212,175,55,0.4)" : "1px solid transparent",
-            borderRadius: "var(--radius-md)", padding: "6px 12px", cursor: "pointer",
-            fontSize: 12, fontWeight: 600, color: reminderEnabled ? "var(--gold)" : "var(--text-muted)",
-            fontFamily: "inherit", marginRight: 8, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4,
-          }}>
-            ⏰ {reminderEnabled ? `Rappel ${reminderTime}` : "Rappel"}
+          <button
+            onClick={() => setShowReminderModal(true)}
+            title="Programmer un rappel de lecture"
+            style={{
+              flex: 1, padding: "13px 8px", background: "none", cursor: "pointer",
+              border: "none",
+              borderBottom: `2px solid ${reminderEnabled ? "var(--gold)" : "transparent"}`,
+              fontSize: 13, fontWeight: reminderEnabled ? 700 : 400,
+              color: reminderEnabled ? "var(--gold)" : "var(--text-muted)",
+              fontFamily: "var(--font-body)", transition: "all 0.2s",
+              textAlign: "center", whiteSpace: "nowrap", overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            ⏰ {reminderEnabled ? `${reminderTime}` : "Rappel"}
           </button>
         </div>
       </div>
