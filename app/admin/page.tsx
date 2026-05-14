@@ -154,16 +154,31 @@ export default function AdminPage() {
       };
 
       type DbRow = Record<string, unknown>;
-      const [media, courses, sermons, albums, groups, siteContent, adminLogs, testimonies] = await Promise.all([
+      const [media, courses, sermons, albums, groupsRaw, siteContent, adminLogs, testimonies] = await Promise.all([
         safeSelect<DbRow>("media_library", "*", { order: "created_at", limit: 100 }),
         safeSelect<DbRow>("courses", "*", { order: "order_index", ascending: true, limit: 100 }),
         safeSelect<DbRow>("sermons", "*", { order: "published_at", limit: 100 }),
         safeSelect<DbRow>("photo_albums", "*", { order: "created_at", limit: 100 }),
-        safeSelect<DbRow>("groups", "*", { order: "created_at", limit: 100 }),
+        safeSelect<DbRow & { id: string }>("groups", "*", { order: "created_at", limit: 100 }),
         safeSelect<DbRow>("site_content", "*", { order: "page_key", ascending: true }),
         safeSelect<import("@/lib/database.types").AdminLogRow>("admin_logs", "*", { order: "created_at", limit: 100 }),
         safeSelect<DbRow>("testimonies", "*", { order: "created_at", limit: 100 }),
       ]);
+
+      // Enrichit les groupes avec member_count (sinon l'admin affiche 0)
+      let groups: DbRow[] = groupsRaw;
+      if (groupsRaw.length > 0) {
+        const gIds = groupsRaw.map((g) => g.id as string);
+        const { data: gmRows } = await sb
+          .from("group_members")
+          .select("group_id")
+          .in("group_id", gIds);
+        const counts: Record<string, number> = {};
+        for (const row of (gmRows as { group_id: string }[] | null) || []) {
+          counts[row.group_id] = (counts[row.group_id] || 0) + 1;
+        }
+        groups = groupsRaw.map((g) => ({ ...g, member_count: counts[g.id as string] || 0 }));
+      }
 
       // Profile lookups — display_name peut ne pas exister, fallback sur full_name
       const safeProfileLookup = async (userIds: string[]): Promise<UserProfileRow[]> => {
