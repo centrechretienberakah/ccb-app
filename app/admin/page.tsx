@@ -45,20 +45,27 @@ export default function AdminPage() {
         sb.from("pastoral_appointments").select("*", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
-      // Tente d'abord avec les nouvelles colonnes (admin_panel_v2 SQL).
-      // Si la migration n'est pas encore exécutée, retombe sur les colonnes de base.
-      let members: any[] | null = null;
+      // Trois niveaux de fallback selon les migrations appliquées.
+      // Niveau 1 : tout (admin_panel_v2 + schema_fixes_v4 appliqués)
+      // Niveau 2 : sans is_disabled/last_sign_in_at/last_seen_at
+      // Niveau 3 : colonnes minimales (sans display_name)
+      let members: any[] = [];
       {
-        const full = await sb.from("user_profiles")
+        const lvl1 = await sb.from("user_profiles")
           .select("user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium, is_disabled, last_sign_in_at, last_seen_at")
           .order("created_at", { ascending: false }).limit(200);
-        if (full.error) {
-          const basic = await sb.from("user_profiles")
+        if (!lvl1.error && lvl1.data) { members = lvl1.data; }
+        else {
+          const lvl2 = await sb.from("user_profiles")
             .select("user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium")
             .order("created_at", { ascending: false }).limit(200);
-          members = basic.data;
-        } else {
-          members = full.data;
+          if (!lvl2.error && lvl2.data) { members = lvl2.data; }
+          else {
+            const lvl3 = await sb.from("user_profiles")
+              .select("user_id, full_name, created_at, country, city")
+              .order("created_at", { ascending: false }).limit(200);
+            members = lvl3.data ?? [];
+          }
         }
       }
 
@@ -70,13 +77,36 @@ export default function AdminPage() {
         .select("id, content, created_at, user_id, is_pinned, post_type")
         .order("created_at", { ascending: false }).limit(30);
 
-      const { data: recentPrayers } = await sb.from("prayer_requests")
-        .select("id, title, content, is_answered, created_at, user_id, is_anonymous, category")
-        .order("created_at", { ascending: false }).limit(30);
+      // prayer_requests : fallback si colonnes title/category absentes
+      let recentPrayers: any[] = [];
+      {
+        const full = await sb.from("prayer_requests")
+          .select("id, title, content, is_answered, created_at, user_id, is_anonymous, category")
+          .order("created_at", { ascending: false }).limit(30);
+        if (!full.error && full.data) recentPrayers = full.data;
+        else {
+          const basic = await sb.from("prayer_requests")
+            .select("id, content, is_answered, created_at, user_id, is_anonymous")
+            .order("created_at", { ascending: false }).limit(30);
+          recentPrayers = (basic.data ?? []).map((p: any) => ({ ...p, title: (p.content ?? "").slice(0, 60), category: null }));
+        }
+      }
 
-      const { data: devotions } = await sb.from("devotions")
-        .select("id, date, title, verse_reference, verse_text, content")
-        .order("date", { ascending: false }).limit(30);
+      // devotions : essai sur 'devotions' puis fallback 'daily_devotions'
+      let devotions: any[] = [];
+      {
+        const tryDev = await sb.from("devotions")
+          .select("id, devotion_date, title, verse_reference, verse_text, content")
+          .order("devotion_date", { ascending: false }).limit(30);
+        if (!tryDev.error && tryDev.data) {
+          devotions = tryDev.data.map((d: any) => ({ ...d, date: d.devotion_date }));
+        } else {
+          const tryDaily = await sb.from("daily_devotions")
+            .select("id, devotion_date, title, verse_reference, verse_text")
+            .order("devotion_date", { ascending: false }).limit(30);
+          devotions = (tryDaily.data ?? []).map((d: any) => ({ ...d, date: d.devotion_date, content: null }));
+        }
+      }
 
       const { data: events } = await sb.from("events")
         .select("*")
