@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getSiteContent } from "@/lib/site-content";
 
 export const metadata: Metadata = { title: "À Propos — Centre Chrétien Berakah" };
 
@@ -33,7 +34,10 @@ const BELIEFS = [
   "Jésus-Christ reviendra glorieusement pour établir son règne éternel.",
 ];
 
-export default function AProposPage() {
+export default async function AProposPage() {
+  const cms = await getSiteContent("a-propos");
+  const heroTitle = cms?.title || "Centre Chrétien Berakah";
+  const heroIntro = cms?.body_md || "Une église locale vivante, ancrée dans la Parole, portée par le Saint-Esprit, et consacrée à faire des disciples de Jésus-Christ.";
   return (
     <div style={{ maxWidth: 780, margin: "0 auto", padding: "32px 16px 80px" }}>
 
@@ -41,10 +45,10 @@ export default function AProposPage() {
       <div style={{ textAlign: "center", marginBottom: 48 }}>
         <div style={{ fontSize: 60, marginBottom: 16 }}>⛪</div>
         <h1 style={{ fontSize: 30, fontWeight: 800, background: "linear-gradient(135deg, var(--text-primary), var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 10, lineHeight: 1.2 }}>
-          Centre Chrétien Berakah
+          {heroTitle}
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 16, lineHeight: 1.7, maxWidth: 540, margin: "0 auto" }}>
-          Une église locale vivante, ancrée dans la Parole, portée par le Saint-Esprit, et consacrée à faire des disciples de Jésus-Christ.
+        <p style={{ color: "var(--text-muted)", fontSize: 16, lineHeight: 1.7, maxWidth: 540, margin: "0 auto", whiteSpace: "pre-wrap" }}>
+          {heroIntro}
         </p>
       </div>
 

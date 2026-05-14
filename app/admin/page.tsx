@@ -16,7 +16,9 @@ export default function AdminPage() {
       if (!user) { router.replace("/auth/login?redirect=/admin"); return; }
 
       const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).single();
-      if (roleRow?.role !== "admin" && roleRow?.role !== "leader") { router.replace("/dashboard"); return; }
+      const isAdmin = roleRow?.role === "admin";
+      const isLeader = roleRow?.role === "leader";
+      if (!isAdmin && !isLeader) { router.replace("/dashboard"); return; }
 
       const { data: profile } = await sb.from("user_profiles").select("display_name, full_name").eq("user_id", user.id).single();
       const adminName = profile?.display_name || profile?.full_name || "Admin";
@@ -39,8 +41,8 @@ export default function AdminPage() {
       ]);
 
       const { data: members } = await sb.from("user_profiles")
-        .select("user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium")
-        .order("created_at", { ascending: false }).limit(100);
+        .select("user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium, is_disabled, last_sign_in_at, last_seen_at")
+        .order("created_at", { ascending: false }).limit(200);
 
       const { data: allRoles } = await sb.from("user_roles").select("user_id, role");
       const rolesMap: Record<string, string> = {};
@@ -59,10 +61,9 @@ export default function AdminPage() {
         .order("date", { ascending: false }).limit(30);
 
       const { data: events } = await sb.from("events")
-        .select("id, title, event_date, event_type, is_published, status")
-        .order("event_date", { ascending: false }).limit(20);
+        .select("*")
+        .order("event_date", { ascending: false }).limit(50);
 
-      // NEW: fetch contact messages and RDV
       const { data: contacts } = await sb.from("contact_messages")
         .select("id, full_name, email, phone, subject, message, is_read, created_at, user_id")
         .order("created_at", { ascending: false }).limit(50);
@@ -70,6 +71,27 @@ export default function AdminPage() {
       const { data: rdvList } = await sb.from("pastoral_appointments")
         .select("id, full_name, phone, email, subject, message, preferred_date, preferred_time, modality, status, created_at, user_id")
         .order("created_at", { ascending: false }).limit(50);
+
+      // Ressources gérables (peuvent ne pas exister selon migrations appliquées — on tolère l'erreur)
+      const safeSelect = async <T,>(table: string, columns: string, opts?: { order?: string; ascending?: boolean; limit?: number }) => {
+        try {
+          let q: any = sb.from(table).select(columns);
+          if (opts?.order) q = q.order(opts.order, { ascending: opts.ascending ?? false });
+          if (opts?.limit) q = q.limit(opts.limit);
+          const { data, error } = await q;
+          if (error) return [] as T[];
+          return (data || []) as T[];
+        } catch { return [] as T[]; }
+      };
+
+      const [media, courses, sermons, albums, groups, siteContent] = await Promise.all([
+        safeSelect("media_library", "*", { order: "created_at", limit: 100 }),
+        safeSelect("courses", "*", { order: "order_index", ascending: true, limit: 100 }),
+        safeSelect("sermons", "*", { order: "published_at", limit: 100 }),
+        safeSelect("photo_albums", "*", { order: "created_at", limit: 100 }),
+        safeSelect("groups", "*", { order: "created_at", limit: 100 }),
+        safeSelect("site_content", "*", { order: "page_key", ascending: true }),
+      ]);
 
       const postUserIds = [...new Set((recentPosts ?? []).map((p: any) => p.user_id))];
       const { data: postProfiles } = postUserIds.length > 0
@@ -85,13 +107,18 @@ export default function AdminPage() {
 
       setData({
         adminName,
+        isAdmin,
         stats: {
           totalMembers: totalMembers ?? 0, newMembersWeek: newMembersWeek ?? 0,
           totalPosts: totalPosts ?? 0, openPrayers: openPrayers ?? 0,
           totalEvents: totalEvents ?? 0, totalDevotions: totalDevotions ?? 0,
           newContacts: newContacts ?? 0, pendingRdv: pendingRdv ?? 0,
         },
-        members: (members || []).map((m: any) => ({ ...m, id: m.user_id, full_name: m.display_name || m.full_name || "—", role: rolesMap[m.user_id] || "member" })),
+        members: (members || []).map((m: any) => ({
+          ...m, id: m.user_id,
+          full_name: m.display_name || m.full_name || "—",
+          role: rolesMap[m.user_id] || "member",
+        })),
         posts: recentPosts ?? [],
         postProfiles: norm(postProfiles ?? []),
         prayers: recentPrayers ?? [],
@@ -100,6 +127,12 @@ export default function AdminPage() {
         events: events ?? [],
         contacts: contacts ?? [],
         rdvList: rdvList ?? [],
+        media,
+        courses,
+        sermons,
+        albums,
+        groups,
+        siteContent,
       });
       setLoading(false);
     }

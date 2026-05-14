@@ -1,9 +1,10 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { getSiteContent } from "@/lib/site-content";
 
 export const metadata: Metadata = { title: "Faire un Don — CCB" };
 
-const MODES = [
+const DEFAULT_MODES = [
   { emoji: "📱", title: "Mobile Money", detail: "MTN MoMo / Orange Money", info: "+243 XXX XXX XXX", color: "#FFD700", bg: "rgba(255,215,0,0.08)", border: "rgba(255,215,0,0.3)" },
   { emoji: "🏦", title: "Virement Bancaire", detail: "Compte CCB — Équateur Bank", info: "IBAN: CD00 0000 0000 0000", color: "#60a5fa", bg: "rgba(96,165,250,0.08)", border: "rgba(96,165,250,0.3)" },
   { emoji: "✉️", title: "Par Courrier", detail: "Enveloppe au bureau de l'église", info: "Av. de l'Église, Kinshasa", color: "#34d399", bg: "rgba(52,211,153,0.08)", border: "rgba(52,211,153,0.3)" },
@@ -19,18 +20,22 @@ const USES = [
   { emoji: "🤲", label: "Actions sociales et aide aux familles" },
 ];
 
-export default function DonsPage() {
+export default async function DonsPage() {
+  const cms = await getSiteContent("dons");
+  const cmsModes = Array.isArray(cms?.data_json?.modes) ? (cms.data_json.modes as typeof DEFAULT_MODES) : null;
+  const MODES = cmsModes && cmsModes.length > 0 ? cmsModes : DEFAULT_MODES;
+  const heroTitle = cms?.title || "Soutenir le Ministère";
+  const heroIntro = cms?.body_md || "Votre générosité permet au Centre Chrétien Berakah de continuer à proclamer l'Évangile, former des disciples et transformer des vies pour la gloire de Dieu.";
   return (
     <div style={{ maxWidth: 680, margin: "0 auto", padding: "32px 16px 80px" }}>
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <div style={{ fontSize: 56, marginBottom: 12 }}>💝</div>
         <h1 style={{ fontSize: 28, fontWeight: 800, background: "linear-gradient(135deg, #f59e0b, #ef4444)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 8 }}>
-          Soutenir le Ministère
+          {heroTitle}
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 15, lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>
-          Votre générosité permet au Centre Chrétien Berakah de continuer à proclamer l&apos;Évangile,
-          former des disciples et transformer des vies pour la gloire de Dieu.
+        <p style={{ color: "var(--text-muted)", fontSize: 15, lineHeight: 1.6, maxWidth: 460, margin: "0 auto", whiteSpace: "pre-wrap" }}>
+          {heroIntro}
         </p>
       </div>
 

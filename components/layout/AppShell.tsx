@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
 import TopBar from "./TopBar";
+import { useHeartbeat } from "@/lib/presence";
 
 function shouldShowShell(pathname: string): boolean {
   if (pathname === "/") return false;
@@ -16,6 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const showShell = shouldShowShell(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useHeartbeat();
 
   // Ferme la sidebar sur mobile quand on change de page
   useEffect(() => {

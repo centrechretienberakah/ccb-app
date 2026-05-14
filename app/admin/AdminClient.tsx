@@ -2,13 +2,20 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useOnlineUsers } from "@/lib/presence";
+import ResourceTab, { ColumnDef } from "./ResourceTab";
+import SiteContentTab from "./SiteContentTab";
 
 interface Stats {
   totalMembers: number; newMembersWeek: number; totalPosts: number;
   openPrayers: number; totalEvents: number; totalDevotions: number;
   newContacts: number; pendingRdv: number;
 }
-interface Member { id: string; full_name: string; role: string; spiritual_level?: string; created_at: string; country?: string; city?: string; }
+interface Member {
+  id: string; full_name: string; role: string; spiritual_level?: string;
+  created_at: string; country?: string; city?: string;
+  is_disabled?: boolean; last_sign_in_at?: string | null; last_seen_at?: string | null;
+}
 interface Post { id: string; content: string; created_at: string; user_id: string; is_pinned?: boolean; post_type?: string; }
 interface Prayer { id: string; title: string; content?: string; is_answered: boolean; created_at: string; user_id: string; is_anonymous?: boolean; category?: string; }
 interface Devotion { id: string; devotion_date: string; title: string; verse_reference: string; verse_text?: string; }
@@ -17,12 +24,19 @@ interface RdvItem { id: string; full_name: string; phone: string; email?: string
 interface Profile { id: string; full_name: string; }
 
 interface AdminClientProps {
-  adminName: string; stats: Stats;
+  adminName: string; isAdmin: boolean; stats: Stats;
   members: Member[]; posts: Post[]; postProfiles: Profile[];
   prayers: Prayer[]; prayerProfiles: Profile[];
   devotions: Devotion[];
+  events: Record<string, unknown>[];
   contacts: ContactMsg[];
   rdvList: RdvItem[];
+  media: Record<string, unknown>[];
+  courses: Record<string, unknown>[];
+  sermons: Record<string, unknown>[];
+  albums: Record<string, unknown>[];
+  groups: Record<string, unknown>[];
+  siteContent: Record<string, unknown>[];
 }
 
 function timeAgo(iso: string) {
@@ -47,14 +61,23 @@ const labelStyle: React.CSSProperties = { display: "block", color: "var(--text-m
 const sectionTitle: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "0 0 1rem" };
 
 export default function AdminClient({
-  adminName, stats,
+  adminName, isAdmin, stats,
   members: initialMembers, posts: initialPosts, postProfiles,
   prayers: initialPrayers, prayerProfiles,
   devotions: initialDevotions,
   contacts: initialContacts,
   rdvList: initialRdv,
+  events: initialEvents,
+  media, courses, sermons, albums, groups, siteContent,
 }: AdminClientProps) {
-  type Tab = "overview" | "members" | "posts" | "prayers" | "devotions" | "contacts" | "rdv";
+  type Tab =
+    | "overview" | "members" | "posts" | "prayers" | "devotions"
+    | "contacts" | "rdv"
+    | "media" | "courses" | "sermons" | "albums" | "groups" | "events"
+    | "content";
+  const onlineSet = useOnlineUsers();
+  // Calcul figé au mount du composant pour éviter Date.now() en render.
+  const [twoMinutesAgo] = useState(() => new Date(Date.now() - 2 * 60_000).toISOString());
   const [tab, setTab] = useState<Tab>("overview");
   const [members, setMembers] = useState(initialMembers);
   const [memberSearch, setMemberSearch] = useState("");
@@ -82,6 +105,43 @@ export default function AdminClient({
     const sb = createClient();
     const { error } = await sb.from("user_roles").upsert({ user_id: memberId, role: newRole }, { onConflict: "user_id" });
     if (!error) { setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m)); showToast("Rôle mis à jour ✓"); }
+  };
+
+  const toggleDisable = async (memberId: string, disable: boolean) => {
+    const sb = createClient();
+    const { error } = await sb.from("user_profiles").update({ is_disabled: disable }).eq("user_id", memberId);
+    if (!error) {
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, is_disabled: disable } : m));
+      showToast(disable ? "Compte désactivé ✓" : "Compte réactivé ✓");
+    } else showToast("❌ " + error.message);
+  };
+
+  const hardDelete = async (memberId: string, name: string) => {
+    if (!confirm(`Supprimer DÉFINITIVEMENT le compte de "${name}" et toutes ses données ? Cette action est irréversible.`)) return;
+    if (!confirm(`Confirmer la suppression définitive de "${name}" ?`)) return;
+    const res = await fetch(`/api/admin/users/${memberId}`, { method: "DELETE" });
+    const body = await res.json();
+    if (!res.ok) { showToast("❌ " + (body.error || "Erreur")); return; }
+    setMembers(prev => prev.filter(m => m.id !== memberId));
+    showToast("Compte supprimé ✓");
+  };
+
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const inviteUser = async () => {
+    if (!inviteEmail) { showToast("Email requis"); return; }
+    setInviting(true);
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: inviteEmail, display_name: inviteName || undefined }),
+    });
+    const body = await res.json();
+    setInviting(false);
+    if (!res.ok) { showToast("❌ " + (body.error || "Erreur")); return; }
+    setInviteEmail(""); setInviteName("");
+    showToast("Invitation envoyée ✓");
   };
 
   const deletePost = async (postId: string) => {
@@ -142,9 +202,90 @@ export default function AdminClient({
     { id: "members",   label: `Membres (${stats.totalMembers})` },
     { id: "posts",     label: `Publications (${stats.totalPosts})` },
     { id: "prayers",   label: `Prières (${stats.openPrayers})` },
-    { id: "devotions", label: `Dévotions (${stats.totalDevotions})` },
+    { id: "devotions", label: `Méditations (${stats.totalDevotions})` },
+    { id: "events",    label: `Événements / Live` },
+    { id: "media",     label: `📚 Bibliothèque` },
+    { id: "courses",   label: `🎓 Classes` },
+    { id: "sermons",   label: `🎙️ Enseignements` },
+    { id: "albums",    label: `🖼️ Galerie` },
+    { id: "groups",    label: `🤝 Groupes` },
+    { id: "content",   label: `📝 Pages (CMS)` },
     { id: "contacts",  label: unreadContacts > 0 ? `📬 Messages (${unreadContacts} non lus)` : `Messages (${contacts.length})` },
     { id: "rdv",       label: pendingRdvCount > 0 ? `🗓️ RDV (${pendingRdvCount} en attente)` : `RDV (${rdvList.length})` },
+  ];
+
+  const lastSignInLabel = (iso: string | null | undefined) => {
+    if (!iso) return "Jamais";
+    return timeAgo(iso);
+  };
+  const isOnline = (id: string, lastSeen?: string | null) => {
+    if (onlineSet.has(id)) return true;
+    if (!lastSeen) return false;
+    return lastSeen >= twoMinutesAgo;
+  };
+
+  // Colonnes des ressources gérables (ResourceTab)
+  const mediaCols: ColumnDef[] = [
+    { key: "title", label: "Titre", type: "text", required: true },
+    { key: "description", label: "Description", type: "textarea", hiddenInList: true },
+    { key: "type", label: "Type", type: "select", options: ["pdf","audio","video","ebook","document"], required: true, defaultValue: "pdf" },
+    { key: "category", label: "Catégorie", type: "text", defaultValue: "general" },
+    { key: "file_url", label: "URL fichier", type: "url", required: true },
+    { key: "thumbnail_url", label: "Vignette", type: "url", hiddenInList: true },
+    { key: "is_premium", label: "Premium", type: "boolean" },
+    { key: "is_published", label: "Publié", type: "boolean", defaultValue: true },
+  ];
+  const courseCols: ColumnDef[] = [
+    { key: "title", label: "Titre", type: "text", required: true },
+    { key: "slug", label: "Slug", type: "text", required: true },
+    { key: "description", label: "Description", type: "textarea", hiddenInList: true },
+    { key: "thumbnail_url", label: "Vignette", type: "url", hiddenInList: true },
+    { key: "level", label: "Niveau", type: "select", options: ["beginner","intermediate","advanced"], defaultValue: "beginner" },
+    { key: "duration_mins", label: "Durée (min)", type: "number" },
+    { key: "is_premium", label: "Premium", type: "boolean" },
+    { key: "is_published", label: "Publié", type: "boolean" },
+    { key: "order_index", label: "Ordre", type: "number" },
+  ];
+  const sermonCols: ColumnDef[] = [
+    { key: "title", label: "Titre", type: "text", required: true },
+    { key: "description", label: "Description", type: "textarea", hiddenInList: true },
+    { key: "speaker", label: "Prédicateur", type: "text", defaultValue: "Rev. Elvis NGUIFFO" },
+    { key: "series", label: "Série", type: "text" },
+    { key: "scripture_ref", label: "Référence", type: "text" },
+    { key: "video_url", label: "Vidéo URL", type: "url", hiddenInList: true },
+    { key: "audio_url", label: "Audio URL", type: "url", hiddenInList: true },
+    { key: "thumbnail_url", label: "Vignette", type: "url", hiddenInList: true },
+    { key: "duration_secs", label: "Durée (s)", type: "number", hiddenInList: true },
+    { key: "is_published", label: "Publié", type: "boolean" },
+    { key: "is_premium", label: "Premium", type: "boolean" },
+    { key: "published_at", label: "Publié le", type: "datetime", hiddenInList: true },
+  ];
+  const albumCols: ColumnDef[] = [
+    { key: "title", label: "Titre", type: "text", required: true },
+    { key: "description", label: "Description", type: "textarea", hiddenInList: true },
+    { key: "cover_url", label: "Cover URL", type: "url" },
+    { key: "is_public", label: "Public", type: "boolean", defaultValue: true },
+  ];
+  const groupCols: ColumnDef[] = [
+    { key: "name", label: "Nom", type: "text", required: true },
+    { key: "description", label: "Description", type: "textarea", hiddenInList: true },
+    { key: "type", label: "Type", type: "select", options: ["cell","prayer","study","mentoring","team"], defaultValue: "cell" },
+    { key: "cover_url", label: "Cover", type: "url", hiddenInList: true },
+    { key: "is_private", label: "Privé", type: "boolean" },
+    { key: "max_members", label: "Max membres", type: "number" },
+  ];
+  const eventCols: ColumnDef[] = [
+    { key: "title", label: "Titre", type: "text", required: true },
+    { key: "subtitle", label: "Sous-titre", type: "text", hiddenInList: true },
+    { key: "description", label: "Description", type: "textarea", hiddenInList: true },
+    { key: "event_date", label: "Date", type: "datetime", required: true },
+    { key: "end_date", label: "Fin", type: "datetime", hiddenInList: true },
+    { key: "location", label: "Lieu", type: "text" },
+    { key: "is_online", label: "En ligne", type: "boolean" },
+    { key: "stream_url", label: "Stream URL", type: "url", hiddenInList: true },
+    { key: "image_url", label: "Image", type: "url", hiddenInList: true },
+    { key: "status", label: "Statut", type: "select", options: ["draft","upcoming","live","past","cancelled"], defaultValue: "upcoming" },
+    { key: "is_published", label: "Publié", type: "boolean", defaultValue: true },
   ];
 
   const modalityLabel: Record<string, string> = { presentiel: "🏛️ Présentiel", visio: "📹 Visio", telephone: "📞 Téléphone" };
@@ -250,29 +391,102 @@ export default function AdminClient({
         {/* ===== MEMBRES ===== */}
         {tab === "members" && (
           <div>
+            {isAdmin && (
+              <div style={{ ...card, marginBottom: "1rem", display: "flex", gap: "0.5rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 220px" }}>
+                  <label style={labelStyle}>Inviter par email</label>
+                  <input type="email" placeholder="email@exemple.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} style={inputStyle} />
+                </div>
+                <div style={{ flex: "1 1 220px" }}>
+                  <label style={labelStyle}>Nom (optionnel)</label>
+                  <input type="text" placeholder="Prénom Nom" value={inviteName} onChange={e => setInviteName(e.target.value)} style={inputStyle} />
+                </div>
+                <button onClick={inviteUser} disabled={inviting} style={{ padding: "0.65rem 1.25rem", borderRadius: "9999px", border: "none", background: "var(--gold)", color: "#1a0a00", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", opacity: inviting ? 0.6 : 1 }}>
+                  {inviting ? "..." : "+ Inviter"}
+                </button>
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
               <input type="search" placeholder="Rechercher par nom ou pays..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} style={{ ...inputStyle, maxWidth: "320px" }} />
-              <span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>{filteredMembers.length} membre(s)</span>
+              <span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
+                {filteredMembers.length} membre(s) · <span style={{ color: "#22c55e" }}>● {filteredMembers.filter(m => isOnline(m.id, m.last_seen_at)).length} en ligne</span>
+              </span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {filteredMembers.map(m => (
-                <div key={m.id} style={{ ...card, display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-                  <div style={{ width: 42, height: 42, borderRadius: "50%", background: m.role === "admin" ? "var(--gold)" : "var(--violet, #7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1rem", color: m.role === "admin" ? "#1a0a00" : "white", flexShrink: 0 }}>{(m.full_name?.[0] ?? "?").toUpperCase()}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.full_name || "Sans nom"}</div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{m.country || m.city || "—"} · {m.spiritual_level || "Nouveau croyant"}</div>
+              {filteredMembers.map(m => {
+                const online = isOnline(m.id, m.last_seen_at);
+                return (
+                  <div key={m.id} style={{ ...card, display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap", opacity: m.is_disabled ? 0.55 : 1 }}>
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <div style={{ width: 42, height: 42, borderRadius: "50%", background: m.role === "admin" ? "var(--gold)" : "var(--violet, #7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1rem", color: m.role === "admin" ? "#1a0a00" : "white" }}>{(m.full_name?.[0] ?? "?").toUpperCase()}</div>
+                      {online && <div title="En ligne" style={{ position: "absolute", bottom: 0, right: 0, width: 12, height: 12, borderRadius: "50%", background: "#22c55e", border: "2px solid var(--card-bg)" }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        {m.full_name || "Sans nom"}
+                        {m.is_disabled && <span style={{ fontSize: "0.65rem", padding: "0.1rem 0.45rem", borderRadius: "9999px", background: "rgba(248,113,113,0.15)", color: "#fca5a5", fontWeight: 700 }}>DÉSACTIVÉ</span>}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{m.country || m.city || "—"} · {m.spiritual_level || "Nouveau croyant"}</div>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: 2 }}>
+                        Inscrit {timeAgo(m.created_at)} · Dernière connexion : {lastSignInLabel(m.last_sign_in_at)}
+                      </div>
+                    </div>
+                    <select value={m.role} onChange={e => changeRole(m.id, e.target.value)} disabled={!isAdmin} style={{ ...inputStyle, width: "auto", minWidth: 0, padding: "0.4rem 0.75rem", fontSize: "0.8rem" }}>
+                      <option value="member">Membre</option>
+                      <option value="leader">Leader</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    {isAdmin && (
+                      <>
+                        <button onClick={() => toggleDisable(m.id, !m.is_disabled)} style={{ padding: "0.4rem 0.7rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-primary)", fontSize: "0.75rem", cursor: "pointer" }}>
+                          {m.is_disabled ? "Réactiver" : "Désactiver"}
+                        </button>
+                        <button onClick={() => hardDelete(m.id, m.full_name)} style={{ padding: "0.4rem 0.7rem", borderRadius: "var(--radius-md)", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#f87171", fontSize: "0.75rem", cursor: "pointer" }}>
+                          🗑 Suppr.
+                        </button>
+                      </>
+                    )}
                   </div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>Inscrit {timeAgo(m.created_at)}</div>
-                  <select value={m.role} onChange={e => changeRole(m.id, e.target.value)} style={{ ...inputStyle, width: "auto", minWidth: 0, padding: "0.4rem 0.75rem", fontSize: "0.8rem" }}>
-                    <option value="member">Membre</option>
-                    <option value="leader">Leader</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-              ))}
+                );
+              })}
               {filteredMembers.length === 0 && <div style={{ ...card, textAlign: "center", color: "var(--text-muted)", padding: "3rem" }}>Aucun membre correspondant.</div>}
             </div>
           </div>
+        )}
+
+        {/* ===== ÉVÉNEMENTS / LIVE ===== */}
+        {tab === "events" && (
+          <ResourceTab table="events" titleField="title" columns={eventCols} initialRows={initialEvents} rubrique="Événements & Live" icon="📅" />
+        )}
+
+        {/* ===== BIBLIOTHÈQUE ===== */}
+        {tab === "media" && (
+          <ResourceTab table="media_library" titleField="title" columns={mediaCols} initialRows={media} rubrique="Bibliothèque" icon="📚" />
+        )}
+
+        {/* ===== CLASSES ===== */}
+        {tab === "courses" && (
+          <ResourceTab table="courses" titleField="title" columns={courseCols} initialRows={courses} rubrique="Salle de classe" icon="🎓" />
+        )}
+
+        {/* ===== ENSEIGNEMENTS ===== */}
+        {tab === "sermons" && (
+          <ResourceTab table="sermons" titleField="title" columns={sermonCols} initialRows={sermons} rubrique="Enseignements / Sermons" icon="🎙️" />
+        )}
+
+        {/* ===== GALERIE ===== */}
+        {tab === "albums" && (
+          <ResourceTab table="photo_albums" titleField="title" columns={albumCols} initialRows={albums} rubrique="Albums photo" icon="🖼️" />
+        )}
+
+        {/* ===== GROUPES ===== */}
+        {tab === "groups" && (
+          <ResourceTab table="groups" titleField="name" columns={groupCols} initialRows={groups} rubrique="Groupes / Cellules" icon="🤝" />
+        )}
+
+        {/* ===== SITE CONTENT (CMS pages statiques) ===== */}
+        {tab === "content" && (
+          <SiteContentTab initialRows={siteContent} />
         )}
 
         {/* ===== PUBLICATIONS ===== */}
