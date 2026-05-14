@@ -45,24 +45,33 @@ export default function AdminPage() {
         sb.from("pastoral_appointments").select("*", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
-      // Cascade de fallback selon les migrations appliquées en prod.
-      // L1 : tout (admin_panel_v2 + schema_fixes_v4)
-      // L2 : sans is_disabled/last_sign_in_at/last_seen_at
-      // L3 : sans country/city (schémas minimaux)
-      // L4 : strict minimum (user_id, full_name, created_at)
+      // Cascade adaptive : commence par MINIMAL (toujours marche) puis enrichit.
+      // Une 1ère query avec juste (user_id, created_at) garantit qu'on a au moins
+      // une liste de UUIDs. Puis on tente d'ajouter les colonnes optionnelles.
       let members: any[] = [];
-      const tryLevels = [
-        "user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium, is_disabled, last_sign_in_at, last_seen_at",
-        "user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium",
-        "user_id, full_name, created_at, country, city",
-        "user_id, full_name, created_at",
-        "user_id, created_at",
-      ];
-      for (const cols of tryLevels) {
-        const res = await sb.from("user_profiles")
-          .select(cols)
+      {
+        const minimal = await sb.from("user_profiles")
+          .select("user_id, created_at")
           .order("created_at", { ascending: false }).limit(200);
-        if (!res.error && res.data) { members = res.data; break; }
+        members = (minimal.data as any[]) ?? [];
+      }
+      // Tente d'enrichir avec les colonnes optionnelles si elles existent
+      const optionalCols = [
+        "user_id, display_name, full_name, spiritual_level, country, city, is_premium, is_disabled, last_sign_in_at, last_seen_at",
+        "user_id, display_name, full_name, spiritual_level, country, city, is_premium",
+        "user_id, full_name, country, city",
+        "user_id, full_name",
+      ];
+      for (const cols of optionalCols) {
+        const ids = members.map((m: any) => m.user_id);
+        if (ids.length === 0) break;
+        const r = await sb.from("user_profiles").select(cols).in("user_id", ids);
+        if (!r.error && r.data) {
+          const byId = new Map<string, any>();
+          for (const row of r.data as any[]) byId.set(row.user_id, row);
+          members = members.map((m: any) => ({ ...byId.get(m.user_id), ...m }));
+          break;
+        }
       }
 
       const { data: allRoles } = await sb.from("user_roles").select("user_id, role");
