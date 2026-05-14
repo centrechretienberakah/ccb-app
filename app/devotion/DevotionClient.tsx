@@ -78,7 +78,7 @@ export default function DevotionClient({ devotionId, userId, alreadyCompleted }:
         ) : loading ? (
           "Enregistrement..."
         ) : (
-          <><span>☀️</span> J'ai lu et medite cette devotion</>
+          <><span>☀️</span> J&apos;ai lu et medite cette devotion</>
         )}
       </button>
 

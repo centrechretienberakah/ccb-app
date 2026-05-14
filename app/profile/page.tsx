@@ -11,7 +11,7 @@ export default async function ProfilePage() {
 
   let profile: any = null;
   let milestones: any[] = [];
-  let stats = { chaptersRead: 0, versesSaved: 0, readingDates: [] as string[] };
+  const stats = { chaptersRead: 0, versesSaved: 0, readingDates: [] as string[] };
   let isAdmin = false;
 
   try {

@@ -37,24 +37,6 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = localStorage.getItem("ccb-reading-reminder");
-    if (saved) {
-      const { time, enabled } = JSON.parse(saved);
-      setReminderTime(time || "07:00");
-      setReminderEnabled(enabled ?? false);
-    } else {
-      setReminderTime("07:00");
-    }
-    if ("Notification" in window) {
-      setNotifPermission(Notification.permission);
-    }
-    // Check if it's time to remind today
-    checkAndFireReminder();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   function checkAndFireReminder() {
     if (typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
@@ -76,6 +58,24 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
       localStorage.setItem("ccb-reminder-last-fired", today);
     }
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("ccb-reading-reminder");
+    if (saved) {
+      const { time, enabled } = JSON.parse(saved);
+      setReminderTime(time || "07:00");
+      setReminderEnabled(enabled ?? false);
+    } else {
+      setReminderTime("07:00");
+    }
+    if ("Notification" in window) {
+      setNotifPermission(Notification.permission);
+    }
+    // Check if it's time to remind today
+    checkAndFireReminder();
+   
+  }, []);
 
   async function requestNotifPermission(): Promise<NotificationPermission> {
     if (!("Notification" in window)) return "denied";

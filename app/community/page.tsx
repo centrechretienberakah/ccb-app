@@ -11,12 +11,12 @@ export default async function CommunityPage() {
   if (!user) redirect("/auth/login?redirect=/community");
 
   let members: any[] = [];
-  let memberMilestones: Record<string, string[]> = {};
+  const memberMilestones: Record<string, string[]> = {};
   let isAdmin = false;
   let posts: any[] = [];
   let categories: any[] = [];
   let userLikedPostIds: string[] = [];
-  let userVotes: Record<string, number> = {};
+  const userVotes: Record<string, number> = {};
   let currentUserProfile: any = null;
 
   try {

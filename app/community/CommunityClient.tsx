@@ -62,7 +62,7 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
         await supabase.from("spiritual_milestones").insert(modalMilestones.map((m) => ({ user_id: adminModal.user_id, milestone: m })));
       }
       setSaveMsg("✅ Sauvegardé");
-      adminModal.cell_group = modalCellGroup || null;
+      setAdminModal({ ...adminModal, cell_group: modalCellGroup || null });
       setTimeout(() => setAdminModal(null), 1200);
     } catch { setSaveMsg("❌ Erreur lors de la sauvegarde"); }
     finally { setSaving(false); }
@@ -80,7 +80,7 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
       {/* Onglets sub-nav */}
       <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
         <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", overflowX: "auto" }}>
-          <button style={tabStyle(tab === "feed")} onClick={() => setTab("feed")}>📰 Fil d'actualité</button>
+          <button style={tabStyle(tab === "feed")} onClick={() => setTab("feed")}>📰 Fil d&apos;actualité</button>
           <button style={tabStyle(tab === "members")} onClick={() => setTab("members")}>👥 Membres ({members.length})</button>
           {isAdmin && <span style={{ marginLeft: "auto", padding: "0 16px", fontSize: 11, color: "var(--violet)", fontWeight: 700, flexShrink: 0 }}>🛡️ Admin</span>}
         </div>

@@ -115,7 +115,7 @@ export default function RegisterPage() {
 
         <div className="auth-panel-content">
           <div className="auth-panel-verse">
-            &laquo;&nbsp;Vous ne m'avez pas choisi ;
+            &laquo;&nbsp;Vous ne m&apos;avez pas choisi ;
             mais moi, je vous ai choisis.&nbsp;&raquo;
           </div>
           <div className="auth-panel-verse-ref">Jean 15 : 16</div>

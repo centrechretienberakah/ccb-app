@@ -134,7 +134,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
   }
 
   const avatarSrc = form.avatar_url || null;
-  const initials = (form.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const initials = (form.display_name || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
   const inputStyle: React.CSSProperties = {
     width: "100%", background: "var(--input-bg)", border: "1px solid var(--input-border)",

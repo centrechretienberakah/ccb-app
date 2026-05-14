@@ -389,7 +389,7 @@ function NotesTab({ notes, onSave, onDelete }: {
       {notes.length === 0 && !showForm ? (
         <div style={{ textAlign: "center", padding: "50px 20px", color: "var(--text-muted)" }}>
           <div style={{ fontSize: 44, marginBottom: 12 }}>📝</div>
-          <div style={{ fontSize: 15 }}>Aucune note pour l'instant.</div>
+          <div style={{ fontSize: 15 }}>Aucune note pour l&apos;instant.</div>
           <p style={{ fontSize: 13, marginTop: 8, color: "var(--text-muted)" }}>
             Commencez à annoter vos lectures bibliques !
           </p>

@@ -128,7 +128,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
     }).select(`id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`).single();
 
     if (e) { setError(e.message); setSaving(false); return; }
-    onPostCreated({ ...data, user_profiles: currentUserProfile, likeCount: 0, comments: [], voteResults: [] });
+    onPostCreated({ ...(data as any), user_profiles: currentUserProfile, likeCount: 0, comments: [], voteResults: [] } as Post);
     setOpen(false); setContent(""); setType("text"); setMediaUrl(""); setLinkUrl(""); setLinkTitle(""); setLinkDesc(""); setPollOptions(["",""]); setQuizOptions([{text:"",correct:false},{text:"",correct:false}]); setCategoryId("");
     setSaving(false);
   }
@@ -722,7 +722,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       {filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px" }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
-          <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Aucun post pour l'instant. Soyez le premier à partager !</div>
+          <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Aucun post pour l&apos;instant. Soyez le premier à partager !</div>
         </div>
       ) : (
         filtered.map((post) => (

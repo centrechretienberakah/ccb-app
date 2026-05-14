@@ -171,7 +171,7 @@ export default function NotificationsClient({ notifications: initial }: { notifi
           textAlign: "center",
         }}>
           <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
-            Les notifications apparaîtront ici quand quelqu'un réagit à vos prières, posts ou activités communautaires.
+            Les notifications apparaîtront ici quand quelqu&apos;un réagit à vos prières, posts ou activités communautaires.
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/community" style={{ background: "linear-gradient(135deg, var(--gold-dark), var(--gold))", border: "none", borderRadius: "var(--radius-full)", padding: "10px 20px", color: "#000", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>

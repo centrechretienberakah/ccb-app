@@ -225,7 +225,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
         {/* Fields */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: 0.5, textTransform: "uppercase", display: "block", marginBottom: 5 }}>Nom d'affichage *</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: 0.5, textTransform: "uppercase", display: "block", marginBottom: 5 }}>Nom d&apos;affichage *</label>
             <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Votre nom ou pseudo" style={inputStyle} />
           </div>
           <div>
@@ -307,7 +307,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
       {/* ── Section Apparence ── */}
       <SectionCard title="Apparence" icon="🎨">
         <div style={{ marginBottom: 4 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>Choisissez le thème de l'application</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>Choisissez le thème de l&apos;application</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {[
               { dark: false, label: "☀️ Clair", desc: "Fond beige chaleureux" },
