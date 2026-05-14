@@ -45,28 +45,24 @@ export default function AdminPage() {
         sb.from("pastoral_appointments").select("*", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
-      // Trois niveaux de fallback selon les migrations appliquées.
-      // Niveau 1 : tout (admin_panel_v2 + schema_fixes_v4 appliqués)
-      // Niveau 2 : sans is_disabled/last_sign_in_at/last_seen_at
-      // Niveau 3 : colonnes minimales (sans display_name)
+      // Cascade de fallback selon les migrations appliquées en prod.
+      // L1 : tout (admin_panel_v2 + schema_fixes_v4)
+      // L2 : sans is_disabled/last_sign_in_at/last_seen_at
+      // L3 : sans country/city (schémas minimaux)
+      // L4 : strict minimum (user_id, full_name, created_at)
       let members: any[] = [];
-      {
-        const lvl1 = await sb.from("user_profiles")
-          .select("user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium, is_disabled, last_sign_in_at, last_seen_at")
+      const tryLevels = [
+        "user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium, is_disabled, last_sign_in_at, last_seen_at",
+        "user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium",
+        "user_id, full_name, created_at, country, city",
+        "user_id, full_name, created_at",
+        "user_id, created_at",
+      ];
+      for (const cols of tryLevels) {
+        const res = await sb.from("user_profiles")
+          .select(cols)
           .order("created_at", { ascending: false }).limit(200);
-        if (!lvl1.error && lvl1.data) { members = lvl1.data; }
-        else {
-          const lvl2 = await sb.from("user_profiles")
-            .select("user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium")
-            .order("created_at", { ascending: false }).limit(200);
-          if (!lvl2.error && lvl2.data) { members = lvl2.data; }
-          else {
-            const lvl3 = await sb.from("user_profiles")
-              .select("user_id, full_name, created_at, country, city")
-              .order("created_at", { ascending: false }).limit(200);
-            members = lvl3.data ?? [];
-          }
-        }
+        if (!res.error && res.data) { members = res.data; break; }
       }
 
       const { data: allRoles } = await sb.from("user_roles").select("user_id, role");
@@ -143,17 +139,32 @@ export default function AdminPage() {
         safeSelect("testimonies", "*", { order: "created_at", limit: 100 }),
       ]);
 
-      const postUserIds = [...new Set((recentPosts ?? []).map((p: any) => p.user_id))];
-      const { data: postProfiles } = postUserIds.length > 0
-        ? await sb.from("user_profiles").select("user_id, display_name, full_name").in("user_id", postUserIds)
-        : { data: [] };
-
+      // Profile lookups — display_name peut ne pas exister, fallback sur full_name
+      const safeProfileLookup = async (userIds: string[]) => {
+        if (userIds.length === 0) return [] as any[];
+        const tries = [
+          "user_id, display_name, full_name",
+          "user_id, full_name",
+        ];
+        for (const cols of tries) {
+          const r = await sb.from("user_profiles").select(cols).in("user_id", userIds);
+          if (!r.error && r.data) return r.data;
+        }
+        return [];
+      };
+      const postUserIds   = [...new Set((recentPosts   ?? []).map((p: any) => p.user_id))];
       const prayerUserIds = [...new Set((recentPrayers ?? []).map((p: any) => p.user_id))];
-      const { data: prayerProfiles } = prayerUserIds.length > 0
-        ? await sb.from("user_profiles").select("user_id, display_name, full_name").in("user_id", prayerUserIds)
-        : { data: [] };
+      const postProfiles   = await safeProfileLookup(postUserIds);
+      const prayerProfiles = await safeProfileLookup(prayerUserIds);
 
       const norm = (arr: any[]) => (arr || []).map((p) => ({ id: p.user_id, full_name: p.display_name || p.full_name || "Membre" }));
+
+      // Normalise display_name absent
+      const membersNormalized = (members || []).map((m: any) => ({
+        ...m, id: m.user_id,
+        full_name: m.display_name || m.full_name || "—",
+        role: rolesMap[m.user_id] || "member",
+      }));
 
       setData({
         adminName,
@@ -166,11 +177,7 @@ export default function AdminPage() {
           totalEvents: totalEvents ?? 0, totalDevotions: totalDevotions ?? 0,
           newContacts: newContacts ?? 0, pendingRdv: pendingRdv ?? 0,
         },
-        members: (members || []).map((m: any) => ({
-          ...m, id: m.user_id,
-          full_name: m.display_name || m.full_name || "—",
-          role: rolesMap[m.user_id] || "member",
-        })),
+        members: membersNormalized,
         posts: recentPosts ?? [],
         postProfiles: norm(postProfiles ?? []),
         prayers: recentPrayers ?? [],
