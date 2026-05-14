@@ -25,7 +25,6 @@ const ALL_ITEMS = [
   { href: "/jesus-daily",   label: "Jesus Daily",       emoji: "🎬" },
   { href: "/live",          label: "Live",              emoji: "📡" },
   { href: "/notifications", label: "Notifications",     emoji: "🔔" },
-  { href: "/plan-biblique", label: "Plan de Lecture",   emoji: "📖" },
   { href: "/premium",       label: "Premium",           emoji: "👑" },
   { href: "/prayer",        label: "Prière",            emoji: "🙏" },
   { href: "/rendez-vous",   label: "Rendez-vous",       emoji: "🗓️" },

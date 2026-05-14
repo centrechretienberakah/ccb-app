@@ -19,7 +19,7 @@ const QUICK_ACTIONS = [
   { emoji: "🎓", label: "Classes", sub: "Formation biblique", href: "/classes", gradient: "linear-gradient(145deg, #164e63 0%, #0891b2 55%, #22d3ee 100%)", glow: "rgba(34,211,238,0.35)" },
   { emoji: "📡", label: "Live", sub: "Cultes en direct", href: "/live", gradient: "linear-gradient(145deg, #1e1b4b 0%, #4338ca 55%, #818cf8 100%)", glow: "rgba(129,140,248,0.35)" },
   { emoji: "📅", label: "Evenements", sub: "Calendrier CCB", href: "/events", gradient: "linear-gradient(145deg, #064e3b 0%, #059669 55%, #34d399 100%)", glow: "rgba(52,211,153,0.35)" },
-  { emoji: "📖", label: "Plan de lecture", sub: "Lis la Bible en 1 an", href: "/plan-biblique", gradient: "linear-gradient(145deg, #1e3a5f 0%, #1e40af 55%, #60a5fa 100%)", glow: "rgba(96,165,250,0.35)" },
+  { emoji: "📖", label: "Plan de lecture", sub: "Lis la Bible en 1 an", href: "/bible", gradient: "linear-gradient(145deg, #1e3a5f 0%, #1e40af 55%, #60a5fa 100%)", glow: "rgba(96,165,250,0.35)" },
   { emoji: "💝", label: "Faire un don", sub: "Soutenir le ministere", href: "/dons", gradient: "linear-gradient(145deg, #7f1d1d 0%, #dc2626 55%, #f87171 100%)", glow: "rgba(248,113,113,0.35)" },
   { emoji: "📢", label: "Annonces", sub: "Actualites CCB", href: "/annonces", gradient: "linear-gradient(145deg, #78350f 0%, #d97706 55%, #fcd34d 100%)", glow: "rgba(252,211,77,0.35)" },
   { emoji: "🖼️", label: "Galerie", sub: "Photos & souvenirs", href: "/galerie", gradient: "linear-gradient(145deg, #831843 0%, #db2777 55%, #f9a8d4 100%)", glow: "rgba(249,168,212,0.35)" },
