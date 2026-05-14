@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useOnlineUsers } from "@/lib/presence";
 import ResourceTab, { ColumnDef } from "./ResourceTab";
 import SiteContentTab from "./SiteContentTab";
+import { can, ROLE_LABEL, ROLE_BADGE, type Role } from "@/lib/rbac";
 
 interface Stats {
   totalMembers: number; newMembersWeek: number; totalPosts: number;
@@ -23,8 +24,15 @@ interface ContactMsg { id: string; full_name: string; email: string; phone?: str
 interface RdvItem { id: string; full_name: string; phone: string; email?: string; subject: string; message?: string; preferred_date: string; preferred_time: string; modality: string; status: string; created_at: string; }
 interface Profile { id: string; full_name: string; }
 
+interface AdminLog {
+  id: string; actor_id: string | null; actor_role: string | null;
+  action: string; target_type: string | null; target_id: string | null;
+  details: Record<string, unknown> | null; created_at: string;
+}
+
 interface AdminClientProps {
-  adminName: string; isAdmin: boolean; stats: Stats;
+  adminName: string; isAdmin: boolean; isOwner: boolean; currentRole: string;
+  stats: Stats;
   members: Member[]; posts: Post[]; postProfiles: Profile[];
   prayers: Prayer[]; prayerProfiles: Profile[];
   devotions: Devotion[];
@@ -37,6 +45,8 @@ interface AdminClientProps {
   albums: Record<string, unknown>[];
   groups: Record<string, unknown>[];
   siteContent: Record<string, unknown>[];
+  adminLogs: AdminLog[];
+  testimonies: Record<string, unknown>[];
 }
 
 function timeAgo(iso: string) {
@@ -50,9 +60,10 @@ function timeAgo(iso: string) {
 }
 
 function roleBadge(role: string) {
-  if (role === "admin") return { label: "Admin", bg: "rgba(212,175,55,0.15)", color: "var(--gold)" };
-  if (role === "leader") return { label: "Leader", bg: "rgba(124,58,237,0.15)", color: "var(--violet-light, #a78bfa)" };
-  return { label: "Membre", bg: "rgba(255,255,255,0.06)", color: "var(--text-secondary)" };
+  const r = (role as Role) || "member";
+  const badge = ROLE_BADGE[r] ?? ROLE_BADGE.member;
+  const label = ROLE_LABEL[r] ?? "Membre";
+  return { label, bg: badge.bg, color: badge.color };
 }
 
 const card: React.CSSProperties = { background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "1.25rem" };
@@ -61,7 +72,7 @@ const labelStyle: React.CSSProperties = { display: "block", color: "var(--text-m
 const sectionTitle: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "0 0 1rem" };
 
 export default function AdminClient({
-  adminName, isAdmin, stats,
+  adminName, isAdmin, isOwner, currentRole, stats,
   members: initialMembers, posts: initialPosts, postProfiles,
   prayers: initialPrayers, prayerProfiles,
   devotions: initialDevotions,
@@ -69,13 +80,25 @@ export default function AdminClient({
   rdvList: initialRdv,
   events: initialEvents,
   media, courses, sermons, albums, groups, siteContent,
+  adminLogs, testimonies,
 }: AdminClientProps) {
   type Tab =
     | "overview" | "members" | "posts" | "prayers" | "devotions"
     | "contacts" | "rdv"
     | "media" | "courses" | "sermons" | "albums" | "groups" | "events"
-    | "content";
+    | "testimonies"
+    | "content" | "activity";
   const onlineSet = useOnlineUsers();
+  // currentRole peut être 'owner' | 'admin' | 'moderator' | 'leader' | 'member' | 'premium_member'
+  const canDeleteUser    = can(currentRole, "user.delete");
+  const canChangeRole    = can(currentRole, "user.change_role");
+  const canChangeOwner   = can(currentRole, "user.change_role_owner");
+  const canDisableUser   = can(currentRole, "user.disable");
+  const canInviteUser    = can(currentRole, "user.invite");
+  const canViewAuditLog  = can(currentRole, "admin.view_audit_log");
+  const canEditSettings  = can(currentRole, "settings.edit");
+  // Silence "unused props" pour les flags hérités
+  void isAdmin; void isOwner;
   // Calcul figé au mount du composant pour éviter Date.now() en render.
   const [twoMinutesAgo] = useState(() => new Date(Date.now() - 2 * 60_000).toISOString());
   const [tab, setTab] = useState<Tab>("overview");
@@ -101,10 +124,21 @@ export default function AdminClient({
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
+  const logAction = async (sb: ReturnType<typeof createClient>, action: string, targetType?: string, targetId?: string, details?: Record<string, unknown>) => {
+    try {
+      await sb.rpc("log_admin_action", { p_action: action, p_target_type: targetType ?? null, p_target_id: targetId ?? null, p_details: details ?? null });
+    } catch { /* RPC pas encore migrée — silencieux */ }
+  };
+
   const changeRole = async (memberId: string, newRole: string) => {
     const sb = createClient();
+    const oldRole = members.find(m => m.id === memberId)?.role;
     const { error } = await sb.from("user_roles").upsert({ user_id: memberId, role: newRole }, { onConflict: "user_id" });
-    if (!error) { setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m)); showToast("Rôle mis à jour ✓"); }
+    if (!error) {
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
+      showToast("Rôle mis à jour ✓");
+      logAction(sb, "role.change", "user", memberId, { from: oldRole, to: newRole });
+    }
   };
 
   const toggleDisable = async (memberId: string, disable: boolean) => {
@@ -113,17 +147,20 @@ export default function AdminClient({
     if (!error) {
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, is_disabled: disable } : m));
       showToast(disable ? "Compte désactivé ✓" : "Compte réactivé ✓");
+      logAction(sb, disable ? "user.disable" : "user.enable", "user", memberId);
     } else showToast("❌ " + error.message);
   };
 
   const hardDelete = async (memberId: string, name: string) => {
     if (!confirm(`Supprimer DÉFINITIVEMENT le compte de "${name}" et toutes ses données ? Cette action est irréversible.`)) return;
     if (!confirm(`Confirmer la suppression définitive de "${name}" ?`)) return;
+    const sb = createClient();
     const res = await fetch(`/api/admin/users/${memberId}`, { method: "DELETE" });
     const body = await res.json();
     if (!res.ok) { showToast("❌ " + (body.error || "Erreur")); return; }
     setMembers(prev => prev.filter(m => m.id !== memberId));
     showToast("Compte supprimé ✓");
+    logAction(sb, "user.delete", "user", memberId, { name });
   };
 
   const [inviteEmail, setInviteEmail] = useState("");
@@ -140,6 +177,8 @@ export default function AdminClient({
     const body = await res.json();
     setInviting(false);
     if (!res.ok) { showToast("❌ " + (body.error || "Erreur")); return; }
+    const sb = createClient();
+    logAction(sb, "user.invite", "user", body.user?.id, { email: inviteEmail });
     setInviteEmail(""); setInviteName("");
     showToast("Invitation envoyée ✓");
   };
@@ -197,21 +236,23 @@ export default function AdminClient({
   const unreadContacts = contacts.filter(c => !c.is_read).length;
   const pendingRdvCount = rdvList.filter(r => r.status === "pending").length;
 
-  const tabs: { id: Tab; label: string }[] = [
+  const tabs: { id: Tab; label: string; hidden?: boolean }[] = [
     { id: "overview",  label: "Aperçu" },
     { id: "members",   label: `Membres (${stats.totalMembers})` },
     { id: "posts",     label: `Publications (${stats.totalPosts})` },
     { id: "prayers",   label: `Prières (${stats.openPrayers})` },
     { id: "devotions", label: `Méditations (${stats.totalDevotions})` },
-    { id: "events",    label: `Événements / Live` },
+    { id: "events",    label: `📅 Événements / Live` },
     { id: "media",     label: `📚 Bibliothèque` },
     { id: "courses",   label: `🎓 Classes` },
     { id: "sermons",   label: `🎙️ Enseignements` },
     { id: "albums",    label: `🖼️ Galerie` },
     { id: "groups",    label: `🤝 Groupes` },
-    { id: "content",   label: `📝 Pages (CMS)` },
+    { id: "testimonies", label: `✨ Témoignages (${testimonies.length})` },
+    { id: "content",   label: `📝 Pages (CMS)`, hidden: !canEditSettings },
     { id: "contacts",  label: unreadContacts > 0 ? `📬 Messages (${unreadContacts} non lus)` : `Messages (${contacts.length})` },
     { id: "rdv",       label: pendingRdvCount > 0 ? `🗓️ RDV (${pendingRdvCount} en attente)` : `RDV (${rdvList.length})` },
+    { id: "activity",  label: `🛡 Activité`, hidden: !canViewAuditLog },
   ];
 
   const lastSignInLabel = (iso: string | null | undefined) => {
@@ -274,6 +315,14 @@ export default function AdminClient({
     { key: "is_private", label: "Privé", type: "boolean" },
     { key: "max_members", label: "Max membres", type: "number" },
   ];
+  const testimonyCols: ColumnDef[] = [
+    { key: "title", label: "Titre", type: "text", required: true },
+    { key: "content", label: "Contenu", type: "textarea", required: true, hiddenInList: true },
+    { key: "category", label: "Catégorie", type: "select", options: ["healing","salvation","provision","family","deliverance","other"], defaultValue: "healing" },
+    { key: "media_url", label: "Média", type: "url", hiddenInList: true },
+    { key: "is_approved", label: "Approuvé", type: "boolean" },
+    { key: "is_featured", label: "Mis en avant", type: "boolean" },
+  ];
   const eventCols: ColumnDef[] = [
     { key: "title", label: "Titre", type: "text", required: true },
     { key: "subtitle", label: "Sous-titre", type: "text", hiddenInList: true },
@@ -314,12 +363,17 @@ export default function AdminClient({
               <h1 style={{ fontFamily: "var(--font-title)", fontWeight: 700, fontSize: "1.35rem", color: "var(--gold)", margin: 0 }}>Dashboard Admin</h1>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Bienvenue, <strong style={{ color: "var(--text-primary)" }}>{adminName}</strong></span>
+              <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                Bienvenue, <strong style={{ color: "var(--text-primary)" }}>{adminName}</strong>{" "}
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.55rem", borderRadius: "9999px", background: roleBadge(currentRole).bg, color: roleBadge(currentRole).color, marginLeft: 6 }}>
+                  {roleBadge(currentRole).label}
+                </span>
+              </span>
               <a href="/dashboard" style={{ color: "var(--text-muted)", fontSize: "0.8rem", textDecoration: "none", padding: "0.4rem 0.9rem", border: "1px solid var(--border)", borderRadius: "9999px" }}>← App</a>
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.125rem", overflowX: "auto", scrollbarWidth: "none" }}>
-            {tabs.map(t => (
+            {tabs.filter(t => !t.hidden).map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "0.55rem 1rem", borderRadius: "8px 8px 0 0", border: "none", background: tab === t.id ? "var(--card-bg)" : "transparent", color: tab === t.id ? "var(--gold)" : "var(--text-secondary)", fontWeight: tab === t.id ? 700 : 500, fontSize: "0.82rem", cursor: "pointer", whiteSpace: "nowrap", borderBottom: tab === t.id ? "2px solid var(--gold)" : "2px solid transparent" }}>
                 {t.label}
               </button>
@@ -391,7 +445,7 @@ export default function AdminClient({
         {/* ===== MEMBRES ===== */}
         {tab === "members" && (
           <div>
-            {isAdmin && (
+            {canInviteUser && (
               <div style={{ ...card, marginBottom: "1rem", display: "flex", gap: "0.5rem", alignItems: "flex-end", flexWrap: "wrap" }}>
                 <div style={{ flex: "1 1 220px" }}>
                   <label style={labelStyle}>Inviter par email</label>
@@ -431,20 +485,28 @@ export default function AdminClient({
                         Inscrit {timeAgo(m.created_at)} · Dernière connexion : {lastSignInLabel(m.last_sign_in_at)}
                       </div>
                     </div>
-                    <select value={m.role} onChange={e => changeRole(m.id, e.target.value)} disabled={!isAdmin} style={{ ...inputStyle, width: "auto", minWidth: 0, padding: "0.4rem 0.75rem", fontSize: "0.8rem" }}>
+                    <select
+                      value={m.role}
+                      onChange={e => changeRole(m.id, e.target.value)}
+                      disabled={!canChangeRole || (m.role === "owner" && !canChangeOwner)}
+                      style={{ ...inputStyle, width: "auto", minWidth: 0, padding: "0.4rem 0.75rem", fontSize: "0.8rem" }}
+                    >
                       <option value="member">Membre</option>
-                      <option value="leader">Leader</option>
+                      <option value="premium_member">Premium</option>
+                      <option value="moderator">Modérateur</option>
+                      <option value="leader">Leader (legacy)</option>
                       <option value="admin">Admin</option>
+                      {canChangeOwner && <option value="owner">Propriétaire</option>}
                     </select>
-                    {isAdmin && (
-                      <>
-                        <button onClick={() => toggleDisable(m.id, !m.is_disabled)} style={{ padding: "0.4rem 0.7rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-primary)", fontSize: "0.75rem", cursor: "pointer" }}>
-                          {m.is_disabled ? "Réactiver" : "Désactiver"}
-                        </button>
-                        <button onClick={() => hardDelete(m.id, m.full_name)} style={{ padding: "0.4rem 0.7rem", borderRadius: "var(--radius-md)", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#f87171", fontSize: "0.75rem", cursor: "pointer" }}>
-                          🗑 Suppr.
-                        </button>
-                      </>
+                    {canDisableUser && (
+                      <button onClick={() => toggleDisable(m.id, !m.is_disabled)} style={{ padding: "0.4rem 0.7rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-primary)", fontSize: "0.75rem", cursor: "pointer" }}>
+                        {m.is_disabled ? "Réactiver" : "Désactiver"}
+                      </button>
+                    )}
+                    {canDeleteUser && m.role !== "owner" && (
+                      <button onClick={() => hardDelete(m.id, m.full_name)} style={{ padding: "0.4rem 0.7rem", borderRadius: "var(--radius-md)", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#f87171", fontSize: "0.75rem", cursor: "pointer" }}>
+                        🗑 Suppr.
+                      </button>
                     )}
                   </div>
                 );
@@ -484,9 +546,44 @@ export default function AdminClient({
           <ResourceTab table="groups" titleField="name" columns={groupCols} initialRows={groups} rubrique="Groupes / Cellules" icon="🤝" />
         )}
 
+        {/* ===== TÉMOIGNAGES ===== */}
+        {tab === "testimonies" && (
+          <ResourceTab table="testimonies" titleField="title" columns={testimonyCols} initialRows={testimonies} rubrique="Témoignages" icon="✨" />
+        )}
+
         {/* ===== SITE CONTENT (CMS pages statiques) ===== */}
-        {tab === "content" && (
+        {tab === "content" && canEditSettings && (
           <SiteContentTab initialRows={siteContent} />
+        )}
+
+        {/* ===== ACTIVITÉ / LOGS ADMIN ===== */}
+        {tab === "activity" && canViewAuditLog && (
+          <div style={{ ...card, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <h3 style={{ margin: 0 }}>🛡 Journal d&apos;activité <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "0.85rem" }}>({adminLogs.length} entrées)</span></h3>
+            {adminLogs.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "2rem" }}>Aucune activité enregistrée pour l&apos;instant.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", maxHeight: "70vh", overflowY: "auto" }}>
+                {adminLogs.map(log => (
+                  <div key={log.id} style={{ ...card, padding: "0.7rem 0.9rem", background: "var(--surface)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                        <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--gold)" }}>{log.action}</span>
+                        {log.actor_role && <span style={{ fontSize: "0.65rem", padding: "0.1rem 0.45rem", borderRadius: "9999px", background: roleBadge(log.actor_role).bg, color: roleBadge(log.actor_role).color, fontWeight: 700 }}>{roleBadge(log.actor_role).label}</span>}
+                        {log.target_type && <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>→ {log.target_type}{log.target_id ? ` #${String(log.target_id).slice(0, 8)}` : ""}</span>}
+                      </div>
+                      <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{timeAgo(log.created_at)}</span>
+                    </div>
+                    {log.details && (
+                      <pre style={{ marginTop: "0.4rem", fontSize: "0.72rem", color: "var(--text-muted)", whiteSpace: "pre-wrap", wordBreak: "break-all", fontFamily: "ui-monospace, monospace" }}>
+                        {JSON.stringify(log.details, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* ===== PUBLICATIONS ===== */}

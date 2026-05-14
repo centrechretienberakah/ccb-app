@@ -10,6 +10,16 @@ const PROTECTED_ROUTES = [
 ];
 const PREMIUM_ROUTES = ["/premium"];
 
+// Rôles autorisés à accéder à /admin
+const ADMIN_ROLES = new Set(["owner", "admin", "moderator", "leader"]);
+
+function getOwnerEmails(): string[] {
+  return (process.env.OWNER_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -44,6 +54,30 @@ export async function proxy(request: NextRequest) {
   // Redirige les connectés hors des pages auth
   if (user && (pathname.startsWith("/auth/login") || pathname.startsWith("/auth/register"))) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // ── OWNER auto-promotion (sur /admin et /dashboard uniquement pour limiter le coût) ──
+  if (user && (pathname.startsWith("/admin") || pathname === "/dashboard")) {
+    const ownerEmails = getOwnerEmails();
+    const userEmail = (user.email || "").toLowerCase();
+    if (userEmail && ownerEmails.includes(userEmail)) {
+      // Upsert role=owner si pas déjà owner (idempotent)
+      await supabase
+        .from("user_roles")
+        .upsert({ user_id: user.id, role: "owner" }, { onConflict: "user_id" });
+    }
+  }
+
+  // ── Protection /admin : role obligatoire ──
+  if (pathname.startsWith("/admin") && user) {
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+    if (!roleRow || !ADMIN_ROLES.has(roleRow.role)) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
   // Protection premium → vérifie user_profiles

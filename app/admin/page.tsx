@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import AdminClient from "./AdminClient";
+import { isModerator as canAccessAdmin } from "@/lib/rbac";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -15,10 +16,14 @@ export default function AdminPage() {
       const { data: { user } } = await sb.auth.getUser();
       if (!user) { router.replace("/auth/login?redirect=/admin"); return; }
 
+      // Tente d'auto-promouvoir en owner (idempotent, basé sur owner_emails)
+      try { await sb.rpc("promote_owner_if_matched"); } catch { /* RPC pas encore migrée */ }
+
       const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).single();
-      const isAdmin = roleRow?.role === "admin";
-      const isLeader = roleRow?.role === "leader";
-      if (!isAdmin && !isLeader) { router.replace("/dashboard"); return; }
+      const currentRole = roleRow?.role || "member";
+      if (!canAccessAdmin(currentRole)) { router.replace("/dashboard"); return; }
+      const isAdmin = currentRole === "admin" || currentRole === "owner";
+      const isOwner = currentRole === "owner";
 
       const { data: profile } = await sb.from("user_profiles").select("display_name, full_name").eq("user_id", user.id).single();
       const adminName = profile?.display_name || profile?.full_name || "Admin";
@@ -97,13 +102,15 @@ export default function AdminPage() {
         } catch { return [] as T[]; }
       };
 
-      const [media, courses, sermons, albums, groups, siteContent] = await Promise.all([
+      const [media, courses, sermons, albums, groups, siteContent, adminLogs, testimonies] = await Promise.all([
         safeSelect("media_library", "*", { order: "created_at", limit: 100 }),
         safeSelect("courses", "*", { order: "order_index", ascending: true, limit: 100 }),
         safeSelect("sermons", "*", { order: "published_at", limit: 100 }),
         safeSelect("photo_albums", "*", { order: "created_at", limit: 100 }),
         safeSelect("groups", "*", { order: "created_at", limit: 100 }),
         safeSelect("site_content", "*", { order: "page_key", ascending: true }),
+        safeSelect("admin_logs", "*", { order: "created_at", limit: 100 }),
+        safeSelect("testimonies", "*", { order: "created_at", limit: 100 }),
       ]);
 
       const postUserIds = [...new Set((recentPosts ?? []).map((p: any) => p.user_id))];
@@ -121,6 +128,8 @@ export default function AdminPage() {
       setData({
         adminName,
         isAdmin,
+        isOwner,
+        currentRole,
         stats: {
           totalMembers: totalMembers ?? 0, newMembersWeek: newMembersWeek ?? 0,
           totalPosts: totalPosts ?? 0, openPrayers: openPrayers ?? 0,
@@ -146,6 +155,8 @@ export default function AdminPage() {
         albums,
         groups,
         siteContent,
+        adminLogs,
+        testimonies,
       });
       setLoading(false);
     }
