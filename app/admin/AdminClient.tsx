@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useOnlineUsers } from "@/lib/presence";
 import ResourceTab, { ColumnDef } from "./ResourceTab";
 import SiteContentTab from "./SiteContentTab";
+import GroupsTab from "./GroupsTab";
 import { can, ROLE_LABEL, ROLE_BADGE, type Role } from "@/lib/rbac";
 
 interface Stats {
@@ -559,7 +560,10 @@ export default function AdminClient({
 
         {/* ===== GROUPES ===== */}
         {tab === "groups" && (
-          <ResourceTab table="groups" titleField="name" columns={groupCols} initialRows={groups} rubrique="Groupes / Cellules" icon="🤝" />
+          <GroupsTab
+            initialGroups={groups}
+            members={members.map((m) => ({ id: m.id, full_name: m.full_name || "Membre" }))}
+          />
         )}
 
         {/* ===== TÉMOIGNAGES ===== */}
