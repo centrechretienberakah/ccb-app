@@ -11,7 +11,7 @@ const LEVEL_COLORS: Record<string, { label: string; color: string; bg: string }>
 
 const CATEGORIES = ["Tout", "Théologie", "Bible", "Prière", "Leadership", "Famille", "Évangélisation"];
 
-export default function ClassesClient({ courses, isPremium, userId }: { courses: Course[]; isPremium: boolean; userId: string | null }) {
+export default function ClassesClient({ courses, isPremium }: { courses: Course[]; isPremium: boolean; userId?: string | null }) {
   const [catFilter, setCatFilter] = useState("Tout");
   const [levelFilter, setLevelFilter] = useState("Tout");
   const [search, setSearch] = useState("");
@@ -108,7 +108,10 @@ function CourseGrid({ courses, isPremium }: { courses: Course[]; isPremium: bool
         return (
           <div key={c.id} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
             <div style={{ height: 140, background: "linear-gradient(135deg, rgba(90,44,160,0.2), rgba(90,44,160,0.35))", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0 }}>
-              {c.thumbnail_url ? <img src={c.thumbnail_url} alt={c.title} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} /> : <span style={{ fontSize: 44 }}>{locked ? "🔒" : "🎓"}</span>}
+              {c.thumbnail_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={c.thumbnail_url} alt={c.title} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
+              ) : <span style={{ fontSize: 44 }}>{locked ? "🔒" : "🎓"}</span>}
               {c.is_premium && <span style={{ position: "absolute", top: 8, left: 8, background: "var(--gold)", color: "#000", borderRadius: "var(--radius-full)", padding: "2px 8px", fontSize: 10, fontWeight: 800 }}>👑 Premium</span>}
               {levelInfo && <span style={{ position: "absolute", top: 8, right: 8, background: levelInfo.bg, border: `1px solid ${levelInfo.color}50`, color: levelInfo.color, borderRadius: "var(--radius-full)", padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>{levelInfo.label}</span>}
             </div>

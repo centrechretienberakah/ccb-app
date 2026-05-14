@@ -37,7 +37,10 @@ export default async function CoursPage({ params }: { params: Promise<{ id: stri
 
       {/* Hero */}
       <div style={{ background: "linear-gradient(135deg, rgba(90,44,160,0.2), rgba(90,44,160,0.4))", borderRadius: "var(--radius-xl)", padding: "28px 24px", marginBottom: 28, position: "relative", overflow: "hidden" }}>
-        {course.thumbnail_url && <img src={course.thumbnail_url} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.2 }} />}
+        {course.thumbnail_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={course.thumbnail_url} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.2 }} />
+        )}
         <div style={{ position: "relative" }}>
           {course.category && <span style={{ background: "rgba(255,255,255,0.1)", color: "#c4b5fd", borderRadius: "var(--radius-full)", padding: "3px 12px", fontSize: 12, fontWeight: 700, display: "inline-block", marginBottom: 10 }}>📂 {course.category}</span>}
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 10px" }}>🎓 {course.title}</h1>

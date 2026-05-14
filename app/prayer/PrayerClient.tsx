@@ -41,6 +41,7 @@ function Avatar({ profile, size = 36 }: {
   const name = profile?.display_name || "?";
   const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
   if (profile?.avatar_url) {
+    // eslint-disable-next-line @next/next/no-img-element
     return <img src={profile.avatar_url} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt={name} />;
   }
   return (
@@ -458,7 +459,6 @@ export default function PrayerClient({ prayers: initialPrayers, currentUserId, c
     return true;
   });
 
-  const totalPriants = prayers.reduce((acc, p) => acc + p.intercessionsCount, 0);
   const answeredCount = prayers.filter((p) => p.is_answered).length;
 
   const tabStyle = (active: boolean): React.CSSProperties => ({

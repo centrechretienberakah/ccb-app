@@ -16,7 +16,7 @@ function fmtDate(d: string) { return new Date(d).toLocaleDateString("fr-FR", { d
 
 const TYPES = ["Tout", "pdf", "audio", "video", "ebook"];
 
-export default function BibliothequeClient({ resources, isPremium, userId }: { resources: Resource[]; isPremium: boolean; userId: string | null }) {
+export default function BibliothequeClient({ resources, isPremium }: { resources: Resource[]; isPremium: boolean; userId?: string | null }) {
   const [filter, setFilter] = useState("Tout");
   const [search, setSearch] = useState("");
 
@@ -68,7 +68,10 @@ export default function BibliothequeClient({ resources, isPremium, userId }: { r
               <div key={r.id} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 {/* Thumbnail */}
                 <div style={{ height: 120, background: `linear-gradient(135deg, ${info.color}18, ${info.color}30)`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0 }}>
-                  {r.thumbnail_url ? <img src={r.thumbnail_url} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} /> : <span style={{ fontSize: 42 }}>{locked ? "🔒" : info.emoji}</span>}
+                  {r.thumbnail_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={r.thumbnail_url} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
+                  ) : <span style={{ fontSize: 42 }}>{locked ? "🔒" : info.emoji}</span>}
                   <span style={{ position: "absolute", top: 8, right: 8, background: info.color, color: "#fff", borderRadius: "var(--radius-full)", padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>{info.label}</span>
                   {dur && <span style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.7)", color: "#fff", borderRadius: "var(--radius-full)", padding: "2px 8px", fontSize: 10 }}>{dur}</span>}
                   {r.is_premium && <span style={{ position: "absolute", top: 8, left: 8, background: "var(--gold)", color: "#000", borderRadius: "var(--radius-full)", padding: "2px 8px", fontSize: 10, fontWeight: 800 }}>👑 Premium</span>}

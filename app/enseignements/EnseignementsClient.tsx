@@ -141,10 +141,10 @@ function SermonCard({ sermon, isPremiumUser }: { sermon: Sermon; isPremiumUser: 
   );
 }
 
-export default function EnseignementsClient({ sermons, isPremiumUser, isAdmin }: {
+export default function EnseignementsClient({ sermons, isPremiumUser }: {
   sermons: Sermon[];
   isPremiumUser: boolean;
-  isAdmin: boolean;
+  isAdmin?: boolean;
 }) {
   const [filter, setFilter] = useState<"tous" | "video" | "audio" | "premium">("tous");
   const [search, setSearch] = useState("");

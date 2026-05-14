@@ -148,7 +148,10 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
                     {isMe && <div style={{ position: "absolute", top: 8, right: 8, background: "#d4af37", color: "#000", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 700 }}>MOI</div>}
                     {isAdmin && !isMe && <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(168,85,247,0.2)", color: "#a855f7", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 700 }}>✏️</div>}
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-                      {member.avatar_url ? <img src={member.avatar_url} style={{ width: 58, height: 58, borderRadius: "50%", objectFit: "cover", border: "2px solid #333" }} /> :
+                      {member.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={member.avatar_url} alt={member.display_name || "Avatar membre"} style={{ width: 58, height: 58, borderRadius: "50%", objectFit: "cover", border: "2px solid #333" }} />
+                      ) :
                         <div style={{ width: 58, height: 58, borderRadius: "50%", background: "linear-gradient(135deg,#d4af37,#c9a227)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: "#000" }}>{initials}</div>}
                     </div>
                     <div style={{ textAlign: "center", fontWeight: 700, fontSize: 13, color: "#f0e8d0", marginBottom: 4 }}>{member.display_name || "Membre"}</div>

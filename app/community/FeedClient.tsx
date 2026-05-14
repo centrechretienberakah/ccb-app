@@ -60,7 +60,8 @@ function Avatar({ profile, size = 40 }: { profile?: { display_name?: string; ava
   const name = profile?.display_name || "?";
   const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
   if (profile?.avatar_url) return (
-    <img src={profile.avatar_url} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={profile.avatar_url} alt={name} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
   );
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, var(--gold-dark), var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.38, fontWeight: 700, color: "#000", flexShrink: 0 }}>{initials}</div>
@@ -165,7 +166,8 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
           <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])} />
           {mediaUrl ? (
             <div style={{ position: "relative" }}>
-              <img src={mediaUrl} style={{ width: "100%", borderRadius: "var(--radius-md)", maxHeight: 300, objectFit: "cover" }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={mediaUrl} alt="Aperçu média" style={{ width: "100%", borderRadius: "var(--radius-md)", maxHeight: 300, objectFit: "cover" }} />
               <button onClick={() => setMediaUrl("")} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: "50%", width: 28, height: 28, color: "#fff", cursor: "pointer", fontSize: 14 }}>✕</button>
             </div>
           ) : (
@@ -332,7 +334,8 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
 
         {/* Médias */}
         {post.post_type === "image" && post.media_url && (
-          <img src={post.media_url} style={{ width: "100%", borderRadius: "var(--radius-md)", maxHeight: 400, objectFit: "cover", marginBottom: 12 }} />
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={post.media_url} alt={post.content?.slice(0, 60) || "Publication"} style={{ width: "100%", borderRadius: "var(--radius-md)", maxHeight: 400, objectFit: "cover", marginBottom: 12 }} />
         )}
 
         {post.post_type === "video" && (

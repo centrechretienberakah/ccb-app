@@ -3,9 +3,6 @@ import { useState } from "react";
 
 interface Event { id: string; title: string; description?: string; event_date: string; location?: string; cover_image_url?: string; }
 
-const YOUTUBE_CHANNEL_ID = "UCxxxxxxxxxxxxxxxxxx"; // À remplacer par le vrai ID
-const LIVE_EMBED = `https://www.youtube.com/embed/live_stream?channel=${YOUTUBE_CHANNEL_ID}&autoplay=1`;
-
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 }

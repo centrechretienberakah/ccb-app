@@ -8,7 +8,7 @@ const CACHE_VERSION = "v4";
 const CACHE_NAME = "ccb-" + CACHE_VERSION;
 
 // ── INSTALLATION ─────────────────────────────────────────────────────────────
-self.addEventListener("install", (event) => {
+self.addEventListener("install", () => {
   // Prend le contrôle immédiatement, sans attendre la fermeture des onglets
   self.skipWaiting();
 });

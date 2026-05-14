@@ -37,7 +37,7 @@ const UPCOMING = [
   { icon: "🎓", title: "Bootcamp CCB 2026", time: "26 – 28 Juin 2026 · Douala & Online", tag: "Bootcamp", href: "https://bootcamp.centrechretienberakah.com" },
 ];
 
-export default function DashboardClient({ displayName, avatarUrl, email, role }: Props) {
+export default function DashboardClient({ displayName, avatarUrl }: Props) {
   const initials = displayName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   const greeting = (() => {
     const h = new Date().getHours();

@@ -74,7 +74,6 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
   const [profileMsg, setProfileMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // ── Sécurité ──────────────────────────────────────────────
-  const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
   const [savingPwd, setSavingPwd] = useState(false);
@@ -158,7 +157,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
     setSavingPwd(false);
     if (error) { setPwdMsg({ ok: false, text: error.message }); return; }
     setPwdMsg({ ok: true, text: "✅ Mot de passe mis à jour !" });
-    setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+    setNewPwd(""); setConfirmPwd("");
     setTimeout(() => setPwdMsg(null), 4000);
   }
 
@@ -202,7 +201,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
             {avatarUrl ? (
-              <img src={avatarUrl} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "3px solid var(--gold)" }} />
+              <img src={avatarUrl} alt={displayName || "Avatar"} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "3px solid var(--gold)" }} />
             ) : (
               <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg, var(--gold-dark), var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, color: "#000", border: "3px solid var(--gold)" }}>
                 {initials}

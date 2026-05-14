@@ -17,8 +17,8 @@ interface Props {
 }
 
 export default function ComingSoon({
-  emoji, title, subtitle, description,
-  features, accentColor = "var(--violet)", accentGlow = "rgba(90,44,160,0.2)",
+  emoji, title, description,
+  features, accentColor = "var(--violet)",
   notifyLabel = "Me notifier au lancement",
 }: Props) {
   return (

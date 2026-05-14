@@ -308,14 +308,7 @@ export default function AdminClient({
     { key: "cover_url", label: "Cover URL", type: "url" },
     { key: "is_public", label: "Public", type: "boolean", defaultValue: true },
   ];
-  const groupCols: ColumnDef[] = [
-    { key: "name", label: "Nom", type: "text", required: true },
-    { key: "description", label: "Description", type: "textarea", hiddenInList: true },
-    { key: "type", label: "Type", type: "select", options: ["cell","prayer","study","mentoring","team"], defaultValue: "cell" },
-    { key: "cover_url", label: "Cover", type: "url", hiddenInList: true },
-    { key: "is_private", label: "Privé", type: "boolean" },
-    { key: "max_members", label: "Max membres", type: "number" },
-  ];
+  // groupCols : remplacé par GroupsTab dédié (upload cover + multi-select membres)
   const testimonyCols: ColumnDef[] = [
     { key: "title", label: "Titre", type: "text", required: true },
     { key: "content", label: "Contenu", type: "textarea", required: true, hiddenInList: true },

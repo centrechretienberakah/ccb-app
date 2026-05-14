@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Passe Berakah Premium — CCB" };

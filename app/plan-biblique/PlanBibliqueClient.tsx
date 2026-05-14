@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   READING_PLANS, getDayReading, calculateProgress,
   GOAL_LABELS,
-  type ReadingPlan, type SpiritualLevel, type SpiritualGoal,
+  type ReadingPlan,
 } from "@/lib/bible/reading-plans";
 
 interface ActivePlan {
