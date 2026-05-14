@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   READING_PLANS, getDayReading, calculateProgress,
-  LEVEL_LABELS, GOAL_LABELS,
+  GOAL_LABELS,
   type ReadingPlan, type SpiritualLevel, type SpiritualGoal,
 } from "@/lib/bible/reading-plans";
 
@@ -387,31 +387,34 @@ function PlanGrid({ plans, activePlanIds, onSelect }: {
   activePlanIds: string[];
   onSelect: (p: ReadingPlan) => void;
 }) {
-  const [filterLevel, setFilterLevel] = useState<string>("all");
+  const [filterCat, setFilterCat] = useState<"all" | "systematic" | "thematic">("all");
 
-  const levels = [
-    { id: "all", label: "Tous" },
-    { id: "BEGINNER", label: "Débutant" },
-    { id: "INTERMEDIATE", label: "Intermédiaire" },
-    { id: "ADVANCED", label: "Avancé" },
+  const categories = [
+    { id: "all" as const,        label: "Tous",                  emoji: "📚" },
+    { id: "systematic" as const, label: "Lecture systématique",  emoji: "📖" },
+    { id: "thematic" as const,   label: "Lecture thématique",    emoji: "🎯" },
   ];
 
-  const filtered = filterLevel === "all" ? plans : plans.filter((p) => p.level === filterLevel);
+  const filtered =
+    filterCat === "all"        ? plans :
+    filterCat === "thematic"   ? plans.filter((p) => p.type === "THEMATIC") :
+                                 plans.filter((p) => p.type !== "THEMATIC");
 
   return (
     <div>
-      {/* Filtres niveau */}
+      {/* Filtres catégorie */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-        {levels.map((l) => (
-          <button key={l.id} onClick={() => setFilterLevel(l.id)} style={{
+        {categories.map((c) => (
+          <button key={c.id} onClick={() => setFilterCat(c.id)} style={{
             padding: "7px 16px",
-            background: filterLevel === l.id ? "var(--gold)" : "var(--card-bg)",
-            color: filterLevel === l.id ? "#000" : "var(--text-secondary)",
-            border: `1px solid ${filterLevel === l.id ? "var(--gold)" : "var(--border)"}`,
-            borderRadius: "var(--radius-full)", fontSize: 12, fontWeight: filterLevel === l.id ? 700 : 400,
+            background: filterCat === c.id ? "var(--gold)" : "var(--card-bg)",
+            color: filterCat === c.id ? "#000" : "var(--text-secondary)",
+            border: `1px solid ${filterCat === c.id ? "var(--gold)" : "var(--border)"}`,
+            borderRadius: "var(--radius-full)", fontSize: 12, fontWeight: filterCat === c.id ? 700 : 400,
             cursor: "pointer", fontFamily: "var(--font-body)",
+            display: "flex", alignItems: "center", gap: 5,
           }}>
-            {l.label}
+            <span>{c.emoji}</span>{c.label}
           </button>
         ))}
       </div>
@@ -451,7 +454,7 @@ function PlanGrid({ plans, activePlanIds, onSelect }: {
                   background: "var(--surface-2)", borderRadius: "var(--radius-full)",
                   color: "var(--text-muted)",
                 }}>
-                  {LEVEL_LABELS[plan.level]}
+                  {plan.type === "THEMATIC" ? "🎯 Thématique" : "📖 Systématique"}
                 </span>
               </div>
             </div>
@@ -499,7 +502,7 @@ function PlanDetail({ plan, onStart, onBack, loading }: {
             ⏱ {plan.duration}
           </span>
           <span style={{ background: "var(--surface-2)", color: "var(--text-secondary)", borderRadius: "var(--radius-full)", padding: "4px 12px", fontSize: 12 }}>
-            {LEVEL_LABELS[plan.level]}
+            {plan.type === "THEMATIC" ? "🎯 Lecture thématique" : "📖 Lecture systématique"}
           </span>
           {plan.goals.map((g) => (
             <span key={g} style={{ background: "var(--surface-2)", color: "var(--text-secondary)", borderRadius: "var(--radius-full)", padding: "4px 12px", fontSize: 12 }}>
