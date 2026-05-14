@@ -275,16 +275,13 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
                 <VersionRow key={v.id} version={v} active={v.id === versionId} onClick={() => changeVersion(v.id)} />
               ))}
 
-              {/* Premium versions */}
+              {/* Versions modernes */}
               <div style={{ padding: "10px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", fontFamily: "var(--font-body)", textTransform: "uppercase", borderTop: "1px solid var(--border)", marginTop: 4 }}>
-                Versions modernes (clé API)
+                Versions modernes
               </div>
               {BIBLE_VERSIONS.filter((v) => v.source === "apibible").map((v) => (
-                <VersionRow key={v.id} version={v} active={v.id === versionId} onClick={() => changeVersion(v.id)} locked />
+                <VersionRow key={v.id} version={v} active={v.id === versionId} onClick={() => changeVersion(v.id)} />
               ))}
-              <div style={{ padding: "8px 14px 12px", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>
-                💡 Ajoutez <code style={{ background: "var(--surface-2)", padding: "1px 4px", borderRadius: 3 }}>BIBLE_API_KEY</code> sur Vercel pour débloquer
-              </div>
             </div>
           )}
         </div>
