@@ -3,13 +3,28 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-// Channel name shared between heartbeat emitters and admin watcher.
+// Channel name partagé entre tous les onglets/utilisateurs.
 export const PRESENCE_CHANNEL = "ccb:presence:online";
 
+// ── Store partagé module-level ──────────────────────────────────────────────
+// On utilise une référence stable + des listeners pour que toute consommation
+// via useOnlineUsers() voie le même Set, sans avoir à manipuler le canal
+// Supabase deux fois (interdit : on ne peut pas .on() après .subscribe()).
+let onlineSet = new Set<string>();
+const listeners = new Set<() => void>();
+function notify() {
+  for (const fn of listeners) fn();
+}
+function setOnline(next: Set<string>) {
+  onlineSet = next;
+  notify();
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// useHeartbeat — appelle touch_last_seen() toutes les 60s + maintient la
-// présence Realtime tant que la page est ouverte.
-// À appeler une seule fois (dans AppShell) pour tout utilisateur connecté.
+// useHeartbeat
+// - Persiste last_seen_at via RPC toutes les 60s
+// - Track la présence sur le channel Realtime (1 instance pour toute l'app)
+// - Met à jour le store onlineSet quand la présence change
 // ─────────────────────────────────────────────────────────────────────────────
 export function useHeartbeat() {
   useEffect(() => {
@@ -22,18 +37,27 @@ export function useHeartbeat() {
       const { data: { user } } = await sb.auth.getUser();
       if (!user || stopped) return;
 
-      // RPC pour persister last_seen_at
       const ping = async () => {
-        try { await sb.rpc("touch_last_seen"); } catch { /* noop */ }
+        try { await sb.rpc("touch_last_seen"); } catch { /* RPC absent avant migration */ }
       };
       await ping();
       interval = setInterval(ping, 60_000);
 
-      // Realtime presence
       channel = sb.channel(PRESENCE_CHANNEL, { config: { presence: { key: user.id } } });
+      // ATTENTION : tous les .on() doivent être enregistrés AVANT .subscribe()
+      channel.on("presence", { event: "sync" }, () => {
+        if (!channel) return;
+        const state = channel.presenceState() as Record<string, Array<{ user_id?: string }>>;
+        const next = new Set<string>();
+        for (const arr of Object.values(state)) {
+          for (const p of arr) if (p.user_id) next.add(p.user_id);
+        }
+        setOnline(next);
+      });
       channel.subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await channel?.track({ user_id: user.id, online_at: new Date().toISOString() });
+        if (status === "SUBSCRIBED" && channel) {
+          try { await channel.track({ user_id: user.id, online_at: new Date().toISOString() }); }
+          catch { /* noop */ }
         }
       });
     }
@@ -42,38 +66,25 @@ export function useHeartbeat() {
     return () => {
       stopped = true;
       if (interval) clearInterval(interval);
-      if (channel) channel.unsubscribe();
+      if (channel) {
+        try { channel.unsubscribe(); } catch { /* noop */ }
+      }
     };
   }, []);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// useOnlineUsers — pour le panel admin : retourne un Set des user_id en ligne
+// useOnlineUsers — lit le store partagé alimenté par useHeartbeat
 // ─────────────────────────────────────────────────────────────────────────────
 export function useOnlineUsers(): Set<string> {
-  const [online, setOnline] = useState<Set<string>>(new Set());
+  const [snap, setSnap] = useState<Set<string>>(() => new Set(onlineSet));
 
   useEffect(() => {
-    const sb = createClient();
-    const channel = sb.channel(PRESENCE_CHANNEL, { config: { presence: { key: "admin-watcher" } } });
-
-    const refresh = () => {
-      const state = channel.presenceState() as Record<string, Array<{ user_id?: string }>>;
-      const ids = new Set<string>();
-      for (const arr of Object.values(state)) {
-        for (const p of arr) if (p.user_id) ids.add(p.user_id);
-      }
-      setOnline(ids);
-    };
-
-    channel
-      .on("presence", { event: "sync" }, refresh)
-      .on("presence", { event: "join" }, refresh)
-      .on("presence", { event: "leave" }, refresh)
-      .subscribe();
-
-    return () => { channel.unsubscribe(); };
+    const fn = () => setSnap(new Set(onlineSet));
+    listeners.add(fn);
+    fn();
+    return () => { listeners.delete(fn); };
   }, []);
 
-  return online;
+  return snap;
 }
