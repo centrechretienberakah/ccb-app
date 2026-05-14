@@ -7,7 +7,7 @@ import { IconHome, IconUsers, IconBook, IconSun } from "@/components/icons";
 const PRIMARY_ITEMS = [
   { href: "/dashboard", label: "Accueil",    Icon: IconHome },
   { href: "/bible",     label: "Ma Bible",   Icon: IconBook },
-  { href: "/devotion",  label: "Dévotion",   Icon: IconSun },
+  { href: "/devotion",  label: "Méditons",   Icon: IconSun },
   { href: "/community", label: "Communauté", Icon: IconUsers },
 ];
 

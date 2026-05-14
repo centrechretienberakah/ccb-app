@@ -11,7 +11,7 @@ interface Props {
 }
 
 const QUICK_ACTIONS = [
-  { emoji: "☀️", label: "Devotion du jour", sub: "Commence ta journee", href: "/devotion", gradient: "linear-gradient(145deg, #92400e 0%, #d97706 55%, #fbbf24 100%)", glow: "rgba(251,191,36,0.35)" },
+  { emoji: "☀️", label: "Méditons ensemble", sub: "Méditation du jour", href: "/devotion", gradient: "linear-gradient(145deg, #92400e 0%, #d97706 55%, #fbbf24 100%)", glow: "rgba(251,191,36,0.35)" },
   { emoji: "📖", label: "Ma Bible", sub: "Lire & Plan de lecture", href: "/bible", gradient: "linear-gradient(145deg, #1e3a5f 0%, #1e40af 55%, #3b82f6 100%)", glow: "rgba(59,130,246,0.35)" },
   { emoji: "🙏", label: "Priere", sub: "Intercession & demandes", href: "/prayer", gradient: "linear-gradient(145deg, #4c0519 0%, #9f1239 55%, #fb7185 100%)", glow: "rgba(251,113,133,0.35)" },
   { emoji: "👥", label: "Communaute", sub: "Echanges & partages", href: "/community", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #4ade80 100%)", glow: "rgba(74,222,128,0.35)" },
@@ -128,7 +128,7 @@ export default function DashboardClient({ displayName, avatarUrl, email, role }:
           <IconZap size={20} />
           <div>
             <div className="dashboard-cta-title">Pret pour la Parole ?</div>
-            <div className="dashboard-cta-sub">Commence ta devotion du jour</div>
+            <div className="dashboard-cta-sub">Commence ta méditation du jour</div>
           </div>
           <Link href="/devotion" className="dashboard-cta-btn">Commencer</Link>
         </div>

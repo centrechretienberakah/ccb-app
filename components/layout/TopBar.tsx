@@ -12,7 +12,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/plan-biblique":  "Plan de Lecture",
   "/prayer":         "Priere",
   "/community":     "Communaute",
-  "/devotion":      "Devotion du jour",
+  "/devotion":      "Méditons ensemble",
   "/jesus-daily":   "Jesus Daily",
   "/classes":       "Salle de classe",
   "/live":          "Live",

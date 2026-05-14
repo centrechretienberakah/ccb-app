@@ -3,7 +3,7 @@ import DevotionClient from "./DevotionClient";
 import { getDailyDevotion } from "./devotions-data";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Devotion du Jour" };
+export const metadata = { title: "Méditons ensemble — CCB" };
 
 export default async function DevotionPage() {
   const supabase = await createClient();
