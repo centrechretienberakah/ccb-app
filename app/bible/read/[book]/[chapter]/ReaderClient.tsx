@@ -290,8 +290,20 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
         </div>
       </div>
 
+      {/* Styles mobile — décale la barre du lecteur au-dessus du BottomNav */}
+      <style>{`
+        @media (max-width: 639px) {
+          .reader-chapter-nav {
+            bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+          }
+          .reader-chapter-content {
+            padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px)) !important;
+          }
+        }
+      `}</style>
+
       {/* Content */}
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 20px 120px" }}>
+      <div className="reader-chapter-content" style={{ maxWidth: 680, margin: "0 auto", padding: "0 20px 120px" }}>
 
         {loading && (
           <div style={{ textAlign: "center", padding: "60px 20px" }}>
@@ -394,10 +406,10 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
       </div>
 
       {/* Bottom navigation */}
-      <div style={{
+      <div className="reader-chapter-nav" style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
         background: "var(--nav-bg)", backdropFilter: "blur(12px)",
-        borderTop: "1px solid var(--border)", padding: "10px 16px 24px",
+        borderTop: "1px solid var(--border)", padding: "10px 16px 12px",
       }}>
         <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 10 }}>
           <button onClick={() => navigate("prev")} disabled={!hasPrev} style={{
