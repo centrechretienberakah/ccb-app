@@ -142,8 +142,11 @@ export default function GroupsTab({ initialGroups, members }: Props) {
         coverUrl = await uploadCover(sb);
       }
 
+      // Récupère l'user_id de l'admin courant pour created_by
+      const { data: { user } } = await sb.auth.getUser();
+
       // 2. Upsert group
-      const payload = {
+      const payload: Record<string, unknown> = {
         name: form.name.trim(),
         description: form.description.trim() || null,
         type: form.type,
@@ -151,6 +154,7 @@ export default function GroupsTab({ initialGroups, members }: Props) {
         is_private: form.is_private,
         max_members: form.max_members,
       };
+      if (user?.id) payload.created_by = user.id;
 
       let groupId: string;
       if (editing) {
