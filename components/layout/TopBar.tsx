@@ -23,7 +23,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/events":        "Evenements",
   "/settings":      "Parametres",
   "/admin":         "Administration",
-  "/annonces":      "Annonces",
   "/galerie":       "Galerie Photos",
   "/bibliotheque":  "Bibliothèque",
   "/rendez-vous":   "Rendez-vous Pastoral",

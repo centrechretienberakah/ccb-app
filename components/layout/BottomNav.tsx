@@ -29,7 +29,6 @@ const MORE_SECTIONS = [
     title: "Ministère",
     items: [
       { href: "/enseignements", label: "Enseignements", emoji: "🎙️" },
-      { href: "/annonces",      label: "Annonces",      emoji: "📢" },
       { href: "/galerie",       label: "Galerie",       emoji: "🖼️" },
       { href: "/bibliotheque",  label: "Bibliothèque",  emoji: "📚" },
       { href: "/temoignages",   label: "Témoignages",   emoji: "✨" },
