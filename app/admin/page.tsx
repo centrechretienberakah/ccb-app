@@ -40,9 +40,22 @@ export default function AdminPage() {
         sb.from("pastoral_appointments").select("*", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
-      const { data: members } = await sb.from("user_profiles")
-        .select("user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium, is_disabled, last_sign_in_at, last_seen_at")
-        .order("created_at", { ascending: false }).limit(200);
+      // Tente d'abord avec les nouvelles colonnes (admin_panel_v2 SQL).
+      // Si la migration n'est pas encore exécutée, retombe sur les colonnes de base.
+      let members: any[] | null = null;
+      {
+        const full = await sb.from("user_profiles")
+          .select("user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium, is_disabled, last_sign_in_at, last_seen_at")
+          .order("created_at", { ascending: false }).limit(200);
+        if (full.error) {
+          const basic = await sb.from("user_profiles")
+            .select("user_id, display_name, full_name, spiritual_level, created_at, country, city, is_premium")
+            .order("created_at", { ascending: false }).limit(200);
+          members = basic.data;
+        } else {
+          members = full.data;
+        }
+      }
 
       const { data: allRoles } = await sb.from("user_roles").select("user_id, role");
       const rolesMap: Record<string, string> = {};
