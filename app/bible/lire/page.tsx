@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import BibleClient from "../BibleClient";
+import LireBibleRedirect from "./LireBibleRedirect";
 
 export const metadata = {
   title: "Lire la Bible — CCB",
@@ -34,7 +34,7 @@ export default async function LireBiblePage() {
   }
 
   return (
-    <BibleClient
+    <LireBibleRedirect
       user={user}
       notes={notes}
       savedVerses={savedVerses}

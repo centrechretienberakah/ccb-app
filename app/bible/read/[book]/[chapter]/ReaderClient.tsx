@@ -58,6 +58,11 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
     if (saved && BIBLE_VERSIONS.find((v) => v.id === saved)) setVersionId(saved);
   }, []);
 
+  // Sauvegarder la dernière position de lecture
+  useEffect(() => {
+    localStorage.setItem("ccb-bible-last", JSON.stringify({ book: bookFr, chapter }));
+  }, [bookFr, chapter]);
+
   function changeVersion(id: string) {
     setVersionId(id);
     localStorage.setItem("ccb-bible-version", id);
