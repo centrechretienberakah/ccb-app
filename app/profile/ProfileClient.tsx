@@ -4,10 +4,34 @@ import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
+interface UserMin { id: string; email?: string; }
+interface ProfileShape {
+  user_id?: string;
+  display_name?: string | null;
+  full_name?: string | null;
+  bio?: string | null;
+  city?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  spiritual_level?: string | null;
+  avatar_url?: string | null;
+  birthday?: string | null;
+  baptism_date?: string | null;
+  marital_status?: string | null;
+  profession?: string | null;
+  testimony?: string | null;
+  cell_group?: string | null;
+  is_public?: boolean | null;
+}
+interface MilestoneItem {
+  user_id?: string;
+  milestone: string;
+}
+
 interface Props {
-  user: any;
-  profile: any;
-  milestones: any[];
+  user: UserMin;
+  profile: ProfileShape | null;
+  milestones: MilestoneItem[];
   stats: { chaptersRead: number; versesSaved: number; readingDates: string[] };
   isAdmin: boolean;
 }
@@ -78,8 +102,9 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       setForm((f) => ({ ...f, avatar_url: publicUrl + "?t=" + Date.now() }));
       showToast("Photo mise à jour ✅");
-    } catch (err: any) {
-      showToast("Erreur upload : " + (err?.message || "inconnu"));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "inconnu";
+      showToast("Erreur upload : " + msg);
     } finally {
       setUploadingPhoto(false);
     }
@@ -88,7 +113,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
   async function handleSave() {
     setSaving(true);
     try {
-      const profileData: any = {
+      const profileData: Record<string, unknown> = {
         user_id: user.id,
         display_name: form.display_name,
         bio: form.bio,
@@ -117,8 +142,9 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
       showToast("Profil sauvegardé ✅");
       setEditing(false);
       router.refresh();
-    } catch (err: any) {
-      showToast("Erreur : " + (err?.message || "inconnu"));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "inconnu";
+      showToast("Erreur : " + msg);
     } finally {
       setSaving(false);
     }
@@ -296,7 +322,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
           {editing ? (
             <textarea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
               placeholder="Quelques mots sur toi..." rows={3}
-              style={{ ...inputStyle, resize: "vertical" } as any}
+              style={{ ...inputStyle, resize: "vertical" } as React.CSSProperties}
             />
           ) : (
             <p style={{
@@ -341,7 +367,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
             <textarea value={form.testimony}
               onChange={(e) => setForm((f) => ({ ...f, testimony: e.target.value }))}
               placeholder="Partage ce que Dieu a fait dans ta vie..." rows={5}
-              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 } as any}
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 } as React.CSSProperties}
             />
           ) : (
             <p style={{

@@ -13,30 +13,33 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/auth/login");
 
-  let profile = null;
-  let userProfile = null;
+  interface ProfileMin { full_name?: string | null; avatar_url?: string | null; role?: string | null }
+  interface UserProfileMin { display_name?: string | null; avatar_url?: string | null; bio?: string | null }
+
+  let profile: ProfileMin | null = null;
+  let userProfile: UserProfileMin | null = null;
 
   try {
     const [{ data: p }, { data: up }] = await Promise.all([
       supabase.from("profiles").select("full_name, avatar_url, role").eq("id", user.id).single(),
       supabase.from("user_profiles").select("display_name, avatar_url, bio").eq("user_id", user.id).single(),
     ]);
-    profile = p;
-    userProfile = up;
+    profile = p as ProfileMin | null;
+    userProfile = up as UserProfileMin | null;
   } catch {}
 
   const displayName =
-    (userProfile as any)?.display_name ||
-    (profile as any)?.full_name ||
+    userProfile?.display_name ||
+    profile?.full_name ||
     user?.email?.split("@")[0] ||
     "Bien-aimé(e)";
 
   const avatarUrl =
-    (userProfile as any)?.avatar_url ||
-    (profile as any)?.avatar_url ||
+    userProfile?.avatar_url ||
+    profile?.avatar_url ||
     null;
 
-  const role = (profile as any)?.role ?? "member";
+  const role = profile?.role ?? "member";
 
   return (
     <DashboardClient

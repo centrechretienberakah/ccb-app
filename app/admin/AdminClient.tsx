@@ -14,15 +14,15 @@ interface Stats {
   newContacts: number; pendingRdv: number;
 }
 interface Member {
-  id: string; full_name: string; role: string; spiritual_level?: string;
-  created_at: string; country?: string; city?: string;
+  id: string; full_name: string; role: string; spiritual_level?: string | null;
+  created_at: string; country?: string | null; city?: string | null;
   is_disabled?: boolean; last_sign_in_at?: string | null; last_seen_at?: string | null;
 }
-interface Post { id: string; content: string; created_at: string; user_id: string; is_pinned?: boolean; post_type?: string; }
-interface Prayer { id: string; title: string; content?: string; is_answered: boolean; created_at: string; user_id: string; is_anonymous?: boolean; category?: string; }
-interface Devotion { id: string; devotion_date: string; title: string; verse_reference: string; verse_text?: string; }
-interface ContactMsg { id: string; full_name: string; email: string; phone?: string; subject: string; message: string; is_read: boolean; created_at: string; }
-interface RdvItem { id: string; full_name: string; phone: string; email?: string; subject: string; message?: string; preferred_date: string; preferred_time: string; modality: string; status: string; created_at: string; }
+interface Post { id: string; content: string; created_at: string; user_id: string; is_pinned?: boolean; post_type?: string | null; }
+interface Prayer { id: string; title?: string | null; content?: string | null; is_answered: boolean; created_at: string; user_id: string; is_anonymous?: boolean; category?: string | null; }
+interface Devotion { id: string; devotion_date: string; title: string; verse_reference: string; verse_text?: string | null; }
+interface ContactMsg { id: string; full_name: string; email: string; phone?: string | null; subject: string; message: string; is_read: boolean; created_at: string; }
+interface RdvItem { id: string; full_name: string; phone: string; email?: string | null; subject: string; message?: string | null; preferred_date: string; preferred_time: string; modality: string; status: string; created_at: string; }
 interface Profile { id: string; full_name: string; }
 
 interface AdminLog {

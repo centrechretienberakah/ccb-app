@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-interface Group { id: string; name: string; description?: string; type?: string; member_count?: number; is_private?: boolean; cover_url?: string; created_at: string; }
+interface Group { id: string; name: string; description?: string | null; type?: string | null; member_count?: number; is_private?: boolean; cover_url?: string | null; created_at: string; }
 
 const TYPE_COLORS: Record<string, { color: string; bg: string; border: string; emoji: string }> = {
   prayer: { color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.3)", emoji: "🙏" },
@@ -14,7 +14,7 @@ const TYPE_COLORS: Record<string, { color: string; bg: string; border: string; e
   default: { color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)", emoji: "👥" },
 };
 
-function getStyle(type?: string) { return TYPE_COLORS[type ?? "default"] ?? TYPE_COLORS.default; }
+function getStyle(type?: string | null) { return TYPE_COLORS[type ?? "default"] ?? TYPE_COLORS.default; }
 
 export default function GroupesClient({ groups, myGroupIds: initial, userId }: { groups: Group[]; myGroupIds: string[]; userId: string | null }) {
   const [myIds, setMyIds] = useState(initial);

@@ -4,13 +4,14 @@ import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 // ─── Cache window (client uniquement) ───────────────────────────────────────
-function getClientCache() {
+interface FeedCache { posts: Post[]; likedIds: Set<string>; votes: Record<string, number> }
+function getClientCache(): FeedCache | null {
   if (typeof window === "undefined") return null;
-  const w = window as any;
+  const w = window as unknown as { __ccbFeedCache?: FeedCache };
   if (!w.__ccbFeedCache) {
-    w.__ccbFeedCache = { posts: [] as Post[], likedIds: new Set<string>(), votes: {} as Record<string, number> };
+    w.__ccbFeedCache = { posts: [] as Post[], likedIds: new Set<string>(), votes: {} };
   }
-  return w.__ccbFeedCache as { posts: Post[]; likedIds: Set<string>; votes: Record<string, number> };
+  return w.__ccbFeedCache;
 }
 
 // ─── Types ───────────────────────────────────────────────────
@@ -22,7 +23,7 @@ export interface Post {
   link_title?: string; link_description?: string;
   poll_options?: { text: string; correct?: boolean }[];
   is_pinned: boolean; created_at: string;
-  user_profiles?: { display_name: string; avatar_url?: string };
+  user_profiles?: { display_name?: string | null; avatar_url?: string | null } | null;
   post_categories?: { name: string; icon: string; color: string };
   likeCount: number;
   comments: Comment[];
@@ -30,8 +31,13 @@ export interface Post {
 }
 interface Comment {
   id: string; user_id: string; content: string; created_at: string;
-  user_profiles?: { display_name: string; avatar_url?: string };
+  user_profiles?: { display_name?: string | null; avatar_url?: string | null } | null;
 }
+export interface CurrentUserProfile {
+  display_name?: string | null;
+  avatar_url?: string | null;
+}
+interface PollOption { text: string; correct?: boolean }
 
 const POST_TYPES = [
   { key: "text",  icon: "✍️", label: "Texte" },
@@ -56,7 +62,7 @@ function getYoutubeId(url: string) {
   return m ? m[1] : null;
 }
 
-function Avatar({ profile, size = 40 }: { profile?: { display_name?: string; avatar_url?: string } | null; size?: number }) {
+function Avatar({ profile, size = 40 }: { profile?: { display_name?: string | null; avatar_url?: string | null } | null; size?: number }) {
   const name = profile?.display_name || "?";
   const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
   if (profile?.avatar_url) return (
@@ -82,7 +88,7 @@ const inputStyle: React.CSSProperties = {
 
 // ─── PostCreator ─────────────────────────────────────────────
 function PostCreator({ categories, currentUserProfile, currentUserId, onPostCreated }: {
-  categories: Category[]; currentUserProfile: any; currentUserId: string; onPostCreated: (post: Post) => void;
+  categories: Category[]; currentUserProfile: CurrentUserProfile | null; currentUserId: string; onPostCreated: (post: Post) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<string>("text");
@@ -116,7 +122,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
     if (!categoryId) { setError("Veuillez sélectionner une catégorie avant de publier."); return; }
     setSaving(true); setError("");
     const supabase = createClient();
-    let pollData: any = null;
+    let pollData: PollOption[] | null = null;
     if (type === "poll") pollData = pollOptions.filter(Boolean).map((t) => ({ text: t }));
     if (type === "quiz") pollData = quizOptions.filter((o) => o.text).map((o) => ({ text: o.text, correct: o.correct }));
 
@@ -129,7 +135,10 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
     }).select(`id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`).single();
 
     if (e) { setError(e.message); setSaving(false); return; }
-    onPostCreated({ ...(data as any), user_profiles: currentUserProfile, likeCount: 0, comments: [], voteResults: [] } as Post);
+    const userProfilesForPost = currentUserProfile
+      ? { display_name: currentUserProfile.display_name ?? "Membre", avatar_url: currentUserProfile.avatar_url ?? undefined }
+      : undefined;
+    onPostCreated({ ...(data as unknown as Post), user_profiles: userProfilesForPost, likeCount: 0, comments: [], voteResults: [] });
     setOpen(false); setContent(""); setType("text"); setMediaUrl(""); setLinkUrl(""); setLinkTitle(""); setLinkDesc(""); setPollOptions(["",""]); setQuizOptions([{text:"",correct:false},{text:"",correct:false}]); setCategoryId("");
     setSaving(false);
   }
@@ -241,7 +250,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
           CATÉGORIE <span style={{ color: "var(--error)" }}>*</span>
           {!categoryId && <span style={{ fontWeight: 400, marginLeft: 6 }}>(obligatoire)</span>}
         </div>
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", WebkitOverflowScrolling: "touch" as any, scrollbarWidth: "none" as any, paddingBottom: 4 }}>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none", paddingBottom: 4 }}>
           {categories.map((c) => (
             <button key={c.id} onClick={() => setCategoryId(categoryId === c.id ? "" : c.id)}
               style={{ flexShrink: 0, background: categoryId === c.id ? `${c.color}22` : "var(--page-bg)", border: `1px solid ${categoryId === c.id ? c.color : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "5px 12px", color: categoryId === c.id ? c.color : "var(--text-muted)", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -483,7 +492,7 @@ function AdminCategoryManager({ categories, onCategoriesChange }: { categories: 
 
 // ─── FeedClient (export principal) ───────────────────────────
 export default function FeedClient({ posts: initialPosts, categories: initialCategories, currentUserId, currentUserProfile, isAdmin, userLikedPostIds, userVotes }: {
-  posts: Post[]; categories: Category[]; currentUserId: string; currentUserProfile: any;
+  posts: Post[]; categories: Category[]; currentUserId: string; currentUserProfile: CurrentUserProfile | null;
   isAdmin: boolean; userLikedPostIds: string[]; userVotes: Record<string, number>;
 }) {
   const [posts, setPosts] = useState<Post[]>(() => {
@@ -532,24 +541,28 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         if (lkErr) console.warn("[CCB Feed] likes error:", lkErr.message);
         if (cmErr) console.warn("[CCB Feed] comments error:", cmErr.message);
 
-        const postUserIds = [...new Set(pd.map((p: any) => p.user_id as string))];
-        const commentUserIds = [...new Set((cm || []).map((c: any) => c.user_id as string))];
+        type PostRaw = { id: string; user_id: string };
+        type CommentRaw = { id: string; post_id: string; user_id: string; content: string; created_at: string };
+        type ProfileRaw = { user_id: string; display_name: string; avatar_url?: string | null };
+
+        const postUserIds = [...new Set((pd as PostRaw[]).map((p) => p.user_id))];
+        const commentUserIds = [...new Set(((cm || []) as CommentRaw[]).map((c) => c.user_id))];
         const allUserIds = [...new Set([...postUserIds, ...commentUserIds])];
-        let rawProfiles: any[] = [];
+        let rawProfiles: ProfileRaw[] = [];
         if (allUserIds.length > 0) {
           const { data: rpd, error: profErr } = await supabase
             .from("user_profiles")
             .select("user_id, display_name, avatar_url")
             .in("user_id", allUserIds);
           if (profErr) console.warn("[CCB Feed] profiles error:", profErr.message);
-          rawProfiles = rpd || [];
+          rawProfiles = (rpd as ProfileRaw[] | null) || [];
         }
         const profilesMap: Record<string, { display_name: string; avatar_url?: string }> = Object.fromEntries(
-          rawProfiles.map((p: any) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+          rawProfiles.map((p) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url ?? undefined }])
         );
 
         const lm: Record<string, number> = {};
-        const cm2: Record<string, any[]> = {};
+        const cm2: Record<string, Comment[]> = {};
         const vm: Record<string, number[]> = {};
         const liked = new Set<string>();
         const voted: Record<string, number> = {};
@@ -558,9 +571,9 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
           lm[l.post_id] = (lm[l.post_id] || 0) + 1;
           if (l.user_id === uid) liked.add(l.post_id);
         }
-        for (const c of cm || []) {
+        for (const c of (cm || []) as CommentRaw[]) {
           if (!cm2[c.post_id]) cm2[c.post_id] = [];
-          cm2[c.post_id].push({ ...c, user_profiles: profilesMap[c.user_id] || null });
+          cm2[c.post_id].push({ ...c, user_profiles: profilesMap[c.user_id] || undefined });
         }
         for (const v of vt || []) {
           if (!vm[v.post_id]) vm[v.post_id] = [];
@@ -568,12 +581,12 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
           if (v.user_id === uid) voted[v.post_id] = v.option_index;
         }
 
-        const freshPosts = pd.map((p: any) => ({
+        const freshPosts = (pd as unknown as Post[]).map((p) => ({
           ...p,
-          user_profiles: profilesMap[p.user_id] || null,
+          user_profiles: profilesMap[p.user_id] || undefined,
           likeCount: lm[p.id] || 0,
           comments: cm2[p.id] || [], voteResults: vm[p.id] || [],
-        })) as Post[];
+        }));
 
         const freshIds = new Set(freshPosts.map((p) => p.id));
         setPosts((prev) => {
@@ -585,8 +598,9 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         });
         setLikedIds(liked);
         setMyVotes(voted);
-      } catch (err: any) {
-        console.error("[CCB Feed] loadPosts exception:", err?.message ?? err);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[CCB Feed] loadPosts exception:", msg);
       }
     }
 
@@ -596,14 +610,13 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       .channel("ccb-feed-posts")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
         if (!mounted) return;
-        const newId = (payload.new as any).id as string;
-        const newUserId = (payload.new as any).user_id as string;
+        const newRow = payload.new as { id: string; user_id: string };
         const [{ data, error }, { data: profileData }] = await Promise.all([
-          supabase.from("posts").select(SEL).eq("id", newId).single(),
-          supabase.from("user_profiles").select("display_name, avatar_url").eq("user_id", newUserId).single(),
+          supabase.from("posts").select(SEL).eq("id", newRow.id).single(),
+          supabase.from("user_profiles").select("display_name, avatar_url").eq("user_id", newRow.user_id).single(),
         ]);
         if (error || !data || !mounted) return;
-        const newPost = { ...(data as any), user_profiles: profileData || null, likeCount: 0, comments: [], voteResults: [] } as Post;
+        const newPost = { ...(data as unknown as Post), user_profiles: (profileData as Post["user_profiles"]) || undefined, likeCount: 0, comments: [], voteResults: [] };
         setPosts((prev) => {
           if (prev.some((p) => p.id === newPost.id)) return prev;
           const next = [newPost, ...prev];
@@ -614,7 +627,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "posts" }, (payload) => {
         if (!mounted) return;
-        const deletedId = (payload.old as any).id;
+        const deletedId = (payload.old as { id: string }).id;
         setPosts((prev) => {
           const next = prev.filter((p) => p.id !== deletedId);
           const cache = getClientCache();
@@ -624,7 +637,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "posts" }, (payload) => {
         if (!mounted) return;
-        const u = payload.new as any;
+        const u = payload.new as { id: string; is_pinned: boolean };
         setPosts((prev) => {
           const next = prev.map((p) => p.id === u.id ? { ...p, is_pinned: u.is_pinned } : p);
           const cache = getClientCache();
@@ -669,8 +682,17 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       .insert({ post_id: postId, user_id: currentUserId, content: text })
       .select("id, user_id, content, created_at").single();
     if (data) {
-      const commentWithProfile = { ...data, user_profiles: currentUserProfile };
-      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments: [...p.comments, commentWithProfile as any] } : p));
+      const commentProfile = currentUserProfile
+        ? { display_name: currentUserProfile.display_name ?? "Membre", avatar_url: currentUserProfile.avatar_url ?? undefined }
+        : undefined;
+      const commentWithProfile: Comment = {
+        id: (data as { id: string }).id,
+        user_id: (data as { user_id: string }).user_id,
+        content: (data as { content: string }).content,
+        created_at: (data as { created_at: string }).created_at,
+        user_profiles: commentProfile,
+      };
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments: [...p.comments, commentWithProfile] } : p));
     }
   }
 
@@ -707,9 +729,9 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       {categories.length > 0 && (
         <div style={{
           display: "flex", gap: 6, marginBottom: 16,
-          overflowX: "auto", WebkitOverflowScrolling: "touch" as any,
-          scrollbarWidth: "none" as any, paddingBottom: 4, paddingTop: 2,
-          msOverflowStyle: "none" as any,
+          overflowX: "auto", WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none", paddingBottom: 4, paddingTop: 2,
+          msOverflowStyle: "none",
         }}>
           <button onClick={() => setFilterCat("")} style={{ flexShrink: 0, background: !filterCat ? "var(--gold)" : "var(--card-bg)", border: `1px solid ${!filterCat ? "var(--gold)" : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "6px 16px", color: !filterCat ? "#000" : "var(--text-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Tous</button>
           {categories.map((c) => (

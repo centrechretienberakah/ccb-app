@@ -1,6 +1,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import CommunityClient from "./CommunityClient";
+import type { Post, Category, CurrentUserProfile } from "./FeedClient";
+
+interface Member {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  cell_group: string | null;
+  testimony: string | null;
+}
+
+interface RawComment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  user_profiles?: { display_name?: string | null; avatar_url?: string | null } | null;
+}
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Communauté — CCB" };
@@ -10,14 +29,14 @@ export default async function CommunityPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?redirect=/community");
 
-  let members: any[] = [];
+  let members: Member[] = [];
   const memberMilestones: Record<string, string[]> = {};
   let isAdmin = false;
-  let posts: any[] = [];
-  let categories: any[] = [];
+  let posts: Post[] = [];
+  let categories: Category[] = [];
   let userLikedPostIds: string[] = [];
   const userVotes: Record<string, number> = {};
-  let currentUserProfile: any = null;
+  let currentUserProfile: CurrentUserProfile | null = null;
 
   try {
     // Profil courant (pour l'avatar dans PostCreator)
@@ -26,7 +45,7 @@ export default async function CommunityPage() {
       .select("display_name, avatar_url")
       .eq("user_id", user.id)
       .single();
-    currentUserProfile = myProfile;
+    currentUserProfile = (myProfile as CurrentUserProfile | null) ?? null;
 
     // Membres publics
     const { data: membersData } = await supabase
@@ -34,7 +53,7 @@ export default async function CommunityPage() {
       .select("user_id, display_name, avatar_url, bio, cell_group, testimony")
       .eq("is_public", true)
       .order("created_at", { ascending: false });
-    members = membersData || [];
+    members = (membersData as Member[] | null) || [];
 
     // Jalons spirituels
     const { data: milestonesData } = await supabase
@@ -58,7 +77,7 @@ export default async function CommunityPage() {
       .from("post_categories")
       .select("*")
       .order("sort_order");
-    categories = catData || [];
+    categories = (catData as Category[] | null) || [];
 
     // Posts avec categories — SANS join user_profiles (pas de FK directe,
     // PostgREST retourne 400). Profils fetchés séparément ci-dessous.
@@ -70,7 +89,7 @@ export default async function CommunityPage() {
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(60);
-    posts = postsData || [];
+    posts = (postsData as unknown as Post[] | null) || [];
 
     // Likes
     const { data: allLikes } = await supabase
@@ -88,8 +107,9 @@ export default async function CommunityPage() {
     const { data: allComments } = await supabase
       .from("post_comments")
       .select("post_id, id, user_id, content, created_at");
-    const commentsMap: Record<string, any[]> = {};
-    for (const c of allComments || []) {
+    const typedComments = (allComments as RawComment[] | null) || [];
+    const commentsMap: Record<string, RawComment[]> = {};
+    for (const c of typedComments) {
       if (!commentsMap[c.post_id]) commentsMap[c.post_id] = [];
       commentsMap[c.post_id].push(c);
     }
@@ -106,35 +126,43 @@ export default async function CommunityPage() {
     }
 
     // Fetch profils en batch (posts + commentaires)
-    const postUserIds = [...new Set(posts.map((p: any) => p.user_id as string))];
-    const commentUserIds = [...new Set((allComments || []).map((c: any) => c.user_id as string))];
+    type ProfileMin = { user_id: string; display_name: string; avatar_url?: string | null };
+    type Profile = { display_name: string; avatar_url?: string };
+    const postUserIds = [...new Set(posts.map((p) => p.user_id))];
+    const commentUserIds = [...new Set(typedComments.map((c) => c.user_id))];
     const allUserIds = [...new Set([...postUserIds, ...commentUserIds])];
-    let profilesData: any[] = [];
+    let profilesData: ProfileMin[] = [];
     if (allUserIds.length > 0) {
       const { data: pd } = await supabase
         .from("user_profiles")
         .select("user_id, display_name, avatar_url")
         .in("user_id", allUserIds);
-      profilesData = pd || [];
+      profilesData = (pd as ProfileMin[] | null) || [];
     }
-    const profilesMap: Record<string, any> = Object.fromEntries(
-      profilesData.map((p: any) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+    const profilesMap: Record<string, Profile> = Object.fromEntries(
+      profilesData.map((p) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url ?? undefined }])
     );
 
     // Enrichir commentaires avec profils
     for (const pid of Object.keys(commentsMap)) {
-      commentsMap[pid] = commentsMap[pid].map((c: any) => ({
+      commentsMap[pid] = commentsMap[pid].map((c) => ({
         ...c,
-        user_profiles: profilesMap[c.user_id] || null,
+        user_profiles: profilesMap[c.user_id] ?? null,
       }));
     }
 
     // Enrichir posts avec profils + likes + comments + votes
-    posts = posts.map((p: any) => ({
+    posts = posts.map((p) => ({
       ...p,
-      user_profiles: profilesMap[p.user_id] || null,
+      user_profiles: profilesMap[p.user_id] || undefined,
       likeCount: likesMap[p.id] || 0,
-      comments: commentsMap[p.id] || [],
+      comments: (commentsMap[p.id] || []).map((c) => ({
+        id: c.id,
+        user_id: c.user_id,
+        content: c.content,
+        created_at: c.created_at,
+        user_profiles: c.user_profiles ?? undefined,
+      })),
       voteResults: votesMap[p.id] || [],
     }));
   } catch (e) {
