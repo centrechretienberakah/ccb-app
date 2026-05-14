@@ -372,9 +372,25 @@ export default function AdminClient({
               <a href="/dashboard" style={{ color: "var(--text-muted)", fontSize: "0.8rem", textDecoration: "none", padding: "0.4rem 0.9rem", border: "1px solid var(--border)", borderRadius: "9999px" }}>← App</a>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "0.125rem", overflowX: "auto", scrollbarWidth: "none" }}>
+          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", paddingBottom: "4px" }}>
             {tabs.filter(t => !t.hidden).map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "0.55rem 1rem", borderRadius: "8px 8px 0 0", border: "none", background: tab === t.id ? "var(--card-bg)" : "transparent", color: tab === t.id ? "var(--gold)" : "var(--text-secondary)", fontWeight: tab === t.id ? 700 : 500, fontSize: "0.82rem", cursor: "pointer", whiteSpace: "nowrap", borderBottom: tab === t.id ? "2px solid var(--gold)" : "2px solid transparent" }}>
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                style={{
+                  padding: "0.45rem 0.75rem",
+                  borderRadius: "6px",
+                  border: tab === t.id ? "1px solid var(--gold)" : "1px solid var(--border)",
+                  background: tab === t.id ? "var(--gold)" : "var(--card-bg)",
+                  color: tab === t.id ? "#1a0a00" : "var(--text-secondary)",
+                  fontWeight: tab === t.id ? 700 : 500,
+                  fontSize: "0.78rem",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.15s ease",
+                  flexShrink: 0,
+                }}
+              >
                 {t.label}
               </button>
             ))}
