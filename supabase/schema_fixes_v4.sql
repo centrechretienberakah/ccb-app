@@ -1,24 +1,47 @@
 -- =====================================================================
--- CCB SCHEMA FIXES v4 — alignement schéma prod avec ce que le code attend
--- À exécuter dans Supabase SQL Editor (idempotent)
+-- CCB SCHEMA FIXES v4 — alignement complet user_profiles + tables
+-- À exécuter dans Supabase SQL Editor (idempotent, sûr à relancer)
+-- =====================================================================
+-- En prod, certains projets ont une user_profiles minimale ; cette
+-- migration ajoute toutes les colonnes attendues par l'app, en silence
+-- si elles existent déjà.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
--- 1. user_profiles : ajout `display_name` (le code l'utilise partout)
+-- 1. user_profiles : ajout de toutes les colonnes attendues
 -- ---------------------------------------------------------------------
 
 ALTER TABLE public.user_profiles
-  ADD COLUMN IF NOT EXISTS display_name TEXT;
+  ADD COLUMN IF NOT EXISTS display_name     TEXT,
+  ADD COLUMN IF NOT EXISTS full_name        TEXT,
+  ADD COLUMN IF NOT EXISTS avatar_url       TEXT,
+  ADD COLUMN IF NOT EXISTS phone            TEXT,
+  ADD COLUMN IF NOT EXISTS city             TEXT,
+  ADD COLUMN IF NOT EXISTS country          TEXT DEFAULT 'Cameroun',
+  ADD COLUMN IF NOT EXISTS bio              TEXT,
+  ADD COLUMN IF NOT EXISTS cell_group       TEXT,
+  ADD COLUMN IF NOT EXISTS spiritual_level  TEXT DEFAULT 'Nouveau croyant',
+  ADD COLUMN IF NOT EXISTS is_premium       BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS is_public        BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS is_disabled      BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS last_sign_in_at  TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_seen_at     TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
--- Backfill : si display_name vide, copie depuis full_name puis email
+-- Backfill : display_name depuis (display_name | full_name | email username | 'Membre')
 UPDATE public.user_profiles up
-   SET display_name = COALESCE(up.full_name, NULLIF(split_part(u.email, '@', 1), ''), 'Membre')
+   SET display_name = COALESCE(
+     NULLIF(up.display_name, ''),
+     NULLIF(up.full_name, ''),
+     NULLIF(SPLIT_PART(u.email, '@', 1), ''),
+     'Membre'
+   )
   FROM auth.users u
  WHERE up.user_id = u.id
    AND (up.display_name IS NULL OR up.display_name = '');
 
 -- ---------------------------------------------------------------------
--- 2. prayer_requests : colonnes manquantes attendues par l'app
+-- 2. prayer_requests : colonnes manquantes
 -- ---------------------------------------------------------------------
 
 ALTER TABLE public.prayer_requests
@@ -28,7 +51,7 @@ ALTER TABLE public.prayer_requests
   ADD COLUMN IF NOT EXISTS testimony     TEXT,
   ADD COLUMN IF NOT EXISTS updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
--- Backfill : titre par défaut si manquant
+-- Backfill : titre par défaut depuis content
 UPDATE public.prayer_requests
    SET title = COALESCE(
      NULLIF(SUBSTRING(content FROM 1 FOR 60), ''),
@@ -40,8 +63,7 @@ UPDATE public.prayer_requests
 -- 3. devotions : aligner avec ce que le code attend
 -- ---------------------------------------------------------------------
 
--- Cas A : la table 'devotions' n'existe pas et 'daily_devotions' existe
---         → on renomme daily_devotions en devotions
+-- Renomme daily_devotions → devotions si nécessaire
 DO $$
 DECLARE
   has_devotions BOOLEAN;
@@ -54,7 +76,7 @@ BEGIN
   END IF;
 END $$;
 
--- Cas B : la table devotions existe maintenant — assure-toi qu'elle a les colonnes attendues
+-- Crée devotions si absente
 CREATE TABLE IF NOT EXISTS public.devotions (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   devotion_date       DATE NOT NULL UNIQUE,
@@ -72,13 +94,11 @@ CREATE TABLE IF NOT EXISTS public.devotions (
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Le code admin lit `date` (alias) ET fait des INSERTs avec `devotion_date` :
--- on s'assure que les deux colonnes existent / le code utilisera la table directement.
+-- Ajoute la colonne content si manquante (legacy)
 ALTER TABLE public.devotions
   ADD COLUMN IF NOT EXISTS content TEXT;
 
--- Le code lit la colonne `date` comme alias de devotion_date
--- → on crée une colonne 'date' générée si elle n'existe pas
+-- Colonne 'date' (alias de devotion_date, lue par certains endroits du code)
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -88,7 +108,6 @@ BEGIN
     BEGIN
       EXECUTE 'ALTER TABLE public.devotions ADD COLUMN date DATE GENERATED ALWAYS AS (devotion_date) STORED';
     EXCEPTION WHEN others THEN
-      -- Si la génération échoue, ajoute juste la colonne (le code utilisera coalesce côté JS)
       EXECUTE 'ALTER TABLE public.devotions ADD COLUMN IF NOT EXISTS date DATE';
       EXECUTE 'UPDATE public.devotions SET date = devotion_date WHERE date IS NULL';
     END;
@@ -100,7 +119,14 @@ ALTER TABLE public.devotions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS devotions_public_read ON public.devotions;
 DROP POLICY IF EXISTS devotions_admin_write ON public.devotions;
 CREATE POLICY devotions_public_read ON public.devotions FOR SELECT USING (true);
-CREATE POLICY devotions_admin_write ON public.devotions FOR ALL USING (public.is_moderator_or_above());
+
+-- Ne crée la policy write QUE si la fonction existe
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'is_moderator_or_above' AND pronamespace = 'public'::regnamespace) THEN
+    EXECUTE 'CREATE POLICY devotions_admin_write ON public.devotions FOR ALL USING (public.is_moderator_or_above())';
+  END IF;
+END $$;
 
 -- =====================================================================
 -- FIN
