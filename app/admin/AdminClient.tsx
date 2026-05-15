@@ -229,7 +229,8 @@ export default function AdminClient({
     let res = await sb.from("devotions").insert({ ...basePayload, author: adminName }).select().single();
 
     // Tentative 2 : retry sans author si erreur "schema cache" (colonne absente)
-    if (res.error && /column.*author/i.test(res.error.message)) {
+    // L'erreur Supabase est : "Could not find the 'author' column of 'devotions' in the schema cache"
+    if (res.error && /author/i.test(res.error.message)) {
       res = await sb.from("devotions").insert(basePayload).select().single();
     }
 
