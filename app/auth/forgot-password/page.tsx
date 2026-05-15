@@ -16,8 +16,11 @@ export default function ForgotPasswordPage() {
     setError("");
     const supabase = createClient();
     const origin = typeof window !== "undefined" ? window.location.origin : "";
+    // On envoie directement vers /auth/reset-password. Supabase peut renvoyer
+    // soit un flow implicite (#access_token=...) soit PKCE (?code=...).
+    // La page reset-password gère les deux côté client.
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${origin}/auth/callback?next=/auth/reset-password`,
+      redirectTo: `${origin}/auth/reset-password`,
     });
     if (error) {
       setError(error.message);

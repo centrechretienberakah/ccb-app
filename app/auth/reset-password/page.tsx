@@ -16,27 +16,68 @@ export default function ResetPasswordPage() {
   const [sessionReady, setSessionReady] = useState(false);
   const [sessionError, setSessionError] = useState(false);
 
-  // Vérifie qu'on est bien dans un flow de recovery (session active)
+  // Établit la session de recovery depuis l'URL (hash implicit OU query PKCE)
   useEffect(() => {
     const supabase = createClient();
     let mounted = true;
+
+    async function establishSession() {
+      if (typeof window === "undefined") return;
+
+      // CAS 1 : flow PKCE → ?code=xxx en query
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!mounted) return;
+        if (!error) {
+          // Clean URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setSessionReady(true);
+          return;
+        }
+      }
+
+      // CAS 2 : flow implicit → #access_token=...&refresh_token=...&type=recovery dans le hash
+      if (window.location.hash) {
+        const params = new URLSearchParams(window.location.hash.slice(1));
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token");
+        if (access_token && refresh_token) {
+          const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+          if (!mounted) return;
+          if (!error) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            setSessionReady(true);
+            return;
+          }
+        }
+      }
+
+      // CAS 3 : session déjà active (event déjà passé ou user déjà connecté)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
+      if (session) {
+        setSessionReady(true);
+        return;
+      }
+
+      // Aucune session → lien invalide après un délai
+      setTimeout(() => {
+        if (mounted && !sessionReady) setSessionError(true);
+      }, 2500);
+    }
+
+    // Listener pour l'event PASSWORD_RECOVERY (auto-détection Supabase)
     const sub = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
         setSessionReady(true);
       }
     });
-    // Vérifie aussi la session courante (cas où l'event est déjà passé)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      if (session) setSessionReady(true);
-      else {
-        // Pas de session après quelques secondes → lien expiré/invalide
-        setTimeout(() => {
-          if (mounted && !sessionReady) setSessionError(true);
-        }, 2500);
-      }
-    });
+
+    establishSession();
+
     return () => {
       mounted = false;
       sub.data.subscription.unsubscribe();
