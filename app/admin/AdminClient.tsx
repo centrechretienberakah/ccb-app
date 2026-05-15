@@ -6,6 +6,7 @@ import { useOnlineUsers } from "@/lib/presence";
 import ResourceTab, { ColumnDef } from "./ResourceTab";
 import SiteContentTab from "./SiteContentTab";
 import GroupsTab from "./GroupsTab";
+import AnalyticsTab, { type AnalyticsData } from "./AnalyticsTab";
 import BroadcastNotification from "./BroadcastNotification";
 import { can, ROLE_LABEL, ROLE_BADGE, type Role } from "@/lib/rbac";
 
@@ -49,6 +50,7 @@ interface AdminClientProps {
   siteContent: Record<string, unknown>[];
   adminLogs: AdminLog[];
   testimonies: Record<string, unknown>[];
+  analytics: AnalyticsData;
 }
 
 function timeAgo(iso: string) {
@@ -82,10 +84,10 @@ export default function AdminClient({
   rdvList: initialRdv,
   events: initialEvents,
   media, courses, sermons, albums, groups, siteContent,
-  adminLogs, testimonies,
+  adminLogs, testimonies, analytics,
 }: AdminClientProps) {
   type Tab =
-    | "overview" | "members" | "posts" | "prayers" | "devotions"
+    | "overview" | "analytics" | "members" | "posts" | "prayers" | "devotions"
     | "contacts" | "rdv"
     | "media" | "courses" | "sermons" | "albums" | "groups" | "events"
     | "testimonies"
@@ -240,6 +242,7 @@ export default function AdminClient({
 
   const tabs: { id: Tab; label: string; hidden?: boolean }[] = [
     { id: "overview",  label: "Aperçu" },
+    { id: "analytics", label: "📊 Statistiques" },
     { id: "members",   label: `Membres (${stats.totalMembers})` },
     { id: "posts",     label: `Publications (${stats.totalPosts})` },
     { id: "prayers",   label: `Prières (${stats.openPrayers})` },
@@ -394,6 +397,11 @@ export default function AdminClient({
       </div>
 
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "1.75rem 1.5rem" }}>
+
+        {/* ===== STATISTIQUES ===== */}
+        {tab === "analytics" && (
+          <AnalyticsTab data={analytics} onlineCount={onlineSet.size} />
+        )}
 
         {/* ===== APERÇU ===== */}
         {tab === "overview" && (

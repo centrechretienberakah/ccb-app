@@ -6,8 +6,9 @@ import AdminClient from "./AdminClient";
 import { isModerator as canAccessAdmin } from "@/lib/rbac";
 import type {
   UserProfileRow, UserRoleRow, PostRow, PrayerRow, DevotionRow, EventRow,
-  ContactMessageRow, PastoralAppointmentRow,
+  ContactMessageRow, PastoralAppointmentRow, SermonRow,
 } from "@/lib/database.types";
+import { buildAnalyticsData } from "@/lib/analytics";
 
 type AdminPayload = Parameters<typeof AdminClient>[0];
 
@@ -213,6 +214,32 @@ export default function AdminPage() {
         role: rolesMap[m.user_id] || "member",
       }));
 
+      // Construit les données analytics depuis ce qui est déjà chargé
+      const analytics = buildAnalyticsData({
+        members: members.map((m) => ({
+          user_id: m.user_id,
+          created_at: m.created_at,
+          country: m.country ?? null,
+          last_sign_in_at: m.last_sign_in_at ?? null,
+          full_name: m.full_name ?? null,
+          display_name: m.display_name ?? null,
+        })),
+        posts: postsTyped.map((p) => ({
+          created_at: p.created_at,
+          post_type: p.post_type ?? null,
+          user_id: p.user_id,
+        })),
+        prayers: recentPrayers.map((p) => ({
+          created_at: p.created_at,
+          category: p.category ?? null,
+        })),
+        sermons: (sermons as unknown as SermonRow[]).map((s) => ({
+          title: s.title,
+          view_count: s.view_count ?? 0,
+        })),
+        onlineUserIds: new Set(),
+      });
+
       setData({
         adminName,
         isAdmin,
@@ -241,6 +268,7 @@ export default function AdminPage() {
         siteContent,
         adminLogs,
         testimonies,
+        analytics,
       });
       setLoading(false);
     }
