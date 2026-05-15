@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
 import TopBar from "./TopBar";
+import PushNotificationsBanner from "@/components/PushNotificationsBanner";
 import { useHeartbeat } from "@/lib/presence";
 
 function shouldShowShell(pathname: string): boolean {
@@ -60,6 +61,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Bottom nav (mobile seulement via CSS) */}
       <BottomNav />
+
+      {/* Bannière push notifications (auto-cachée si abonné/refusé/dismissed) */}
+      <PushNotificationsBanner />
     </div>
   );
 }

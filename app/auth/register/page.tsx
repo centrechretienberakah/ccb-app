@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { usePushNotifications } from "@/lib/push-notifications";
 
 const STEPS = [
   { label: "Compte", icon: "✉" },
@@ -26,6 +27,20 @@ export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // ── Auto-prompt push notifications après signup réussi (étape 3) ──
+  const push = usePushNotifications();
+  useEffect(() => {
+    if (step !== 3) return;
+    // Délai court pour laisser le rendu se stabiliser, puis demander permission
+    const timer = setTimeout(() => {
+      if (push.state === "default") {
+        push.subscribe().catch(() => { /* silencieux — utilisateur peut refuser */ });
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   /* ── Step 1: valider email + mot de passe ── */
   function handleStep1(e: React.FormEvent) {
@@ -308,18 +323,24 @@ export default function RegisterPage() {
                     Bienvenue dans la famille CCB !
                   </div>
                   <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    Verifiez votre boite email pour confirmer votre adresse,
-                    puis connectez-vous pour acceder a votre espace.
+                    Votre compte <strong>{email}</strong> a été créé avec succès.
                   </div>
                 </div>
-                <div className="auth-success">
-                  Un email de confirmation a ete envoye a <strong>{email}</strong>
-                </div>
+                {push.state === "subscribed" && (
+                  <div className="auth-success">
+                    🔔 Notifications activées — vous serez tenu informé.
+                  </div>
+                )}
+                {push.state === "denied" && (
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "8px 12px", background: "rgba(255,255,255,0.04)", borderRadius: 8 }}>
+                    Notifications désactivées. Tu peux les réactiver dans Paramètres &gt; Notifications.
+                  </div>
+                )}
                 <button
-                  onClick={() => router.push("/auth/login")}
+                  onClick={() => router.push("/dashboard")}
                   className="auth-btn auth-btn-gold"
                 >
-                  Aller a la connexion →
+                  Accéder à mon espace →
                 </button>
               </div>
             )}
