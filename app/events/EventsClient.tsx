@@ -448,15 +448,8 @@ export default function EventsClient({ events: initialEvents, userRsvpMap: initi
                 href: "/prayer",
                 tag: "Prière",
               },
-              {
-                icon: "🎓",
-                title: "Bootcamp Annuel CCB 2026",
-                time: "26 – 28 Juin 2026 · Douala, Cameroun & En ligne",
-                sub: "SEMBLABLE À CHRIST · Romains 8:29",
-                accent: "var(--gold)",
-                href: "https://bootcamp.centrechretienberakah.com",
-                tag: "Bootcamp",
-              },
+              // Bootcamp Annuel 2026 retiré du hardcoded — il vit maintenant dans la table events
+              // (voir supabase/seed_initial_events_testimonies.sql). Géré via /admin → Événements.
             ].map((item) => (
               <div key={item.title} style={{
                 display: "flex", gap: 14, alignItems: "center",

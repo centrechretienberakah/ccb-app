@@ -4,56 +4,25 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 interface Temoignage { id: string; content: string; user_id: string; created_at: string; likes_count: number; category?: string; }
+export interface FeaturedTestimony {
+  id: string;
+  title?: string | null;
+  content: string;
+  category?: string | null;
+  author_name?: string | null;
+  author_role?: string | null;
+  author_country?: string | null;
+  author_initial?: string | null;
+  author_photo?: string | null;
+  is_featured?: boolean;
+  created_at: string;
+}
 
 const CATEGORIES = ["Guérison", "Délivrance", "Protection", "Provision", "Famille", "Travail", "Autre"];
 
-// ─── Témoignages vedettes (Bootcamp 2025 — landing page) ──────
-const FEATURED = [
-  {
-    name: "Kévin Bouna",
-    text: "J'ai compris que je ne suis pas appelé à répéter les erreurs du passé, mais à devenir un instrument de transformation. Ce camp m'a révélé que les cycles négatifs peuvent être brisés en Dieu — par l'obéissance et une relation sincère avec Lui. Je repars avec une vision claire : être un canal de bénédiction pour ma génération.",
-    role: "Membre CCB · Canada",
-    initial: "K",
-    country: "🇨🇦",
-    photo: "/testimonie-kevin.jpg",
-  },
-  {
-    name: "Djeumo Daïna",
-    text: "La retraite 2025 a été un tournant dans ma vie. En seulement quelques jours, j'ai découvert qui je suis réellement en Christ. J'ai ressenti une véritable atmosphère de famille, une présence réelle de Jésus-Christ… et même vécu un miracle. Dieu m'a protégée. Je ne suis plus la même.",
-    role: "Membre CCB · Yaoundé",
-    initial: "D",
-    country: "🇨🇲",
-    photo: "/testimonie-daina.jpg",
-  },
-  {
-    name: "Cabrelle Djontso",
-    text: "Un cadre magnifique, une atmosphère de joie et de partage de la Parole… J'ai découvert une nouvelle version de moi-même. J'ai appris à poser des limites, à me connaître, et compris que les limites générationnelles peuvent être brisées. Je t'invite à nous rejoindre — tu ne regretteras pas !",
-    role: "Membre CCB · Yaoundé",
-    initial: "C",
-    country: "🇨🇲",
-    photo: "/testimonie-cabrelle.jpg",
-  },
-  {
-    name: "MD Merveille Djambong",
-    text: "Une retraite bien organisée, un programme respecté, et surtout une présence de Dieu tangible au milieu de nous. J'ai été touchée par l'esprit de famille qui régnait. C'était formidable — et j'ai hâte de vivre ça à nouveau avec de nouveaux visages !",
-    role: "Membre CCB · Douala",
-    initial: "M",
-    country: "🇨🇲",
-    photo: null,
-  },
-  {
-    name: "Christiana Nguiffo",
-    text: "Ce fut un moment de communion fraternelle intense — louange, adoration, détente, et une Parole qui transforme. Nous avons appris que si nous sommes en Christ, il n'y a plus de malédiction : chaque bienfait devient une bénédiction générationnelle. J'ai hâte d'être à la retraite 2026 !",
-    role: "Co-Hôte · Membre CCB · Belgique",
-    initial: "C",
-    country: "🇧🇪",
-    photo: "/testimonie-christiana.jpg",
-  },
-];
-
 function fmtDate(d: string) { return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); }
 
-export default function TemoignagesClient({ temoignages, userId }: { temoignages: Temoignage[]; userId: string | null }) {
+export default function TemoignagesClient({ temoignages, featured, userId }: { temoignages: Temoignage[]; featured: FeaturedTestimony[]; userId: string | null }) {
   const [list, setList] = useState(temoignages);
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Guérison");
@@ -91,38 +60,46 @@ export default function TemoignagesClient({ temoignages, userId }: { temoignages
           <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {FEATURED.map((t) => (
-            <div key={t.name} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "18px 20px", position: "relative", overflow: "hidden" }}>
-              {/* Accent bar */}
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #ca8a04, #f59e0b, transparent)" }} />
-              {/* Badge + stars */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--gold)", background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: "var(--radius-full)", padding: "3px 10px" }}>✦ Bootcamp 2025</span>
-                <span style={{ color: "var(--gold)", fontSize: 12, letterSpacing: 2 }}>★★★★★</span>
-              </div>
-              {/* Text */}
-              <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.75, fontStyle: "italic", margin: "0 0 14px" }}>
-                &ldquo;{t.text}&rdquo;
-              </p>
-              {/* Author */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {t.photo ? (
-                  <Image src={t.photo} alt={t.name} width={40} height={40}
-                    style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid rgba(212,175,55,0.3)" }} />
-                ) : (
-                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #5a2ca0, #7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
-                    {t.initial}
+        {featured.length === 0 ? (
+          <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "20px 12px" }}>
+            Aucun témoignage vedette pour l&apos;instant.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {featured.map((t) => (
+              <div key={t.id} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "18px 20px", position: "relative", overflow: "hidden" }}>
+                {/* Accent bar */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #ca8a04, #f59e0b, transparent)" }} />
+                {/* Badge + stars */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--gold)", background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: "var(--radius-full)", padding: "3px 10px" }}>✦ Vedette</span>
+                  <span style={{ color: "var(--gold)", fontSize: 12, letterSpacing: 2 }}>★★★★★</span>
+                </div>
+                {/* Text */}
+                <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.75, fontStyle: "italic", margin: "0 0 14px" }}>
+                  &ldquo;{t.content}&rdquo;
+                </p>
+                {/* Author */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {t.author_photo ? (
+                    <Image src={t.author_photo} alt={t.author_name || "Témoin"} width={40} height={40}
+                      style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid rgba(212,175,55,0.3)" }} />
+                  ) : (
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #5a2ca0, #7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
+                      {t.author_initial || (t.author_name?.[0] ?? "?")}
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)" }}>
+                      {t.author_name || "Anonyme"} {t.author_country && <span style={{ fontSize: 14 }}>{t.author_country}</span>}
+                    </div>
+                    {t.author_role && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.author_role}</div>}
                   </div>
-                )}
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)" }}>{t.name} <span style={{ fontSize: 14 }}>{t.country}</span></div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.role}</div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* CTA Bootcamp 2026 */}
         <a href="https://bootcamp.centrechretienberakah.com" target="_blank" rel="noopener noreferrer"

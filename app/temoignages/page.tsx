@@ -8,7 +8,15 @@ export default async function TemoignagesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Try to fetch from posts table with tag 'temoignage', or from a dedicated table
+  // Témoignages featured (Bootcamp 2025, etc.) — gérés via /admin
+  const { data: featured } = await supabase
+    .from("testimonies")
+    .select("id, title, content, category, author_name, author_role, author_country, author_initial, author_photo, is_featured, created_at")
+    .eq("is_approved", true)
+    .eq("is_featured", true)
+    .order("created_at", { ascending: false });
+
+  // Témoignages soumis par les membres (posts table)
   const { data: temoignages } = await supabase
     .from("posts")
     .select("id, content, user_id, created_at, likes_count, category")
@@ -16,5 +24,11 @@ export default async function TemoignagesPage() {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  return <TemoignagesClient temoignages={temoignages ?? []} userId={user?.id ?? null} />;
+  return (
+    <TemoignagesClient
+      temoignages={temoignages ?? []}
+      featured={(featured ?? []) as Parameters<typeof TemoignagesClient>[0]["featured"]}
+      userId={user?.id ?? null}
+    />
+  );
 }
