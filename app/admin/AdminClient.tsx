@@ -218,16 +218,26 @@ export default function AdminClient({
     }
     setSaving(true); setDevMsg(null);
     const sb = createClient();
-    const { data, error } = await sb.from("devotions").insert({
+    const basePayload: Record<string, unknown> = {
       devotion_date: form.devotion_date, title: form.title, verse_reference: form.verse_reference,
       verse_text: form.verse_text, meditation_p1: form.meditation_p1, meditation_p2: form.meditation_p2 || null,
       meditation_p3: form.meditation_p3 || null, reflection_question: form.reflection_question || null,
-      prayer: form.prayer, declaration: form.declaration, author: adminName,
-    }).select().single();
-    if (error) { setDevMsg({ type: "error", text: error.message }); }
-    else {
-      setDevotions(prev => [data, ...prev]);
-      setDevMsg({ type: "success", text: "Dévotion publiée avec succès !" });
+      prayer: form.prayer, declaration: form.declaration,
+    };
+
+    // Tentative 1 : avec author (si la colonne existe en prod)
+    let res = await sb.from("devotions").insert({ ...basePayload, author: adminName }).select().single();
+
+    // Tentative 2 : retry sans author si erreur "schema cache" (colonne absente)
+    if (res.error && /column.*author/i.test(res.error.message)) {
+      res = await sb.from("devotions").insert(basePayload).select().single();
+    }
+
+    if (res.error) {
+      setDevMsg({ type: "error", text: res.error.message });
+    } else {
+      setDevotions(prev => [res.data, ...prev]);
+      setDevMsg({ type: "success", text: "Méditation publiée avec succès !" });
       setForm({ devotion_date: new Date().toISOString().split("T")[0], title: "", verse_reference: "", verse_text: "", meditation_p1: "", meditation_p2: "", meditation_p3: "", reflection_question: "", prayer: "", declaration: "" });
       setTimeout(() => { setShowDevotionForm(false); setDevMsg(null); }, 1800);
     }
