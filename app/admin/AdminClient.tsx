@@ -236,12 +236,37 @@ export default function AdminClient({
 
     if (res.error) {
       setDevMsg({ type: "error", text: res.error.message });
-    } else {
-      setDevotions(prev => [res.data, ...prev]);
-      setDevMsg({ type: "success", text: "Méditation publiée avec succès !" });
-      setForm({ devotion_date: new Date().toISOString().split("T")[0], title: "", verse_reference: "", verse_text: "", meditation_p1: "", meditation_p2: "", meditation_p3: "", reflection_question: "", prayer: "", declaration: "" });
-      setTimeout(() => { setShowDevotionForm(false); setDevMsg(null); }, 1800);
+      setSaving(false);
+      return;
     }
+
+    setDevotions(prev => [res.data, ...prev]);
+
+    // ── Envoie une notification push à tous les abonnés ──
+    let pushFeedback = "";
+    try {
+      const notifRes = await fetch("/api/notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `☀️ Méditons ensemble — ${form.title}`,
+          body: `${form.verse_reference} · ${form.verse_text.slice(0, 80)}${form.verse_text.length > 80 ? "…" : ""}`,
+          url: "/devotion",
+        }),
+      });
+      const notifBody = await notifRes.json();
+      if (notifRes.ok) {
+        pushFeedback = ` 🔔 ${notifBody.sent} notification(s) envoyée(s)${notifBody.failed > 0 ? `, ${notifBody.failed} échec(s)` : ""}.`;
+      } else {
+        pushFeedback = ` ⚠ Push non envoyé : ${notifBody.error ?? "erreur inconnue"}`;
+      }
+    } catch {
+      pushFeedback = " ⚠ Push non envoyé (réseau).";
+    }
+
+    setDevMsg({ type: "success", text: "Méditation publiée avec succès !" + pushFeedback });
+    setForm({ devotion_date: new Date().toISOString().split("T")[0], title: "", verse_reference: "", verse_text: "", meditation_p1: "", meditation_p2: "", meditation_p3: "", reflection_question: "", prayer: "", declaration: "" });
+    setTimeout(() => { setShowDevotionForm(false); setDevMsg(null); }, 3500);
     setSaving(false);
   };
 
