@@ -6,6 +6,7 @@ import { useOnlineUsers } from "@/lib/presence";
 import ResourceTab, { ColumnDef } from "./ResourceTab";
 import SiteContentTab from "./SiteContentTab";
 import GroupsTab from "./GroupsTab";
+import BroadcastNotification from "./BroadcastNotification";
 import { can, ROLE_LABEL, ROLE_BADGE, type Role } from "@/lib/rbac";
 
 interface Stats {
@@ -397,6 +398,9 @@ export default function AdminClient({
         {/* ===== APERÇU ===== */}
         {tab === "overview" && (
           <div>
+            <div style={{ marginBottom: "2rem" }}>
+              <BroadcastNotification />
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
               {[
                 { label: "Membres", value: stats.totalMembers, icon: "👥", accent: "var(--violet, #7c3aed)" },

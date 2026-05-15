@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { usePushNotifications } from "@/lib/push-notifications";
 
 // ─── Types ────────────────────────────────────────────────────
 interface Profile {
@@ -61,6 +62,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const push = usePushNotifications();
 
   // ── Compte ────────────────────────────────────────────────
   const [displayName, setDisplayName] = useState(initialProfile?.display_name ?? "");
@@ -331,8 +333,52 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
         </div>
       </SectionCard>
 
-      {/* ── Section Notifications ── */}
-      <SectionCard title="Notifications" icon="🔔">
+      {/* ── Section Notifications PUSH (navigateur/PWA) ── */}
+      <SectionCard title="Notifications push" icon="📲">
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
+          Recevez les annonces du Centre Chrétien Berakah directement sur votre appareil, même app fermée.
+        </div>
+        {push.state === "unsupported" && (
+          <div style={{ padding: "12px 14px", borderRadius: "var(--radius-md)", background: "rgba(148,163,184,0.1)", color: "var(--text-muted)", fontSize: 13 }}>
+            ⚠️ Votre navigateur ne supporte pas les notifications push. Essayez Chrome, Firefox, Edge ou Safari récent.
+          </div>
+        )}
+        {push.state === "denied" && (
+          <div style={{ padding: "12px 14px", borderRadius: "var(--radius-md)", background: "rgba(248,113,113,0.1)", color: "#fca5a5", fontSize: 13 }}>
+            🚫 Notifications bloquées. Ouvrez les paramètres du navigateur pour ce site et autorisez les notifications, puis rechargez la page.
+          </div>
+        )}
+        {(push.state === "default" || push.state === "loading") && (
+          <button
+            onClick={push.subscribe}
+            disabled={push.state === "loading"}
+            style={{ width: "100%", background: "linear-gradient(135deg, var(--violet-dark), var(--violet-light))", border: "none", borderRadius: "var(--radius-full)", padding: "12px", color: "#fff", fontWeight: 700, fontSize: 14, cursor: push.state === "loading" ? "wait" : "pointer", opacity: push.state === "loading" ? 0.6 : 1 }}
+          >
+            {push.state === "loading" ? "Chargement..." : "📲 Activer les notifications push"}
+          </button>
+        )}
+        {push.state === "subscribed" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ padding: "10px 14px", borderRadius: "var(--radius-md)", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", color: "#86efac", fontSize: 13 }}>
+              ✅ Notifications push activées sur ce navigateur.
+            </div>
+            <button
+              onClick={push.unsubscribe}
+              style={{ width: "100%", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "10px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+            >
+              Désactiver les notifications push
+            </button>
+          </div>
+        )}
+        {push.error && (
+          <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: "var(--radius-md)", background: "rgba(248,113,113,0.1)", color: "#fca5a5", fontSize: 12 }}>
+            ⚠️ {push.error}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* ── Section Notifications (préférences locales) ── */}
+      <SectionCard title="Préférences de notifications" icon="🔔">
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
           Choisissez quand être notifié
         </div>
