@@ -89,17 +89,33 @@ export default function DevotionClient({
     return () => { mounted = false; };
   }, [active.id, userId]);
 
+  const [likeError, setLikeError] = useState<string | null>(null);
+
   async function toggleLike() {
     if (!userId) { window.location.href = "/auth/login?redirect=/devotion"; return; }
-    if (!active.id) return;
+    if (!active.id) { setLikeError("Cette méditation n'est pas encore enregistrée en base."); return; }
     const sb = createClient();
+    setLikeError(null);
+    // Optimistic update
+    const prevLiked = userLiked;
+    const prevCount = likeCount;
     if (userLiked) {
-      await sb.from("devotion_likes").delete().eq("devotion_id", active.id).eq("user_id", userId);
       setUserLiked(false); setLikeCount((c) => Math.max(0, c - 1));
+      const { error } = await sb.from("devotion_likes").delete().eq("devotion_id", active.id).eq("user_id", userId);
+      if (error) {
+        // Rollback
+        setUserLiked(prevLiked); setLikeCount(prevCount);
+        setLikeError("Impossible de retirer le j'aime. Vérifiez que la table devotion_likes existe.");
+      }
     } else {
-      await sb.from("devotion_likes").insert({ devotion_id: active.id, user_id: userId });
       setUserLiked(true); setLikeCount((c) => c + 1);
+      const { error } = await sb.from("devotion_likes").insert({ devotion_id: active.id, user_id: userId });
+      if (error) {
+        setUserLiked(prevLiked); setLikeCount(prevCount);
+        setLikeError("Impossible de liker. La table devotion_likes n'existe pas encore en base.");
+      }
     }
+    if (likeError) setTimeout(() => setLikeError(null), 4000);
   }
 
   async function loadComments() {
@@ -131,10 +147,13 @@ export default function DevotionClient({
     await loadComments();
   }
 
+  const [commentError, setCommentError] = useState<string | null>(null);
+
   async function submitComment() {
     if (!userId) { window.location.href = "/auth/login?redirect=/devotion"; return; }
     if (!active.id || commentText.trim().length < 2) return;
     setPostingComment(true);
+    setCommentError(null);
     const sb = createClient();
     const { error } = await sb.from("devotion_comments")
       .insert({ devotion_id: active.id, user_id: userId, content: commentText.trim() });
@@ -142,15 +161,22 @@ export default function DevotionClient({
       setCommentText("");
       setCommentsCount((c) => c + 1);
       await loadComments();
+    } else {
+      setCommentError("Impossible de publier. La table devotion_comments n'existe pas encore en base.");
+      setTimeout(() => setCommentError(null), 4000);
     }
     setPostingComment(false);
   }
 
-  function buildShareText(d: UnifiedDevotion) {
+  // Construit le texte partagé. `includeUrl` ajoute le lien CCB dans le texte
+  // (utile pour le clipboard ; pas nécessaire pour navigator.share qui passe url séparément).
+  function buildShareText(d: UnifiedDevotion, includeUrl: boolean) {
+    const dateUpper = fmtDate(d.date).toUpperCase();
+    const titleUpper = d.title.toUpperCase();
     const lines: string[] = [
-      `☀ Méditons ensemble — ${fmtDate(d.date)}`,
+      `☀ MÉDITONS ENSEMBLE — ${dateUpper}`,
       ``,
-      `« ${d.title} »`,
+      `« ${titleUpper} »`,
       ``,
       `📖 ${d.verse_ref}`,
       `« ${d.verse_text} »`,
@@ -162,22 +188,29 @@ export default function DevotionClient({
     if (d.prayer) { lines.push("", "🙏 PRIÈRE DU JOUR", d.prayer); }
     if (d.declaration) { lines.push("", "✦ DÉCLARATION DE FOI", d.declaration); }
     lines.push("", `— ${SIGNATURE}`);
-    lines.push("", "📱 Rejoignez le Centre Chrétien Berakah :");
-    lines.push(`${PUBLIC_URL}`);
+    if (includeUrl) {
+      lines.push("", "📱 Rejoignez le Centre Chrétien Berakah :");
+      lines.push(PUBLIC_URL);
+    }
     return lines.join("\n");
   }
 
   async function handleShare() {
-    const text = buildShareText(active);
-    const title = `Méditons ensemble — ${active.title}`;
+    const title = `MÉDITONS ENSEMBLE — ${active.title}`;
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({ title, text, url: PUBLIC_URL });
+        // navigator.share affiche déjà l'URL séparément — pas de duplication dans le texte
+        await navigator.share({
+          title,
+          text: buildShareText(active, false),
+          url: PUBLIC_URL,
+        });
         return;
       }
     } catch { /* user cancelled */ }
     try {
-      await navigator.clipboard.writeText(text);
+      // Pour le presse-papier on inclut le lien dans le texte pour qu'il soit copié
+      await navigator.clipboard.writeText(buildShareText(active, true));
       setShared(true);
       setTimeout(() => setShared(false), 2200);
     } catch { /* noop */ }
@@ -379,6 +412,17 @@ export default function DevotionClient({
         )}
       </div>
 
+      {/* ─── Erreurs ─── */}
+      {(likeError || commentError) && (
+        <div style={{
+          padding: "8px 12px", marginBottom: 12,
+          background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.3)",
+          borderRadius: 10, color: "#fca5a5", fontSize: 12,
+        }}>
+          ⚠ {likeError || commentError}
+        </div>
+      )}
+
       {/* ─── Actions : Like, Comment, Share ─── */}
       <div style={{ display: "flex", gap: 8, marginBottom: 32 }}>
         <button
@@ -536,28 +580,6 @@ export default function DevotionClient({
         </>
       )}
 
-      {/* ─── CTA Rejoindre ─── */}
-      <div style={{
-        marginTop: 32, padding: 20,
-        background: "var(--card-bg)", border: "1px solid var(--border)",
-        borderRadius: "var(--radius-xl)", textAlign: "center",
-      }}>
-        <div style={{ fontSize: 22, marginBottom: 8 }}>🤝</div>
-        <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "0 0 14px", lineHeight: 1.5 }}>
-          Reçois chaque jour la méditation du Centre Chrétien Berakah. Active les notifications pour ne rien manquer.
-        </p>
-        <Link
-          href="/community"
-          style={{
-            display: "inline-block",
-            background: "linear-gradient(135deg, var(--violet-dark), var(--violet))",
-            color: "#fff", borderRadius: 9999,
-            padding: "10px 22px", fontWeight: 700, fontSize: 13, textDecoration: "none",
-          }}
-        >
-          Rejoindre la communauté →
-        </Link>
-      </div>
     </div>
   );
 }

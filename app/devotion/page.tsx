@@ -88,22 +88,26 @@ export default async function DevotionPage() {
     };
   }
 
-  // Archives : 30 dernières devotions
+  // Archives : 30 dernières devotions (toutes colonnes valides du schéma)
   let archives: UnifiedDevotion[] = [];
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     let archivesRows: DevotionRow[] = [];
+    // Essai 1 : ordre par devotion_date (colonne canonique du schéma)
     const r1 = await supabase
-      .from("devotions").select("id, devotion_date, date, title, verse_reference, verse_ref, verse_text, meditation_p1, meditation_p2, meditation_p3, content, application, prayer, declaration, author")
-      .gte("date", thirtyDaysAgo)
-      .order("date", { ascending: false })
+      .from("devotions")
+      .select("id, devotion_date, title, verse_reference, verse_text, meditation_p1, meditation_p2, meditation_p3, reflection_question, prayer, declaration, author")
+      .gte("devotion_date", thirtyDaysAgo)
+      .order("devotion_date", { ascending: false })
       .limit(30);
     if (!r1.error && r1.data) archivesRows = r1.data as DevotionRow[];
     else {
+      // Fallback si la colonne date existe et pas devotion_date
       const r2 = await supabase
-        .from("devotions").select("id, devotion_date, title, verse_reference, verse_text, meditation_p1, meditation_p2, meditation_p3, prayer, declaration, author")
-        .gte("devotion_date", thirtyDaysAgo)
-        .order("devotion_date", { ascending: false })
+        .from("devotions")
+        .select("id, date, title, verse_reference, verse_text, meditation_p1, meditation_p2, meditation_p3, reflection_question, prayer, declaration, author")
+        .gte("date", thirtyDaysAgo)
+        .order("date", { ascending: false })
         .limit(30);
       if (!r2.error && r2.data) archivesRows = r2.data as DevotionRow[];
     }
