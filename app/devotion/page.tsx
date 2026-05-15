@@ -5,40 +5,112 @@ import { getDailyDevotion } from "./devotions-data";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Méditons ensemble — CCB" };
 
+interface DevotionRow {
+  id: string;
+  devotion_date?: string;
+  date?: string;
+  title: string;
+  verse_reference?: string;
+  verse_ref?: string;
+  verse_text: string;
+  meditation_p1?: string | null;
+  meditation_p2?: string | null;
+  meditation_p3?: string | null;
+  reflection_question?: string | null;
+  content?: string | null;
+  application?: string | null;
+  prayer?: string | null;
+  declaration?: string | null;
+  author?: string | null;
+}
+
+interface UnifiedDevotion {
+  id: string | null;
+  date: string;
+  title: string;
+  verse_ref: string;
+  verse_text: string;
+  content: string;
+  application: string;
+  prayer: string;
+  declaration: string;
+}
+
+function normalize(d: DevotionRow | null): UnifiedDevotion | null {
+  if (!d) return null;
+  const dateStr = d.devotion_date || d.date || new Date().toISOString().split("T")[0];
+  const meditationParts = [d.meditation_p1, d.meditation_p2, d.meditation_p3].filter(Boolean) as string[];
+  const content = meditationParts.length > 0 ? meditationParts.join("\n\n") : (d.content || "");
+  return {
+    id: d.id,
+    date: dateStr,
+    title: d.title,
+    verse_ref: d.verse_reference || d.verse_ref || "",
+    verse_text: d.verse_text,
+    content,
+    application: d.application || d.reflection_question || "",
+    prayer: d.prayer || "",
+    declaration: d.declaration || "",
+  };
+}
+
 export default async function DevotionPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const today = new Date().toISOString().split("T")[0];
 
-  // Tentative Supabase, fallback static
-  let devotion: any = null;
+  // Today's devotion : tente DB sur `date` puis `devotion_date`
+  let todayDevotion: UnifiedDevotion | null = null;
   try {
-    const { data } = await supabase
-      .from("devotions")
-      .select("*")
-      .eq("date", today)
-      .single();
-    devotion = data;
-  } catch {}
+    const { data: byDate } = await supabase
+      .from("devotions").select("*").eq("date", today).maybeSingle();
+    if (byDate) todayDevotion = normalize(byDate as DevotionRow);
+    if (!todayDevotion) {
+      const { data: byDevDate } = await supabase
+        .from("devotions").select("*").eq("devotion_date", today).maybeSingle();
+      if (byDevDate) todayDevotion = normalize(byDevDate as DevotionRow);
+    }
+  } catch { /* table absente, fallback static */ }
 
-  const content = devotion || getDailyDevotion();
-
-  // Progression
-  let completed = false;
-  if (user && content.id) {
-    try {
-      const { data } = await supabase
-        .from("devotion_progress")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("devotion_id", content.id)
-        .maybeSingle();
-      completed = !!data;
-    } catch {}
+  if (!todayDevotion) {
+    const fallback = getDailyDevotion();
+    todayDevotion = {
+      id: fallback.id,
+      date: today,
+      title: fallback.title,
+      verse_ref: fallback.verse_ref,
+      verse_text: fallback.verse_text,
+      content: fallback.content,
+      application: fallback.application,
+      prayer: fallback.prayer,
+      declaration: fallback.declaration,
+    };
   }
 
-  // Streak
+  // Archives : 30 dernières devotions
+  let archives: UnifiedDevotion[] = [];
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    let archivesRows: DevotionRow[] = [];
+    const r1 = await supabase
+      .from("devotions").select("id, devotion_date, date, title, verse_reference, verse_ref, verse_text, meditation_p1, meditation_p2, meditation_p3, content, application, prayer, declaration, author")
+      .gte("date", thirtyDaysAgo)
+      .order("date", { ascending: false })
+      .limit(30);
+    if (!r1.error && r1.data) archivesRows = r1.data as DevotionRow[];
+    else {
+      const r2 = await supabase
+        .from("devotions").select("id, devotion_date, title, verse_reference, verse_text, meditation_p1, meditation_p2, meditation_p3, prayer, declaration, author")
+        .gte("devotion_date", thirtyDaysAgo)
+        .order("devotion_date", { ascending: false })
+        .limit(30);
+      if (!r2.error && r2.data) archivesRows = r2.data as DevotionRow[];
+    }
+    archives = archivesRows.map((r) => normalize(r)).filter(Boolean) as UnifiedDevotion[];
+  } catch { /* noop */ }
+
+  // Progression : combien de devotions lues par cet user
   let streak = 0;
   if (user) {
     try {
@@ -47,98 +119,39 @@ export default async function DevotionPage() {
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id);
       streak = count ?? 0;
-    } catch {}
+    } catch { /* noop */ }
   }
 
-  const dateStr = new Date().toLocaleDateString("fr-FR", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-  });
-
-  const paragraphs = (content.content as string).split("\n\n").filter(Boolean);
+  // Stats engagement de la devotion du jour
+  let likeCount = 0;
+  let userLiked = false;
+  let commentsCount = 0;
+  if (todayDevotion.id) {
+    try {
+      const [{ count: lc }, { count: cc }] = await Promise.all([
+        supabase.from("devotion_likes").select("id", { count: "exact", head: true }).eq("devotion_id", todayDevotion.id),
+        supabase.from("devotion_comments").select("id", { count: "exact", head: true }).eq("devotion_id", todayDevotion.id),
+      ]);
+      likeCount = lc ?? 0;
+      commentsCount = cc ?? 0;
+      if (user) {
+        const { data: myLike } = await supabase
+          .from("devotion_likes").select("id")
+          .eq("devotion_id", todayDevotion.id).eq("user_id", user.id).maybeSingle();
+        userLiked = !!myLike;
+      }
+    } catch { /* noop */ }
+  }
 
   return (
-    <div className="devotion-page">
-
-      {/* Hero */}
-      <div className="devotion-hero">
-        <div className="devotion-hero-orb-1" />
-        <div className="devotion-hero-orb-2" />
-        <div className="devotion-hero-inner">
-          <div className="devotion-hero-meta">
-            <span className="devotion-date-badge">☀️ {dateStr}</span>
-            {streak > 0 && (
-              <span className="devotion-streak-badge">🔥 {streak} jour{streak > 1 ? "s" : ""}</span>
-            )}
-          </div>
-          <h1 className="devotion-hero-title">{content.title}</h1>
-          <p className="devotion-hero-author">par {content.author ?? "Pasteur Elvis"}</p>
-        </div>
-      </div>
-
-      <div className="devotion-content">
-
-        {/* Verset principal */}
-        <div className="devotion-verse-card">
-          <div className="devotion-verse-icon">📖</div>
-          <blockquote className="devotion-verse-text">
-            &ldquo;{content.verse_text}&rdquo;
-          </blockquote>
-          <cite className="devotion-verse-ref">— {content.verse_ref}</cite>
-        </div>
-
-        {/* Meditation */}
-        <div className="devotion-section">
-          <div className="devotion-section-header">
-            <span className="devotion-section-icon">✦</span>
-            <h2 className="devotion-section-title">Meditation</h2>
-          </div>
-          <div className="devotion-section-body">
-            {paragraphs.map((p: string, i: number) => (
-              <p key={i} className="devotion-paragraph">{p}</p>
-            ))}
-          </div>
-        </div>
-
-        {/* Application */}
-        {content.application && (
-          <div className="devotion-section devotion-application">
-            <div className="devotion-section-header">
-              <span className="devotion-section-icon">💡</span>
-              <h2 className="devotion-section-title">Application pratique</h2>
-            </div>
-            <div className="devotion-section-body">
-              <p className="devotion-paragraph devotion-paragraph-highlight">
-                {content.application}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Priere */}
-        <div className="devotion-prayer-card">
-          <div className="devotion-prayer-header">
-            <span>🙏</span>
-            <h2 className="devotion-section-title" style={{ color: "inherit" }}>Priere du jour</h2>
-          </div>
-          <p className="devotion-prayer-text">{content.prayer}</p>
-        </div>
-
-        {/* Declaration */}
-        {content.declaration && (
-          <div className="devotion-declaration-card">
-            <div className="devotion-declaration-label">✦ Declaration de foi</div>
-            <p className="devotion-declaration-text">{content.declaration}</p>
-          </div>
-        )}
-
-        {/* Actions */}
-        <DevotionClient
-          devotionId={content.id}
-          userId={user?.id ?? null}
-          alreadyCompleted={completed}
-        />
-
-      </div>
-    </div>
+    <DevotionClient
+      today={todayDevotion}
+      archives={archives}
+      streak={streak}
+      userId={user?.id ?? null}
+      initialLikeCount={likeCount}
+      initialUserLiked={userLiked}
+      initialCommentsCount={commentsCount}
+    />
   );
 }
