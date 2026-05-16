@@ -699,6 +699,9 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   });
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [filterCat, setFilterCat] = useState<string>("");
+  const [filterKind, setFilterKind] = useState<PostKind | "">("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortMode, setSortMode] = useState<"recent" | "popular">("recent");
   const [likedIds, setLikedIds] = useState<Set<string>>(() => {
     const cache = getClientCache();
     return cache && cache.likedIds.size > 0 ? cache.likedIds : new Set(userLikedPostIds);
@@ -852,7 +855,28 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     };
   }, []);
 
-  const filtered = filterCat ? posts.filter((p) => p.category_id === filterCat) : posts;
+  // Filtres : catégorie + kind + recherche full-text
+  let filtered = posts;
+  if (filterCat) filtered = filtered.filter((p) => p.category_id === filterCat);
+  if (filterKind) filtered = filtered.filter((p) => p.post_kind === filterKind);
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    filtered = filtered.filter((p) => {
+      const text = p.content.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      const author = (p.user_profiles?.display_name || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      return text.includes(q) || author.includes(q);
+    });
+  }
+  // Tri (les pinned restent toujours en premier dans le DB query)
+  if (sortMode === "popular") {
+    filtered = [...filtered].sort((a, b) => {
+      // Pinned d'abord, puis par engagement (likes + comments)
+      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+      const scoreA = (a.likeCount || 0) * 2 + (a.comments?.length || 0);
+      const scoreB = (b.likeCount || 0) * 2 + (b.comments?.length || 0);
+      return scoreB - scoreA;
+    });
+  }
 
   function handlePostCreated(post: Post) {
     setPosts((prev) => {
@@ -992,6 +1016,67 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
 
       {/* Créer un post */}
       <PostCreator categories={categories} currentUserProfile={currentUserProfile} currentUserId={currentUserId} onPostCreated={handlePostCreated} />
+
+      {/* Barre recherche + tri */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="🔍 Rechercher dans la communauté…"
+          style={{
+            flex: 1, padding: "9px 14px",
+            background: "var(--card-bg)", border: "1px solid var(--border)",
+            borderRadius: "var(--radius-full)", color: "var(--text-primary)",
+            fontSize: 13, outline: "none",
+          }}
+        />
+        <button onClick={() => setSortMode(sortMode === "recent" ? "popular" : "recent")}
+          title={sortMode === "recent" ? "Trié par récent" : "Trié par popularité"}
+          style={{
+            background: "var(--card-bg)", border: "1px solid var(--border)",
+            borderRadius: "var(--radius-full)", padding: "9px 14px",
+            color: "var(--text-secondary)", fontSize: 12, fontWeight: 700,
+            cursor: "pointer", whiteSpace: "nowrap",
+          }}>
+          {sortMode === "recent" ? "🕐 Récent" : "🔥 Populaire"}
+        </button>
+      </div>
+
+      {/* Filtres par type de publication (kind) */}
+      <div style={{
+        display: "flex", gap: 6, marginBottom: 10,
+        overflowX: "auto", WebkitOverflowScrolling: "touch",
+        scrollbarWidth: "none", paddingBottom: 4,
+      }}>
+        <button onClick={() => setFilterKind("")} style={{
+          flexShrink: 0,
+          background: !filterKind ? "rgba(90,44,160,0.15)" : "var(--card-bg)",
+          border: `1px solid ${!filterKind ? "#5A2CA0" : "var(--border)"}`,
+          borderRadius: "var(--radius-full)", padding: "5px 12px",
+          color: !filterKind ? "#5A2CA0" : "var(--text-muted)",
+          fontSize: 11, fontWeight: !filterKind ? 700 : 500, cursor: "pointer",
+          whiteSpace: "nowrap",
+        }}>Tous types</button>
+        {POST_KINDS.map((k) => {
+          const active = filterKind === k.id;
+          return (
+            <button key={k.id} onClick={() => setFilterKind(active ? "" : k.id)}
+              style={{
+                flexShrink: 0,
+                background: active ? `${k.color}1f` : "var(--card-bg)",
+                border: `1px solid ${active ? k.color : "var(--border)"}`,
+                borderRadius: "var(--radius-full)", padding: "5px 12px",
+                color: active ? k.color : "var(--text-muted)",
+                fontSize: 11, fontWeight: active ? 700 : 500,
+                cursor: "pointer", whiteSpace: "nowrap",
+                display: "flex", alignItems: "center", gap: 4,
+              }}>
+              <span>{k.emoji}</span>{k.label}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Filtre catégories */}
       {categories.length > 0 && (

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import FeedClient, { Post, Category } from "./FeedClient";
+import CommunitySidebar from "./CommunitySidebar";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
 
 const MILESTONES = [
@@ -21,6 +22,13 @@ interface Member {
   bio: string | null; cell_group: string | null; testimony: string | null;
 }
 
+interface TopContributor {
+  user_id: string; display_name: string | null; avatar_url: string | null; xp: number;
+}
+interface PinnedSidebarPost {
+  id: string; content: string; user_id: string; display_name: string | null;
+}
+
 interface Props {
   members: Member[]; currentUserId: string; currentUserProfile: any;
   isAdmin: boolean; memberMilestones: Record<string, string[]>;
@@ -28,9 +36,11 @@ interface Props {
   userLikedPostIds: string[];
   userBookmarkedPostIds?: string[];
   userVotes: Record<string, number>;
+  topContributors?: TopContributor[];
+  pinnedPosts?: PinnedSidebarPost[];
 }
 
-export default function CommunityClient({ members, currentUserId, currentUserProfile, isAdmin, memberMilestones, posts, categories, userLikedPostIds, userBookmarkedPostIds, userVotes }: Props) {
+export default function CommunityClient({ members, currentUserId, currentUserProfile, isAdmin, memberMilestones, posts, categories, userLikedPostIds, userBookmarkedPostIds, userVotes, topContributors = [], pinnedPosts = [] }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"feed" | "members">("feed");
   const [search, setSearch] = useState(""); const [filterCell, setFilterCell] = useState("");
@@ -115,12 +125,43 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
         <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", overflowX: "auto" }}>
           <button style={tabStyle(tab === "feed")} onClick={() => setTab("feed")}>📰 Fil d&apos;actualité</button>
           <button style={tabStyle(tab === "members")} onClick={() => setTab("members")}>👥 Membres ({members.length})</button>
-          {isAdmin && <span style={{ marginLeft: "auto", padding: "0 16px", fontSize: 11, color: T.violet, fontWeight: 700, flexShrink: 0 }}>🛡️ Admin</span>}
+          {isAdmin && (
+            <Link href="/community/admin" style={{
+              marginLeft: "auto", padding: "6px 14px", fontSize: 11,
+              background: T.violetSoft, color: T.violet, fontWeight: 700,
+              borderRadius: 999, textDecoration: "none", flexShrink: 0,
+              border: `1px solid ${T.violet}`,
+              alignSelf: "center", marginRight: 12,
+            }}>
+              🛡️ Modération
+            </Link>
+          )}
         </div>
       </div>
 
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 40px" }}>
+      {/* Style media query pour layout desktop avec sidebar */}
+      <style>{`
+        .ccb-community-grid {
+          max-width: 680px;
+          margin: 0 auto;
+          padding: 16px 16px 40px;
+        }
+        @media (min-width: 1100px) {
+          .ccb-community-grid {
+            max-width: 1080px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 300px;
+            gap: 24px;
+            align-items: start;
+          }
+          .ccb-community-sidebar { display: block; }
+        }
+        .ccb-community-sidebar { display: none; }
+      `}</style>
 
+      <div className="ccb-community-grid">
+
+        <div>
         {/* ── ONGLET FEED ── toujours monté (display:none préserve l'état React) */}
         <div style={{ display: tab === "feed" ? "block" : "none" }}>
           <FeedClient
@@ -231,6 +272,16 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
               })}
             </div>
           </div>
+        </div>
+        </div>{/* /feed column */}
+
+        {/* Right sidebar (desktop only) */}
+        <div className="ccb-community-sidebar">
+          <CommunitySidebar
+            contributors={topContributors}
+            pinned={pinnedPosts}
+            members={members.map((m) => ({ user_id: m.user_id, display_name: m.display_name, avatar_url: m.avatar_url }))}
+          />
         </div>
       </div>
 
