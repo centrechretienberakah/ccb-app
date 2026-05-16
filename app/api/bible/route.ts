@@ -60,13 +60,26 @@ async function fetchGetBible(abbrev: string, bookNumber: number, chapter: number
   } as RequestInit, 10000);
   if (!res.ok) throw new Error(`getbible ${res.status}`);
   const data = await res.json();
+  // Supporte les 2 formats de getbible.net :
+  //  - Nouveau (2024+) : verses = [{ chapter, verse: 1, name, text }]
+  //  - Ancien           : verses = { "1": { verse_nr: 1, verse: "texte" } }
   const raw = data.verses || {};
-  const parsed = (Object.values(raw) as any[])
-    .map((v) => ({
-      verse: Number(v.verse_nr ?? v.verse ?? 0),
-      text: String(v.verse || v.text || "").trim().replace(/\n/g, " "),
-    }))
-    .filter((v) => v.text.length > 0)
+  const parsed = (Object.values(raw) as Array<Record<string, unknown>>)
+    .map((v) => {
+      // Numéro du verset
+      const verseNum = Number(
+        v.verse_nr ?? (typeof v.verse === "number" ? v.verse : 0),
+      );
+      // Texte du verset (priorité au champ "text" du nouveau format)
+      const verseText = typeof v.text === "string"
+        ? v.text
+        : typeof v.verse === "string" ? v.verse : "";
+      return {
+        verse: verseNum,
+        text: verseText.trim().replace(/\n/g, " "),
+      };
+    })
+    .filter((v) => v.text.length > 0 && v.verse > 0)
     .sort((a, b) => a.verse - b.verse);
   if (!parsed.length) throw new Error("No verses");
   return parsed;
