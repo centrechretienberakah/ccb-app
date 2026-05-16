@@ -39,12 +39,10 @@ export const READING_PLANS: ReadingPlan[] = [
   { id: "nt-1-year",       title: "Nouveau Testament en 1 an",description: "Lecture quotidienne du NT sur 365 jours.",          duration: "1 an",    totalDays: 365, type: "NT_1_YEAR",     level: "BEGINNER",     goals: ["FAITH"],                    emoji: "🕊️" },
   { id: "ot-6-months",     title: "Ancien Testament en 6 mois", description: "Fondements bibliques et histoire du peuple de Dieu.", duration: "6 mois", totalDays: 180, type: "OT_6_MONTHS", level: "INTERMEDIATE", goals: ["DISCIPLINE", "HOLINESS"],   emoji: "📜" },
   { id: "ot-1-year",       title: "Ancien Testament en 1 an", description: "Étude approfondie de l'AT sur 365 jours.",          duration: "1 an",    totalDays: 365, type: "OT_1_YEAR",     level: "ADVANCED",     goals: ["HOLINESS"],                 emoji: "🏛️" },
-  { id: "theme-salvation", title: "Le Salut",                  description: "30 jours pour comprendre le salut selon la Bible.",  duration: "30 jours",totalDays: 30,  type: "THEMATIC",      level: "BEGINNER",     goals: ["SALVATION"],                emoji: "🙏" },
-  { id: "theme-faith",     title: "La Foi",                    description: "30 jours pour grandir dans la confiance en Dieu.",   duration: "30 jours",totalDays: 30,  type: "THEMATIC",      level: "BEGINNER",     goals: ["FAITH"],                    emoji: "⭐" },
-  { id: "theme-prayer",    title: "La Prière",                 description: "30 jours pour développer une vie de prière.",        duration: "30 jours",totalDays: 30,  type: "THEMATIC",      level: "INTERMEDIATE", goals: ["PRAYER"],                   emoji: "🕯️" },
-  { id: "theme-love",      title: "L'Amour",                  description: "30 jours pour découvrir l'amour de Dieu.",          duration: "30 jours",totalDays: 30,  type: "THEMATIC",      level: "BEGINNER",     goals: ["LOVE"],                     emoji: "❤️" },
-  { id: "theme-forgiveness",title: "Le Pardon",                description: "30 jours pour apprendre le pardon biblique.",        duration: "30 jours",totalDays: 30,  type: "THEMATIC",      level: "INTERMEDIATE", goals: ["FORGIVENESS"],              emoji: "🕊️" },
 ];
+// Note : les anciens plans thématiques (theme-salvation, theme-faith, theme-prayer,
+// theme-love, theme-forgiveness) ont été retirés. Ils sont remplacés par les
+// 13 plans thématiques enrichis accessibles via /bible/theme (lib/bible/themed-plans.ts).
 
 // ─── Lectures thématiques (30 jours) ─────────────────────────────────────────
 const THEMATIC_READINGS: Record<string, DayReading[]> = {
