@@ -25,12 +25,11 @@ const OSIS_BOOKS = [
   "1PE","2PE","1JN","2JN","3JN","JUD","REV",
 ];
 
-// ─── API.Bible version IDs ────────────────────────────────────────────────────
+// ─── API.Bible version IDs (Starter Plan accessible) ─────────────────────────
 const APIBIBLE_IDS: Record<string, string> = {
-  s21:  "3a2a80c1be6bee61-01",   // Segond 21
-  nbs:  "d5754d2b6e5f7bf3-01",   // Nouvelle Bible Segond
-  bds:  "db00bc83c3b0f552-01",   // Bible du Semeur
-  nfc:  "1e5d8f0fb7ceae62-01",   // Français Courant
+  nlt: "d6e14a625393b4da-01",    // New Living Translation
+  amp: "a81b73293d3080c9-01",    // Amplified Bible
+  msg: "6f11a7de016f942e-01",    // The Message
 };
 
 // ─── Fetchers ─────────────────────────────────────────────────────────────────
@@ -103,7 +102,7 @@ async function fetchApiBible(
     "include-verse-numbers": "true",
     "include-verse-spans": "false",
   });
-  const url = `https://api.scripture.api.bible/v1/bibles/${bibleId}/chapters/${chapterId}?${params}`;
+  const url = `https://rest.api.bible/v1/bibles/${bibleId}/chapters/${chapterId}?${params}`;
 
   const res = await fetchWithTimeout(url, {
     headers: { "api-key": apiKey, Accept: "application/json" },

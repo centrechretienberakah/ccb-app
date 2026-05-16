@@ -24,11 +24,10 @@ export const BIBLE_VERSIONS: BibleVersion[] = [
   { id: "asv", label: "American Standard Version", shortLabel: "ASV", source: "getbible", getbibleAbbrev: "asv", year: "1901" },
   { id: "web", label: "World English Bible",       shortLabel: "WEB", source: "getbible", getbibleAbbrev: "web", year: "2000" },
 
-  // ── Versions modernes (clé API.Bible requise) ─────────────────────────────
-  { id: "s21",  label: "Segond 21",             shortLabel: "S21",  source: "apibible", apibibleId: "3a2a80c1be6bee61-01", year: "2007" },
-  { id: "nbs",  label: "Nouvelle Bible Segond", shortLabel: "NBS",  source: "apibible", apibibleId: "d5754d2b6e5f7bf3-01", year: "2002" },
-  { id: "bds",  label: "Bible du Semeur",        shortLabel: "BDS",  source: "apibible", apibibleId: "db00bc83c3b0f552-01", year: "2000" },
-  { id: "nfc",  label: "Français Courant",       shortLabel: "NFC",  source: "apibible", apibibleId: "1e5d8f0fb7ceae62-01", year: "2019" },
+  // ── Versions anglaises modernes (clé API.Bible Starter, gratuite) ────────
+  { id: "nlt", label: "New Living Translation", shortLabel: "NLT", source: "apibible", apibibleId: "d6e14a625393b4da-01", year: "2015" },
+  { id: "amp", label: "Amplified Bible",         shortLabel: "AMP", source: "apibible", apibibleId: "a81b73293d3080c9-01", year: "2015" },
+  { id: "msg", label: "The Message",             shortLabel: "MSG", source: "apibible", apibibleId: "6f11a7de016f942e-01", year: "2002" },
 ];
 
 export const DEFAULT_VERSION = BIBLE_VERSIONS[0];
