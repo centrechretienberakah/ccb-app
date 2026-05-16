@@ -457,7 +457,7 @@ function ContentWithMentions({ content, members }: { content: string; members: M
 }
 
 // ─── PostCard ─────────────────────────────────────────────────
-function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members, userVote, onLike, onComment, onCommentLike, onReply, onDelete, onPin, onVote, onBookmark, onReport, onShare }: {
+function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members, userVote, onLike, onComment, onCommentLike, onReply, onDelete, onPin, onVote, onBookmark, onReport, onShare, onEdit }: {
   post: Post; currentUserId: string; isAdmin: boolean; isLiked: boolean; isBookmarked: boolean;
   members: MemberLookup[];
   userVote?: number;
@@ -469,6 +469,7 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
   onBookmark: () => void;
   onReport: () => void;
   onShare: () => void;
+  onEdit: (newTitle: string, newContent: string) => Promise<void>;
 }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -479,6 +480,28 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
   const [localBookmark, setLocalBookmark] = useState(isBookmarked);
   const [localVote, setLocalVote] = useState<number | undefined>(userVote);
   const [localVoteResults, setLocalVoteResults] = useState<number[]>(post.voteResults || []);
+
+  // Édition inline
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(post.title ?? "");
+  const [editContent, setEditContent] = useState(post.content);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  async function handleSaveEdit() {
+    if (!editContent.trim()) return;
+    setSavingEdit(true);
+    try {
+      await onEdit(editTitle.trim(), editContent);
+      setEditing(false);
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+  function handleCancelEdit() {
+    setEditTitle(post.title ?? "");
+    setEditContent(post.content);
+    setEditing(false);
+  }
 
   const isMyPost = post.user_id === currentUserId;
   const cat = post.post_categories;
@@ -546,25 +569,78 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
               {isAdmin && (
                 <button onClick={onPin} title={post.is_pinned ? "Désépingler" : "Épingler"} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>📌</button>
               )}
+              {isMyPost && !editing && (
+                <button onClick={() => setEditing(true)} title="Modifier" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>✏️</button>
+              )}
               <button onClick={onDelete} title="Supprimer" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>🗑️</button>
             </div>
           )}
         </div>
 
-        {/* Titre de la publication (en gras) */}
-        {post.title && (
-          <h3 style={{
-            fontSize: 17, fontWeight: 800, color: "var(--text-primary)",
-            margin: "0 0 8px", lineHeight: 1.35, fontFamily: "var(--font-title)",
-          }}>
-            {post.title}
-          </h3>
-        )}
+        {/* Mode édition inline */}
+        {editing ? (
+          <div style={{ marginBottom: 12 }}>
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Titre de la publication"
+              maxLength={140}
+              style={{
+                width: "100%", boxSizing: "border-box",
+                padding: "10px 12px", marginBottom: 8,
+                background: "var(--card-bg)", border: "1px solid var(--border)",
+                borderRadius: 10, color: "var(--text-primary)",
+                fontSize: 16, fontWeight: 700, fontFamily: "var(--font-title)",
+                outline: "none",
+              }}
+            />
+            <MentionTextarea
+              value={editContent} onChange={setEditContent}
+              members={members}
+              rows={4}
+              placeholder="Modifier le contenu… (@ pour mentionner)"
+              style={{
+                width: "100%", boxSizing: "border-box",
+                padding: "10px 12px",
+                background: "var(--card-bg)", border: "1px solid var(--border)",
+                borderRadius: 10, color: "var(--text-primary)",
+                fontSize: 14, fontFamily: "inherit", outline: "none",
+                resize: "vertical",
+              } as React.CSSProperties}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+              <button onClick={handleCancelEdit} disabled={savingEdit} style={{
+                background: "var(--surface)", border: "1px solid var(--border)",
+                borderRadius: "var(--radius-md)", padding: "7px 16px",
+                color: "var(--text-muted)", cursor: savingEdit ? "wait" : "pointer", fontSize: 12,
+              }}>Annuler</button>
+              <button onClick={handleSaveEdit} disabled={savingEdit || !editContent.trim()} style={{
+                background: "linear-gradient(135deg, var(--gold-dark), var(--gold))",
+                border: "none", borderRadius: "var(--radius-md)", padding: "7px 18px",
+                color: "#000", fontWeight: 700, cursor: savingEdit ? "wait" : "pointer", fontSize: 12,
+                opacity: !editContent.trim() ? 0.5 : 1,
+              }}>{savingEdit ? "Sauvegarde…" : "Sauvegarder"}</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Titre de la publication (en gras) */}
+            {post.title && (
+              <h3 style={{
+                fontSize: 17, fontWeight: 800, color: "var(--text-primary)",
+                margin: "0 0 8px", lineHeight: 1.35, fontFamily: "var(--font-title)",
+              }}>
+                {post.title}
+              </h3>
+            )}
 
-        {/* Contenu texte avec mentions cliquables */}
-        <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, margin: "0 0 12px", whiteSpace: "pre-wrap" }}>
-          <ContentWithMentions content={post.content} members={members} />
-        </p>
+            {/* Contenu texte avec mentions cliquables */}
+            <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, margin: "0 0 12px", whiteSpace: "pre-wrap" }}>
+              <ContentWithMentions content={post.content} members={members} />
+            </p>
+          </>
+        )}
 
         {/* Médias */}
         {post.post_type === "image" && post.media_url && (
@@ -1156,6 +1232,17 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   }
 
+  async function handleEditPost(postId: string, newTitle: string, newContent: string) {
+    const supabase = createClient();
+    const { error } = await supabase.from("posts")
+      .update({ title: newTitle || null, content: newContent })
+      .eq("id", postId).eq("user_id", currentUserId);
+    if (error) { alert("Erreur édition : " + error.message); return; }
+    setPosts((prev) => prev.map((p) =>
+      p.id === postId ? { ...p, title: newTitle || null, content: newContent } : p,
+    ));
+  }
+
   async function handlePin(postId: string) {
     const post = posts.find((p) => p.id === postId);
     if (!post) return;
@@ -1266,6 +1353,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
             onBookmark={() => handleBookmark(post.id)}
             onReport={() => handleReport(post.id)}
             onShare={() => handleShare(post.id)}
+            onEdit={(t, c) => handleEditPost(post.id, t, c)}
           />
         ))
       )}
