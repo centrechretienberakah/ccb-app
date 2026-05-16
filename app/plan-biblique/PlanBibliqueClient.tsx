@@ -25,8 +25,16 @@ interface Props {
 export default function PlanBibliqueClient({ user, activePlans: initialPlans }: Props) {
   const router = useRouter();
   const supabase = createClient();
-  const [tab, setTab] = useState<"active" | "browse">(initialPlans.length > 0 ? "active" : "browse");
-  const [activePlans, setActivePlans] = useState<ActivePlan[]>(initialPlans);
+
+  // Cette page ne gère que les plans systématiques (Bible 1an, NT, AT…).
+  // Les plans thématiques (plan_id "theme:xxx" ou ancien "theme-xxx") sont
+  // gérés par /bible/theme. On les filtre pour que le compteur reste cohérent
+  // avec la liste affichée.
+  const systematicOnly = (rows: ActivePlan[]) =>
+    rows.filter((p) => !p.plan_id.startsWith("theme:") && !p.plan_id.startsWith("theme-"));
+
+  const [activePlans, setActivePlans] = useState<ActivePlan[]>(systematicOnly(initialPlans));
+  const [tab, setTab] = useState<"active" | "browse">(activePlans.length > 0 ? "active" : "browse");
   const [selectedPlan, setSelectedPlan] = useState<ReadingPlan | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
