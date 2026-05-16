@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { POST_KINDS, getPostKindDef, notifyCommunityStaff, type PostKind } from "@/lib/community/theme";
 
 // ─── Cache window (client uniquement) ───────────────────────────────────────
 interface FeedCache { posts: Post[]; likedIds: Set<string>; votes: Record<string, number> }
@@ -18,8 +19,11 @@ function getClientCache(): FeedCache | null {
 export interface Category { id: string; name: string; icon: string; color: string; }
 export interface Post {
   id: string; user_id: string; category_id: string | null;
-  post_type: "text" | "image" | "video" | "link" | "poll" | "quiz";
-  content: string; media_url?: string; link_url?: string;
+  post_type: "text" | "image" | "video" | "audio" | "pdf" | "link" | "poll" | "quiz";
+  post_kind?: PostKind | null;
+  content: string; media_url?: string;
+  audio_url?: string | null; pdf_url?: string | null;
+  link_url?: string;
   link_title?: string; link_description?: string;
   poll_options?: { text: string; correct?: boolean }[];
   is_pinned: boolean; created_at: string;
@@ -28,9 +32,13 @@ export interface Post {
   likeCount: number;
   comments: Comment[];
   voteResults: number[];
+  bookmarked?: boolean;
 }
 interface Comment {
   id: string; user_id: string; content: string; created_at: string;
+  parent_comment_id?: string | null;
+  likeCount?: number;
+  liked?: boolean;
   user_profiles?: { display_name?: string | null; avatar_url?: string | null } | null;
 }
 export interface CurrentUserProfile {
@@ -43,6 +51,8 @@ const POST_TYPES = [
   { key: "text",  icon: "✍️", label: "Texte" },
   { key: "image", icon: "🖼️", label: "Image" },
   { key: "video", icon: "▶️", label: "Vidéo" },
+  { key: "audio", icon: "🎵", label: "Audio" },
+  { key: "pdf",   icon: "📄", label: "PDF" },
   { key: "link",  icon: "🔗", label: "Lien" },
   { key: "poll",  icon: "📊", label: "Sondage" },
   { key: "quiz",  icon: "🧠", label: "Quiz" },
@@ -92,9 +102,12 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
 }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<string>("text");
+  const [kind, setKind] = useState<PostKind>("discussion");
   const [content, setContent] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [pdfUrl, setPdfUrl] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [linkTitle, setLinkTitle] = useState("");
   const [linkDesc, setLinkDesc] = useState("");
@@ -105,16 +118,28 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  async function uploadImage(file: File) {
+  async function uploadFile(file: File, kind: "image" | "audio" | "pdf"): Promise<string | null> {
     setUploading(true);
     const supabase = createClient();
     const ext = file.name.split(".").pop();
-    const path = `${currentUserId}/${Date.now()}.${ext}`;
+    const path = `${currentUserId}/${kind}-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("posts").upload(path, file);
-    if (upErr) { setError("Erreur upload : " + upErr.message); setUploading(false); return; }
+    if (upErr) { setError("Erreur upload : " + upErr.message); setUploading(false); return null; }
     const { data } = supabase.storage.from("posts").getPublicUrl(path);
-    setMediaUrl(data.publicUrl);
     setUploading(false);
+    return data.publicUrl;
+  }
+  async function uploadImage(file: File) {
+    const url = await uploadFile(file, "image");
+    if (url) setMediaUrl(url);
+  }
+  async function uploadAudio(file: File) {
+    const url = await uploadFile(file, "audio");
+    if (url) setAudioUrl(url);
+  }
+  async function uploadPdf(file: File) {
+    const url = await uploadFile(file, "pdf");
+    if (url) setPdfUrl(url);
   }
 
   async function submit() {
@@ -128,18 +153,28 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
 
     const { data, error: e } = await supabase.from("posts").insert({
       user_id: currentUserId, category_id: categoryId || null,
-      post_type: type, content,
+      post_type: type, post_kind: kind, content,
       media_url: mediaUrl || null,
+      audio_url: audioUrl || null,
+      pdf_url: pdfUrl || null,
       link_url: linkUrl || null, link_title: linkTitle || null, link_description: linkDesc || null,
       poll_options: pollData,
-    }).select(`id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`).single();
+    }).select(`id, user_id, category_id, post_type, post_kind, content, media_url, audio_url, pdf_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`).single();
 
     if (e) { setError(e.message); setSaving(false); return; }
     const userProfilesForPost = currentUserProfile
       ? { display_name: currentUserProfile.display_name ?? "Membre", avatar_url: currentUserProfile.avatar_url ?? undefined }
       : undefined;
     onPostCreated({ ...(data as unknown as Post), user_profiles: userProfilesForPost, likeCount: 0, comments: [], voteResults: [] });
-    setOpen(false); setContent(""); setType("text"); setMediaUrl(""); setLinkUrl(""); setLinkTitle(""); setLinkDesc(""); setPollOptions(["",""]); setQuizOptions([{text:"",correct:false},{text:"",correct:false}]); setCategoryId("");
+    // Notif staff
+    const kindDef = getPostKindDef(kind);
+    const author = currentUserProfile?.display_name || "Un membre";
+    notifyCommunityStaff(
+      `${kindDef.emoji} ${author} a publié : ${kindDef.label}`,
+      content.slice(0, 120),
+      "/community",
+    );
+    setOpen(false); setContent(""); setType("text"); setKind("discussion"); setMediaUrl(""); setAudioUrl(""); setPdfUrl(""); setLinkUrl(""); setLinkTitle(""); setLinkDesc(""); setPollOptions(["",""]); setQuizOptions([{text:"",correct:false},{text:"",correct:false}]); setCategoryId("");
     setSaving(false);
   }
 
@@ -153,7 +188,29 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
 
   return (
     <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16 }}>
-      {/* Type selector */}
+      {/* Kind picker — type thématique du post */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6, letterSpacing: 0.4 }}>
+          TYPE DE PUBLICATION
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {POST_KINDS.map((k) => (
+            <button key={k.id} onClick={() => setKind(k.id)} title={k.description}
+              style={{
+                background: kind === k.id ? `${k.color}1f` : "var(--page-bg)",
+                border: `1px solid ${kind === k.id ? k.color : "var(--border)"}`,
+                borderRadius: "var(--radius-full)", padding: "5px 12px",
+                color: kind === k.id ? k.color : "var(--text-muted)",
+                fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+                fontWeight: kind === k.id ? 700 : 400,
+              }}>
+              <span>{k.emoji}</span>{k.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Media type selector */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
         {POST_TYPES.map((pt) => (
           <button key={pt.key} onClick={() => setType(pt.key)} style={{ background: type === pt.key ? "rgba(var(--gold-rgb, 212,175,55), 0.15)" : "var(--page-bg)", border: `1px solid ${type === pt.key ? "var(--gold)" : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "5px 12px", color: type === pt.key ? "var(--gold)" : "var(--text-muted)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
@@ -192,6 +249,41 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
           placeholder="URL YouTube ou Vimeo (ex: https://youtube.com/watch?v=...)"
           style={{ ...inputStyle, width: "100%", marginTop: 10 }}
         />
+      )}
+
+      {type === "audio" && (
+        <div style={{ marginTop: 10 }}>
+          <input type="file" accept="audio/*" style={{ display: "none" }} id="ccb-audio-input"
+            onChange={(e) => e.target.files?.[0] && uploadAudio(e.target.files[0])} />
+          {audioUrl ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <audio src={audioUrl} controls style={{ flex: 1 }} />
+              <button onClick={() => setAudioUrl("")} style={{ background: "var(--surface)", border: "none", borderRadius: 8, padding: "8px 12px", color: "var(--text-muted)", cursor: "pointer", fontSize: 13 }}>✕</button>
+            </div>
+          ) : (
+            <label htmlFor="ccb-audio-input" style={{ display: "block", width: "100%", background: "var(--page-bg)", border: "2px dashed var(--border)", borderRadius: "var(--radius-md)", padding: "18px", color: "var(--text-muted)", cursor: "pointer", fontSize: 13, textAlign: "center" }}>
+              {uploading ? "⏳ Chargement..." : "🎵 Cliquer pour téléverser un fichier audio"}
+            </label>
+          )}
+        </div>
+      )}
+
+      {type === "pdf" && (
+        <div style={{ marginTop: 10 }}>
+          <input type="file" accept="application/pdf" style={{ display: "none" }} id="ccb-pdf-input"
+            onChange={(e) => e.target.files?.[0] && uploadPdf(e.target.files[0])} />
+          {pdfUrl ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", background: "var(--page-bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px" }}>
+              <span style={{ fontSize: 22 }}>📄</span>
+              <a href={pdfUrl} target="_blank" rel="noopener" style={{ flex: 1, color: "var(--gold)", fontSize: 13, textDecoration: "underline" }}>Voir le PDF</a>
+              <button onClick={() => setPdfUrl("")} style={{ background: "var(--surface)", border: "none", borderRadius: 8, padding: "5px 10px", color: "var(--text-muted)", cursor: "pointer", fontSize: 13 }}>✕</button>
+            </div>
+          ) : (
+            <label htmlFor="ccb-pdf-input" style={{ display: "block", width: "100%", background: "var(--page-bg)", border: "2px dashed var(--border)", borderRadius: "var(--radius-md)", padding: "18px", color: "var(--text-muted)", cursor: "pointer", fontSize: 13, textAlign: "center" }}>
+              {uploading ? "⏳ Chargement..." : "📄 Cliquer pour téléverser un PDF"}
+            </label>
+          )}
+        </div>
       )}
 
       {type === "link" && (
@@ -273,20 +365,31 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
 }
 
 // ─── PostCard ─────────────────────────────────────────────────
-function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onComment, onDelete, onPin, onVote }: {
-  post: Post; currentUserId: string; isAdmin: boolean; isLiked: boolean; userVote?: number;
-  onLike: () => void; onComment: (text: string) => void; onDelete: () => void; onPin: () => void; onVote: (idx: number) => void;
+function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, userVote, onLike, onComment, onCommentLike, onReply, onDelete, onPin, onVote, onBookmark, onReport, onShare }: {
+  post: Post; currentUserId: string; isAdmin: boolean; isLiked: boolean; isBookmarked: boolean; userVote?: number;
+  onLike: () => void;
+  onComment: (text: string, parentId?: string) => void;
+  onCommentLike: (commentId: string) => void;
+  onReply: (parentId: string, text: string) => void;
+  onDelete: () => void; onPin: () => void; onVote: (idx: number) => void;
+  onBookmark: () => void;
+  onReport: () => void;
+  onShare: () => void;
 }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
   const [localLike, setLocalLike] = useState(isLiked);
   const [localLikeCount, setLocalLikeCount] = useState(post.likeCount);
+  const [localBookmark, setLocalBookmark] = useState(isBookmarked);
   const [localVote, setLocalVote] = useState<number | undefined>(userVote);
   const [localVoteResults, setLocalVoteResults] = useState<number[]>(post.voteResults || []);
 
   const isMyPost = post.user_id === currentUserId;
   const cat = post.post_categories;
   const author = post.user_profiles;
+  const kindDef = post.post_kind ? getPostKindDef(post.post_kind) : null;
   const ytId = post.post_type === "video" && post.media_url ? getYoutubeId(post.media_url) : null;
 
   function handleLike() {
@@ -308,6 +411,17 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
     setCommentText("");
   }
 
+  function handleReplySubmit() {
+    if (!replyingTo || !replyText.trim()) return;
+    onReply(replyingTo, replyText);
+    setReplyText(""); setReplyingTo(null);
+  }
+
+  function handleBookmark() {
+    setLocalBookmark((b) => !b);
+    onBookmark();
+  }
+
   const totalVotes = post.poll_options ? localVoteResults.length : 0;
 
   return (
@@ -323,6 +437,11 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
             <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>{author?.display_name || "Membre"}</div>
             <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{timeAgo(post.created_at)}</div>
           </div>
+          {kindDef && (
+            <span style={{ background: `${kindDef.color}1f`, border: `1px solid ${kindDef.color}66`, borderRadius: "var(--radius-full)", padding: "3px 10px", fontSize: 10, color: kindDef.color, fontWeight: 700, flexShrink: 0 }}>
+              {kindDef.emoji} {kindDef.label}
+            </span>
+          )}
           {cat && (
             <span style={{ background: `${cat.color}20`, border: `1px solid ${cat.color}50`, borderRadius: "var(--radius-full)", padding: "3px 10px", fontSize: 10, color: cat.color, fontWeight: 600, flexShrink: 0 }}>
               {cat.icon} {cat.name}
@@ -365,6 +484,23 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
           </a>
         )}
 
+        {post.post_type === "audio" && post.audio_url && (
+          <div style={{ marginBottom: 12, background: "var(--page-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 10 }}>
+            <audio src={post.audio_url} controls style={{ width: "100%" }} />
+          </div>
+        )}
+
+        {post.post_type === "pdf" && post.pdf_url && (
+          <a href={post.pdf_url} target="_blank" rel="noopener" style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--page-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 14, marginBottom: 12, textDecoration: "none" }}>
+            <span style={{ fontSize: 28 }}>📄</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, color: "var(--gold)", fontWeight: 700 }}>Document PDF</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Cliquer pour ouvrir</div>
+            </div>
+            <span style={{ color: "var(--text-muted)", fontSize: 14 }}>→</span>
+          </a>
+        )}
+
         {(post.post_type === "poll" || post.post_type === "quiz") && post.poll_options && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -399,28 +535,90 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, userVote, onLike, onC
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 16, paddingTop: 12, borderTop: "1px solid var(--border-subtle)" }}>
-          <button onClick={handleLike} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: localLike ? "var(--error)" : "var(--text-muted)", fontSize: 13 }}>
+        <div style={{ display: "flex", gap: 14, paddingTop: 12, borderTop: "1px solid var(--border-subtle)", alignItems: "center" }}>
+          <button onClick={handleLike} title="J'aime" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: localLike ? "var(--error)" : "var(--text-muted)", fontSize: 13 }}>
             <span style={{ fontSize: 16 }}>{localLike ? "❤️" : "🤍"}</span> {localLikeCount}
           </button>
-          <button onClick={() => setShowComments(!showComments)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: "var(--text-muted)", fontSize: 13 }}>
+          <button onClick={() => setShowComments(!showComments)} title="Commenter" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: "var(--text-muted)", fontSize: 13 }}>
             <span style={{ fontSize: 16 }}>💬</span> {post.comments.length}
           </button>
+          <button onClick={handleBookmark} title={localBookmark ? "Retirer des favoris" : "Enregistrer"} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: localBookmark ? "var(--gold)" : "var(--text-muted)", fontSize: 16 }}>
+            {localBookmark ? "🔖" : "📑"}
+          </button>
+          <button onClick={onShare} title="Partager" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 16 }}>
+            📤
+          </button>
+          <div style={{ flex: 1 }} />
+          {!isMyPost && (
+            <button onClick={onReport} title="Signaler" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 14 }}>
+              ⚠️
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Commentaires */}
+      {/* Commentaires (arborescence à 1 niveau de réponses) */}
       {showComments && (
         <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border-subtle)", padding: "12px 16px" }}>
-          {post.comments.map((c) => (
-            <div key={c.id} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-              <Avatar profile={c.user_profiles} size={28} />
-              <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: "var(--radius-md)", padding: "8px 12px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{c.user_profiles?.display_name || "Membre"}</div>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{c.content}</div>
+          {(() => {
+            const tops = post.comments.filter((c) => !c.parent_comment_id);
+            const repliesByParent = post.comments
+              .filter((c) => c.parent_comment_id)
+              .reduce<Record<string, Comment[]>>((acc, c) => {
+                const k = c.parent_comment_id as string;
+                (acc[k] = acc[k] || []).push(c);
+                return acc;
+              }, {});
+            return tops.map((c) => (
+              <div key={c.id} style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <Avatar profile={c.user_profiles} size={28} />
+                  <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: "var(--radius-md)", padding: "8px 12px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{c.user_profiles?.display_name || "Membre"}</div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{c.content}</div>
+                    <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 11 }}>
+                      <button onClick={() => onCommentLike(c.id)} style={{ background: "none", border: "none", cursor: "pointer", color: c.liked ? "var(--error)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
+                        {c.liked ? "❤️" : "🤍"} {c.likeCount ?? 0}
+                      </button>
+                      <button onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}>
+                        ↩ Répondre
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Réponses imbriquées */}
+                {(repliesByParent[c.id] ?? []).map((r) => (
+                  <div key={r.id} style={{ display: "flex", gap: 8, marginTop: 8, marginLeft: 38 }}>
+                    <Avatar profile={r.user_profiles} size={24} />
+                    <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: "var(--radius-md)", padding: "6px 10px" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)" }}>{r.user_profiles?.display_name || "Membre"}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{r.content}</div>
+                      <div style={{ display: "flex", gap: 12, marginTop: 4, fontSize: 11 }}>
+                        <button onClick={() => onCommentLike(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: r.liked ? "var(--error)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
+                          {r.liked ? "❤️" : "🤍"} {r.likeCount ?? 0}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Input réponse */}
+                {replyingTo === c.id && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 8, marginLeft: 38 }}>
+                    <input value={replyText} onChange={(e) => setReplyText(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleReplySubmit()}
+                      placeholder="Répondre…"
+                      autoFocus
+                      style={{ flex: 1, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "6px 12px", color: "var(--text-primary)", fontSize: 12 }} />
+                    <button onClick={handleReplySubmit} style={{ background: "var(--gold)", border: "none", borderRadius: "var(--radius-full)", padding: "6px 12px", color: "#000", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>➤</button>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            ));
+          })()}
+
+          {/* Input nouveau commentaire */}
           <div style={{ display: "flex", gap: 8 }}>
             <input value={commentText} onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleComment()}
@@ -491,9 +689,9 @@ function AdminCategoryManager({ categories, onCategoriesChange }: { categories: 
 }
 
 // ─── FeedClient (export principal) ───────────────────────────
-export default function FeedClient({ posts: initialPosts, categories: initialCategories, currentUserId, currentUserProfile, isAdmin, userLikedPostIds, userVotes }: {
+export default function FeedClient({ posts: initialPosts, categories: initialCategories, currentUserId, currentUserProfile, isAdmin, userLikedPostIds, userBookmarkedPostIds, userVotes }: {
   posts: Post[]; categories: Category[]; currentUserId: string; currentUserProfile: CurrentUserProfile | null;
-  isAdmin: boolean; userLikedPostIds: string[]; userVotes: Record<string, number>;
+  isAdmin: boolean; userLikedPostIds: string[]; userBookmarkedPostIds?: string[]; userVotes: Record<string, number>;
 }) {
   const [posts, setPosts] = useState<Post[]>(() => {
     const cache = getClientCache();
@@ -505,6 +703,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     const cache = getClientCache();
     return cache && cache.likedIds.size > 0 ? cache.likedIds : new Set(userLikedPostIds);
   });
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => new Set(userBookmarkedPostIds ?? []));
   const [myVotes, setMyVotes] = useState<Record<string, number>>(() => {
     const cache = getClientCache();
     return cache && Object.keys(cache.votes).length > 0 ? cache.votes : userVotes;
@@ -676,24 +875,93 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     }
   }
 
-  async function handleComment(postId: string, text: string) {
+  async function handleComment(postId: string, text: string, parentId?: string) {
     const supabase = createClient();
+    const insertPayload: Record<string, unknown> = {
+      post_id: postId, user_id: currentUserId, content: text,
+    };
+    if (parentId) insertPayload.parent_comment_id = parentId;
     const { data } = await supabase.from("post_comments")
-      .insert({ post_id: postId, user_id: currentUserId, content: text })
-      .select("id, user_id, content, created_at").single();
+      .insert(insertPayload)
+      .select("id, user_id, content, created_at, parent_comment_id").single();
     if (data) {
       const commentProfile = currentUserProfile
         ? { display_name: currentUserProfile.display_name ?? "Membre", avatar_url: currentUserProfile.avatar_url ?? undefined }
         : undefined;
+      const d = data as { id: string; user_id: string; content: string; created_at: string; parent_comment_id: string | null };
       const commentWithProfile: Comment = {
-        id: (data as { id: string }).id,
-        user_id: (data as { user_id: string }).user_id,
-        content: (data as { content: string }).content,
-        created_at: (data as { created_at: string }).created_at,
-        user_profiles: commentProfile,
+        id: d.id, user_id: d.user_id, content: d.content,
+        created_at: d.created_at, parent_comment_id: d.parent_comment_id,
+        likeCount: 0, liked: false, user_profiles: commentProfile,
       };
       setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments: [...p.comments, commentWithProfile] } : p));
+      // Notif staff
+      const author = currentUserProfile?.display_name || "Un membre";
+      notifyCommunityStaff(
+        `💬 ${author} a ${parentId ? "répondu à un commentaire" : "commenté un post"}`,
+        text.slice(0, 120),
+        "/community",
+      );
     }
+  }
+
+  async function handleCommentLike(postId: string, commentId: string) {
+    const supabase = createClient();
+    // Trouver l'état actuel pour toggle
+    const post = posts.find((p) => p.id === postId);
+    const comment = post?.comments.find((c) => c.id === commentId);
+    const wasLiked = !!comment?.liked;
+    // Optimiste
+    setPosts((prev) => prev.map((p) => p.id !== postId ? p : {
+      ...p,
+      comments: p.comments.map((c) => c.id !== commentId ? c : {
+        ...c, liked: !wasLiked, likeCount: (c.likeCount ?? 0) + (wasLiked ? -1 : 1),
+      }),
+    }));
+    if (wasLiked) {
+      await supabase.from("post_comment_likes").delete()
+        .eq("comment_id", commentId).eq("user_id", currentUserId);
+    } else {
+      await supabase.from("post_comment_likes").insert({ comment_id: commentId, user_id: currentUserId });
+    }
+  }
+
+  async function handleBookmark(postId: string) {
+    const supabase = createClient();
+    if (bookmarkedIds.has(postId)) {
+      await supabase.from("post_bookmarks").delete()
+        .eq("post_id", postId).eq("user_id", currentUserId);
+      setBookmarkedIds((s) => { const n = new Set(s); n.delete(postId); return n; });
+    } else {
+      await supabase.from("post_bookmarks").insert({ post_id: postId, user_id: currentUserId });
+      setBookmarkedIds((s) => new Set([...s, postId]));
+    }
+  }
+
+  async function handleReport(postId: string) {
+    const reason = prompt("Pourquoi signales-tu ce post ? (motif court)");
+    if (!reason || !reason.trim()) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("post_reports").insert({
+      post_id: postId, user_id: currentUserId, reason: reason.trim(),
+    });
+    if (error) { alert("Erreur signalement : " + error.message); return; }
+    alert("Merci, ton signalement a été transmis aux modérateurs.");
+    // Notif staff
+    notifyCommunityStaff(
+      "⚠️ Nouveau signalement",
+      `Motif : ${reason.trim().slice(0, 100)}`,
+      "/community",
+    );
+  }
+
+  async function handleShare(postId: string) {
+    const url = `${typeof window !== "undefined" ? window.location.origin : "https://centrechretienberakah.com"}/community#post-${postId}`;
+    const text = "Découvre cette publication sur la communauté CCB :";
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try { await navigator.share({ title: "Communauté CCB", text, url }); return; } catch { /* fallback */ }
+    }
+    try { await navigator.clipboard.writeText(`${text} ${url}`); alert("Lien copié !"); } catch { /* noop */ }
   }
 
   async function handleDelete(postId: string) {
@@ -757,12 +1025,18 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
             currentUserId={currentUserId}
             isAdmin={isAdmin}
             isLiked={likedIds.has(post.id)}
+            isBookmarked={bookmarkedIds.has(post.id)}
             userVote={myVotes[post.id]}
             onLike={() => handleLike(post.id)}
             onComment={(text) => handleComment(post.id, text)}
+            onCommentLike={(commentId) => handleCommentLike(post.id, commentId)}
+            onReply={(parentId, text) => handleComment(post.id, text, parentId)}
             onDelete={() => handleDelete(post.id)}
             onPin={() => handlePin(post.id)}
             onVote={(idx) => handleVote(post.id, idx)}
+            onBookmark={() => handleBookmark(post.id)}
+            onReport={() => handleReport(post.id)}
+            onShare={() => handleShare(post.id)}
           />
         ))
       )}

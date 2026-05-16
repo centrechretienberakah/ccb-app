@@ -23,10 +23,12 @@ interface Props {
   members: Member[]; currentUserId: string; currentUserProfile: any;
   isAdmin: boolean; memberMilestones: Record<string, string[]>;
   posts: Post[]; categories: Category[];
-  userLikedPostIds: string[]; userVotes: Record<string, number>;
+  userLikedPostIds: string[];
+  userBookmarkedPostIds?: string[];
+  userVotes: Record<string, number>;
 }
 
-export default function CommunityClient({ members, currentUserId, currentUserProfile, isAdmin, memberMilestones, posts, categories, userLikedPostIds, userVotes }: Props) {
+export default function CommunityClient({ members, currentUserId, currentUserProfile, isAdmin, memberMilestones, posts, categories, userLikedPostIds, userBookmarkedPostIds, userVotes }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"feed" | "members">("feed");
   const [search, setSearch] = useState(""); const [filterCell, setFilterCell] = useState("");
@@ -93,7 +95,10 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
           <FeedClient
             posts={posts} categories={categories}
             currentUserId={currentUserId} currentUserProfile={currentUserProfile}
-            isAdmin={isAdmin} userLikedPostIds={userLikedPostIds} userVotes={userVotes}
+            isAdmin={isAdmin}
+            userLikedPostIds={userLikedPostIds}
+            userBookmarkedPostIds={userBookmarkedPostIds}
+            userVotes={userVotes}
           />
         </div>
 

@@ -18,6 +18,9 @@ interface RawComment {
   user_id: string;
   content: string;
   created_at: string;
+  parent_comment_id?: string | null;
+  likeCount?: number;
+  liked?: boolean;
   user_profiles?: { display_name?: string | null; avatar_url?: string | null } | null;
 }
 
@@ -35,6 +38,7 @@ export default async function CommunityPage() {
   let posts: Post[] = [];
   let categories: Category[] = [];
   let userLikedPostIds: string[] = [];
+  let userBookmarkedPostIds: string[] = [];
   const userVotes: Record<string, number> = {};
   let currentUserProfile: CurrentUserProfile | null = null;
 
@@ -84,7 +88,7 @@ export default async function CommunityPage() {
     const { data: postsData } = await supabase
       .from("posts")
       .select(
-        "id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)"
+        "id, user_id, category_id, post_type, post_kind, content, media_url, audio_url, pdf_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)"
       )
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
@@ -106,13 +110,38 @@ export default async function CommunityPage() {
     // Commentaires — SANS join user_profiles (meme raison)
     const { data: allComments } = await supabase
       .from("post_comments")
-      .select("post_id, id, user_id, content, created_at");
+      .select("post_id, id, user_id, content, created_at, parent_comment_id");
     const typedComments = (allComments as RawComment[] | null) || [];
+
+    // Likes commentaires
+    const { data: allCommentLikes } = await supabase
+      .from("post_comment_likes")
+      .select("comment_id, user_id");
+    const commentLikeCount: Record<string, number> = {};
+    const userCommentLikes = new Set<string>();
+    for (const cl of allCommentLikes || []) {
+      commentLikeCount[cl.comment_id] = (commentLikeCount[cl.comment_id] || 0) + 1;
+      if (cl.user_id === user.id) userCommentLikes.add(cl.comment_id);
+    }
+
+    // Enrichir les commentaires avec like count + liked
+    for (const c of typedComments) {
+      c.likeCount = commentLikeCount[c.id] || 0;
+      c.liked = userCommentLikes.has(c.id);
+    }
+
     const commentsMap: Record<string, RawComment[]> = {};
     for (const c of typedComments) {
       if (!commentsMap[c.post_id]) commentsMap[c.post_id] = [];
       commentsMap[c.post_id].push(c);
     }
+
+    // Bookmarks de l'utilisateur courant
+    const { data: bookmarks } = await supabase
+      .from("post_bookmarks")
+      .select("post_id")
+      .eq("user_id", user.id);
+    userBookmarkedPostIds = (bookmarks ?? []).map((b: { post_id: string }) => b.post_id);
 
     // Poll votes
     const { data: allVotes } = await supabase
@@ -151,16 +180,22 @@ export default async function CommunityPage() {
       }));
     }
 
-    // Enrichir posts avec profils + likes + comments + votes
+    const bookmarkedSet = new Set(userBookmarkedPostIds);
+
+    // Enrichir posts avec profils + likes + comments + votes + bookmark
     posts = posts.map((p) => ({
       ...p,
       user_profiles: profilesMap[p.user_id] || undefined,
       likeCount: likesMap[p.id] || 0,
+      bookmarked: bookmarkedSet.has(p.id),
       comments: (commentsMap[p.id] || []).map((c) => ({
         id: c.id,
         user_id: c.user_id,
         content: c.content,
         created_at: c.created_at,
+        parent_comment_id: c.parent_comment_id ?? null,
+        likeCount: c.likeCount ?? 0,
+        liked: c.liked ?? false,
         user_profiles: c.user_profiles ?? undefined,
       })),
       voteResults: votesMap[p.id] || [],
@@ -179,6 +214,7 @@ export default async function CommunityPage() {
       posts={posts}
       categories={categories}
       userLikedPostIds={userLikedPostIds}
+      userBookmarkedPostIds={userBookmarkedPostIds}
       userVotes={userVotes}
     />
   );
