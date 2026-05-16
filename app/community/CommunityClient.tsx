@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import FeedClient, { Post, Category } from "./FeedClient";
+import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
 
 const MILESTONES = [
   { key: "baptism_water",   label: "Baptême d'eau",           icon: "💧" },
@@ -72,19 +74,48 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
 
   const tabStyle = (active: boolean) => ({
     padding: "12px 20px", background: "none", border: "none",
-    borderBottom: `2px solid ${active ? "var(--gold)" : "transparent"}`,
-    color: active ? "var(--gold)" : "var(--text-muted)", fontWeight: active ? 700 : 400,
+    borderBottom: `2px solid ${active ? T.violet : "transparent"}`,
+    color: active ? T.violet : T.textMuted, fontWeight: active ? 700 : 400,
     fontSize: 14, cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap" as const,
+    fontFamily: F.body,
   });
 
   return (
-    <div style={{ background: "var(--page-bg)", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
+    <div style={{ background: T.bg, color: T.text, fontFamily: F.body }}>
+      {/* Hero header CCB Communauté */}
+      <div style={{
+        background: `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
+        color: "#fff", padding: "32px 18px 26px",
+        position: "relative", overflow: "hidden",
+        boxShadow: T.shadowGlow,
+      }}>
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, ${T.gold}, transparent)`,
+        }} />
+        <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center" }}>
+          <h1 style={{
+            fontFamily: F.title, fontSize: "clamp(1.6rem, 5vw, 2.2rem)",
+            fontWeight: 700, margin: "0 0 6px",
+            letterSpacing: "0.05em",
+          }}>
+            COMMUNAUTÉ CCB
+          </h1>
+          <p style={{
+            margin: 0, fontSize: 13, opacity: 0.9, fontStyle: "italic",
+            color: T.lavender,
+          }}>
+            Grandissons ensemble dans la foi, l&apos;amour et la bénédiction.
+          </p>
+        </div>
+      </div>
+
       {/* Onglets sub-nav */}
-      <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+      <div style={{ background: T.card, borderBottom: `1px solid ${T.border}` }}>
         <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", overflowX: "auto" }}>
           <button style={tabStyle(tab === "feed")} onClick={() => setTab("feed")}>📰 Fil d&apos;actualité</button>
           <button style={tabStyle(tab === "members")} onClick={() => setTab("members")}>👥 Membres ({members.length})</button>
-          {isAdmin && <span style={{ marginLeft: "auto", padding: "0 16px", fontSize: 11, color: "var(--violet)", fontWeight: 700, flexShrink: 0 }}>🛡️ Admin</span>}
+          {isAdmin && <span style={{ marginLeft: "auto", padding: "0 16px", fontSize: 11, color: T.violet, fontWeight: 700, flexShrink: 0 }}>🛡️ Admin</span>}
         </div>
       </div>
 
@@ -108,9 +139,29 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
             {isAdmin && (
               <div style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", gap: 10, alignItems: "center" }}>
                 <span style={{ fontSize: 18 }}>🛡️</span>
-                <div style={{ fontSize: 12, color: "#888" }}>Cliquez sur un membre pour gérer son groupe et ses jalons</div>
+                <div style={{ fontSize: 12, color: "#888" }}>Mode admin actif — clic membre = édition cellule/jalons. Pour voir le profil public, utilisez le classement.</div>
               </div>
             )}
+
+            {/* Lien vers classement XP/badges */}
+            <Link href="/community/membres" style={{
+              display: "flex", alignItems: "center", gap: 10,
+              background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
+              color: "#fff", borderRadius: 14, padding: "12px 16px",
+              marginBottom: 14, textDecoration: "none",
+              boxShadow: T.shadowSoft,
+            }}>
+              <span style={{ fontSize: 22 }}>🏆</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: F.title, fontWeight: 700, fontSize: 14 }}>
+                  Classement complet
+                </div>
+                <div style={{ fontSize: 11, color: T.lavender }}>
+                  XP, rangs (Disciple → Ambassadeur Berakah), badges
+                </div>
+              </div>
+              <span style={{ fontSize: 18, color: T.gold }}>→</span>
+            </Link>
 
             {/* Recherche */}
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Rechercher un membre..."
@@ -148,8 +199,12 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
                 const mMilestones = memberMilestones[member.user_id] || [];
                 return (
                   <div key={member.user_id}
-                    onClick={() => { if (isAdmin && !isMe) openAdminModal(member); else if (isMe) router.push("/profile"); }}
-                    style={{ background: "#111", border: `1px solid ${isMe ? "#d4af37" : isAdmin ? "rgba(168,85,247,0.2)" : "#1a1a1a"}`, borderRadius: 14, padding: 14, cursor: (isMe || isAdmin) ? "pointer" : "default", position: "relative" }}>
+                    onClick={() => {
+                      if (isAdmin && !isMe) openAdminModal(member);
+                      else if (isMe) router.push("/profile");
+                      else router.push(`/community/profil/${member.user_id}`);
+                    }}
+                    style={{ background: "#111", border: `1px solid ${isMe ? "#d4af37" : isAdmin ? "rgba(168,85,247,0.2)" : "#1a1a1a"}`, borderRadius: 14, padding: 14, cursor: "pointer", position: "relative" }}>
                     {isMe && <div style={{ position: "absolute", top: 8, right: 8, background: "#d4af37", color: "#000", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 700 }}>MOI</div>}
                     {isAdmin && !isMe && <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(168,85,247,0.2)", color: "#a855f7", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 700 }}>✏️</div>}
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
