@@ -239,10 +239,10 @@ export default function BibleHubClient({
             <div style={cardSmall}>
               <div style={{ fontSize: 22, marginBottom: 4 }}>▶️</div>
               <div style={{ fontSize: 11, color: T.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                {lastRead ? "Reprendre" : "Commencer"}
+                {lastRead ? "Reprendre" : "BIBLE"}
               </div>
               <div style={{ fontFamily: F.title, fontWeight: 700, fontSize: 14, color: T.text, marginTop: 2 }}>
-                {lastRead ? `${lastRead.book_name} ${lastRead.chapter}` : "Choisir un livre"}
+                {lastRead ? `${lastRead.book_name} ${lastRead.chapter}` : "lire"}
               </div>
             </div>
           </Link>
