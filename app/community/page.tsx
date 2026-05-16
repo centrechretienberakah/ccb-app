@@ -43,6 +43,15 @@ export default async function CommunityPage() {
   const userVotes: Record<string, number> = {};
   let topContributors: Array<{ user_id: string; display_name: string | null; avatar_url: string | null; xp: number }> = [];
   let pinnedSidebar: Array<{ id: string; content: string; user_id: string; display_name: string | null }> = [];
+  let unreadNotifCount = 0;
+  try {
+    const { count } = await supabase
+      .from("user_notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("read_at", null);
+    unreadNotifCount = count ?? 0;
+  } catch { /* table v13 not deployed yet */ }
   let currentUserProfile: CurrentUserProfile | null = null;
 
   try {
@@ -275,6 +284,7 @@ export default async function CommunityPage() {
       userVotes={userVotes}
       topContributors={topContributors}
       pinnedPosts={pinnedSidebar}
+      unreadNotifCount={unreadNotifCount}
     />
   );
 }

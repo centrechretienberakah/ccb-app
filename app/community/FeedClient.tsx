@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { POST_KINDS, getPostKindDef, notifyCommunityStaff, type PostKind } from "@/lib/community/theme";
+import { getMentionedUserIds, renderSegments, type MemberLookup } from "@/lib/community/mentions";
+import MentionTextarea from "@/components/community/MentionTextarea";
+import Link from "next/link";
 
 // ─── Cache window (client uniquement) ───────────────────────────────────────
 interface FeedCache { posts: Post[]; likedIds: Set<string>; votes: Record<string, number> }
@@ -96,9 +99,51 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
+// ─── Helper : crée des notifs in-app + push pour mentions ─────────
+async function createMentionNotifications(args: {
+  mentionedIds: string[];
+  actorId: string;
+  actorName: string;
+  sourceType: "post" | "comment";
+  sourceId: string;
+  excerpt: string;
+}) {
+  if (args.mentionedIds.length === 0) return;
+  const supabase = createClient();
+  const rows = args.mentionedIds
+    .filter((uid) => uid !== args.actorId) // pas d'auto-notification
+    .map((uid) => ({
+      user_id: uid,
+      actor_id: args.actorId,
+      type: args.sourceType === "post" ? "mention_post" : "mention_comment",
+      source_type: args.sourceType,
+      source_id: args.sourceId,
+      payload: { actor_name: args.actorName, excerpt: args.excerpt.slice(0, 200) },
+    }));
+  if (rows.length === 0) return;
+  await supabase.from("user_notifications").insert(rows);
+
+  // Push aussi pour chaque mentionné (audience: user_ids)
+  try {
+    await fetch("/api/notifications/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: `🔔 ${args.actorName} t'a mentionné`,
+        body: args.excerpt.slice(0, 140),
+        url: "/community/notifications",
+        audience: "user_ids",
+        userIds: rows.map((r) => r.user_id),
+      }),
+    });
+  } catch { /* noop */ }
+}
+
 // ─── PostCreator ─────────────────────────────────────────────
-function PostCreator({ categories, currentUserProfile, currentUserId, onPostCreated }: {
-  categories: Category[]; currentUserProfile: CurrentUserProfile | null; currentUserId: string; onPostCreated: (post: Post) => void;
+function PostCreator({ categories, currentUserProfile, currentUserId, members, onPostCreated }: {
+  categories: Category[]; currentUserProfile: CurrentUserProfile | null; currentUserId: string;
+  members: MemberLookup[];
+  onPostCreated: (post: Post) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<string>("text");
@@ -174,6 +219,15 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
       content.slice(0, 120),
       "/community",
     );
+    // Notif mentions
+    const mentionedIds = getMentionedUserIds(content, members);
+    if (mentionedIds.length > 0) {
+      const postId = (data as unknown as { id: string }).id;
+      createMentionNotifications({
+        mentionedIds, actorId: currentUserId, actorName: author,
+        sourceType: "post", sourceId: postId, excerpt: content,
+      });
+    }
     setOpen(false); setContent(""); setType("text"); setKind("discussion"); setMediaUrl(""); setAudioUrl(""); setPdfUrl(""); setLinkUrl(""); setLinkTitle(""); setLinkDesc(""); setPollOptions(["",""]); setQuizOptions([{text:"",correct:false},{text:"",correct:false}]); setCategoryId("");
     setSaving(false);
   }
@@ -219,11 +273,13 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
         ))}
       </div>
 
-      {/* Contenu texte */}
-      <textarea value={content} onChange={(e) => setContent(e.target.value)}
-        placeholder={type === "poll" ? "Question du sondage..." : type === "quiz" ? "Question du quiz..." : "Exprimez-vous..."}
+      {/* Contenu texte avec @mention autocomplete */}
+      <MentionTextarea
+        value={content} onChange={setContent}
+        members={members}
+        placeholder={type === "poll" ? "Question du sondage..." : type === "quiz" ? "Question du quiz..." : "Exprimez-vous... (tapez @ pour mentionner un membre)"}
         rows={3}
-        style={{ ...inputStyle, width: "100%", resize: "vertical" }}
+        style={{ ...inputStyle, width: "100%", resize: "vertical" } as React.CSSProperties}
       />
 
       {/* Champs spécifiques par type */}
@@ -364,9 +420,32 @@ function PostCreator({ categories, currentUserProfile, currentUserId, onPostCrea
   );
 }
 
+// ─── Renderer contenu avec mentions cliquables ────────────────
+function ContentWithMentions({ content, members }: { content: string; members: MemberLookup[] }) {
+  if (members.length === 0) return <>{content}</>;
+  const segments = renderSegments(content, members);
+  return (
+    <>
+      {segments.map((s, i) => {
+        if (s.type === "mention" && s.userId) {
+          return (
+            <Link key={i} href={`/community/profil/${s.userId}`}
+              style={{ color: "#5A2CA0", fontWeight: 700, textDecoration: "none" }}>
+              {s.content}
+            </Link>
+          );
+        }
+        return <span key={i}>{s.content}</span>;
+      })}
+    </>
+  );
+}
+
 // ─── PostCard ─────────────────────────────────────────────────
-function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, userVote, onLike, onComment, onCommentLike, onReply, onDelete, onPin, onVote, onBookmark, onReport, onShare }: {
-  post: Post; currentUserId: string; isAdmin: boolean; isLiked: boolean; isBookmarked: boolean; userVote?: number;
+function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members, userVote, onLike, onComment, onCommentLike, onReply, onDelete, onPin, onVote, onBookmark, onReport, onShare }: {
+  post: Post; currentUserId: string; isAdmin: boolean; isLiked: boolean; isBookmarked: boolean;
+  members: MemberLookup[];
+  userVote?: number;
   onLike: () => void;
   onComment: (text: string, parentId?: string) => void;
   onCommentLike: (commentId: string) => void;
@@ -457,8 +536,10 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, userVot
           )}
         </div>
 
-        {/* Contenu texte */}
-        <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, margin: "0 0 12px", whiteSpace: "pre-wrap" }}>{post.content}</p>
+        {/* Contenu texte avec mentions cliquables */}
+        <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, margin: "0 0 12px", whiteSpace: "pre-wrap" }}>
+          <ContentWithMentions content={post.content} members={members} />
+        </p>
 
         {/* Médias */}
         {post.post_type === "image" && post.media_url && (
@@ -575,7 +656,9 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, userVot
                   <Avatar profile={c.user_profiles} size={28} />
                   <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: "var(--radius-md)", padding: "8px 12px" }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{c.user_profiles?.display_name || "Membre"}</div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{c.content}</div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                      <ContentWithMentions content={c.content} members={members} />
+                    </div>
                     <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 11 }}>
                       <button onClick={() => onCommentLike(c.id)} style={{ background: "none", border: "none", cursor: "pointer", color: c.liked ? "var(--error)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
                         {c.liked ? "❤️" : "🤍"} {c.likeCount ?? 0}
@@ -593,7 +676,9 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, userVot
                     <Avatar profile={r.user_profiles} size={24} />
                     <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: "var(--radius-md)", padding: "6px 10px" }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)" }}>{r.user_profiles?.display_name || "Membre"}</div>
-                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{r.content}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                        <ContentWithMentions content={r.content} members={members} />
+                      </div>
                       <div style={{ display: "flex", gap: 12, marginTop: 4, fontSize: 11 }}>
                         <button onClick={() => onCommentLike(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: r.liked ? "var(--error)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
                           {r.liked ? "❤️" : "🤍"} {r.likeCount ?? 0}
@@ -603,14 +688,20 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, userVot
                   </div>
                 ))}
 
-                {/* Input réponse */}
+                {/* Input réponse avec @mention */}
                 {replyingTo === c.id && (
                   <div style={{ display: "flex", gap: 8, marginTop: 8, marginLeft: 38 }}>
-                    <input value={replyText} onChange={(e) => setReplyText(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleReplySubmit()}
-                      placeholder="Répondre…"
-                      autoFocus
-                      style={{ flex: 1, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "6px 12px", color: "var(--text-primary)", fontSize: 12 }} />
+                    <div style={{ flex: 1 }}>
+                      <MentionTextarea
+                        multiline={false}
+                        value={replyText} onChange={setReplyText}
+                        members={members}
+                        onKeyDown={(e) => e.key === "Enter" && handleReplySubmit()}
+                        placeholder="Répondre… (tapez @ pour mentionner)"
+                        autoFocus
+                        style={{ width: "100%", boxSizing: "border-box", background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "6px 12px", color: "var(--text-primary)", fontSize: 12 } as React.CSSProperties}
+                      />
+                    </div>
                     <button onClick={handleReplySubmit} style={{ background: "var(--gold)", border: "none", borderRadius: "var(--radius-full)", padding: "6px 12px", color: "#000", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>➤</button>
                   </div>
                 )}
@@ -618,13 +709,18 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, userVot
             ));
           })()}
 
-          {/* Input nouveau commentaire */}
+          {/* Input nouveau commentaire avec @mention */}
           <div style={{ display: "flex", gap: 8 }}>
-            <input value={commentText} onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleComment()}
-              placeholder="Écrire un commentaire..."
-              style={{ flex: 1, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "8px 14px", color: "var(--text-primary)", fontSize: 13 }}
-            />
+            <div style={{ flex: 1 }}>
+              <MentionTextarea
+                multiline={false}
+                value={commentText} onChange={setCommentText}
+                members={members}
+                onKeyDown={(e) => e.key === "Enter" && handleComment()}
+                placeholder="Écrire un commentaire... (tapez @ pour mentionner)"
+                style={{ width: "100%", boxSizing: "border-box", background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "8px 14px", color: "var(--text-primary)", fontSize: 13 } as React.CSSProperties}
+              />
+            </div>
             <button onClick={handleComment} style={{ background: "var(--gold)", border: "none", borderRadius: "var(--radius-full)", padding: "8px 14px", color: "#000", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>➤</button>
           </div>
         </div>
@@ -689,9 +785,10 @@ function AdminCategoryManager({ categories, onCategoriesChange }: { categories: 
 }
 
 // ─── FeedClient (export principal) ───────────────────────────
-export default function FeedClient({ posts: initialPosts, categories: initialCategories, currentUserId, currentUserProfile, isAdmin, userLikedPostIds, userBookmarkedPostIds, userVotes }: {
+export default function FeedClient({ posts: initialPosts, categories: initialCategories, currentUserId, currentUserProfile, isAdmin, userLikedPostIds, userBookmarkedPostIds, userVotes, members = [] }: {
   posts: Post[]; categories: Category[]; currentUserId: string; currentUserProfile: CurrentUserProfile | null;
   isAdmin: boolean; userLikedPostIds: string[]; userBookmarkedPostIds?: string[]; userVotes: Record<string, number>;
+  members?: MemberLookup[];
 }) {
   const [posts, setPosts] = useState<Post[]>(() => {
     const cache = getClientCache();
@@ -926,6 +1023,14 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         text.slice(0, 120),
         "/community",
       );
+      // Notif mentions
+      const mentionedIds = getMentionedUserIds(text, members);
+      if (mentionedIds.length > 0) {
+        createMentionNotifications({
+          mentionedIds, actorId: currentUserId, actorName: author,
+          sourceType: "comment", sourceId: d.id, excerpt: text,
+        });
+      }
     }
   }
 
@@ -1015,7 +1120,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       {isAdmin && <AdminCategoryManager categories={categories} onCategoriesChange={setCategories} />}
 
       {/* Créer un post */}
-      <PostCreator categories={categories} currentUserProfile={currentUserProfile} currentUserId={currentUserId} onPostCreated={handlePostCreated} />
+      <PostCreator categories={categories} currentUserProfile={currentUserProfile} currentUserId={currentUserId} members={members} onPostCreated={handlePostCreated} />
 
       {/* Barre recherche + tri */}
       <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
@@ -1111,6 +1216,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
             isAdmin={isAdmin}
             isLiked={likedIds.has(post.id)}
             isBookmarked={bookmarkedIds.has(post.id)}
+            members={members}
             userVote={myVotes[post.id]}
             onLike={() => handleLike(post.id)}
             onComment={(text) => handleComment(post.id, text)}

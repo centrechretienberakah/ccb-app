@@ -38,9 +38,10 @@ interface Props {
   userVotes: Record<string, number>;
   topContributors?: TopContributor[];
   pinnedPosts?: PinnedSidebarPost[];
+  unreadNotifCount?: number;
 }
 
-export default function CommunityClient({ members, currentUserId, currentUserProfile, isAdmin, memberMilestones, posts, categories, userLikedPostIds, userBookmarkedPostIds, userVotes, topContributors = [], pinnedPosts = [] }: Props) {
+export default function CommunityClient({ members, currentUserId, currentUserProfile, isAdmin, memberMilestones, posts, categories, userLikedPostIds, userBookmarkedPostIds, userVotes, topContributors = [], pinnedPosts = [], unreadNotifCount = 0 }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"feed" | "members">("feed");
   const [search, setSearch] = useState(""); const [filterCell, setFilterCell] = useState("");
@@ -125,9 +126,30 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
         <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", overflowX: "auto" }}>
           <button style={tabStyle(tab === "feed")} onClick={() => setTab("feed")}>📰 Fil d&apos;actualité</button>
           <button style={tabStyle(tab === "members")} onClick={() => setTab("members")}>👥 Membres ({members.length})</button>
+          <Link href="/community/notifications" title="Mes notifications" style={{
+            marginLeft: "auto", padding: "8px 12px",
+            position: "relative", flexShrink: 0,
+            textDecoration: "none", color: T.textSoft,
+            display: "flex", alignItems: "center",
+            fontSize: 17,
+          }}>
+            🔔
+            {unreadNotifCount > 0 && (
+              <span style={{
+                position: "absolute", top: 4, right: 0,
+                background: "#C24B7A", color: "#fff",
+                fontSize: 9, fontWeight: 700,
+                borderRadius: 999, padding: "1px 5px",
+                minWidth: 14, textAlign: "center",
+                border: `1.5px solid ${T.card}`,
+              }}>
+                {unreadNotifCount > 99 ? "99+" : unreadNotifCount}
+              </span>
+            )}
+          </Link>
           {isAdmin && (
             <Link href="/community/admin" style={{
-              marginLeft: "auto", padding: "6px 14px", fontSize: 11,
+              padding: "6px 14px", fontSize: 11,
               background: T.violetSoft, color: T.violet, fontWeight: 700,
               borderRadius: 999, textDecoration: "none", flexShrink: 0,
               border: `1px solid ${T.violet}`,
@@ -171,6 +193,7 @@ export default function CommunityClient({ members, currentUserId, currentUserPro
             userLikedPostIds={userLikedPostIds}
             userBookmarkedPostIds={userBookmarkedPostIds}
             userVotes={userVotes}
+            members={members.map((m) => ({ user_id: m.user_id, display_name: m.display_name, avatar_url: m.avatar_url }))}
           />
         </div>
 
