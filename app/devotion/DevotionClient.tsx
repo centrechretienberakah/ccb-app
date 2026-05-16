@@ -22,6 +22,19 @@ interface DevotionComment {
   content: string;
   created_at: string;
   display_name: string;
+  likeCount: number;
+  liked: boolean;
+}
+
+// Helper : envoie une notification au staff (owner/admin/moderator/leader)
+async function notifyAdmins(title: string, body: string, url = "/devotion") {
+  try {
+    await fetch("/api/notifications/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, body, url, audience: "admins" }),
+    });
+  } catch { /* silencieux — notif facultative */ }
 }
 
 interface Props {
@@ -65,7 +78,20 @@ export default function DevotionClient({
   const [postingComment, setPostingComment] = useState(false);
 
   const [shared, setShared] = useState(false);
+  const [currentUserName, setCurrentUserName] = useState<string>("Un membre");
   const articleRef = useRef<HTMLDivElement>(null);
+
+  // Récupère le display_name du user courant pour personnaliser les notifs admin
+  useEffect(() => {
+    if (!userId) return;
+    const sb = createClient();
+    sb.from("user_profiles")
+      .select("display_name, full_name")
+      .eq("user_id", userId).maybeSingle()
+      .then(({ data }) => {
+        if (data) setCurrentUserName(data.display_name || data.full_name || "Un membre");
+      });
+  }, [userId]);
 
   // Re-fetch like/comment stats quand on change d'active devotion (depuis archives)
   useEffect(() => {
@@ -113,6 +139,12 @@ export default function DevotionClient({
       if (error) {
         setUserLiked(prevLiked); setLikeCount(prevCount);
         setLikeError("Impossible de liker. La table devotion_likes n'existe pas encore en base.");
+      } else {
+        // Notifie le staff
+        notifyAdmins(
+          `❤️ ${currentUserName} a liké une méditation`,
+          `« ${active.title} »`,
+        );
       }
     }
     if (likeError) setTimeout(() => setLikeError(null), 4000);
@@ -127,7 +159,9 @@ export default function DevotionClient({
       .eq("devotion_id", active.id)
       .order("created_at", { ascending: false })
       .limit(50);
-    const userIds = [...new Set((cm ?? []).map((c) => c.user_id))];
+    const list = (cm ?? []) as { id: string; user_id: string; content: string; created_at: string }[];
+    const userIds = [...new Set(list.map((c) => c.user_id))];
+    const commentIds = list.map((c) => c.id);
     let profMap: Record<string, string> = {};
     if (userIds.length > 0) {
       const { data: profs } = await sb.from("user_profiles")
@@ -136,10 +170,54 @@ export default function DevotionClient({
         (profs ?? []).map((p) => [p.user_id, p.display_name || p.full_name || "Membre"]),
       );
     }
-    setComments((cm ?? []).map((c) => ({
+    // Likes par commentaire
+    const likeCounts: Record<string, number> = {};
+    const userLikedSet = new Set<string>();
+    if (commentIds.length > 0) {
+      const { data: cl } = await sb.from("devotion_comment_likes")
+        .select("comment_id, user_id").in("comment_id", commentIds);
+      for (const row of (cl ?? []) as { comment_id: string; user_id: string }[]) {
+        likeCounts[row.comment_id] = (likeCounts[row.comment_id] || 0) + 1;
+        if (userId && row.user_id === userId) userLikedSet.add(row.comment_id);
+      }
+    }
+    setComments(list.map((c) => ({
       id: c.id, user_id: c.user_id, content: c.content, created_at: c.created_at,
       display_name: profMap[c.user_id] || "Membre",
+      likeCount: likeCounts[c.id] || 0,
+      liked: userLikedSet.has(c.id),
     })));
+  }
+
+  async function toggleCommentLike(commentId: string) {
+    if (!userId) { window.location.href = "/auth/login?redirect=/devotion"; return; }
+    const sb = createClient();
+    const target = comments.find((c) => c.id === commentId);
+    if (!target) return;
+    // Optimistic update
+    setComments((prev) => prev.map((c) =>
+      c.id === commentId
+        ? { ...c, liked: !c.liked, likeCount: c.likeCount + (c.liked ? -1 : 1) }
+        : c,
+    ));
+    if (target.liked) {
+      const { error } = await sb.from("devotion_comment_likes")
+        .delete().eq("comment_id", commentId).eq("user_id", userId);
+      if (error) {
+        // Rollback
+        setComments((prev) => prev.map((c) =>
+          c.id === commentId ? { ...c, liked: true, likeCount: c.likeCount + 1 } : c,
+        ));
+      }
+    } else {
+      const { error } = await sb.from("devotion_comment_likes")
+        .insert({ comment_id: commentId, user_id: userId });
+      if (error) {
+        setComments((prev) => prev.map((c) =>
+          c.id === commentId ? { ...c, liked: false, likeCount: Math.max(0, c.likeCount - 1) } : c,
+        ));
+      }
+    }
   }
 
   async function openComments() {
@@ -158,9 +236,15 @@ export default function DevotionClient({
     const { error } = await sb.from("devotion_comments")
       .insert({ devotion_id: active.id, user_id: userId, content: commentText.trim() });
     if (!error) {
+      const text = commentText.trim();
       setCommentText("");
       setCommentsCount((c) => c + 1);
       await loadComments();
+      // Notifie le staff
+      notifyAdmins(
+        `💬 ${currentUserName} a commenté une méditation`,
+        text.length > 100 ? text.slice(0, 97) + "…" : text,
+      );
     } else {
       setCommentError("Impossible de publier. La table devotion_comments n'existe pas encore en base.");
       setTimeout(() => setCommentError(null), 4000);
@@ -197,23 +281,31 @@ export default function DevotionClient({
 
   async function handleShare() {
     const title = `MÉDITONS ENSEMBLE — ${active.title}`;
+    let didShare = false;
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
-        // navigator.share affiche déjà l'URL séparément — pas de duplication dans le texte
         await navigator.share({
           title,
           text: buildShareText(active, false),
           url: PUBLIC_URL,
         });
-        return;
+        didShare = true;
       }
     } catch { /* user cancelled */ }
-    try {
-      // Pour le presse-papier on inclut le lien dans le texte pour qu'il soit copié
-      await navigator.clipboard.writeText(buildShareText(active, true));
-      setShared(true);
-      setTimeout(() => setShared(false), 2200);
-    } catch { /* noop */ }
+    if (!didShare) {
+      try {
+        await navigator.clipboard.writeText(buildShareText(active, true));
+        setShared(true);
+        didShare = true;
+        setTimeout(() => setShared(false), 2200);
+      } catch { /* noop */ }
+    }
+    if (didShare && userId) {
+      notifyAdmins(
+        `📤 ${currentUserName} a partagé une méditation`,
+        `« ${active.title} »`,
+      );
+    }
   }
 
   const isFromToday = active.date === today.date;
@@ -524,7 +616,21 @@ export default function DevotionClient({
             ) : (
               comments.map((c) => (
                 <div key={c.id} style={{ padding: "8px 12px", background: "var(--surface)", borderRadius: 10 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--gold)", marginBottom: 4 }}>{c.display_name}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--gold)" }}>{c.display_name}</div>
+                    <button
+                      onClick={() => toggleCommentLike(c.id)}
+                      style={{
+                        background: "transparent", border: "none",
+                        color: c.liked ? "#fca5a5" : "var(--text-muted)",
+                        cursor: "pointer", fontSize: 12, fontWeight: 700,
+                        display: "flex", alignItems: "center", gap: 4,
+                        padding: "2px 6px", borderRadius: 9999,
+                      }}
+                    >
+                      {c.liked ? "❤️" : "🤍"} {c.likeCount > 0 ? c.likeCount : ""}
+                    </button>
+                  </div>
                   <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.content}</p>
                 </div>
               ))
