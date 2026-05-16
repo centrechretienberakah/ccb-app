@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import BibleHubClient from "./BibleHubClient";
-import { getDailyVerse } from "@/lib/bible/verse-of-day";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Ma Bible — CCB" };
@@ -30,10 +29,6 @@ export default async function BiblePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?redirect=/bible");
 
-  const today = new Date().toISOString().split("T")[0];
-  const verseOfDay = getDailyVerse(today);
-
-  // En parallèle : versets sauvegardés, collections, dernier chapitre lu, total chapitres lus
   const [
     { data: savedRows },
     { data: collRows },
@@ -71,7 +66,6 @@ export default async function BiblePage() {
 
   return (
     <BibleHubClient
-      verseOfDay={verseOfDay}
       lastRead={lastReadRow}
       chaptersRead={chaptersReadCount ?? 0}
       savedVerses={savedVerses}

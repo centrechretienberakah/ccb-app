@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { BIBLE_THEME as T, BIBLE_FONTS as F } from "@/lib/bible/theme";
-import { shareBibleVerse, notifyBibleStaff } from "@/lib/bible/share";
-import type { DailyVerse } from "@/lib/bible/verse-of-day";
 import { createClient } from "@/lib/supabase/client";
 
 interface SavedVerseLite {
@@ -27,7 +25,6 @@ interface LastReadLite {
 }
 
 interface Props {
-  verseOfDay: DailyVerse;
   lastRead: LastReadLite | null;
   chaptersRead: number;
   savedVerses: SavedVerseLite[];
@@ -36,7 +33,6 @@ interface Props {
 }
 
 export default function BibleHubClient({
-  verseOfDay,
   lastRead,
   chaptersRead,
   savedVerses,
@@ -49,71 +45,10 @@ export default function BibleHubClient({
   const [newCollName, setNewCollName] = useState("");
   const [newCollEmoji, setNewCollEmoji] = useState("📖");
   const [showNewColl, setShowNewColl] = useState(false);
-  const [shareBusy, setShareBusy] = useState(false);
 
   function flash(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
-  }
-
-  async function handleShareDaily() {
-    if (shareBusy) return;
-    setShareBusy(true);
-    const status = await shareBibleVerse({
-      reference: verseOfDay.reference,
-      text: verseOfDay.text,
-    });
-    if (status === "shared" || status === "copied") {
-      flash(status === "shared" ? "Partagé !" : "Copié dans le presse-papier !");
-      // Display name pour la notif staff
-      try {
-        const { data } = await supabase
-          .from("user_profiles")
-          .select("display_name, full_name")
-          .eq("user_id", userId)
-          .maybeSingle();
-        const name = (data?.display_name as string) || (data?.full_name as string) || "Un membre";
-        await notifyBibleStaff(
-          `📤 ${name} a partagé un verset`,
-          `« ${verseOfDay.reference} » — Verset du jour`,
-          "/bible",
-        );
-      } catch { /* noop */ }
-    }
-    setShareBusy(false);
-  }
-
-  async function handleSaveDaily() {
-    try {
-      const { error } = await supabase.from("user_saved_verses").upsert(
-        {
-          user_id: userId,
-          book_name: verseOfDay.book,
-          chapter: verseOfDay.chapter,
-          verse_number: verseOfDay.verse,
-          verse_text: verseOfDay.text,
-          reference: verseOfDay.reference,
-        },
-        { onConflict: "user_id,book_name,chapter,verse_number" },
-      );
-      if (error) throw error;
-      flash(`⭐ ${verseOfDay.reference} sauvegardé !`);
-      try {
-        const { data } = await supabase
-          .from("user_profiles")
-          .select("display_name, full_name")
-          .eq("user_id", userId)
-          .maybeSingle();
-        const name = (data?.display_name as string) || (data?.full_name as string) || "Un membre";
-        await notifyBibleStaff(
-          `⭐ ${name} a sauvegardé un verset`,
-          `« ${verseOfDay.reference} »`,
-          "/bible",
-        );
-      } catch { /* noop */ }
-    } catch (e) {
-      flash("Erreur : " + (e as Error).message);
-    }
   }
 
   async function createCollection() {
@@ -177,55 +112,6 @@ export default function BibleHubClient({
           <StatChip label="Chapitres lus" value={chaptersRead} />
           <StatChip label="Versets favoris" value={savedVerses.length} />
           <StatChip label="Collections" value={collections.length} />
-        </div>
-
-        {/* Verset du jour — carte premium violet/or */}
-        <div style={{
-          background: `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
-          borderRadius: 20,
-          padding: "24px 22px",
-          color: "#fff",
-          boxShadow: "0 10px 40px rgba(62,28,112,0.28)",
-          marginBottom: 22,
-          position: "relative",
-          overflow: "hidden",
-        }}>
-          {/* Or accent */}
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, height: 3,
-            background: `linear-gradient(90deg, ${T.gold}, transparent)`,
-          }} />
-          <div style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.2em",
-            color: T.gold, marginBottom: 8, textTransform: "uppercase",
-            fontFamily: F.body,
-          }}>
-            ✨ Verset du jour
-          </div>
-          <p style={{
-            fontFamily: F.title, fontSize: 18, lineHeight: 1.55,
-            margin: "0 0 14px", fontStyle: "italic", fontWeight: 400,
-          }}>
-            « {verseOfDay.text} »
-          </p>
-          <div style={{
-            fontSize: 12, fontWeight: 700, color: T.gold,
-            marginBottom: 18, fontFamily: F.body,
-          }}>
-            — {verseOfDay.reference}
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Link
-              href={`/bible/read/${encodeURIComponent(verseOfDay.book)}/${verseOfDay.chapter}`}
-              style={btnGold}
-            >
-              📖 Lire le chapitre
-            </Link>
-            <button onClick={handleSaveDaily} style={btnGhost}>⭐ Sauver</button>
-            <button onClick={handleShareDaily} disabled={shareBusy} style={btnGhost}>
-              {shareBusy ? "…" : "📤 Partager"}
-            </button>
-          </div>
         </div>
 
         {/* Accès rapides : Reprise / Plans thématiques / Plan / Progression */}
@@ -495,30 +381,6 @@ const F_TITLE = "var(--font-cinzel), Georgia, serif";
 const F_BODY = "var(--font-montserrat), system-ui, sans-serif";
 
 // ─── Styles partagés ─────────────────────────────────────────────────
-const btnGold: React.CSSProperties = {
-  background: "linear-gradient(135deg, #D4AF37, #A8862B)",
-  color: "#1F1A33",
-  padding: "10px 16px",
-  borderRadius: 10,
-  fontWeight: 700,
-  fontSize: 13,
-  border: "none",
-  cursor: "pointer",
-  textDecoration: "none",
-  fontFamily: F_BODY,
-  display: "inline-block",
-};
-const btnGhost: React.CSSProperties = {
-  background: "rgba(255,255,255,0.12)",
-  color: "#fff",
-  padding: "10px 14px",
-  borderRadius: 10,
-  fontWeight: 600,
-  fontSize: 13,
-  border: "1px solid rgba(255,255,255,0.25)",
-  cursor: "pointer",
-  fontFamily: F_BODY,
-};
 const btnViolet: React.CSSProperties = {
   background: "#5A2CA0",
   color: "#fff",
