@@ -74,7 +74,7 @@ export async function generateVerseImage({ reference, text, versionShort }: Vers
   ctx.fillText("✶ CENTRE CHRÉTIEN BERAKAH ✶", 540, 950);
   ctx.fillStyle = "rgba(255,255,255,0.5)";
   ctx.font = "20px sans-serif";
-  ctx.fillText("ccb-app.com/bible", 540, 985);
+  ctx.fillText("centrechretienberakah.com", 540, 985);
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);

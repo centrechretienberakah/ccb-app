@@ -1,7 +1,7 @@
 // Helper de partage façon Méditons : UPPERCASE + lien CCB + navigator.share
 // Retourne true si effectivement partagé/copié.
 
-const APP_URL = "https://ccb-app.com";
+const APP_URL = "https://centrechretienberakah.com";
 
 interface ShareVerseInput {
   reference: string;
