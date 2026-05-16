@@ -554,11 +554,6 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
             <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>{author?.display_name || "Membre"}</div>
             <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{timeAgo(post.created_at)}</div>
           </div>
-          {kindDef && (
-            <span style={{ background: `${kindDef.color}1f`, border: `1px solid ${kindDef.color}66`, borderRadius: "var(--radius-full)", padding: "3px 10px", fontSize: 10, color: kindDef.color, fontWeight: 700, flexShrink: 0 }}>
-              {kindDef.emoji} {kindDef.label}
-            </span>
-          )}
           {cat && (
             <span style={{ background: `${cat.color}20`, border: `1px solid ${cat.color}50`, borderRadius: "var(--radius-full)", padding: "3px 10px", fontSize: 10, color: cat.color, fontWeight: 600, flexShrink: 0 }}>
               {cat.icon} {cat.name}
