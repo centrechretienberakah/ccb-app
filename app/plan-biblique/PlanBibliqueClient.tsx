@@ -395,40 +395,10 @@ function PlanGrid({ plans, activePlanIds, onSelect }: {
   activePlanIds: string[];
   onSelect: (p: ReadingPlan) => void;
 }) {
-  const [filterCat, setFilterCat] = useState<"all" | "systematic" | "thematic">("all");
-
-  const categories = [
-    { id: "all" as const,        label: "Tous",                  emoji: "📚" },
-    { id: "systematic" as const, label: "Lecture systématique",  emoji: "📖" },
-    { id: "thematic" as const,   label: "Lecture thématique",    emoji: "🎯" },
-  ];
-
-  const filtered =
-    filterCat === "all"        ? plans :
-    filterCat === "thematic"   ? plans.filter((p) => p.type === "THEMATIC") :
-                                 plans.filter((p) => p.type !== "THEMATIC");
-
   return (
     <div>
-      {/* Filtres catégorie */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-        {categories.map((c) => (
-          <button key={c.id} onClick={() => setFilterCat(c.id)} style={{
-            padding: "7px 16px",
-            background: filterCat === c.id ? "var(--gold)" : "var(--card-bg)",
-            color: filterCat === c.id ? "#000" : "var(--text-secondary)",
-            border: `1px solid ${filterCat === c.id ? "var(--gold)" : "var(--border)"}`,
-            borderRadius: "var(--radius-full)", fontSize: 12, fontWeight: filterCat === c.id ? 700 : 400,
-            cursor: "pointer", fontFamily: "var(--font-body)",
-            display: "flex", alignItems: "center", gap: 5,
-          }}>
-            <span>{c.emoji}</span>{c.label}
-          </button>
-        ))}
-      </div>
-
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
-        {filtered.map((plan) => {
+        {plans.map((plan) => {
           const isActive = activePlanIds.includes(plan.id);
           return (
             <div key={plan.id} onClick={() => onSelect(plan)} style={{
@@ -455,15 +425,8 @@ function PlanGrid({ plans, activePlanIds, onSelect }: {
               <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
                 {plan.description}
               </p>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "var(--gold)", fontWeight: 600 }}>{plan.duration}</span>
-                <span style={{
-                  fontSize: 11, padding: "2px 8px",
-                  background: "var(--surface-2)", borderRadius: "var(--radius-full)",
-                  color: "var(--text-muted)",
-                }}>
-                  {plan.type === "THEMATIC" ? "🎯 Thématique" : "📖 Systématique"}
-                </span>
+              <div style={{ fontSize: 12, color: "var(--gold)", fontWeight: 600 }}>
+                {plan.duration}
               </div>
             </div>
           );
@@ -508,9 +471,6 @@ function PlanDetail({ plan, onStart, onBack, loading }: {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
           <span style={{ background: "rgba(212,175,55,0.15)", color: "var(--gold)", borderRadius: "var(--radius-full)", padding: "4px 12px", fontSize: 12, fontWeight: 700 }}>
             ⏱ {plan.duration}
-          </span>
-          <span style={{ background: "var(--surface-2)", color: "var(--text-secondary)", borderRadius: "var(--radius-full)", padding: "4px 12px", fontSize: 12 }}>
-            {plan.type === "THEMATIC" ? "🎯 Lecture thématique" : "📖 Lecture systématique"}
           </span>
           {plan.goals.map((g) => (
             <span key={g} style={{ background: "var(--surface-2)", color: "var(--text-secondary)", borderRadius: "var(--radius-full)", padding: "4px 12px", fontSize: 12 }}>
