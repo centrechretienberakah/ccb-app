@@ -24,6 +24,7 @@ export interface Post {
   id: string; user_id: string; category_id: string | null;
   post_type: "text" | "image" | "video" | "audio" | "pdf" | "link" | "poll" | "quiz";
   post_kind?: PostKind | null;
+  title?: string | null;
   content: string; media_url?: string;
   audio_url?: string | null; pdf_url?: string | null;
   link_url?: string;
@@ -148,6 +149,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<string>("text");
   const [kind, setKind] = useState<PostKind>("discussion");
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
@@ -198,13 +200,15 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
 
     const { data, error: e } = await supabase.from("posts").insert({
       user_id: currentUserId, category_id: categoryId || null,
-      post_type: type, post_kind: kind, content,
+      post_type: type, post_kind: kind,
+      title: title.trim() || null,
+      content,
       media_url: mediaUrl || null,
       audio_url: audioUrl || null,
       pdf_url: pdfUrl || null,
       link_url: linkUrl || null, link_title: linkTitle || null, link_description: linkDesc || null,
       poll_options: pollData,
-    }).select(`id, user_id, category_id, post_type, post_kind, content, media_url, audio_url, pdf_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`).single();
+    }).select(`id, user_id, category_id, post_type, post_kind, title, content, media_url, audio_url, pdf_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`).single();
 
     if (e) { setError(e.message); setSaving(false); return; }
     const userProfilesForPost = currentUserProfile
@@ -228,7 +232,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
         sourceType: "post", sourceId: postId, excerpt: content,
       });
     }
-    setOpen(false); setContent(""); setType("text"); setKind("discussion"); setMediaUrl(""); setAudioUrl(""); setPdfUrl(""); setLinkUrl(""); setLinkTitle(""); setLinkDesc(""); setPollOptions(["",""]); setQuizOptions([{text:"",correct:false},{text:"",correct:false}]); setCategoryId("");
+    setOpen(false); setTitle(""); setContent(""); setType("text"); setKind("discussion"); setMediaUrl(""); setAudioUrl(""); setPdfUrl(""); setLinkUrl(""); setLinkTitle(""); setLinkDesc(""); setPollOptions(["",""]); setQuizOptions([{text:"",correct:false},{text:"",correct:false}]); setCategoryId("");
     setSaving(false);
   }
 
@@ -242,36 +246,61 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
 
   return (
     <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16 }}>
-      {/* Kind picker — type thématique du post */}
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6, letterSpacing: 0.4 }}>
-          TYPE DE PUBLICATION
+      {/* Top row : Type de publication + Catégorie côte à côte */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6, letterSpacing: 0.4 }}>
+            TYPE DE PUBLICATION
+          </div>
+          <select value={type} onChange={(e) => setType(e.target.value)}
+            style={{
+              width: "100%", padding: "10px 12px", boxSizing: "border-box",
+              background: "var(--card-bg)", border: "1px solid var(--border)",
+              borderRadius: 10, color: "var(--text-primary)",
+              fontSize: 14, cursor: "pointer", fontFamily: "inherit", outline: "none",
+            }}>
+            {POST_TYPES.map((pt) => (
+              <option key={pt.key} value={pt.key}>{pt.icon} {pt.label}</option>
+            ))}
+          </select>
         </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {POST_KINDS.map((k) => (
-            <button key={k.id} onClick={() => setKind(k.id)} title={k.description}
-              style={{
-                background: kind === k.id ? `${k.color}1f` : "var(--page-bg)",
-                border: `1px solid ${kind === k.id ? k.color : "var(--border)"}`,
-                borderRadius: "var(--radius-full)", padding: "5px 12px",
-                color: kind === k.id ? k.color : "var(--text-muted)",
-                fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
-                fontWeight: kind === k.id ? 700 : 400,
-              }}>
-              <span>{k.emoji}</span>{k.label}
-            </button>
-          ))}
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 600,
+            color: categoryId ? "var(--text-muted)" : "var(--error)",
+            marginBottom: 6, letterSpacing: 0.4,
+          }}>
+            CATÉGORIE <span style={{ color: "var(--error)" }}>*</span>
+          </div>
+          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
+            style={{
+              width: "100%", padding: "10px 12px", boxSizing: "border-box",
+              background: "var(--card-bg)",
+              border: `1px solid ${categoryId ? "var(--border)" : "var(--error)"}`,
+              borderRadius: 10, color: "var(--text-primary)",
+              fontSize: 14, cursor: "pointer", fontFamily: "inherit", outline: "none",
+            }}>
+            <option value="">— Choisir une catégorie —</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Media type selector */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-        {POST_TYPES.map((pt) => (
-          <button key={pt.key} onClick={() => setType(pt.key)} style={{ background: type === pt.key ? "rgba(var(--gold-rgb, 212,175,55), 0.15)" : "var(--page-bg)", border: `1px solid ${type === pt.key ? "var(--gold)" : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "5px 12px", color: type === pt.key ? "var(--gold)" : "var(--text-muted)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-            <span>{pt.icon}</span>{pt.label}
-          </button>
-        ))}
-      </div>
+      {/* Titre de la publication (en gras) */}
+      <input
+        type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+        placeholder="Titre de la publication"
+        maxLength={140}
+        style={{
+          width: "100%", boxSizing: "border-box",
+          padding: "11px 14px", marginBottom: 10,
+          background: "var(--card-bg)", border: "1px solid var(--border)",
+          borderRadius: 10, color: "var(--text-primary)",
+          fontSize: 16, fontWeight: 700, fontFamily: "inherit", outline: "none",
+        }}
+      />
 
       {/* Contenu texte avec @mention autocomplete */}
       <MentionTextarea
@@ -392,21 +421,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
         </div>
       )}
 
-      {/* Catégorie — obligatoire */}
-      <div style={{ marginTop: 12 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: categoryId ? "var(--text-muted)" : "var(--error)", marginBottom: 6, letterSpacing: 0.4 }}>
-          CATÉGORIE <span style={{ color: "var(--error)" }}>*</span>
-          {!categoryId && <span style={{ fontWeight: 400, marginLeft: 6 }}>(obligatoire)</span>}
-        </div>
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none", paddingBottom: 4 }}>
-          {categories.map((c) => (
-            <button key={c.id} onClick={() => setCategoryId(categoryId === c.id ? "" : c.id)}
-              style={{ flexShrink: 0, background: categoryId === c.id ? `${c.color}22` : "var(--page-bg)", border: `1px solid ${categoryId === c.id ? c.color : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "5px 12px", color: categoryId === c.id ? c.color : "var(--text-muted)", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
-              {c.icon} {c.name}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Catégorie déplacée en haut (dropdown), donc rien ici */}
 
       {error && <div style={{ color: "var(--error)", fontSize: 12, marginTop: 8 }}>{error}</div>}
 
@@ -535,6 +550,16 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
             </div>
           )}
         </div>
+
+        {/* Titre de la publication (en gras) */}
+        {post.title && (
+          <h3 style={{
+            fontSize: 17, fontWeight: 800, color: "var(--text-primary)",
+            margin: "0 0 8px", lineHeight: 1.35, fontFamily: "var(--font-title)",
+          }}>
+            {post.title}
+          </h3>
+        )}
 
         {/* Contenu texte avec mentions cliquables */}
         <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, margin: "0 0 12px", whiteSpace: "pre-wrap" }}>
@@ -818,7 +843,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     let mounted = true;
     const uid = userIdRef.current;
     const supabase = createClient();
-    const SEL = `id, user_id, category_id, post_type, post_kind, content, media_url, audio_url, pdf_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`;
+    const SEL = `id, user_id, category_id, post_type, post_kind, title, content, media_url, audio_url, pdf_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`;
 
     async function loadPosts() {
       if (!mounted) return;

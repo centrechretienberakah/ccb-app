@@ -100,7 +100,7 @@ export default async function CommunityPage() {
     const { data: postsData } = await supabase
       .from("posts")
       .select(
-        "id, user_id, category_id, post_type, post_kind, content, media_url, audio_url, pdf_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)"
+        "id, user_id, category_id, post_type, post_kind, title, content, media_url, audio_url, pdf_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)"
       )
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
