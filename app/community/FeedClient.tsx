@@ -189,6 +189,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
 
   async function submit() {
     if (!content.trim()) { setError("Le texte du post est requis."); return; }
+    if (!categoryId) { setError("Veuillez sélectionner une catégorie avant de publier."); return; }
     setSaving(true); setError("");
     const supabase = createClient();
     let pollData: PollOption[] | null = null;
@@ -391,9 +392,21 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
         </div>
       )}
 
-      {/* Catégorie facultative supprimée — le TYPE DE PUBLICATION (post_kind)
-          remplit ce rôle. Le champ category_id reste accepté en DB pour
-          compatibilité avec les anciens posts. */}
+      {/* Catégorie — obligatoire */}
+      <div style={{ marginTop: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: categoryId ? "var(--text-muted)" : "var(--error)", marginBottom: 6, letterSpacing: 0.4 }}>
+          CATÉGORIE <span style={{ color: "var(--error)" }}>*</span>
+          {!categoryId && <span style={{ fontWeight: 400, marginLeft: 6 }}>(obligatoire)</span>}
+        </div>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none", paddingBottom: 4 }}>
+          {categories.map((c) => (
+            <button key={c.id} onClick={() => setCategoryId(categoryId === c.id ? "" : c.id)}
+              style={{ flexShrink: 0, background: categoryId === c.id ? `${c.color}22` : "var(--page-bg)", border: `1px solid ${categoryId === c.id ? c.color : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "5px 12px", color: categoryId === c.id ? c.color : "var(--text-muted)", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+              {c.icon} {c.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {error && <div style={{ color: "var(--error)", fontSize: 12, marginTop: 8 }}>{error}</div>}
 
@@ -805,7 +818,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     let mounted = true;
     const uid = userIdRef.current;
     const supabase = createClient();
-    const SEL = `id, user_id, category_id, post_type, content, media_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`;
+    const SEL = `id, user_id, category_id, post_type, post_kind, content, media_url, audio_url, pdf_url, link_url, link_title, link_description, poll_options, is_pinned, created_at, post_categories(name, icon, color)`;
 
     async function loadPosts() {
       if (!mounted) return;
