@@ -123,6 +123,7 @@ async function fetchApiBible(
 const GETBIBLE_MAP: Record<string, string> = {
   darby: "darby", neg: "neg", crampon: "crampon",
   ostervald: "ostervald", martin: "martin",
+  kjv: "kjv", asv: "asv", web: "web",
 };
 
 // ─── Route handler ────────────────────────────────────────────────────────────

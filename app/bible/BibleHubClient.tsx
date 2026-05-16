@@ -383,36 +383,67 @@ export default function BibleHubClient({
           </>
         )}
 
-        {/* Accès Lire la Bible */}
-        <Link href="/bible/lire" style={{ textDecoration: "none" }}>
-          <div style={{
-            background: T.card, border: `1px solid ${T.border}`,
-            borderRadius: 16, padding: "18px 18px",
-            display: "flex", alignItems: "center", gap: 14,
-            cursor: "pointer",
-          }}>
+        {/* Recherche + Parcourir la Bible */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <Link href="/bible/recherche" style={{ textDecoration: "none" }}>
             <div style={{
-              width: 48, height: 48, borderRadius: 12, flexShrink: 0,
-              background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 22, color: "#fff",
+              background: T.card, border: `1px solid ${T.border}`,
+              borderRadius: 16, padding: "16px 18px",
+              display: "flex", alignItems: "center", gap: 14, cursor: "pointer",
             }}>
-              📖
-            </div>
-            <div style={{ flex: 1 }}>
               <div style={{
-                fontFamily: F.title, fontSize: 15, fontWeight: 700,
-                color: T.text, marginBottom: 2,
+                width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+                background: T.violetSoft, color: T.violet,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 22,
               }}>
-                Parcourir la Bible
+                🔍
               </div>
-              <div style={{ fontSize: 12, color: T.textMuted, fontFamily: F.body }}>
-                AT · NT · 66 livres · 8 versions
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontFamily: F.title, fontSize: 15, fontWeight: 700,
+                  color: T.text, marginBottom: 2,
+                }}>
+                  Rechercher
+                </div>
+                <div style={{ fontSize: 12, color: T.textMuted, fontFamily: F.body }}>
+                  Recherche full-text dans toute la LSG
+                </div>
               </div>
+              <div style={{ color: T.violet, fontSize: 18 }}>→</div>
             </div>
-            <div style={{ color: T.violet, fontSize: 18 }}>→</div>
-          </div>
-        </Link>
+          </Link>
+
+          <Link href="/bible/lire" style={{ textDecoration: "none" }}>
+            <div style={{
+              background: T.card, border: `1px solid ${T.border}`,
+              borderRadius: 16, padding: "18px 18px",
+              display: "flex", alignItems: "center", gap: 14,
+              cursor: "pointer",
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+                background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 22, color: "#fff",
+              }}>
+                📖
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontFamily: F.title, fontSize: 15, fontWeight: 700,
+                  color: T.text, marginBottom: 2,
+                }}>
+                  Parcourir la Bible
+                </div>
+                <div style={{ fontSize: 12, color: T.textMuted, fontFamily: F.body }}>
+                  AT · NT · 66 livres · 13 versions (10 FR + 3 EN)
+                </div>
+              </div>
+              <div style={{ color: T.violet, fontSize: 18 }}>→</div>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   );
