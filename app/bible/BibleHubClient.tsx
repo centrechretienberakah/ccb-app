@@ -228,9 +228,8 @@ export default function BibleHubClient({
           </div>
         </div>
 
-        {/* Reprise lecture + Plan de lecture (2 cartes) */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 22 }}>
-          {/* Reprise */}
+        {/* Accès rapides : Reprise / Plans thématiques / Plan / Progression */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
           <Link
             href={lastRead
               ? `/bible/read/${encodeURIComponent(lastRead.book_name)}/${lastRead.chapter}`
@@ -247,7 +246,17 @@ export default function BibleHubClient({
               </div>
             </div>
           </Link>
-          {/* Plan */}
+          <Link href="/bible/theme" style={{ textDecoration: "none" }}>
+            <div style={cardSmall}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>🌿</div>
+              <div style={{ fontSize: 11, color: T.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                13 thèmes
+              </div>
+              <div style={{ fontFamily: F.title, fontWeight: 700, fontSize: 14, color: T.text, marginTop: 2 }}>
+                Plans thématiques
+              </div>
+            </div>
+          </Link>
           <Link href="/plan-biblique" style={{ textDecoration: "none" }}>
             <div style={cardSmall}>
               <div style={{ fontSize: 22, marginBottom: 4 }}>📅</div>
@@ -256,6 +265,17 @@ export default function BibleHubClient({
               </div>
               <div style={{ fontFamily: F.title, fontWeight: 700, fontSize: 14, color: T.text, marginTop: 2 }}>
                 Bible guidée
+              </div>
+            </div>
+          </Link>
+          <Link href="/bible/progression" style={{ textDecoration: "none" }}>
+            <div style={cardSmall}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>📊</div>
+              <div style={{ fontSize: 11, color: T.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Stats & badges
+              </div>
+              <div style={{ fontFamily: F.title, fontWeight: 700, fontSize: 14, color: T.text, marginTop: 2 }}>
+                Ma progression
               </div>
             </div>
           </Link>
@@ -271,7 +291,7 @@ export default function BibleHubClient({
           {collections.map((c) => (
             <Link
               key={c.id}
-              href={`/bible/lire?coll=${c.id}`}
+              href={`/bible/collection/${c.id}`}
               style={{ ...collTile, textDecoration: "none" } as React.CSSProperties}
             >
               <div style={{ fontSize: 24, marginBottom: 4 }}>{c.emoji || "📖"}</div>
