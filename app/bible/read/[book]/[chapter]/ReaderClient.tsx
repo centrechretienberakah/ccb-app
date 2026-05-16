@@ -9,6 +9,9 @@ import {
   HIGHLIGHT_COLORS, highlightBg, type HighlightColor,
 } from "@/lib/bible/theme";
 import { shareBibleVerse, notifyBibleStaff } from "@/lib/bible/share";
+import { speak, stopSpeaking, isSpeechSupported } from "@/lib/bible/audio";
+import { generateVerseImage, downloadOrShareVerseImage } from "@/lib/bible/verse-image";
+import Link from "next/link";
 
 interface Verse {
   verse: number;
@@ -65,6 +68,8 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
   const [collections, setCollections] = useState<{ id: string; name: string; emoji: string | null }[]>([]);
   const pickerRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ startX: number; startY: number; startT: number } | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [imgBusy, setImgBusy] = useState(false);
 
   // ── Boot : user + paramètres ─────────────────────────────────────
   useEffect(() => {
@@ -326,6 +331,55 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
     setSelectedVerse(null);
   }
 
+  // ── Audio (lecture vocale du chapitre) ───────────────────────────
+  function toggleAudio() {
+    if (!isSpeechSupported()) {
+      showToast("Lecture vocale non disponible sur ce navigateur.");
+      return;
+    }
+    if (isPlaying) {
+      stopSpeaking();
+      setIsPlaying(false);
+      return;
+    }
+    if (verses.length === 0) return;
+    const text = verses.map((v) => `Verset ${v.verse}. ${v.text}`).join(" ");
+    const u = speak(text);
+    if (!u) return;
+    setIsPlaying(true);
+    u.onend = () => setIsPlaying(false);
+    u.onerror = () => setIsPlaying(false);
+  }
+  useEffect(() => {
+    // Stop audio quand on change de chapitre
+    return () => { if (isSpeechSupported()) stopSpeaking(); };
+  }, [chapter, bookFr]);
+
+  // ── Image partage social media ───────────────────────────────────
+  async function shareVerseImage(v: Verse) {
+    if (imgBusy) return;
+    setImgBusy(true);
+    try {
+      const blob = await generateVerseImage({
+        reference: `${bookFr} ${chapter}:${v.verse}`,
+        text: v.text,
+        versionShort: currentVersion.shortLabel,
+      });
+      if (!blob) { showToast("Erreur image."); return; }
+      const status = await downloadOrShareVerseImage(blob, `ccb-${bookFr}-${chapter}-${v.verse}.png`);
+      showToast(status === "shared" ? "Image partagée !" : "Image téléchargée !");
+      if (userId) {
+        notifyBibleStaff(
+          `🖼️ ${userName} a partagé une image verset`,
+          `« ${bookFr} ${chapter}:${v.verse} »`,
+          `/bible/read/${encodeURIComponent(bookFr)}/${chapter}`,
+        );
+      }
+    } finally {
+      setImgBusy(false);
+    }
+  }
+
   // ── Swipe mobile (chapter prev/next) ─────────────────────────────
   function onTouchStart(e: React.TouchEvent) {
     const t = e.touches[0];
@@ -443,7 +497,10 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
               <button onClick={() => shareVerseAction(selectedVerse)} style={btnSecondaryFull}>
                 📤 Partager
               </button>
-              <button onClick={() => openNoteEditor(selectedVerse.verse)} style={btnSecondaryFull}>
+              <button onClick={() => shareVerseImage(selectedVerse)} disabled={imgBusy} style={btnSecondaryFull}>
+                🖼️ {imgBusy ? "Génération…" : "Image PNG"}
+              </button>
+              <button onClick={() => openNoteEditor(selectedVerse.verse)} style={{ ...btnSecondaryFull, gridColumn: "1 / -1" }}>
                 📝 {notesByVerse.has(selectedVerse.verse) ? "Modifier note" : "Ajouter note"}
               </button>
             </div>
@@ -576,7 +633,22 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center" }}>
+              <button onClick={toggleAudio} title={isPlaying ? "Arrêter" : "Écouter le chapitre"} style={{
+                ...fontBtn,
+                width: 32,
+                background: isPlaying ? T.violet : T.surface2,
+                color: isPlaying ? "#fff" : T.textSoft,
+                borderColor: isPlaying ? T.violet : T.border,
+              }}>
+                {isPlaying ? "⏸" : "🔊"}
+              </button>
+              <Link href={`/bible/parallel/${encodeURIComponent(bookFr)}/${chapter}`} title="Mode parallèle 2 versions" style={{
+                ...fontBtn, width: 32, textDecoration: "none",
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+              } as React.CSSProperties}>
+                ⇄
+              </Link>
               <button onClick={() => setFontSize((f) => Math.max(13, f - 1))} style={fontBtn}>A-</button>
               <button onClick={() => setFontSize((f) => Math.min(24, f + 1))} style={fontBtn}>A+</button>
             </div>

@@ -1,11 +1,15 @@
-// ─── CCB Service Worker — Version v4 ────────────────────────────────────────
+// ─── CCB Service Worker — Version v5 ────────────────────────────────────────
 // RÈGLE FONDAMENTALE : les pages HTML ne sont JAMAIS mises en cache par ce SW.
 // Seuls les assets immuables (_next/static/ avec hash de contenu) sont cachés.
 // Cela garantit que chaque déploiement Vercel est immédiatement visible sur
 // tous les appareils, quelle que soit la qualité de la connexion.
+//
+// v5 : ajout d'un cache dédié pour /api/bible (Network-First + fallback offline).
+// Les chapitres déjà lus restent accessibles hors-ligne.
 
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const CACHE_NAME = "ccb-" + CACHE_VERSION;
+const BIBLE_CACHE = "ccb-bible-" + CACHE_VERSION;
 
 // ── INSTALLATION ─────────────────────────────────────────────────────────────
 self.addEventListener("install", () => {
@@ -20,7 +24,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys.map((k) => {
-            if (k !== CACHE_NAME) {
+            if (k !== CACHE_NAME && k !== BIBLE_CACHE) {
               console.log("CCB SW: suppression cache obsolète →", k);
               return caches.delete(k);
             }
@@ -43,10 +47,28 @@ self.addEventListener("fetch", (event) => {
   //    Si hors-ligne, laisse le navigateur gérer (erreur réseau normale).
   if (event.request.destination === "document") return;
 
-  // ❷ APIs Supabase, API interne → réseau uniquement, pas de cache
+  // ❷ APIs Supabase → réseau uniquement
   if (url.includes("supabase.co")) return;
-  if (url.includes("/api/")) return;
   if (url.includes("chrome-extension")) return;
+
+  // ❷.1 /api/bible → Network-First + cache fallback (lecture offline)
+  if (url.includes("/api/bible")) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(BIBLE_CACHE).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || Response.error()))
+    );
+    return;
+  }
+
+  // ❷.2 Reste des /api/ → réseau uniquement
+  if (url.includes("/api/")) return;
 
   // ❸ Assets Next.js avec hash (_next/static/) → Cache First (immuables)
   if (url.includes("/_next/static/")) {
