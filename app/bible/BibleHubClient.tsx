@@ -1,140 +1,508 @@
 "use client";
-import Link from "next/link";
 
-export default function BibleHubClient() {
+import Link from "next/link";
+import { useState } from "react";
+import { BIBLE_THEME as T, BIBLE_FONTS as F } from "@/lib/bible/theme";
+import { shareBibleVerse, notifyBibleStaff } from "@/lib/bible/share";
+import type { DailyVerse } from "@/lib/bible/verse-of-day";
+import { createClient } from "@/lib/supabase/client";
+
+interface SavedVerseLite {
+  id: string;
+  reference: string;
+  verse_text: string;
+  saved_at: string;
+}
+
+interface CollectionLite {
+  id: string;
+  name: string;
+  emoji: string | null;
+}
+
+interface LastReadLite {
+  book_name: string;
+  chapter: number;
+  read_at: string;
+}
+
+interface Props {
+  verseOfDay: DailyVerse;
+  lastRead: LastReadLite | null;
+  chaptersRead: number;
+  savedVerses: SavedVerseLite[];
+  collections: CollectionLite[];
+  userId: string;
+}
+
+export default function BibleHubClient({
+  verseOfDay,
+  lastRead,
+  chaptersRead,
+  savedVerses,
+  collections: initialCollections,
+  userId,
+}: Props) {
+  const supabase = createClient();
+  const [collections, setCollections] = useState<CollectionLite[]>(initialCollections);
+  const [toast, setToast] = useState<string | null>(null);
+  const [newCollName, setNewCollName] = useState("");
+  const [newCollEmoji, setNewCollEmoji] = useState("📖");
+  const [showNewColl, setShowNewColl] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+
+  function flash(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }
+
+  async function handleShareDaily() {
+    if (shareBusy) return;
+    setShareBusy(true);
+    const status = await shareBibleVerse({
+      reference: verseOfDay.reference,
+      text: verseOfDay.text,
+    });
+    if (status === "shared" || status === "copied") {
+      flash(status === "shared" ? "Partagé !" : "Copié dans le presse-papier !");
+      // Display name pour la notif staff
+      try {
+        const { data } = await supabase
+          .from("user_profiles")
+          .select("display_name, full_name")
+          .eq("user_id", userId)
+          .maybeSingle();
+        const name = (data?.display_name as string) || (data?.full_name as string) || "Un membre";
+        await notifyBibleStaff(
+          `📤 ${name} a partagé un verset`,
+          `« ${verseOfDay.reference} » — Verset du jour`,
+          "/bible",
+        );
+      } catch { /* noop */ }
+    }
+    setShareBusy(false);
+  }
+
+  async function handleSaveDaily() {
+    try {
+      const { error } = await supabase.from("user_saved_verses").upsert(
+        {
+          user_id: userId,
+          book_name: verseOfDay.book,
+          chapter: verseOfDay.chapter,
+          verse_number: verseOfDay.verse,
+          verse_text: verseOfDay.text,
+          reference: verseOfDay.reference,
+        },
+        { onConflict: "user_id,book_name,chapter,verse_number" },
+      );
+      if (error) throw error;
+      flash(`⭐ ${verseOfDay.reference} sauvegardé !`);
+      try {
+        const { data } = await supabase
+          .from("user_profiles")
+          .select("display_name, full_name")
+          .eq("user_id", userId)
+          .maybeSingle();
+        const name = (data?.display_name as string) || (data?.full_name as string) || "Un membre";
+        await notifyBibleStaff(
+          `⭐ ${name} a sauvegardé un verset`,
+          `« ${verseOfDay.reference} »`,
+          "/bible",
+        );
+      } catch { /* noop */ }
+    } catch (e) {
+      flash("Erreur : " + (e as Error).message);
+    }
+  }
+
+  async function createCollection() {
+    const name = newCollName.trim();
+    if (!name) return;
+    const { data, error } = await supabase
+      .from("bible_verse_collections")
+      .insert({ user_id: userId, name, emoji: newCollEmoji || "📖" })
+      .select()
+      .single();
+    if (error) { flash("Erreur création."); return; }
+    setCollections((prev) => [data as CollectionLite, ...prev]);
+    setNewCollName("");
+    setNewCollEmoji("📖");
+    setShowNewColl(false);
+    flash(`Collection « ${name} » créée !`);
+  }
+
   return (
     <div style={{
-      maxWidth: 560,
-      margin: "0 auto",
-      padding: "40px 20px 80px",
-      fontFamily: "var(--font-body)",
+      background: T.bg,
+      minHeight: "100vh",
+      color: T.text,
+      fontFamily: F.body,
+      paddingBottom: 80,
     }}>
-
-      {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 40 }}>
-        <div style={{ fontSize: 52, marginBottom: 14 }}>📖</div>
-        <h1 style={{
-          fontFamily: "var(--font-title)",
-          fontSize: 26,
-          fontWeight: 800,
-          color: "var(--text-primary)",
-          margin: "0 0 8px",
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
+          background: T.violet, color: "#fff", padding: "10px 20px",
+          borderRadius: 999, fontSize: 13, fontWeight: 700,
+          zIndex: 9999, boxShadow: "0 8px 30px rgba(90,44,160,0.35)",
+          fontFamily: F.body,
         }}>
-          Ma Bible
-        </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>
-          Que veux-tu faire aujourd&apos;hui ?
-        </p>
-      </div>
+          {toast}
+        </div>
+      )}
 
-      {/* Les 2 choix */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "32px 18px 20px" }}>
 
-        {/* Choix 1 — Lire la Bible */}
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ fontSize: 44, marginBottom: 8 }}>📖</div>
+          <h1 style={{
+            fontFamily: F.title, fontSize: "clamp(1.5rem, 5vw, 2rem)",
+            fontWeight: 700, color: T.text, margin: "0 0 6px",
+            letterSpacing: "0.02em",
+          }}>
+            Ma Bible
+          </h1>
+          <p style={{ color: T.textMuted, fontSize: 13, margin: 0 }}>
+            Lis, médite, sauvegarde, partage.
+          </p>
+        </div>
+
+        {/* Stats banner */}
+        <div style={{
+          display: "flex", gap: 10, marginBottom: 20,
+        }}>
+          <StatChip label="Chapitres lus" value={chaptersRead} />
+          <StatChip label="Versets favoris" value={savedVerses.length} />
+          <StatChip label="Collections" value={collections.length} />
+        </div>
+
+        {/* Verset du jour — carte premium violet/or */}
+        <div style={{
+          background: `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
+          borderRadius: 20,
+          padding: "24px 22px",
+          color: "#fff",
+          boxShadow: "0 10px 40px rgba(62,28,112,0.28)",
+          marginBottom: 22,
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          {/* Or accent */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, height: 3,
+            background: `linear-gradient(90deg, ${T.gold}, transparent)`,
+          }} />
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: "0.2em",
+            color: T.gold, marginBottom: 8, textTransform: "uppercase",
+            fontFamily: F.body,
+          }}>
+            ✨ Verset du jour
+          </div>
+          <p style={{
+            fontFamily: F.title, fontSize: 18, lineHeight: 1.55,
+            margin: "0 0 14px", fontStyle: "italic", fontWeight: 400,
+          }}>
+            « {verseOfDay.text} »
+          </p>
+          <div style={{
+            fontSize: 12, fontWeight: 700, color: T.gold,
+            marginBottom: 18, fontFamily: F.body,
+          }}>
+            — {verseOfDay.reference}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <Link
+              href={`/bible/read/${encodeURIComponent(verseOfDay.book)}/${verseOfDay.chapter}`}
+              style={btnGold}
+            >
+              📖 Lire le chapitre
+            </Link>
+            <button onClick={handleSaveDaily} style={btnGhost}>⭐ Sauver</button>
+            <button onClick={handleShareDaily} disabled={shareBusy} style={btnGhost}>
+              {shareBusy ? "…" : "📤 Partager"}
+            </button>
+          </div>
+        </div>
+
+        {/* Reprise lecture + Plan de lecture (2 cartes) */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 22 }}>
+          {/* Reprise */}
+          <Link
+            href={lastRead
+              ? `/bible/read/${encodeURIComponent(lastRead.book_name)}/${lastRead.chapter}`
+              : "/bible/lire"}
+            style={{ textDecoration: "none" }}
+          >
+            <div style={cardSmall}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>▶️</div>
+              <div style={{ fontSize: 11, color: T.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                {lastRead ? "Reprendre" : "Commencer"}
+              </div>
+              <div style={{ fontFamily: F.title, fontWeight: 700, fontSize: 14, color: T.text, marginTop: 2 }}>
+                {lastRead ? `${lastRead.book_name} ${lastRead.chapter}` : "Choisir un livre"}
+              </div>
+            </div>
+          </Link>
+          {/* Plan */}
+          <Link href="/plan-biblique" style={{ textDecoration: "none" }}>
+            <div style={cardSmall}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>📅</div>
+              <div style={{ fontSize: 11, color: T.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Plan de lecture
+              </div>
+              <div style={{ fontFamily: F.title, fontWeight: 700, fontSize: 14, color: T.text, marginTop: 2 }}>
+                Bible guidée
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Collections */}
+        <SectionTitle>📚 Mes collections</SectionTitle>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+          gap: 10, marginBottom: 12,
+        }}>
+          {collections.map((c) => (
+            <Link
+              key={c.id}
+              href={`/bible/lire?coll=${c.id}`}
+              style={{ ...collTile, textDecoration: "none" } as React.CSSProperties}
+            >
+              <div style={{ fontSize: 24, marginBottom: 4 }}>{c.emoji || "📖"}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.text, fontFamily: F.body }}>
+                {c.name}
+              </div>
+            </Link>
+          ))}
+          <button onClick={() => setShowNewColl(true)} style={{
+            ...collTile,
+            background: "transparent",
+            border: `1.5px dashed ${T.violet}`,
+            color: T.violet,
+            cursor: "pointer",
+          } as React.CSSProperties}>
+            <div style={{ fontSize: 24, marginBottom: 4 }}>＋</div>
+            <div style={{ fontSize: 11, fontWeight: 700 }}>Nouvelle</div>
+          </button>
+        </div>
+
+        {showNewColl && (
+          <div style={{
+            background: T.card, border: `1px solid ${T.border}`, borderRadius: 14,
+            padding: 14, marginBottom: 18,
+          }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <input
+                placeholder="📖"
+                value={newCollEmoji}
+                onChange={(e) => setNewCollEmoji(e.target.value)}
+                maxLength={2}
+                style={{
+                  width: 50, padding: "10px", textAlign: "center", fontSize: 18,
+                  background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8,
+                  color: T.text, fontFamily: F.body, outline: "none",
+                }}
+              />
+              <input
+                placeholder="Nom (ex: Foi, Combat spirituel…)"
+                value={newCollName}
+                onChange={(e) => setNewCollName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") createCollection(); }}
+                style={{
+                  flex: 1, padding: "10px 12px", fontSize: 14,
+                  background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8,
+                  color: T.text, fontFamily: F.body, outline: "none",
+                }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowNewColl(false)} style={btnLink}>Annuler</button>
+              <button onClick={createCollection} style={btnViolet}>Créer</button>
+            </div>
+          </div>
+        )}
+
+        {/* Versets récents sauvegardés */}
+        {savedVerses.length > 0 && (
+          <>
+            <SectionTitle>⭐ Mes versets sauvegardés</SectionTitle>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
+              {savedVerses.map((v) => (
+                <div key={v.id} style={{
+                  background: T.card, borderLeft: `3px solid ${T.gold}`,
+                  borderRadius: "0 12px 12px 0", padding: "12px 14px",
+                  border: `1px solid ${T.borderSoft}`, borderLeftWidth: 3,
+                }}>
+                  <div style={{
+                    fontSize: 12, fontWeight: 700, color: T.violet, marginBottom: 4,
+                    fontFamily: F.body,
+                  }}>
+                    {v.reference}
+                  </div>
+                  <p style={{
+                    margin: 0, fontSize: 13, color: T.textSoft, lineHeight: 1.55,
+                    fontStyle: "italic", fontFamily: F.body,
+                  }}>
+                    « {v.verse_text} »
+                  </p>
+                </div>
+              ))}
+              <Link href="/bible/lire" style={{
+                ...btnViolet, textAlign: "center", textDecoration: "none",
+                padding: "10px 14px",
+              } as React.CSSProperties}>
+                Voir tous mes versets →
+              </Link>
+            </div>
+          </>
+        )}
+
+        {/* Accès Lire la Bible */}
         <Link href="/bible/lire" style={{ textDecoration: "none" }}>
           <div style={{
-            background: "var(--card-bg)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-xl)",
-            padding: "28px 24px",
-            display: "flex",
-            alignItems: "center",
-            gap: 20,
-            overflow: "hidden",
-            position: "relative",
+            background: T.card, border: `1px solid ${T.border}`,
+            borderRadius: 16, padding: "18px 18px",
+            display: "flex", alignItems: "center", gap: 14,
+            cursor: "pointer",
           }}>
             <div style={{
-              position: "absolute", top: 0, left: 0, right: 0, height: 3,
-              background: "linear-gradient(90deg, #1e40af, #3b82f6, transparent)",
-            }} />
-            <div style={{
-              width: 64, height: 64, borderRadius: "var(--radius-xl)", flexShrink: 0,
-              background: "linear-gradient(145deg, #1e3a5f, #1e40af 55%, #3b82f6)",
+              width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+              background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 30,
-              boxShadow: "0 4px 20px rgba(59,130,246,0.3)",
+              fontSize: 22, color: "#fff",
             }}>
               📖
             </div>
             <div style={{ flex: 1 }}>
               <div style={{
-                fontFamily: "var(--font-title)",
-                fontSize: 18, fontWeight: 800,
-                color: "var(--text-primary)", marginBottom: 4,
+                fontFamily: F.title, fontSize: 15, fontWeight: 700,
+                color: T.text, marginBottom: 2,
               }}>
-                Lire la Bible
+                Parcourir la Bible
               </div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                Explore l&apos;Ancien et le Nouveau Testament, sauvegarde tes versets préférés et ajoute des notes.
-              </div>
-            </div>
-            <div style={{ fontSize: 20, color: "var(--text-muted)", flexShrink: 0 }}>→</div>
-          </div>
-        </Link>
-
-        {/* Choix 2 — Plan de Lecture */}
-        <Link href="/plan-biblique" style={{ textDecoration: "none" }}>
-          <div style={{
-            background: "var(--card-bg)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-xl)",
-            padding: "28px 24px",
-            display: "flex",
-            alignItems: "center",
-            gap: 20,
-            overflow: "hidden",
-            position: "relative",
-          }}>
-            <div style={{
-              position: "absolute", top: 0, left: 0, right: 0, height: 3,
-              background: "linear-gradient(90deg, #92400e, #d97706, transparent)",
-            }} />
-            <div style={{
-              width: 64, height: 64, borderRadius: "var(--radius-xl)", flexShrink: 0,
-              background: "linear-gradient(145deg, #92400e, #d97706 55%, #fbbf24)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 30,
-              boxShadow: "0 4px 20px rgba(212,175,55,0.3)",
-            }}>
-              📅
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{
-                fontFamily: "var(--font-title)",
-                fontSize: 18, fontWeight: 800,
-                color: "var(--text-primary)", marginBottom: 4,
-              }}>
-                Plan de Lecture
-              </div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                Lis la Bible en 1 an grâce à un programme guidé. Suis ta progression et reçois des rappels quotidiens.
+              <div style={{ fontSize: 12, color: T.textMuted, fontFamily: F.body }}>
+                AT · NT · 66 livres · 8 versions
               </div>
             </div>
-            <div style={{ fontSize: 20, color: "var(--text-muted)", flexShrink: 0 }}>→</div>
+            <div style={{ color: T.violet, fontSize: 18 }}>→</div>
           </div>
         </Link>
       </div>
-
-      {/* Verset */}
-      <div style={{
-        marginTop: 36,
-        padding: "18px 20px",
-        background: "var(--card-bg)",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: "var(--radius-xl)",
-        textAlign: "center",
-      }}>
-        <p style={{
-          color: "var(--text-muted)", fontSize: 13,
-          fontStyle: "italic", margin: 0, lineHeight: 1.7,
-        }}>
-          &ldquo;Ta parole est une lampe à mes pieds, et une lumière sur mon sentier.&rdquo;
-        </p>
-        <p style={{ color: "var(--gold)", fontSize: 11, fontWeight: 700, margin: "6px 0 0" }}>
-          — Psaume 119:105
-        </p>
-      </div>
-
     </div>
   );
 }
+
+// ─── Sous-composants ─────────────────────────────────────────────────
+function StatChip({ label, value }: { label: string; value: number }) {
+  return (
+    <div style={{
+      flex: 1, background: BIBLE_THEME_CARD, padding: "10px 8px",
+      borderRadius: 12, border: `1px solid ${BIBLE_THEME_BORDER}`,
+      textAlign: "center",
+    }}>
+      <div style={{
+        fontFamily: F_TITLE, fontSize: 18, fontWeight: 700,
+        color: BIBLE_THEME_VIOLET,
+      }}>
+        {value}
+      </div>
+      <div style={{
+        fontSize: 10, color: BIBLE_THEME_MUTED, fontWeight: 600,
+        textTransform: "uppercase", letterSpacing: "0.05em",
+        fontFamily: F_BODY,
+      }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 style={{
+      fontFamily: F_TITLE, fontSize: 13, fontWeight: 700,
+      color: BIBLE_THEME_MUTED, textTransform: "uppercase",
+      letterSpacing: "0.1em", margin: "6px 0 10px",
+    }}>
+      {children}
+    </h2>
+  );
+}
+
+// Constantes locales pour éviter import circulaire dans sous-composants
+const BIBLE_THEME_CARD = "#FAF8F4";
+const BIBLE_THEME_BORDER = "#E5DECC";
+const BIBLE_THEME_VIOLET = "#5A2CA0";
+const BIBLE_THEME_MUTED = "#857C95";
+const F_TITLE = "var(--font-cinzel), Georgia, serif";
+const F_BODY = "var(--font-montserrat), system-ui, sans-serif";
+
+// ─── Styles partagés ─────────────────────────────────────────────────
+const btnGold: React.CSSProperties = {
+  background: "linear-gradient(135deg, #D4AF37, #A8862B)",
+  color: "#1F1A33",
+  padding: "10px 16px",
+  borderRadius: 10,
+  fontWeight: 700,
+  fontSize: 13,
+  border: "none",
+  cursor: "pointer",
+  textDecoration: "none",
+  fontFamily: F_BODY,
+  display: "inline-block",
+};
+const btnGhost: React.CSSProperties = {
+  background: "rgba(255,255,255,0.12)",
+  color: "#fff",
+  padding: "10px 14px",
+  borderRadius: 10,
+  fontWeight: 600,
+  fontSize: 13,
+  border: "1px solid rgba(255,255,255,0.25)",
+  cursor: "pointer",
+  fontFamily: F_BODY,
+};
+const btnViolet: React.CSSProperties = {
+  background: "#5A2CA0",
+  color: "#fff",
+  padding: "9px 16px",
+  borderRadius: 10,
+  fontWeight: 700,
+  fontSize: 13,
+  border: "none",
+  cursor: "pointer",
+  fontFamily: F_BODY,
+};
+const btnLink: React.CSSProperties = {
+  background: "transparent",
+  color: "#857C95",
+  padding: "9px 14px",
+  borderRadius: 10,
+  fontWeight: 600,
+  fontSize: 13,
+  border: "none",
+  cursor: "pointer",
+  fontFamily: F_BODY,
+};
+const cardSmall: React.CSSProperties = {
+  background: BIBLE_THEME_CARD,
+  border: `1px solid ${BIBLE_THEME_BORDER}`,
+  borderRadius: 14,
+  padding: "14px 14px",
+  cursor: "pointer",
+};
+const collTile: React.CSSProperties = {
+  background: BIBLE_THEME_CARD,
+  border: `1px solid ${BIBLE_THEME_BORDER}`,
+  borderRadius: 12,
+  padding: "14px 8px",
+  textAlign: "center",
+  textDecoration: "none",
+  color: "#1F1A33",
+};
