@@ -1,6 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import DevotionClient from "./DevotionClient";
 import { getDailyDevotion } from "./devotions-data";
+
+// Admin client (service_role) pour auto-insert si absent. Utilisé en lecture
+// seule pour bootstrap la méditation du jour.
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createAdminClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Méditons ensemble — CCB" };
@@ -75,17 +87,42 @@ export default async function DevotionPage() {
 
   if (!todayDevotion) {
     const fallback = getDailyDevotion();
-    todayDevotion = {
-      id: fallback.id,
-      date: today,
-      title: fallback.title,
-      verse_ref: fallback.verse_ref,
-      verse_text: fallback.verse_text,
-      content: fallback.content,
-      application: fallback.application,
-      prayer: fallback.prayer,
-      declaration: fallback.declaration,
-    };
+    // Tentative d'insert auto via service_role pour qu'on ait un ID réel
+    // (sinon like/comment impossibles). Échec silencieux si SR non configuré.
+    const admin = getServiceClient();
+    if (admin) {
+      const insertPayload: Record<string, unknown> = {
+        devotion_date: today,
+        title: fallback.title,
+        verse_reference: fallback.verse_ref,
+        verse_text: fallback.verse_text,
+        meditation_p1: fallback.content,
+        prayer: fallback.prayer,
+        declaration: fallback.declaration,
+      };
+      // Tente avec author si la colonne existe, sinon retry sans
+      let r = await admin.from("devotions").insert({ ...insertPayload, author: fallback.author }).select().single();
+      if (r.error && /author/i.test(r.error.message)) {
+        r = await admin.from("devotions").insert(insertPayload).select().single();
+      }
+      if (!r.error && r.data) {
+        todayDevotion = normalize(r.data as DevotionRow);
+      }
+    }
+    // Fallback ultime : utilise le statique sans ID (like/comment KO mais affichage OK)
+    if (!todayDevotion) {
+      todayDevotion = {
+        id: fallback.id,
+        date: today,
+        title: fallback.title,
+        verse_ref: fallback.verse_ref,
+        verse_text: fallback.verse_text,
+        content: fallback.content,
+        application: fallback.application,
+        prayer: fallback.prayer,
+        declaration: fallback.declaration,
+      };
+    }
   }
 
   // Archives : 30 dernières devotions (toutes colonnes valides du schéma)
