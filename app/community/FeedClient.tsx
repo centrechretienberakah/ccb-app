@@ -640,23 +640,64 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
           </div>
         )}
 
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 14, paddingTop: 12, borderTop: "1px solid var(--border-subtle)", alignItems: "center" }}>
-          <button onClick={handleLike} title="J'aime" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: localLike ? "var(--error)" : "var(--text-muted)", fontSize: 13 }}>
-            <span style={{ fontSize: 16 }}>{localLike ? "❤️" : "🤍"}</span> {localLikeCount}
+        {/* Actions façon Facebook : J'aime (pouce) · Commenter · Partager · Enregistrer · Signaler */}
+        <div style={{ display: "flex", gap: 4, paddingTop: 10, borderTop: "1px solid var(--border-subtle)", alignItems: "center" }}>
+          <button onClick={handleLike} title="J'aime" style={{
+            background: "none", border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            gap: 6, padding: "8px 12px", borderRadius: 8,
+            color: localLike ? "#1877F2" : "var(--text-muted)",
+            fontSize: 13, fontWeight: localLike ? 700 : 600,
+            transition: "background 0.15s",
+          }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <span style={{ fontSize: 18, filter: localLike ? "none" : "grayscale(100%) opacity(0.55)" }}>👍</span>
+            <span>J'aime{localLikeCount > 0 ? ` · ${localLikeCount}` : ""}</span>
           </button>
-          <button onClick={() => setShowComments(!showComments)} title="Commenter" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: "var(--text-muted)", fontSize: 13 }}>
-            <span style={{ fontSize: 16 }}>💬</span> {post.comments.length}
+
+          <button onClick={() => setShowComments(!showComments)} title="Commenter" style={{
+            background: "none", border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "8px 12px", borderRadius: 8,
+            color: "var(--text-muted)", fontSize: 13, fontWeight: 600,
+          }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <span style={{ fontSize: 16 }}>💬</span>
+            <span>Commenter{post.comments.length > 0 ? ` · ${post.comments.length}` : ""}</span>
           </button>
-          <button onClick={handleBookmark} title={localBookmark ? "Retirer des favoris" : "Enregistrer"} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: localBookmark ? "var(--gold)" : "var(--text-muted)", fontSize: 16 }}>
+
+          <button onClick={onShare} title="Partager" style={{
+            background: "none", border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "8px 12px", borderRadius: 8,
+            color: "var(--text-muted)", fontSize: 13, fontWeight: 600,
+          }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <span style={{ fontSize: 16, transform: "scaleX(-1)", display: "inline-block" }}>↪</span>
+            <span>Partager</span>
+          </button>
+
+          <div style={{ flex: 1 }} />
+
+          <button onClick={handleBookmark} title={localBookmark ? "Retirer des favoris" : "Enregistrer"} style={{
+            background: "none", border: "none", cursor: "pointer",
+            padding: "8px 10px", borderRadius: 8,
+            color: localBookmark ? "var(--gold)" : "var(--text-muted)", fontSize: 16,
+          }}>
             {localBookmark ? "🔖" : "📑"}
           </button>
-          <button onClick={onShare} title="Partager" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 16 }}>
-            📤
-          </button>
-          <div style={{ flex: 1 }} />
           {!isMyPost && (
-            <button onClick={onReport} title="Signaler" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 14 }}>
+            <button onClick={onReport} title="Signaler" style={{
+              background: "none", border: "none", cursor: "pointer",
+              padding: "8px 10px", borderRadius: 8,
+              color: "var(--text-muted)", fontSize: 14,
+            }}>
               ⚠️
             </button>
           )}
@@ -685,8 +726,8 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
                       <ContentWithMentions content={c.content} members={members} />
                     </div>
                     <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 11 }}>
-                      <button onClick={() => onCommentLike(c.id)} style={{ background: "none", border: "none", cursor: "pointer", color: c.liked ? "var(--error)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
-                        {c.liked ? "❤️" : "🤍"} {c.likeCount ?? 0}
+                      <button onClick={() => onCommentLike(c.id)} style={{ background: "none", border: "none", cursor: "pointer", color: c.liked ? "#1877F2" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, padding: 0, fontWeight: c.liked ? 700 : 500 }}>
+                        <span style={{ filter: c.liked ? "none" : "grayscale(100%) opacity(0.55)" }}>👍</span> {c.likeCount ?? 0}
                       </button>
                       <button onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}>
                         ↩ Répondre
@@ -705,8 +746,8 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
                         <ContentWithMentions content={r.content} members={members} />
                       </div>
                       <div style={{ display: "flex", gap: 12, marginTop: 4, fontSize: 11 }}>
-                        <button onClick={() => onCommentLike(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: r.liked ? "var(--error)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
-                          {r.liked ? "❤️" : "🤍"} {r.likeCount ?? 0}
+                        <button onClick={() => onCommentLike(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: r.liked ? "#1877F2" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, padding: 0, fontWeight: r.liked ? 700 : 500 }}>
+                          <span style={{ filter: r.liked ? "none" : "grayscale(100%) opacity(0.55)" }}>👍</span> {r.likeCount ?? 0}
                         </button>
                       </div>
                     </div>
