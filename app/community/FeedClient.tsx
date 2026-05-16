@@ -640,58 +640,50 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
           </div>
         )}
 
-        {/* Actions façon Facebook : J'aime (pouce) · Commenter · Partager · Enregistrer · Signaler */}
+        {/* Actions : icônes seules, sans libellés */}
         <div style={{ display: "flex", gap: 4, paddingTop: 10, borderTop: "1px solid var(--border-subtle)", alignItems: "center" }}>
           <button onClick={handleLike} title="J'aime" style={{
             background: "none", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            gap: 6, padding: "8px 12px", borderRadius: 8,
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "8px 12px", borderRadius: 8,
             color: localLike ? "#1877F2" : "var(--text-muted)",
-            fontSize: 13, fontWeight: localLike ? 700 : 600,
+            fontSize: 13, fontWeight: localLike ? 700 : 500,
             transition: "background 0.15s",
           }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             <span style={{ fontSize: 18, filter: localLike ? "none" : "grayscale(100%) opacity(0.55)" }}>👍</span>
-            <span>J'aime{localLikeCount > 0 ? ` · ${localLikeCount}` : ""}</span>
+            {localLikeCount > 0 && <span>{localLikeCount}</span>}
           </button>
 
           <button onClick={() => setShowComments(!showComments)} title="Commenter" style={{
             background: "none", border: "none", cursor: "pointer",
             display: "flex", alignItems: "center", gap: 6,
             padding: "8px 12px", borderRadius: 8,
-            color: "var(--text-muted)", fontSize: 13, fontWeight: 600,
+            color: "var(--text-muted)", fontSize: 13, fontWeight: 500,
           }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             <span style={{ fontSize: 16 }}>💬</span>
-            <span>Commenter{post.comments.length > 0 ? ` · ${post.comments.length}` : ""}</span>
+            {post.comments.length > 0 && <span>{post.comments.length}</span>}
           </button>
 
           <button onClick={onShare} title="Partager" style={{
             background: "none", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6,
+            display: "flex", alignItems: "center",
             padding: "8px 12px", borderRadius: 8,
-            color: "var(--text-muted)", fontSize: 13, fontWeight: 600,
+            color: "var(--text-muted)", fontSize: 16,
           }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
-            <span style={{ fontSize: 16, transform: "scaleX(-1)", display: "inline-block" }}>↪</span>
-            <span>Partager</span>
+            <span style={{ transform: "scaleX(-1)", display: "inline-block" }}>↪</span>
           </button>
 
           <div style={{ flex: 1 }} />
 
-          <button onClick={handleBookmark} title={localBookmark ? "Retirer des favoris" : "Enregistrer"} style={{
-            background: "none", border: "none", cursor: "pointer",
-            padding: "8px 10px", borderRadius: 8,
-            color: localBookmark ? "var(--gold)" : "var(--text-muted)", fontSize: 16,
-          }}>
-            {localBookmark ? "🔖" : "📑"}
-          </button>
           {!isMyPost && (
             <button onClick={onReport} title="Signaler" style={{
               background: "none", border: "none", cursor: "pointer",
