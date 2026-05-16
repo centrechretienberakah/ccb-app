@@ -741,17 +741,23 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
             {post.comments.length > 0 && <span>{post.comments.length}</span>}
           </button>
 
-          <button onClick={onShare} title="Partager" style={{
+          <button onClick={onShare} title="Partager" className="ccb-share-btn" style={{
             background: "none", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center",
-            padding: "8px 12px", borderRadius: 8,
-            color: "var(--text-muted)", fontSize: 16,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "10px 14px", borderRadius: 8,
+            color: "var(--text-muted)", fontSize: 22, lineHeight: 1,
+            minWidth: 44, minHeight: 44,
           }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             <span style={{ transform: "scaleX(-1)", display: "inline-block" }}>↪</span>
           </button>
+          <style>{`
+            @media (max-width: 640px) {
+              .ccb-share-btn { font-size: 26px !important; padding: 12px 16px !important; }
+            }
+          `}</style>
 
           <div style={{ flex: 1 }} />
 
