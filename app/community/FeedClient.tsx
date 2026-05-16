@@ -795,7 +795,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     return cache && cache.posts.length > 0 ? cache.posts : initialPosts;
   });
   const [categories, setCategories] = useState<Category[]>(initialCategories);
-  const [filterCat, setFilterCat] = useState<string>("");
   const [filterKind, setFilterKind] = useState<PostKind | "">("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<"recent" | "popular">("recent");
@@ -952,9 +951,8 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     };
   }, []);
 
-  // Filtres : catégorie + kind + recherche full-text
+  // Filtres : kind + recherche full-text
   let filtered = posts;
-  if (filterCat) filtered = filtered.filter((p) => p.category_id === filterCat);
   if (filterKind) filtered = filtered.filter((p) => p.post_kind === filterKind);
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -1182,24 +1180,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
           );
         })}
       </div>
-
-      {/* Filtre catégories */}
-      {categories.length > 0 && (
-        <div style={{
-          display: "flex", gap: 6, marginBottom: 16,
-          overflowX: "auto", WebkitOverflowScrolling: "touch",
-          scrollbarWidth: "none", paddingBottom: 4, paddingTop: 2,
-          msOverflowStyle: "none",
-        }}>
-          <button onClick={() => setFilterCat("")} style={{ flexShrink: 0, background: !filterCat ? "var(--gold)" : "var(--card-bg)", border: `1px solid ${!filterCat ? "var(--gold)" : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "6px 16px", color: !filterCat ? "#000" : "var(--text-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Tous</button>
-          {categories.map((c) => (
-            <button key={c.id} onClick={() => setFilterCat(filterCat === c.id ? "" : c.id)}
-              style={{ flexShrink: 0, background: filterCat === c.id ? `${c.color}20` : "var(--card-bg)", border: `1px solid ${filterCat === c.id ? c.color : "var(--border)"}`, borderRadius: "var(--radius-full)", padding: "6px 16px", color: filterCat === c.id ? c.color : "var(--text-muted)", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
-              {c.icon} {c.name}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Liste des posts */}
       {filtered.length === 0 ? (
