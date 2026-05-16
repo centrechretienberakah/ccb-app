@@ -615,13 +615,28 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
       }}>
         <div style={{ maxWidth: 680, margin: "0 auto", padding: "10px 16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button onClick={() => router.push("/bible")} style={{
+            <button onClick={() => {
+              // Retour intelligent : history.back si possible, sinon sélecteur livres
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/bible/lire");
+              }
+            }} style={{
               background: T.surface2, border: `1px solid ${T.border}`,
               borderRadius: 8, padding: "6px 12px",
               color: T.violet, fontSize: 12, fontWeight: 700, cursor: "pointer",
               fontFamily: F.body, flexShrink: 0,
             }}>
-              ← Bible
+              ← Retour
+            </button>
+            <button onClick={() => router.push("/bible/lire")} title="Choisir un autre livre" style={{
+              background: "transparent", border: `1px solid ${T.border}`,
+              borderRadius: 8, padding: "6px 10px",
+              color: T.textSoft, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              fontFamily: F.body, flexShrink: 0,
+            }}>
+              📚
             </button>
 
             <div style={{ flex: 1, textAlign: "center" }}>
