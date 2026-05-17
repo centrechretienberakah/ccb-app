@@ -40,10 +40,25 @@ export default function CommunityClient({
 }: Props) {
   return (
     <div style={{ background: T.bg, color: T.text, fontFamily: F.body }}>
-      {/* Hero header CCB Communauté — compact + 1 ligne mobile */}
-      <div style={{
+      {/* Hero header CCB Communauté — compact mobile, aéré desktop */}
+      <style>{`
+        .ccb-hero-wrap { padding: 20px 14px 18px; }
+        .ccb-hero-title { font-size: clamp(1.3rem, 4.5vw, 1.6rem); margin: 0 0 4px; letter-spacing: 0.04em; }
+        .ccb-hero-tagline { font-size: clamp(10px, 2.8vw, 12px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (min-width: 768px) {
+          .ccb-hero-wrap { padding: 32px 24px 28px; }
+          .ccb-hero-title { font-size: 2rem; margin-bottom: 6px; letter-spacing: 0.06em; }
+          .ccb-hero-tagline { font-size: 14px; white-space: normal; }
+        }
+        @media (min-width: 1100px) {
+          .ccb-hero-wrap { padding: 40px 24px 36px; }
+          .ccb-hero-title { font-size: 2.4rem; }
+          .ccb-hero-tagline { font-size: 15px; }
+        }
+      `}</style>
+      <div className="ccb-hero-wrap" style={{
         background: `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
-        color: "#fff", padding: "20px 14px 18px",
+        color: "#fff",
         position: "relative", overflow: "hidden",
         boxShadow: T.shadowGlow,
       }}>
@@ -51,19 +66,15 @@ export default function CommunityClient({
           position: "absolute", top: 0, left: 0, right: 0, height: 3,
           background: `linear-gradient(90deg, ${T.gold}, transparent)`,
         }} />
-        <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center" }}>
-          <h1 style={{
-            fontFamily: F.title, fontSize: "clamp(1.3rem, 4.5vw, 1.9rem)",
-            fontWeight: 700, margin: "0 0 4px",
-            letterSpacing: "0.04em",
+        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center" }}>
+          <h1 className="ccb-hero-title" style={{
+            fontFamily: F.title, fontWeight: 700,
           }}>
             COMMUNAUTÉ CCB
           </h1>
-          <p style={{
-            margin: 0, fontSize: "clamp(10px, 2.8vw, 13px)",
-            opacity: 0.9, fontStyle: "italic",
-            color: T.lavender, whiteSpace: "nowrap",
-            overflow: "hidden", textOverflow: "ellipsis",
+          <p className="ccb-hero-tagline" style={{
+            margin: 0, opacity: 0.9, fontStyle: "italic",
+            color: T.lavender,
           }}>
             Grandissons ensemble dans la foi, l&apos;amour et la bénédiction.
           </p>
@@ -135,17 +146,24 @@ export default function CommunityClient({
           margin: 0 auto;
           padding: 16px 16px 40px;
         }
-        @media (min-width: 1100px) {
+        .ccb-community-sidebar { display: none; }
+        @media (min-width: 768px) {
+          .ccb-community-grid {
+            max-width: 720px;
+            padding: 24px 20px 48px;
+          }
+        }
+        @media (min-width: 1024px) {
           .ccb-community-grid {
             max-width: 1080px;
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 300px;
-            gap: 24px;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            gap: 28px;
             align-items: start;
+            padding: 28px 24px 60px;
           }
           .ccb-community-sidebar { display: block; }
         }
-        .ccb-community-sidebar { display: none; }
       `}</style>
 
       <div className="ccb-community-grid">

@@ -237,21 +237,31 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
   }
 
   if (!open) return (
-    <div onClick={() => setOpen(true)} style={{
-      background: "var(--card-bg)", border: "1px solid var(--border-subtle)",
-      borderRadius: "var(--radius-lg)", padding: "10px 14px",
-      display: "flex", alignItems: "center", gap: 10,
-      cursor: "pointer", marginBottom: 12,
-    }}>
-      <Avatar profile={currentUserProfile} size={32} />
-      <div style={{
-        flex: 1, color: "var(--text-muted)", fontSize: 13,
-        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+    <>
+      <style>{`
+        .ccb-composer-closed { padding: 10px 14px; gap: 10px; margin-bottom: 12px; }
+        .ccb-composer-closed .ccb-composer-text { font-size: 13px; }
+        @media (min-width: 768px) {
+          .ccb-composer-closed { padding: 14px 18px; gap: 14px; margin-bottom: 16px; }
+          .ccb-composer-closed .ccb-composer-text { font-size: 15px; white-space: normal; }
+        }
+      `}</style>
+      <div className="ccb-composer-closed" onClick={() => setOpen(true)} style={{
+        background: "var(--card-bg)", border: "1px solid var(--border-subtle)",
+        borderRadius: "var(--radius-lg)",
+        display: "flex", alignItems: "center",
+        cursor: "pointer",
       }}>
-        Partager avec la communauté…
+        <Avatar profile={currentUserProfile} size={36} />
+        <div className="ccb-composer-text" style={{
+          flex: 1, color: "var(--text-muted)",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        }}>
+          Partager avec la communauté…
+        </div>
+        <span style={{ fontSize: 18 }}>✍️</span>
       </div>
-      <span style={{ fontSize: 16 }}>✍️</span>
-    </div>
+    </>
   );
 
   return (
