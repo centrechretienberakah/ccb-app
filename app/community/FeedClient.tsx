@@ -237,10 +237,20 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
   }
 
   if (!open) return (
-    <div onClick={() => setOpen(true)} style={{ background: "var(--card-bg)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 16 }}>
-      <Avatar profile={currentUserProfile} size={36} />
-      <div style={{ flex: 1, color: "var(--text-muted)", fontSize: 14 }}>Partager quelque chose avec la communauté...</div>
-      <span style={{ fontSize: 18 }}>✍️</span>
+    <div onClick={() => setOpen(true)} style={{
+      background: "var(--card-bg)", border: "1px solid var(--border-subtle)",
+      borderRadius: "var(--radius-lg)", padding: "10px 14px",
+      display: "flex", alignItems: "center", gap: 10,
+      cursor: "pointer", marginBottom: 12,
+    }}>
+      <Avatar profile={currentUserProfile} size={32} />
+      <div style={{
+        flex: 1, color: "var(--text-muted)", fontSize: 13,
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+      }}>
+        Partager avec la communauté…
+      </div>
+      <span style={{ fontSize: 16 }}>✍️</span>
     </div>
   );
 
@@ -1266,65 +1276,54 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       {/* Créer un post */}
       <PostCreator categories={categories} currentUserProfile={currentUserProfile} currentUserId={currentUserId} members={members} onPostCreated={handlePostCreated} />
 
-      {/* Barre recherche + tri */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+      {/* Barre unique : Type dropdown + Recherche + Tri (3 sur 1 ligne) */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, alignItems: "stretch" }}>
+        <select
+          value={filterKind}
+          onChange={(e) => setFilterKind(e.target.value as PostKind | "")}
+          style={{
+            background: "var(--card-bg)",
+            border: `1px solid ${filterKind ? "#5A2CA0" : "var(--border)"}`,
+            borderRadius: "var(--radius-full)",
+            padding: "8px 28px 8px 12px",
+            color: filterKind ? "#5A2CA0" : "var(--text-muted)",
+            fontSize: 12, fontWeight: filterKind ? 700 : 500,
+            cursor: "pointer", whiteSpace: "nowrap",
+            appearance: "none", WebkitAppearance: "none",
+            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(filterKind ? "#5A2CA0" : "#888")}' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>")`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 10px center",
+            fontFamily: "inherit", outline: "none",
+            flexShrink: 0, maxWidth: "40%",
+            textOverflow: "ellipsis", overflow: "hidden",
+          }}>
+          <option value="">Tous types</option>
+          {POST_KINDS.map((k) => (
+            <option key={k.id} value={k.id}>{k.emoji} {k.label}</option>
+          ))}
+        </select>
         <input
           type="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="🔍 Rechercher dans la communauté…"
+          placeholder="🔍 Rechercher…"
           style={{
-            flex: 1, padding: "9px 14px",
+            flex: 1, minWidth: 0, padding: "8px 14px",
             background: "var(--card-bg)", border: "1px solid var(--border)",
             borderRadius: "var(--radius-full)", color: "var(--text-primary)",
-            fontSize: 13, outline: "none",
+            fontSize: 13, outline: "none", boxSizing: "border-box",
           }}
         />
         <button onClick={() => setSortMode(sortMode === "recent" ? "popular" : "recent")}
           title={sortMode === "recent" ? "Trié par récent" : "Trié par popularité"}
           style={{
             background: "var(--card-bg)", border: "1px solid var(--border)",
-            borderRadius: "var(--radius-full)", padding: "9px 14px",
+            borderRadius: "var(--radius-full)", padding: "8px 12px",
             color: "var(--text-secondary)", fontSize: 12, fontWeight: 700,
-            cursor: "pointer", whiteSpace: "nowrap",
+            cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
           }}>
-          {sortMode === "recent" ? "🕐 Récent" : "🔥 Populaire"}
+          {sortMode === "recent" ? "🕐" : "🔥"}
         </button>
-      </div>
-
-      {/* Filtres par type de publication (kind) */}
-      <div style={{
-        display: "flex", gap: 6, marginBottom: 10,
-        overflowX: "auto", WebkitOverflowScrolling: "touch",
-        scrollbarWidth: "none", paddingBottom: 4,
-      }}>
-        <button onClick={() => setFilterKind("")} style={{
-          flexShrink: 0,
-          background: !filterKind ? "rgba(90,44,160,0.15)" : "var(--card-bg)",
-          border: `1px solid ${!filterKind ? "#5A2CA0" : "var(--border)"}`,
-          borderRadius: "var(--radius-full)", padding: "5px 12px",
-          color: !filterKind ? "#5A2CA0" : "var(--text-muted)",
-          fontSize: 11, fontWeight: !filterKind ? 700 : 500, cursor: "pointer",
-          whiteSpace: "nowrap",
-        }}>Tous types</button>
-        {POST_KINDS.map((k) => {
-          const active = filterKind === k.id;
-          return (
-            <button key={k.id} onClick={() => setFilterKind(active ? "" : k.id)}
-              style={{
-                flexShrink: 0,
-                background: active ? `${k.color}1f` : "var(--card-bg)",
-                border: `1px solid ${active ? k.color : "var(--border)"}`,
-                borderRadius: "var(--radius-full)", padding: "5px 12px",
-                color: active ? k.color : "var(--text-muted)",
-                fontSize: 11, fontWeight: active ? 700 : 500,
-                cursor: "pointer", whiteSpace: "nowrap",
-                display: "flex", alignItems: "center", gap: 4,
-              }}>
-              <span>{k.emoji}</span>{k.label}
-            </button>
-          );
-        })}
       </div>
 
       {/* Liste des posts */}

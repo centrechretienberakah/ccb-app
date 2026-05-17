@@ -40,10 +40,10 @@ export default function CommunityClient({
 }: Props) {
   return (
     <div style={{ background: T.bg, color: T.text, fontFamily: F.body }}>
-      {/* Hero header CCB Communauté */}
+      {/* Hero header CCB Communauté — compact + 1 ligne mobile */}
       <div style={{
         background: `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
-        color: "#fff", padding: "32px 18px 26px",
+        color: "#fff", padding: "20px 14px 18px",
         position: "relative", overflow: "hidden",
         boxShadow: T.shadowGlow,
       }}>
@@ -53,15 +53,17 @@ export default function CommunityClient({
         }} />
         <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center" }}>
           <h1 style={{
-            fontFamily: F.title, fontSize: "clamp(1.6rem, 5vw, 2.2rem)",
-            fontWeight: 700, margin: "0 0 6px",
-            letterSpacing: "0.05em",
+            fontFamily: F.title, fontSize: "clamp(1.3rem, 4.5vw, 1.9rem)",
+            fontWeight: 700, margin: "0 0 4px",
+            letterSpacing: "0.04em",
           }}>
             COMMUNAUTÉ CCB
           </h1>
           <p style={{
-            margin: 0, fontSize: 13, opacity: 0.9, fontStyle: "italic",
-            color: T.lavender,
+            margin: 0, fontSize: "clamp(10px, 2.8vw, 13px)",
+            opacity: 0.9, fontStyle: "italic",
+            color: T.lavender, whiteSpace: "nowrap",
+            overflow: "hidden", textOverflow: "ellipsis",
           }}>
             Grandissons ensemble dans la foi, l&apos;amour et la bénédiction.
           </p>
