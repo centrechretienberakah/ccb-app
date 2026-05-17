@@ -6,7 +6,7 @@ import AdminClient from "./AdminClient";
 import { isModerator as canAccessAdmin } from "@/lib/rbac";
 import type {
   UserProfileRow, UserRoleRow, PostRow, PrayerRow, DevotionRow, EventRow,
-  ContactMessageRow, PastoralAppointmentRow, SermonRow,
+  ContactMessageRow, PastoralAppointmentRow,
 } from "@/lib/database.types";
 import { buildAnalyticsData } from "@/lib/analytics";
 
@@ -155,9 +155,8 @@ export default function AdminPage() {
       };
 
       type DbRow = Record<string, unknown>;
-      const [media, sermons, albums, siteContent, adminLogs, testimonies] = await Promise.all([
+      const [media, albums, siteContent, adminLogs, testimonies] = await Promise.all([
         safeSelect<DbRow>("media_library", "*", { order: "created_at", limit: 100 }),
-        safeSelect<DbRow>("sermons", "*", { order: "published_at", limit: 100 }),
         safeSelect<DbRow>("photo_albums", "*", { order: "created_at", limit: 100 }),
         safeSelect<DbRow>("site_content", "*", { order: "page_key", ascending: true }),
         safeSelect<import("@/lib/database.types").AdminLogRow>("admin_logs", "*", { order: "created_at", limit: 100 }),
@@ -216,10 +215,7 @@ export default function AdminPage() {
           created_at: p.created_at,
           category: p.category ?? null,
         })),
-        sermons: (sermons as unknown as SermonRow[]).map((s) => ({
-          title: s.title,
-          view_count: s.view_count ?? 0,
-        })),
+        sermons: [],
         onlineUserIds: new Set(),
       });
 
@@ -244,7 +240,6 @@ export default function AdminPage() {
         contacts: contactsTyped,
         rdvList: rdvListTyped,
         media,
-        sermons,
         albums,
         siteContent,
         adminLogs,

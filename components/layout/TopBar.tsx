@@ -25,7 +25,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/bibliotheque":  "Bibliothèque",
   "/rendez-vous":   "Rendez-vous Pastoral",
   "/temoignages":   "Témoignages",
-  "/enseignements": "Enseignements",
   "/contact":       "Contact",
   "/nous-suivre":   "Nous Suivre",
   "/a-propos":      "À Propos",

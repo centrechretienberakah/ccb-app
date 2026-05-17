@@ -16,23 +16,19 @@ const QUICK_ACTIONS = [
   { emoji: "🙏", label: "Priere", sub: "Intercession & demandes", href: "/prayer", gradient: "linear-gradient(145deg, #4c0519 0%, #9f1239 55%, #fb7185 100%)", glow: "rgba(251,113,133,0.35)" },
   { emoji: "👥", label: "Communaute", sub: "Echanges & partages", href: "/community", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #4ade80 100%)", glow: "rgba(74,222,128,0.35)" },
   { emoji: "🎬", label: "Jesus Daily", sub: "Videos prophetiques", href: "/jesus-daily", gradient: "linear-gradient(145deg, #3d1a72 0%, #5a2ca0 55%, #a78bfa 100%)", glow: "rgba(167,139,250,0.35)" },
-  { emoji: "🎓", label: "Classes", sub: "Formation biblique", href: "/classes", gradient: "linear-gradient(145deg, #164e63 0%, #0891b2 55%, #22d3ee 100%)", glow: "rgba(34,211,238,0.35)" },
-  { emoji: "📡", label: "Live", sub: "Cultes en direct", href: "/live", gradient: "linear-gradient(145deg, #1e1b4b 0%, #4338ca 55%, #818cf8 100%)", glow: "rgba(129,140,248,0.35)" },
   { emoji: "📅", label: "Evenements", sub: "Calendrier CCB", href: "/events", gradient: "linear-gradient(145deg, #064e3b 0%, #059669 55%, #34d399 100%)", glow: "rgba(52,211,153,0.35)" },
   { emoji: "💝", label: "Faire un don", sub: "Soutenir le ministere", href: "/dons", gradient: "linear-gradient(145deg, #7f1d1d 0%, #dc2626 55%, #f87171 100%)", glow: "rgba(248,113,113,0.35)" },
   { emoji: "🖼️", label: "Galerie", sub: "Photos & souvenirs", href: "/galerie", gradient: "linear-gradient(145deg, #831843 0%, #db2777 55%, #f9a8d4 100%)", glow: "rgba(249,168,212,0.35)" },
   { emoji: "📚", label: "Bibliotheque", sub: "Ressources digitales", href: "/bibliotheque", gradient: "linear-gradient(145deg, #164e63 0%, #0891b2 55%, #67e8f9 100%)", glow: "rgba(103,232,249,0.35)" },
   { emoji: "🗓️", label: "Rendez-vous", sub: "Conseil pastoral", href: "/rendez-vous", gradient: "linear-gradient(145deg, #4c1d95 0%, #7c3aed 55%, #c4b5fd 100%)", glow: "rgba(196,181,253,0.35)" },
   { emoji: "✨", label: "Temoignages", sub: "Gloire a Dieu", href: "/temoignages", gradient: "linear-gradient(145deg, #713f12 0%, #ca8a04 55%, #fde047 100%)", glow: "rgba(253,224,71,0.35)" },
-  { emoji: "🎙️", label: "Enseignements", sub: "Sermons & predications", href: "/enseignements", gradient: "linear-gradient(145deg, #1e3a8a 0%, #1d4ed8 55%, #93c5fd 100%)", glow: "rgba(147,197,253,0.35)" },
   { emoji: "📬", label: "Contact", sub: "Nous joindre", href: "/contact", gradient: "linear-gradient(145deg, #064e3b 0%, #059669 55%, #6ee7b7 100%)", glow: "rgba(110,231,183,0.35)" },
-  { emoji: "🤝", label: "Groupes", sub: "Cellules & mentorat", href: "/groupes", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #86efac 100%)", glow: "rgba(134,239,172,0.35)" },
   { emoji: "📡", label: "Nous suivre", sub: "Reseaux sociaux", href: "/nous-suivre", gradient: "linear-gradient(145deg, #0c4a6e 0%, #0ea5e9 55%, #7dd3fc 100%)", glow: "rgba(125,211,252,0.35)" },
   { emoji: "⛪", label: "A propos", sub: "Notre histoire", href: "/a-propos", gradient: "linear-gradient(145deg, #431407 0%, #b45309 55%, #fcd34d 100%)", glow: "rgba(180,83,9,0.35)" },
 ];
 
 const UPCOMING = [
-  { icon: "⛪", title: "Culte du Dimanche", time: "Tous les dim. · 17h30 (Belgique)", tag: "LIVE", href: "/live" },
+  { icon: "⛪", title: "Culte du Dimanche", time: "Tous les dim. · 17h30 (Belgique)", tag: "Culte", href: "/events" },
   { icon: "🌙", title: "Nuit de Priere", time: "Prochain : 29 Mai · 23h30", tag: "Priere", href: "/prayer" },
   { icon: "🎓", title: "Bootcamp CCB 2026", time: "26 – 28 Juin 2026 · Douala & Online", tag: "Bootcamp", href: "https://bootcamp.centrechretienberakah.com" },
 ];

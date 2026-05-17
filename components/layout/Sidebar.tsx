@@ -17,7 +17,6 @@ const ALL_ITEMS = [
   { href: "/community",     label: "Communauté",        emoji: "👥" },
   { href: "/contact",       label: "Contact",           emoji: "📬" },
   { href: "/devotion",      label: "Méditons ensemble", emoji: "☀️" },
-  { href: "/enseignements", label: "Enseignements",     emoji: "🎙️" },
   { href: "/events",        label: "Événements",        emoji: "📅" },
   { href: "/dons",          label: "Faire un Don",      emoji: "💝" },
   { href: "/galerie",       label: "Galerie",           emoji: "🖼️" },

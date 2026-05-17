@@ -2,10 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_ROUTES = [
-  "/dashboard", "/courses", "/bible", "/devotion",
+  "/dashboard", "/bible", "/devotion",
   "/community", "/prayer", "/profile", "/settings",
   "/plan-biblique", "/events", "/notifications",
-  "/enseignements", "/contact", "/rendez-vous",
+  "/contact", "/rendez-vous",
   "/admin",
 ];
 const PREMIUM_ROUTES = ["/premium"];

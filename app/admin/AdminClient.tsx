@@ -43,7 +43,7 @@ interface AdminClientProps {
   rdvList: RdvItem[];
   media: Record<string, unknown>[];
   courses?: Record<string, unknown>[];
-  sermons: Record<string, unknown>[];
+  sermons?: Record<string, unknown>[];
   albums: Record<string, unknown>[];
   groups?: Record<string, unknown>[];
   siteContent: Record<string, unknown>[];
@@ -82,13 +82,13 @@ export default function AdminClient({
   contacts: initialContacts,
   rdvList: initialRdv,
   events: initialEvents,
-  media, sermons, albums, siteContent,
+  media, albums, siteContent,
   adminLogs, testimonies, analytics,
 }: AdminClientProps) {
   type Tab =
     | "overview" | "analytics" | "members" | "posts" | "prayers" | "devotions"
     | "contacts" | "rdv"
-    | "media" | "sermons" | "albums" | "events"
+    | "media" | "albums" | "events"
     | "testimonies"
     | "content" | "activity";
   const onlineSet = useOnlineUsers();
@@ -284,7 +284,6 @@ export default function AdminClient({
     { id: "devotions", label: `Méditations (${stats.totalDevotions})` },
     { id: "events",    label: `📅 Événements` },
     { id: "media",     label: `📚 Bibliothèque` },
-    { id: "sermons",   label: `🎙️ Enseignements` },
     { id: "albums",    label: `🖼️ Galerie` },
     { id: "testimonies", label: `✨ Témoignages (${testimonies.length})` },
     { id: "content",   label: `📝 Pages (CMS)`, hidden: !canEditSettings },
@@ -313,20 +312,6 @@ export default function AdminClient({
     { key: "thumbnail_url", label: "Vignette", type: "url", hiddenInList: true },
     { key: "is_premium", label: "Premium", type: "boolean" },
     { key: "is_published", label: "Publié", type: "boolean", defaultValue: true },
-  ];
-  const sermonCols: ColumnDef[] = [
-    { key: "title", label: "Titre", type: "text", required: true },
-    { key: "description", label: "Description", type: "textarea", hiddenInList: true },
-    { key: "speaker", label: "Prédicateur", type: "text", defaultValue: "Rev. Elvis NGUIFFO" },
-    { key: "series", label: "Série", type: "text" },
-    { key: "scripture_ref", label: "Référence", type: "text" },
-    { key: "video_url", label: "Vidéo URL", type: "url", hiddenInList: true },
-    { key: "audio_url", label: "Audio URL", type: "url", hiddenInList: true },
-    { key: "thumbnail_url", label: "Vignette", type: "url", hiddenInList: true },
-    { key: "duration_secs", label: "Durée (s)", type: "number", hiddenInList: true },
-    { key: "is_published", label: "Publié", type: "boolean" },
-    { key: "is_premium", label: "Premium", type: "boolean" },
-    { key: "published_at", label: "Publié le", type: "datetime", hiddenInList: true },
   ];
   const albumCols: ColumnDef[] = [
     { key: "title", label: "Titre", type: "text", required: true },
@@ -567,11 +552,6 @@ export default function AdminClient({
         {/* ===== BIBLIOTHÈQUE ===== */}
         {tab === "media" && (
           <ResourceTab table="media_library" titleField="title" columns={mediaCols} initialRows={media} rubrique="Bibliothèque" icon="📚" />
-        )}
-
-        {/* ===== ENSEIGNEMENTS ===== */}
-        {tab === "sermons" && (
-          <ResourceTab table="sermons" titleField="title" columns={sermonCols} initialRows={sermons} rubrique="Enseignements / Sermons" icon="🎙️" />
         )}
 
         {/* ===== GALERIE ===== */}

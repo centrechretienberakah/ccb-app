@@ -435,9 +435,9 @@ export default function EventsClient({ events: initialEvents, userRsvpMap: initi
                 title: "Culte du Dimanche",
                 time: "Tous les dimanches · 17h30 (Belgique)",
                 sub: "En ligne — partout dans le monde",
-                accent: "#ef4444",
-                href: "/live",
-                tag: "LIVE",
+                accent: "var(--gold)",
+                href: "/events",
+                tag: "Culte",
               },
               {
                 icon: "🌙",
