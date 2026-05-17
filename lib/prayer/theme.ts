@@ -85,3 +85,57 @@ export async function notifyPrayerStaff(title: string, body: string, url = "/pra
     // noop
   }
 }
+
+// ─── Helper notif à l'auteur d'une prière ────────────────────────
+// Envoie : push notification (via push_subscriptions) + entrée in-app
+// (table user_notifications). Skip si actor == author (pas d'auto-notif).
+import { createClient } from "@/lib/supabase/client";
+
+export async function notifyPrayerAuthor(args: {
+  authorId: string;
+  actorId: string;
+  actorName: string;
+  prayerId: string;
+  type: "intercession" | "comment" | "comment_reply";
+  excerpt?: string;
+}): Promise<void> {
+  if (args.authorId === args.actorId) return; // skip auto-notif
+
+  const supabase = createClient();
+  const typeMap = {
+    intercession:    { dbType: "system",            title: "🙏 Quelqu'un intercède pour toi" },
+    comment:         { dbType: "reply_to_comment",  title: "💬 Nouvel encouragement sur ta prière" },
+    comment_reply:   { dbType: "reply_to_comment",  title: "💬 Quelqu'un t'a répondu" },
+  };
+  const def = typeMap[args.type];
+  const body = args.excerpt
+    ? `${args.actorName} : « ${args.excerpt.slice(0, 100)} »`
+    : `${args.actorName} ${args.type === "intercession" ? "prie pour toi" : "a commenté"}`;
+
+  // In-app notification (table user_notifications)
+  try {
+    await supabase.from("user_notifications").insert({
+      user_id: args.authorId,
+      actor_id: args.actorId,
+      type: def.dbType,
+      source_type: args.type === "intercession" ? "generic" : "comment",
+      source_id: args.prayerId,
+      payload: { actor_name: args.actorName, excerpt: args.excerpt ?? "", prayer_id: args.prayerId },
+    });
+  } catch { /* table v13 may not exist yet */ }
+
+  // Push notification (target user)
+  try {
+    await fetch("/api/notifications/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: def.title,
+        body,
+        url: "/prayer",
+        audience: "user_ids",
+        userIds: [args.authorId],
+      }),
+    });
+  } catch { /* noop */ }
+}

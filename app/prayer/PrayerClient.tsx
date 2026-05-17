@@ -6,7 +6,7 @@ import {
   PRAYER_THEME as T, PRAYER_FONTS as F,
   PRAYER_CATEGORIES, getPrayerCategoryDef,
   VISIBILITY_OPTIONS,
-  notifyPrayerStaff,
+  notifyPrayerStaff, notifyPrayerAuthor,
   type PrayerCategory, type PrayerVisibility,
 } from "@/lib/prayer/theme";
 
@@ -14,6 +14,7 @@ interface Profile { user_id: string; display_name: string | null; avatar_url: st
 interface PrayerComment {
   id: string; prayer_id: string; user_id: string;
   content: string; created_at: string;
+  parent_comment_id?: string | null;
   user_profiles: Profile | null;
   likeCount: number;
   liked: boolean;
@@ -232,19 +233,22 @@ function PrayerComposer({
 // ─── PrayerCard ────────────────────────────────────────────────────
 function PrayerCard({
   prayer, currentUserId, hasIntercessed,
-  onIntercede, onComment, onCommentLike, onDelete, onMarkAnswered,
+  onIntercede, onComment, onReply, onCommentLike, onDelete, onMarkAnswered,
 }: {
   prayer: Prayer;
   currentUserId: string;
   hasIntercessed: boolean;
   onIntercede: () => void;
   onComment: (text: string) => Promise<void>;
+  onReply: (parentId: string, text: string) => Promise<void>;
   onCommentLike: (commentId: string) => void;
   onDelete: () => void;
   onMarkAnswered: (testimony: string) => Promise<void>;
 }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
   const [busy, setBusy] = useState(false);
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [answerText, setAnswerText] = useState("");
@@ -268,6 +272,17 @@ function PrayerCard({
     setBusy(true);
     await onComment(t);
     setCommentText("");
+    setBusy(false);
+  }
+
+  async function handleSubmitReply() {
+    if (!replyingTo) return;
+    const t = replyText.trim();
+    if (!t) return;
+    setBusy(true);
+    await onReply(replyingTo, t);
+    setReplyText("");
+    setReplyingTo(null);
     setBusy(false);
   }
 
@@ -460,34 +475,99 @@ function PrayerCard({
             }}>
               Sois le premier à encourager.
             </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 10 }}>
-              {prayer.comments.map((c) => (
-                <div key={c.id} style={{ display: "flex", gap: 8 }}>
-                  <Avatar profile={c.user_profiles} size={28} />
-                  <div style={{ flex: 1, background: T.card, borderRadius: 10, padding: "7px 11px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: T.text }}>
-                      {c.user_profiles?.display_name || "Membre"}
+          ) : (() => {
+            const tops = prayer.comments.filter((c) => !c.parent_comment_id);
+            const repliesByParent = prayer.comments
+              .filter((c) => c.parent_comment_id)
+              .reduce<Record<string, PrayerComment[]>>((acc, c) => {
+                const k = c.parent_comment_id as string;
+                (acc[k] = acc[k] || []).push(c);
+                return acc;
+              }, {});
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 10 }}>
+                {tops.map((c) => (
+                  <div key={c.id}>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Avatar profile={c.user_profiles} size={28} />
+                      <div style={{ flex: 1, background: T.card, borderRadius: 10, padding: "7px 11px" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.text }}>
+                          {c.user_profiles?.display_name || "Membre"}
+                        </div>
+                        <div style={{ fontSize: 13, color: T.textSoft, lineHeight: 1.5 }}>
+                          {c.content}
+                        </div>
+                        <div style={{ marginTop: 4, fontSize: 11, display: "flex", gap: 14 }}>
+                          <button onClick={() => onCommentLike(c.id)} style={{
+                            background: "none", border: "none", cursor: "pointer",
+                            color: c.liked ? "#1877F2" : T.textMuted,
+                            display: "flex", alignItems: "center", gap: 4, padding: 0,
+                            fontWeight: c.liked ? 700 : 500,
+                          }}>
+                            <span style={{ filter: c.liked ? "none" : "grayscale(100%) opacity(0.55)" }}>👍</span>
+                            {c.likeCount > 0 ? c.likeCount : ""}
+                          </button>
+                          <button onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)} style={{
+                            background: "none", border: "none", cursor: "pointer",
+                            color: T.textMuted, padding: 0,
+                          }}>
+                            ↩ Répondre
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, color: T.textSoft, lineHeight: 1.5 }}>
-                      {c.content}
-                    </div>
-                    <div style={{ marginTop: 4, fontSize: 11 }}>
-                      <button onClick={() => onCommentLike(c.id)} style={{
-                        background: "none", border: "none", cursor: "pointer",
-                        color: c.liked ? "#1877F2" : T.textMuted,
-                        display: "flex", alignItems: "center", gap: 4, padding: 0,
-                        fontWeight: c.liked ? 700 : 500,
-                      }}>
-                        <span style={{ filter: c.liked ? "none" : "grayscale(100%) opacity(0.55)" }}>👍</span>
-                        {c.likeCount > 0 ? c.likeCount : ""}
-                      </button>
-                    </div>
+
+                    {/* Réponses imbriquées */}
+                    {(repliesByParent[c.id] ?? []).map((r) => (
+                      <div key={r.id} style={{ display: "flex", gap: 8, marginTop: 6, marginLeft: 36 }}>
+                        <Avatar profile={r.user_profiles} size={24} />
+                        <div style={{ flex: 1, background: T.card, borderRadius: 8, padding: "6px 10px" }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.text }}>
+                            {r.user_profiles?.display_name || "Membre"}
+                          </div>
+                          <div style={{ fontSize: 12, color: T.textSoft, lineHeight: 1.5 }}>
+                            {r.content}
+                          </div>
+                          <div style={{ marginTop: 3, fontSize: 11 }}>
+                            <button onClick={() => onCommentLike(r.id)} style={{
+                              background: "none", border: "none", cursor: "pointer",
+                              color: r.liked ? "#1877F2" : T.textMuted,
+                              display: "flex", alignItems: "center", gap: 4, padding: 0,
+                              fontWeight: r.liked ? 700 : 500,
+                            }}>
+                              <span style={{ filter: r.liked ? "none" : "grayscale(100%) opacity(0.55)" }}>👍</span>
+                              {r.likeCount > 0 ? r.likeCount : ""}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Input réponse */}
+                    {replyingTo === c.id && (
+                      <div style={{ display: "flex", gap: 6, marginTop: 6, marginLeft: 36 }}>
+                        <input value={replyText} onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSubmitReply()}
+                          placeholder="Répondre…" autoFocus
+                          style={{
+                            flex: 1, padding: "6px 10px",
+                            background: T.card, border: `1px solid ${T.border}`,
+                            borderRadius: 999, color: T.text, fontSize: 12,
+                            fontFamily: F.body, outline: "none",
+                          }}
+                        />
+                        <button onClick={handleSubmitReply} disabled={busy || !replyText.trim()} style={{
+                          background: T.violet, color: "#fff", border: "none",
+                          borderRadius: 999, padding: "6px 12px", cursor: busy ? "wait" : "pointer",
+                          fontWeight: 700, fontSize: 12,
+                        }}>➤</button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            );
+          })()}
           <div style={{ display: "flex", gap: 6 }}>
             <input value={commentText} onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmitComment()}
@@ -542,6 +622,15 @@ export default function PrayerClient({
     answered: prayers.filter((p) => p.is_answered).length,
   }), [prayers, currentUserId]);
 
+  const myLife = useMemo(() => {
+    const myPrayers = prayers.filter((p) => p.user_id === currentUserId);
+    return {
+      given: intercessedIds.size,                                          // intercessions que j'ai données
+      received: myPrayers.reduce((s, p) => s + p.intercessionsCount, 0),   // intercessions sur mes prières
+      answered: myPrayers.filter((p) => p.is_answered).length,             // mes prières exaucées
+    };
+  }, [prayers, intercessedIds, currentUserId]);
+
   function handleCreated(p: Prayer) {
     setPrayers((prev) => [p, ...prev]);
   }
@@ -558,14 +647,29 @@ export default function PrayerClient({
       await supabase.from("prayer_intercessions").insert({ prayer_id: prayerId, user_id: currentUserId });
       setIntercessedIds((s) => new Set([...s, prayerId]));
       setPrayers((prev) => prev.map((p) => p.id === prayerId ? { ...p, intercessionsCount: p.intercessionsCount + 1 } : p));
+      // Notif auteur (skip si anonyme — l'auteur prend le risque de l'anonymat)
+      const prayer = prayers.find((p) => p.id === prayerId);
+      if (prayer) {
+        notifyPrayerAuthor({
+          authorId: prayer.user_id,
+          actorId: currentUserId,
+          actorName: currentUserProfile?.display_name || "Un membre",
+          prayerId,
+          type: "intercession",
+        });
+      }
     }
   }
 
-  async function handleComment(prayerId: string, text: string) {
+  async function handleComment(prayerId: string, text: string, parentId?: string) {
     const supabase = createClient();
+    const payload: Record<string, unknown> = {
+      prayer_id: prayerId, user_id: currentUserId, content: text,
+    };
+    if (parentId) payload.parent_comment_id = parentId;
     const { data } = await supabase.from("prayer_comments")
-      .insert({ prayer_id: prayerId, user_id: currentUserId, content: text })
-      .select("id, prayer_id, user_id, content, created_at").single();
+      .insert(payload)
+      .select("id, prayer_id, user_id, content, created_at, parent_comment_id").single();
     if (!data) return;
     const newComment: PrayerComment = {
       ...(data as Omit<PrayerComment, "user_profiles" | "likeCount" | "liked">),
@@ -575,6 +679,34 @@ export default function PrayerClient({
     setPrayers((prev) => prev.map((p) =>
       p.id === prayerId ? { ...p, comments: [...p.comments, newComment] } : p,
     ));
+
+    // Notif :
+    // - Si réponse à un commentaire → notif à l'auteur du commentaire parent
+    // - Sinon → notif à l'auteur de la prière
+    const prayer = prayers.find((p) => p.id === prayerId);
+    if (!prayer) return;
+    if (parentId) {
+      const parent = prayer.comments.find((c) => c.id === parentId);
+      if (parent) {
+        notifyPrayerAuthor({
+          authorId: parent.user_id,
+          actorId: currentUserId,
+          actorName: currentUserProfile?.display_name || "Un membre",
+          prayerId,
+          type: "comment_reply",
+          excerpt: text,
+        });
+      }
+    } else {
+      notifyPrayerAuthor({
+        authorId: prayer.user_id,
+        actorId: currentUserId,
+        actorName: currentUserProfile?.display_name || "Un membre",
+        prayerId,
+        type: "comment",
+        excerpt: text,
+      });
+    }
   }
 
   async function handleCommentLike(prayerId: string, commentId: string) {
@@ -684,6 +816,16 @@ export default function PrayerClient({
       </div>
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 14px 48px" }}>
+        {/* Ma vie de prière — 3 stats compactes */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
+          gap: 8, marginBottom: 14,
+        }}>
+          <StatChip emoji="🙏" label="Intercessions données" value={myLife.given} accent={T.violet} />
+          <StatChip emoji="❤️" label="Reçues sur les miennes" value={myLife.received} accent={T.gold} />
+          <StatChip emoji="🎉" label="Mes exaucées" value={myLife.answered} accent={T.answered} />
+        </div>
+
         <PrayerComposer
           currentUserId={currentUserId}
           currentUserProfile={currentUserProfile}
@@ -723,6 +865,7 @@ export default function PrayerClient({
               hasIntercessed={intercessedIds.has(p.id)}
               onIntercede={() => handleIntercede(p.id)}
               onComment={(text) => handleComment(p.id, text)}
+              onReply={(parentId, text) => handleComment(p.id, text, parentId)}
               onCommentLike={(cid) => handleCommentLike(p.id, cid)}
               onDelete={() => handleDelete(p.id)}
               onMarkAnswered={(testimony) => handleMarkAnswered(p.id, testimony)}
@@ -753,6 +896,38 @@ const btnGhost: React.CSSProperties = {
   color: T.textMuted, cursor: "pointer", fontSize: 12,
   fontFamily: F.body,
 };
+function StatChip({ emoji, label, value, accent }: {
+  emoji: string; label: string; value: number; accent: string;
+}) {
+  return (
+    <div style={{
+      background: T.card, border: `1px solid ${T.border}`,
+      borderRadius: 12, padding: "10px 8px",
+      position: "relative", overflow: "hidden",
+      textAlign: "center",
+    }}>
+      <div style={{
+        position: "absolute", top: 0, left: 0, bottom: 0, width: 3,
+        background: accent,
+      }} />
+      <div style={{ fontSize: 18, marginBottom: 2 }}>{emoji}</div>
+      <div style={{
+        fontFamily: F.title, fontSize: 18, fontWeight: 700,
+        color: T.text, lineHeight: 1,
+      }}>
+        {value}
+      </div>
+      <div style={{
+        fontSize: 9, color: T.textMuted, fontWeight: 600,
+        textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 4,
+        lineHeight: 1.3,
+      }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
 function catChip(active: boolean, color?: string): React.CSSProperties {
   const c = color ?? T.violet;
   return {
