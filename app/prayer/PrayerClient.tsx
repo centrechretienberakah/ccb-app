@@ -9,6 +9,8 @@ import {
   notifyPrayerStaff, notifyPrayerAuthor,
   type PrayerCategory, type PrayerVisibility,
 } from "@/lib/prayer/theme";
+import { sharePrayer } from "@/lib/prayer/share";
+import Link from "next/link";
 
 interface Profile { user_id: string; display_name: string | null; avatar_url: string | null }
 interface PrayerComment {
@@ -40,6 +42,7 @@ interface Props {
   currentUserId: string;
   currentUserProfile: Profile | null;
   myIntercessedIds: string[];
+  isAdmin?: boolean;
 }
 
 function timeAgo(iso: string): string {
@@ -233,7 +236,7 @@ function PrayerComposer({
 // ─── PrayerCard ────────────────────────────────────────────────────
 function PrayerCard({
   prayer, currentUserId, hasIntercessed,
-  onIntercede, onComment, onReply, onCommentLike, onDelete, onMarkAnswered,
+  onIntercede, onComment, onReply, onCommentLike, onDelete, onMarkAnswered, onShare, onReport,
 }: {
   prayer: Prayer;
   currentUserId: string;
@@ -244,6 +247,8 @@ function PrayerCard({
   onCommentLike: (commentId: string) => void;
   onDelete: () => void;
   onMarkAnswered: (testimony: string) => Promise<void>;
+  onShare: () => void;
+  onReport: () => void;
 }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -418,8 +423,27 @@ function PrayerCard({
             {prayer.comments.length > 0 && <span>{prayer.comments.length}</span>}
           </button>
 
+          <button onClick={onShare} title="Partager" style={{
+            background: "none", border: "none",
+            padding: "7px 12px", borderRadius: 8,
+            color: T.textMuted, cursor: "pointer",
+            display: "flex", alignItems: "center",
+            fontSize: 18, fontWeight: 600,
+          }}>
+            <span style={{ transform: "scaleX(-1)", display: "inline-block" }}>↪</span>
+          </button>
+
           <div style={{ flex: 1 }} />
 
+          {!isMine && (
+            <button onClick={onReport} title="Signaler" style={{
+              background: "none", border: "none",
+              padding: "7px 10px", borderRadius: 8,
+              color: T.textMuted, cursor: "pointer", fontSize: 14,
+            }}>
+              ⚠️
+            </button>
+          )}
           {isMine && !prayer.is_answered && (
             <button onClick={() => setShowAnswerForm(!showAnswerForm)} style={{
               background: `linear-gradient(135deg, ${T.answered}, #1e7a35)`,
@@ -599,12 +623,13 @@ function PrayerCard({
 
 // ─── PrayerClient principal ────────────────────────────────────────
 export default function PrayerClient({
-  prayers: initialPrayers, currentUserId, currentUserProfile, myIntercessedIds,
+  prayers: initialPrayers, currentUserId, currentUserProfile, myIntercessedIds, isAdmin = false,
 }: Props) {
   const [prayers, setPrayers] = useState<Prayer[]>(initialPrayers);
   const [intercessedIds, setIntercessedIds] = useState<Set<string>>(new Set(myIntercessedIds));
   const [tab, setTab] = useState<"active" | "mine" | "answered">("active");
   const [filterCat, setFilterCat] = useState<PrayerCategory | "">("");
+  const [search, setSearch] = useState("");
 
   // Realtime placeholder (sync minimal — refetch on demand peut être ajouté)
   useEffect(() => {
@@ -619,8 +644,16 @@ export default function PrayerClient({
     else if (tab === "answered") out = out.filter((p) => p.is_answered);
     else out = out.filter((p) => !p.is_answered);
     if (filterCat) out = out.filter((p) => (p.category ?? "autre") === filterCat);
+    if (search.trim()) {
+      const q = search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      out = out.filter((p) => {
+        const text = `${p.title ?? ""} ${p.content} ${p.user_profiles?.display_name ?? ""}`
+          .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+        return text.includes(q);
+      });
+    }
     return out;
-  }, [prayers, tab, filterCat, currentUserId]);
+  }, [prayers, tab, filterCat, currentUserId, search]);
 
   const stats = useMemo(() => ({
     active: prayers.filter((p) => !p.is_answered).length,
@@ -745,6 +778,44 @@ export default function PrayerClient({
     setPrayers((prev) => prev.filter((p) => p.id !== prayerId));
   }
 
+  async function handleShare(prayer: Prayer) {
+    const status = await sharePrayer({
+      title: prayer.title,
+      content: prayer.content,
+      category: prayer.category ?? undefined,
+      isAnonymous: prayer.is_anonymous,
+      authorName: prayer.user_profiles?.display_name ?? undefined,
+      isAnswered: prayer.is_answered,
+      answeredWith: prayer.answered_with,
+    });
+    if (status === "shared" || status === "copied") {
+      // Increment share_count (best-effort, ignore failure)
+      try {
+        const supabase = createClient();
+        const current = (prayer as Prayer & { share_count?: number }).share_count ?? 0;
+        await supabase.from("prayer_requests")
+          .update({ share_count: current + 1 })
+          .eq("id", prayer.id);
+      } catch { /* noop */ }
+    }
+  }
+
+  async function handleReport(prayerId: string) {
+    const reason = prompt("Pourquoi signales-tu cette demande ? (motif court)");
+    if (!reason || !reason.trim()) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("prayer_reports").insert({
+      prayer_id: prayerId, user_id: currentUserId, reason: reason.trim(),
+    });
+    if (error) { alert("Erreur signalement : " + error.message); return; }
+    alert("Merci, ton signalement a été transmis aux modérateurs.");
+    notifyPrayerStaff(
+      "⚠️ Nouveau signalement de prière",
+      `Motif : ${reason.trim().slice(0, 100)}`,
+      "/prayer/admin",
+    );
+  }
+
   async function handleMarkAnswered(prayerId: string, testimony: string) {
     const supabase = createClient();
     const now = new Date().toISOString();
@@ -803,7 +874,7 @@ export default function PrayerClient({
       <div style={{ background: T.card, borderBottom: `1px solid ${T.border}` }}>
         <div style={{
           maxWidth: 760, margin: "0 auto",
-          display: "flex", overflowX: "auto",
+          display: "flex", overflowX: "auto", alignItems: "center",
         }}>
           {([
             { id: "active",   label: "🙏 Demandes actives", count: stats.active },
@@ -811,7 +882,7 @@ export default function PrayerClient({
             { id: "answered", label: "🎉 Exaucées",         count: stats.answered },
           ] as const).map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
-              padding: "12px 16px", background: "none", border: "none",
+              padding: "12px 14px", background: "none", border: "none",
               borderBottom: `2px solid ${tab === t.id ? T.violet : "transparent"}`,
               color: tab === t.id ? T.violet : T.textMuted,
               fontWeight: tab === t.id ? 700 : 500, fontSize: 13,
@@ -820,6 +891,17 @@ export default function PrayerClient({
               {t.label} · {t.count}
             </button>
           ))}
+          {isAdmin && (
+            <Link href="/prayer/admin" style={{
+              marginLeft: "auto", padding: "6px 14px", fontSize: 11,
+              background: T.violetSoft, color: T.violet, fontWeight: 700,
+              borderRadius: 999, textDecoration: "none", flexShrink: 0,
+              border: `1px solid ${T.violet}`,
+              alignSelf: "center", marginRight: 12,
+            }}>
+              🛡️ Modération
+            </Link>
+          )}
         </div>
       </div>
 
@@ -827,12 +909,27 @@ export default function PrayerClient({
         {/* Ma vie de prière — 3 stats compactes */}
         <div style={{
           display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 8, marginBottom: 14,
+          gap: 8, marginBottom: 12,
         }}>
           <StatChip emoji="🙏" label="Intercessions données" value={myLife.given} accent={T.violet} />
           <StatChip emoji="❤️" label="Reçues sur les miennes" value={myLife.received} accent={T.gold} />
           <StatChip emoji="🎉" label="Mes exaucées" value={myLife.answered} accent={T.answered} />
         </div>
+
+        {/* Recherche */}
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="🔍 Rechercher dans les prières…"
+          style={{
+            width: "100%", boxSizing: "border-box",
+            padding: "10px 14px", marginBottom: 12,
+            background: T.card, border: `1px solid ${T.border}`,
+            borderRadius: 999, color: T.text, fontSize: 13,
+            fontFamily: F.body, outline: "none",
+          }}
+        />
 
         <PrayerComposer
           currentUserId={currentUserId}
@@ -877,6 +974,8 @@ export default function PrayerClient({
               onCommentLike={(cid) => handleCommentLike(p.id, cid)}
               onDelete={() => handleDelete(p.id)}
               onMarkAnswered={(testimony) => handleMarkAnswered(p.id, testimony)}
+              onShare={() => handleShare(p)}
+              onReport={() => handleReport(p.id)}
             />
           ))
         )}

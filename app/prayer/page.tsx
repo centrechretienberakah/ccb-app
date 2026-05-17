@@ -45,6 +45,13 @@ export default async function PrayerPage() {
   }> = [];
   let currentUserProfile: ProfileLite | null = null;
   let myIntercessedIds: string[] = [];
+  let isAdmin = false;
+  try {
+    const { data: roleRow } = await supabase
+      .from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+    const role = roleRow?.role as string | undefined;
+    isAdmin = !!role && ["owner", "admin", "leader", "moderator"].includes(role);
+  } catch { /* noop */ }
 
   try {
     const { data: myProfile } = await supabase
@@ -150,6 +157,7 @@ export default async function PrayerPage() {
       currentUserId={user.id}
       currentUserProfile={currentUserProfile}
       myIntercessedIds={myIntercessedIds}
+      isAdmin={isAdmin}
     />
   );
 }
