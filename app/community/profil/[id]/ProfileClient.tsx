@@ -5,6 +5,22 @@ import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F, getPostKindDef } from "@/li
 import {
   getRank, progressToNextRank, computeBadges, type MemberStats,
 } from "@/lib/community/gamification";
+import { useOnlineUsers } from "@/lib/presence";
+
+function fmtJoinDate(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+}
+function fmtPresence(iso: string | null, online: boolean): { label: string; color: string; dot: string } {
+  if (online) return { label: "En ligne", color: "#2E9B47", dot: "🟢" };
+  if (!iso) return { label: "Jamais connecté", color: "#857C95", dot: "⚪" };
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return { label: "à l'instant", color: "#2E9B47", dot: "🟢" };
+  if (diff < 3600) return { label: `vu il y a ${Math.floor(diff / 60)} min`, color: "#857C95", dot: "⚪" };
+  if (diff < 86400) return { label: `vu il y a ${Math.floor(diff / 3600)} h`, color: "#857C95", dot: "⚪" };
+  if (diff < 86400 * 7) return { label: `vu il y a ${Math.floor(diff / 86400)} j`, color: "#857C95", dot: "⚪" };
+  return { label: `vu le ${new Date(iso).toLocaleDateString("fr-FR")}`, color: "#857C95", dot: "⚪" };
+}
 
 interface Profile {
   user_id: string;
@@ -13,6 +29,10 @@ interface Profile {
   bio: string | null;
   cell_group: string | null;
   testimony: string | null;
+  city: string | null;
+  country: string | null;
+  created_at: string | null;
+  last_seen_at: string | null;
 }
 
 interface RecentPost {
@@ -54,6 +74,11 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
   const progress = progressToNextRank(xp);
   const badges = computeBadges(stats);
   const initials = (profile.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const online = useOnlineUsers();
+  const isOnline = online.has(profile.user_id);
+  const presence = fmtPresence(profile.last_seen_at, isOnline);
+  const location = [profile.city, profile.country].filter(Boolean).join(", ");
+  const joinedOn = fmtJoinDate(profile.created_at);
 
   return (
     <div style={{
@@ -116,19 +141,49 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
               }}>
                 {profile.display_name || "Membre"}
               </h1>
-              {profile.cell_group && (
-                <div style={{
-                  display: "inline-block",
-                  background: "rgba(255,255,255,0.18)",
-                  border: "1px solid rgba(255,255,255,0.25)",
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 }}>
+                {profile.cell_group && (
+                  <span style={{
+                    background: "rgba(255,255,255,0.18)",
+                    border: "1px solid rgba(255,255,255,0.25)",
+                    borderRadius: 999, padding: "2px 10px",
+                    fontSize: 11, fontWeight: 600,
+                  }}>
+                    👥 {profile.cell_group}
+                  </span>
+                )}
+                {location && (
+                  <span style={{
+                    background: "rgba(255,255,255,0.12)",
+                    borderRadius: 999, padding: "2px 10px",
+                    fontSize: 11, fontWeight: 500,
+                  }}>
+                    📍 {location}
+                  </span>
+                )}
+                <span style={{
+                  background: isOnline ? "rgba(46,155,71,0.25)" : "rgba(255,255,255,0.12)",
+                  border: isOnline ? "1px solid rgba(46,155,71,0.6)" : "1px solid transparent",
                   borderRadius: 999, padding: "2px 10px",
                   fontSize: 11, fontWeight: 600,
+                  color: isOnline ? "#a8f0bc" : "rgba(255,255,255,0.85)",
                 }}>
-                  👥 {profile.cell_group}
-                </div>
-              )}
+                  {presence.dot} {presence.label}
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* Bandeau infos (inscription) */}
+          {joinedOn && (
+            <div style={{
+              fontSize: 11, color: "rgba(255,255,255,0.7)",
+              marginTop: 14, marginBottom: 4,
+              display: "flex", alignItems: "center", gap: 6,
+            }}>
+              📅 Membre depuis le <strong style={{ color: "#fff" }}>{joinedOn}</strong>
+            </div>
+          )}
 
           {/* Rang + progression */}
           <div style={{

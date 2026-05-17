@@ -12,6 +12,10 @@ interface ProfileRow {
   bio: string | null;
   cell_group: string | null;
   testimony: string | null;
+  city: string | null;
+  country: string | null;
+  created_at: string | null;
+  last_seen_at: string | null;
   is_public: boolean;
 }
 
@@ -37,13 +41,29 @@ export default async function ProfilPage({ params }: { params: Promise<{ id: str
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/auth/login?redirect=/community/profil/${id}`);
 
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("user_id, display_name, avatar_url, bio, cell_group, testimony, is_public")
-    .eq("user_id", id)
-    .maybeSingle();
+  // Tente fetch complet, fallback minimal si colonnes manquantes
+  let profile: ProfileRow | null = null;
+  try {
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .select("user_id, display_name, avatar_url, bio, cell_group, testimony, city, country, created_at, last_seen_at, is_public")
+      .eq("user_id", id)
+      .maybeSingle();
+    if (error) throw error;
+    profile = data as ProfileRow | null;
+  } catch {
+    const { data } = await supabase
+      .from("user_profiles")
+      .select("user_id, display_name, avatar_url, bio, cell_group, testimony, is_public")
+      .eq("user_id", id)
+      .maybeSingle();
+    if (data) {
+      const minimal = data as Omit<ProfileRow, "city" | "country" | "created_at" | "last_seen_at">;
+      profile = { ...minimal, city: null, country: null, created_at: null, last_seen_at: null };
+    }
+  }
   if (!profile) return notFound();
-  const p = profile as ProfileRow;
+  const p = profile;
 
   // Stats
   const [

@@ -12,6 +12,10 @@ export interface MemberLite {
   avatar_url: string | null;
   bio: string | null;
   cell_group: string | null;
+  city: string | null;
+  country: string | null;
+  created_at: string | null;
+  last_seen_at: string | null;
   milestones: string[];
   stats: MemberStats;
   xp: number;
@@ -31,15 +35,35 @@ export default async function MembresPage() {
     isAdmin = !!role && ["owner", "admin", "leader", "moderator"].includes(role);
   } catch { /* noop */ }
 
-  // Tous les profils publics
-  const { data: profiles } = await supabase
-    .from("user_profiles")
-    .select("user_id, display_name, avatar_url, bio, cell_group, is_public")
-    .eq("is_public", true);
-  const profileRows = (profiles ?? []) as Array<{
+  // Tous les profils publics (cascade : city/country/last_seen peuvent ne pas
+  // exister dans certains schémas — on tente plein puis on retombe sur minimal)
+  let profileRows: Array<{
     user_id: string; display_name: string | null; avatar_url: string | null;
     bio: string | null; cell_group: string | null;
-  }>;
+    city: string | null; country: string | null;
+    created_at: string | null; last_seen_at: string | null;
+  }> = [];
+  try {
+    const { data: full, error } = await supabase
+      .from("user_profiles")
+      .select("user_id, display_name, avatar_url, bio, cell_group, city, country, created_at, last_seen_at, is_public")
+      .eq("is_public", true);
+    if (error) throw error;
+    profileRows = (full ?? []) as typeof profileRows;
+  } catch {
+    const { data: minimal } = await supabase
+      .from("user_profiles")
+      .select("user_id, display_name, avatar_url, bio, cell_group, is_public")
+      .eq("is_public", true);
+    profileRows = (minimal ?? []).map((p) => ({
+      user_id: (p as { user_id: string }).user_id,
+      display_name: (p as { display_name: string | null }).display_name,
+      avatar_url: (p as { avatar_url: string | null }).avatar_url,
+      bio: (p as { bio: string | null }).bio,
+      cell_group: (p as { cell_group: string | null }).cell_group,
+      city: null, country: null, created_at: null, last_seen_at: null,
+    }));
+  }
 
   const userIds = profileRows.map((p) => p.user_id);
   if (userIds.length === 0) {
@@ -114,6 +138,10 @@ export default async function MembresPage() {
       avatar_url: p.avatar_url,
       bio: p.bio,
       cell_group: p.cell_group,
+      city: p.city,
+      country: p.country,
+      created_at: p.created_at,
+      last_seen_at: p.last_seen_at,
       milestones: milestonesByUser[p.user_id] || [],
       stats,
       xp: computeXp(stats),
