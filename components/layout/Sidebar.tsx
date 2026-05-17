@@ -23,7 +23,7 @@ const ALL_ITEMS = [
   { href: "/jesus-daily",   label: "Jesus Daily",       emoji: "🎬" },
   { href: "/notifications", label: "Notifications",     emoji: "🔔" },
   { href: "/premium",       label: "Premium",           emoji: "👑" },
-  { href: "/prayer",        label: "Prière",            emoji: "🙏" },
+  { href: "/prayer",        label: "Prions ensemble",   emoji: "🙏" },
   { href: "/rendez-vous",   label: "Rendez-vous",       emoji: "🗓️" },
   { href: "/temoignages",   label: "Témoignages",       emoji: "✨" },
 ];

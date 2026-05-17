@@ -10,7 +10,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard":     "Tableau de bord",
   "/bible":          "Bible",
   "/plan-biblique":  "Plan de Lecture",
-  "/prayer":         "Priere",
+  "/prayer":         "Prions ensemble",
   "/community":     "Communaute",
   "/devotion":      "Méditons ensemble",
   "/jesus-daily":   "Jesus Daily",
