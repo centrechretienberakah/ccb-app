@@ -172,18 +172,29 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
               fontFamily: F.body, outline: "none", boxSizing: "border-box",
             }}
           />
-          {/* Filtre rang */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <button onClick={() => setRankFilter("")} style={chipStyle(rankFilter === "")}>
-              📚 Tous rangs
-            </button>
+          {/* Filtre rang — menu déroulant */}
+          <select
+            value={rankFilter}
+            onChange={(e) => setRankFilter(e.target.value)}
+            style={{
+              width: "100%", padding: "11px 14px",
+              background: T.card, border: `1.5px solid ${rankFilter ? T.violet : T.border}`,
+              borderRadius: 12,
+              color: rankFilter ? T.violet : T.textSoft,
+              fontSize: 13, fontWeight: rankFilter ? 700 : 500,
+              fontFamily: F.body, cursor: "pointer",
+              outline: "none", boxSizing: "border-box",
+              appearance: "none", WebkitAppearance: "none",
+              backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(rankFilter ? T.violet : T.textMuted)}' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 14px center",
+              paddingRight: 36,
+            }}>
+            <option value="">📚 Tous rangs</option>
             {RANKS.map((r) => (
-              <button key={r.id} onClick={() => setRankFilter(rankFilter === r.id ? "" : r.id)}
-                style={chipStyle(rankFilter === r.id, r.color)}>
-                {r.emoji} {r.label}
-              </button>
+              <option key={r.id} value={r.id}>{r.emoji} {r.label}</option>
             ))}
-          </div>
+          </select>
           {/* Filtre cellules */}
           {cellGroups.length > 0 && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
