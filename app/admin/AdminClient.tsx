@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useOnlineUsers } from "@/lib/presence";
 import ResourceTab, { ColumnDef } from "./ResourceTab";
 import SiteContentTab from "./SiteContentTab";
-import GroupsTab from "./GroupsTab";
 import AnalyticsTab, { type AnalyticsData } from "./AnalyticsTab";
 import BroadcastNotification from "./BroadcastNotification";
 import { can, ROLE_LABEL, ROLE_BADGE, type Role } from "@/lib/rbac";
@@ -43,10 +42,10 @@ interface AdminClientProps {
   contacts: ContactMsg[];
   rdvList: RdvItem[];
   media: Record<string, unknown>[];
-  courses: Record<string, unknown>[];
+  courses?: Record<string, unknown>[];
   sermons: Record<string, unknown>[];
   albums: Record<string, unknown>[];
-  groups: Record<string, unknown>[];
+  groups?: Record<string, unknown>[];
   siteContent: Record<string, unknown>[];
   adminLogs: AdminLog[];
   testimonies: Record<string, unknown>[];
@@ -83,13 +82,13 @@ export default function AdminClient({
   contacts: initialContacts,
   rdvList: initialRdv,
   events: initialEvents,
-  media, courses, sermons, albums, groups, siteContent,
+  media, sermons, albums, siteContent,
   adminLogs, testimonies, analytics,
 }: AdminClientProps) {
   type Tab =
     | "overview" | "analytics" | "members" | "posts" | "prayers" | "devotions"
     | "contacts" | "rdv"
-    | "media" | "courses" | "sermons" | "albums" | "groups" | "events"
+    | "media" | "sermons" | "albums" | "events"
     | "testimonies"
     | "content" | "activity";
   const onlineSet = useOnlineUsers();
@@ -283,12 +282,10 @@ export default function AdminClient({
     { id: "posts",     label: `Publications (${stats.totalPosts})` },
     { id: "prayers",   label: `Prières (${stats.openPrayers})` },
     { id: "devotions", label: `Méditations (${stats.totalDevotions})` },
-    { id: "events",    label: `📅 Événements / Live` },
+    { id: "events",    label: `📅 Événements` },
     { id: "media",     label: `📚 Bibliothèque` },
-    { id: "courses",   label: `🎓 Classes` },
     { id: "sermons",   label: `🎙️ Enseignements` },
     { id: "albums",    label: `🖼️ Galerie` },
-    { id: "groups",    label: `🤝 Groupes` },
     { id: "testimonies", label: `✨ Témoignages (${testimonies.length})` },
     { id: "content",   label: `📝 Pages (CMS)`, hidden: !canEditSettings },
     { id: "contacts",  label: unreadContacts > 0 ? `📬 Messages (${unreadContacts} non lus)` : `Messages (${contacts.length})` },
@@ -317,17 +314,6 @@ export default function AdminClient({
     { key: "is_premium", label: "Premium", type: "boolean" },
     { key: "is_published", label: "Publié", type: "boolean", defaultValue: true },
   ];
-  const courseCols: ColumnDef[] = [
-    { key: "title", label: "Titre", type: "text", required: true },
-    { key: "slug", label: "Slug", type: "text", required: true },
-    { key: "description", label: "Description", type: "textarea", hiddenInList: true },
-    { key: "thumbnail_url", label: "Vignette", type: "url", hiddenInList: true },
-    { key: "level", label: "Niveau", type: "select", options: ["beginner","intermediate","advanced"], defaultValue: "beginner" },
-    { key: "duration_mins", label: "Durée (min)", type: "number" },
-    { key: "is_premium", label: "Premium", type: "boolean" },
-    { key: "is_published", label: "Publié", type: "boolean" },
-    { key: "order_index", label: "Ordre", type: "number" },
-  ];
   const sermonCols: ColumnDef[] = [
     { key: "title", label: "Titre", type: "text", required: true },
     { key: "description", label: "Description", type: "textarea", hiddenInList: true },
@@ -348,7 +334,6 @@ export default function AdminClient({
     { key: "cover_url", label: "Cover URL", type: "url" },
     { key: "is_public", label: "Public", type: "boolean", defaultValue: true },
   ];
-  // groupCols : remplacé par GroupsTab dédié (upload cover + multi-select membres)
   const testimonyCols: ColumnDef[] = [
     { key: "title", label: "Titre", type: "text", required: true },
     { key: "content", label: "Contenu", type: "textarea", required: true, hiddenInList: true },
@@ -584,11 +569,6 @@ export default function AdminClient({
           <ResourceTab table="media_library" titleField="title" columns={mediaCols} initialRows={media} rubrique="Bibliothèque" icon="📚" />
         )}
 
-        {/* ===== CLASSES ===== */}
-        {tab === "courses" && (
-          <ResourceTab table="courses" titleField="title" columns={courseCols} initialRows={courses} rubrique="Salle de classe" icon="🎓" />
-        )}
-
         {/* ===== ENSEIGNEMENTS ===== */}
         {tab === "sermons" && (
           <ResourceTab table="sermons" titleField="title" columns={sermonCols} initialRows={sermons} rubrique="Enseignements / Sermons" icon="🎙️" />
@@ -597,14 +577,6 @@ export default function AdminClient({
         {/* ===== GALERIE ===== */}
         {tab === "albums" && (
           <ResourceTab table="photo_albums" titleField="title" columns={albumCols} initialRows={albums} rubrique="Albums photo" icon="🖼️" />
-        )}
-
-        {/* ===== GROUPES ===== */}
-        {tab === "groups" && (
-          <GroupsTab
-            initialGroups={groups}
-            members={members.map((m) => ({ id: m.id, full_name: m.full_name || "Membre" }))}
-          />
         )}
 
         {/* ===== TÉMOIGNAGES ===== */}

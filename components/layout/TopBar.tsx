@@ -14,8 +14,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/community":     "Communaute",
   "/devotion":      "Méditons ensemble",
   "/jesus-daily":   "Jesus Daily",
-  "/classes":       "Salle de classe",
-  "/live":          "Live",
   "/dons":          "Dons",
   "/premium":       "Premium",
   "/profile":       "Mon profil",
@@ -31,7 +29,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/contact":       "Contact",
   "/nous-suivre":   "Nous Suivre",
   "/a-propos":      "À Propos",
-  "/groupes":       "Groupes de Travail",
 };
 
 export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) {

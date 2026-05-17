@@ -21,14 +21,11 @@ const ALL_ITEMS = [
   { href: "/events",        label: "Événements",        emoji: "📅" },
   { href: "/dons",          label: "Faire un Don",      emoji: "💝" },
   { href: "/galerie",       label: "Galerie",           emoji: "🖼️" },
-  { href: "/groupes",       label: "Groupes",           emoji: "🤝" },
   { href: "/jesus-daily",   label: "Jesus Daily",       emoji: "🎬" },
-  { href: "/live",          label: "Live",              emoji: "📡" },
   { href: "/notifications", label: "Notifications",     emoji: "🔔" },
   { href: "/premium",       label: "Premium",           emoji: "👑" },
   { href: "/prayer",        label: "Prière",            emoji: "🙏" },
   { href: "/rendez-vous",   label: "Rendez-vous",       emoji: "🗓️" },
-  { href: "/classes",       label: "Salle de classe",   emoji: "🎓" },
   { href: "/temoignages",   label: "Témoignages",       emoji: "✨" },
 ];
 
