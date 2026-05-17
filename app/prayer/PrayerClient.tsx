@@ -238,7 +238,7 @@ function PrayerCard({
   prayer: Prayer;
   currentUserId: string;
   hasIntercessed: boolean;
-  onIntercede: () => void;
+  onIntercede: () => Promise<void>;
   onComment: (text: string) => Promise<void>;
   onReply: (parentId: string, text: string) => Promise<void>;
   onCommentLike: (commentId: string) => void;
@@ -250,10 +250,9 @@ function PrayerCard({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [intercessing, setIntercessing] = useState(false);
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [answerText, setAnswerText] = useState("");
-  const [localIntercessed, setLocalIntercessed] = useState(hasIntercessed);
-  const [localInterCount, setLocalInterCount] = useState(prayer.intercessionsCount);
 
   const isMine = prayer.user_id === currentUserId;
   const catDef = getPrayerCategoryDef(prayer.category);
@@ -261,9 +260,15 @@ function PrayerCard({
   const visDef = VISIBILITY_OPTIONS.find((v) => v.id === visibility);
 
   async function handleIntercede() {
-    setLocalIntercessed((p) => !p);
-    setLocalInterCount((c) => localIntercessed ? c - 1 : c + 1);
-    onIntercede();
+    if (intercessing) return;
+    setIntercessing(true);
+    try {
+      await onIntercede();
+    } catch (e) {
+      alert("Erreur intercession : " + (e as Error).message);
+    } finally {
+      setIntercessing(false);
+    }
   }
 
   async function handleSubmitComment() {
@@ -387,18 +392,19 @@ function PrayerCard({
           display: "flex", gap: 6, paddingTop: 10,
           borderTop: `1px solid ${T.borderSoft}`, alignItems: "center", flexWrap: "wrap",
         }}>
-          <button onClick={handleIntercede} title="J'intercède" style={{
-            background: localIntercessed ? T.violetSoft : "transparent",
-            border: `1px solid ${localIntercessed ? T.violet : T.border}`,
+          <button onClick={handleIntercede} disabled={intercessing} title="J'intercède" style={{
+            background: hasIntercessed ? T.violetSoft : "transparent",
+            border: `1px solid ${hasIntercessed ? T.violet : T.border}`,
             borderRadius: 999, padding: "7px 14px",
             display: "flex", alignItems: "center", gap: 6,
-            cursor: "pointer", fontFamily: F.body,
-            color: localIntercessed ? T.violet : T.textSoft,
-            fontWeight: localIntercessed ? 700 : 600, fontSize: 13,
+            cursor: intercessing ? "wait" : "pointer", fontFamily: F.body,
+            color: hasIntercessed ? T.violet : T.textSoft,
+            fontWeight: hasIntercessed ? 700 : 600, fontSize: 13,
             transition: "all 0.15s",
+            opacity: intercessing ? 0.6 : 1,
           }}>
             <span style={{ fontSize: 16 }}>🙏</span>
-            <span>J&apos;intercède{localInterCount > 0 ? ` · ${localInterCount}` : ""}</span>
+            <span>J&apos;intercède{prayer.intercessionsCount > 0 ? ` · ${prayer.intercessionsCount}` : ""}</span>
           </button>
 
           <button onClick={() => setShowComments(!showComments)} style={{
@@ -639,15 +645,17 @@ export default function PrayerClient({
     const supabase = createClient();
     const already = intercessedIds.has(prayerId);
     if (already) {
-      await supabase.from("prayer_intercessions").delete()
+      const { error } = await supabase.from("prayer_intercessions").delete()
         .eq("prayer_id", prayerId).eq("user_id", currentUserId);
+      if (error) throw error;
       setIntercessedIds((s) => { const n = new Set(s); n.delete(prayerId); return n; });
       setPrayers((prev) => prev.map((p) => p.id === prayerId ? { ...p, intercessionsCount: Math.max(0, p.intercessionsCount - 1) } : p));
     } else {
-      await supabase.from("prayer_intercessions").insert({ prayer_id: prayerId, user_id: currentUserId });
+      const { error } = await supabase.from("prayer_intercessions").insert({ prayer_id: prayerId, user_id: currentUserId });
+      if (error) throw error;
       setIntercessedIds((s) => new Set([...s, prayerId]));
       setPrayers((prev) => prev.map((p) => p.id === prayerId ? { ...p, intercessionsCount: p.intercessionsCount + 1 } : p));
-      // Notif auteur (skip si anonyme — l'auteur prend le risque de l'anonymat)
+      // Notif auteur (best-effort, n'échoue pas l'action principale)
       const prayer = prayers.find((p) => p.id === prayerId);
       if (prayer) {
         notifyPrayerAuthor({
@@ -656,7 +664,7 @@ export default function PrayerClient({
           actorName: currentUserProfile?.display_name || "Un membre",
           prayerId,
           type: "intercession",
-        });
+        }).catch(() => { /* noop */ });
       }
     }
   }
