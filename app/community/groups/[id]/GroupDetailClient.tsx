@@ -159,6 +159,34 @@ export default function GroupDetailClient({
     flash("✅ Tu as rejoint le groupe !");
   }
 
+  async function startMeeting() {
+    // Notif push aux autres membres (best-effort, n'échoue pas si KO)
+    const otherMembers = members.filter((m) => m.user_id !== currentUserId).map((m) => m.user_id);
+    if (otherMembers.length > 0) {
+      const author = currentUserProfile?.display_name || "Un membre";
+      try {
+        await fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: `🎥 ${author} démarre une réunion`,
+            body: `Rejoins « ${group.name} » maintenant`,
+            url: `/community/groups/${group.id}/meeting`,
+            audience: "user_ids",
+            userIds: otherMembers,
+          }),
+        });
+      } catch { /* noop */ }
+    }
+    // Notif staff
+    notifyGroupsStaff(
+      `🎥 Réunion lancée : ${group.name}`,
+      `${currentUserProfile?.display_name || "Un membre"} démarre une réunion`,
+      `/community/groups/${group.id}/meeting`,
+    );
+    router.push(`/community/groups/${group.id}/meeting`);
+  }
+
   async function leaveGroup() {
     if (!confirm("Quitter ce groupe ?")) return;
     const supabase = createClient();
@@ -303,6 +331,19 @@ export default function GroupDetailClient({
               </span>
             </div>
           </div>
+          {isMember && (
+            <button onClick={startMeeting} style={{
+              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`,
+              color: "#111", border: "none",
+              borderRadius: 10, padding: "8px 16px",
+              fontWeight: 700, fontSize: 12, fontFamily: F.body,
+              cursor: "pointer",
+              display: "inline-flex", alignItems: "center", gap: 6,
+              boxShadow: "0 2px 12px rgba(212,175,55,0.4)",
+            }}>
+              🎥 Réunion
+            </button>
+          )}
           {isMember ? (
             <button onClick={leaveGroup} style={{
               background: "rgba(0,0,0,0.3)", color: "#fff",
