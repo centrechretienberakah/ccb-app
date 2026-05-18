@@ -96,6 +96,14 @@ export default function CommunityClient({
           }}>
             📰 Fil d&apos;actualité
           </div>
+          <Link href="/community/groups" style={{
+            padding: "12px 20px", textDecoration: "none",
+            fontFamily: F.body, fontSize: 14, fontWeight: 500,
+            color: T.textMuted, whiteSpace: "nowrap",
+            borderBottom: "2px solid transparent",
+          }}>
+            🧑‍🤝‍🧑 Groupes
+          </Link>
           <Link href="/community/membres" style={{
             padding: "12px 20px", textDecoration: "none",
             fontFamily: F.body, fontSize: 14, fontWeight: 500,
