@@ -31,6 +31,10 @@ export interface MessageRow {
   reply_to_id: string | null;
   created_at: string;
   edited_at: string | null;
+  attachment_url: string | null;
+  attachment_type: "image" | "pdf" | "audio" | "video" | "other" | null;
+  attachment_name: string | null;
+  attachment_size: number | null;
   user_profiles: { user_id: string; display_name: string | null; avatar_url: string | null } | null;
 }
 
@@ -86,13 +90,29 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
   // Messages (seulement si membre OU groupe public)
   let messages: MessageRow[] = [];
   if (isMember || group.type === "public") {
-    const { data: msg } = await supabase
-      .from("group_messages")
-      .select("id, group_id, user_id, content, reply_to_id, created_at, edited_at")
-      .eq("group_id", id)
-      .order("created_at", { ascending: true })
-      .limit(200);
-    const msgRows = (msg ?? []) as Omit<MessageRow, "user_profiles">[];
+    // Fetch messages avec fallback gracieux si colonnes attachment_* pas encore créées
+    let msg: Omit<MessageRow, "user_profiles">[] | null = null;
+    try {
+      const res = await supabase
+        .from("group_messages")
+        .select("id, group_id, user_id, content, reply_to_id, created_at, edited_at, attachment_url, attachment_type, attachment_name, attachment_size")
+        .eq("group_id", id)
+        .order("created_at", { ascending: true })
+        .limit(200);
+      if (res.error) throw res.error;
+      msg = res.data as Omit<MessageRow, "user_profiles">[] | null;
+    } catch {
+      const res2 = await supabase
+        .from("group_messages")
+        .select("id, group_id, user_id, content, reply_to_id, created_at, edited_at")
+        .eq("group_id", id)
+        .order("created_at", { ascending: true })
+        .limit(200);
+      msg = ((res2.data ?? []) as Array<Omit<MessageRow, "user_profiles" | "attachment_url" | "attachment_type" | "attachment_name" | "attachment_size">>).map((m) => ({
+        ...m, attachment_url: null, attachment_type: null, attachment_name: null, attachment_size: null,
+      }));
+    }
+    const msgRows = msg ?? [];
 
     // Profils manquants pour les messages (auteurs non-membres? rare mais possible)
     const msgUserIds = [...new Set(msgRows.map((m) => m.user_id))];

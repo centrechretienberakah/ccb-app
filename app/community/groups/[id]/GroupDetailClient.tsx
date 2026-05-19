@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GROUPS_THEME as T, GROUPS_FONTS as F, getGroupCategoryDef, notifyGroupsStaff } from "@/lib/groups/theme";
@@ -35,6 +35,10 @@ interface Message {
   created_at: string;
   edited_at: string | null;
   user_profiles: Profile | null;
+  attachment_url?: string | null;
+  attachment_type?: "image" | "pdf" | "audio" | "video" | "other" | null;
+  attachment_name?: string | null;
+  attachment_size?: number | null;
 }
 
 interface Props {
@@ -88,6 +92,14 @@ export default function GroupDetailClient({
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showMembers, setShowMembers] = useState(false);
+  const [search, setSearch] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<{
+    url: string; type: "image" | "pdf" | "audio" | "video" | "other"; name: string; size: number;
+  } | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const catDef = getGroupCategoryDef(group.category);
@@ -139,6 +151,49 @@ export default function GroupDetailClient({
   }, [messages.length]);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
+
+  // Messages filtrés par recherche
+  const filteredMessages = useMemo(() => {
+    if (!search.trim()) return messages;
+    const q = search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    return messages.filter((m) => {
+      const haystack = `${m.content} ${m.user_profiles?.display_name ?? ""} ${m.attachment_name ?? ""}`
+        .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      return haystack.includes(q);
+    });
+  }, [messages, search]);
+
+  function detectAttachmentType(file: File): "image" | "pdf" | "audio" | "video" | "other" {
+    if (file.type.startsWith("image/")) return "image";
+    if (file.type === "application/pdf") return "pdf";
+    if (file.type.startsWith("audio/")) return "audio";
+    if (file.type.startsWith("video/")) return "video";
+    return "other";
+  }
+
+  async function uploadFile(file: File) {
+    if (file.size > 25 * 1024 * 1024) {
+      flash("Fichier trop volumineux (max 25 Mo)");
+      return;
+    }
+    setUploading(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `groups/${group.id}/${Date.now()}-${currentUserId}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("posts").upload(path, file);
+      if (upErr) { flash("Erreur upload : " + upErr.message); setUploading(false); return; }
+      const { data } = supabase.storage.from("posts").getPublicUrl(path);
+      setPendingAttachment({
+        url: data.publicUrl,
+        type: detectAttachmentType(file),
+        name: file.name,
+        size: file.size,
+      });
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function joinGroup() {
     const supabase = createClient();
@@ -202,16 +257,27 @@ export default function GroupDetailClient({
 
   async function sendMessage() {
     const t = text.trim();
-    if (!t || sending) return;
+    if ((!t && !pendingAttachment) || sending) return;
     setSending(true);
     const supabase = createClient();
-    const { data, error } = await supabase.from("group_messages").insert({
+    const insertPayload: Record<string, unknown> = {
       group_id: group.id, user_id: currentUserId, content: t,
-    }).select("id, group_id, user_id, content, reply_to_id, created_at, edited_at").single();
+    };
+    if (pendingAttachment) {
+      insertPayload.attachment_url = pendingAttachment.url;
+      insertPayload.attachment_type = pendingAttachment.type;
+      insertPayload.attachment_name = pendingAttachment.name;
+      insertPayload.attachment_size = pendingAttachment.size;
+    }
+    const { data, error } = await supabase.from("group_messages")
+      .insert(insertPayload)
+      .select("id, group_id, user_id, content, reply_to_id, created_at, edited_at, attachment_url, attachment_type, attachment_name, attachment_size")
+      .single();
     if (error) { flash("Erreur : " + error.message); setSending(false); return; }
     const row = data as Omit<Message, "user_profiles">;
     setMessages((prev) => [...prev, { ...row, user_profiles: currentUserProfile }]);
     setText("");
+    setPendingAttachment(null);
     setSending(false);
 
     // Notif staff sur premier message du groupe (seuil simple : count actuel == 0 avant)
@@ -396,12 +462,23 @@ export default function GroupDetailClient({
             {/* Header chat */}
             <div style={{
               padding: "10px 14px", borderBottom: `1px solid ${T.borderSoft}`,
-              display: "flex", alignItems: "center", justifyContent: "space-between",
+              display: "flex", alignItems: "center", gap: 8,
               background: T.surface2,
             }}>
               <div style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: T.text }}>
                 💬 Conversation
               </div>
+              <div style={{ flex: 1 }} />
+              <Link href={`/community/groups/${group.id}/files`} title="Fichiers partagés" style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: T.textMuted, fontSize: 16, padding: "4px 6px",
+                textDecoration: "none",
+              }}>📎</Link>
+              <button onClick={() => setShowSearch((s) => !s)} title="Rechercher" style={{
+                background: showSearch ? T.violetSoft : "none", border: "none", cursor: "pointer",
+                color: showSearch ? T.violet : T.textMuted, fontSize: 16,
+                padding: "4px 6px", borderRadius: 6,
+              }}>🔍</button>
               <button onClick={() => setShowMembers(!showMembers)}
                 className="ccb-grp-members-mobile-trigger"
                 style={{
@@ -412,6 +489,27 @@ export default function GroupDetailClient({
               </button>
             </div>
 
+            {/* Search bar */}
+            {showSearch && (
+              <div style={{
+                padding: "8px 14px", borderBottom: `1px solid ${T.borderSoft}`,
+                background: T.bg,
+              }}>
+                <input
+                  type="search" value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="🔍 Rechercher dans la conversation…"
+                  autoFocus
+                  style={{
+                    width: "100%", boxSizing: "border-box",
+                    padding: "8px 12px",
+                    background: T.card, border: `1px solid ${T.border}`,
+                    borderRadius: 999, color: T.text, fontSize: 13,
+                    fontFamily: F.body, outline: "none",
+                  }}
+                />
+              </div>
+            )}
+
             {/* Messages */}
             <div ref={scrollRef} style={{
               flex: 1, overflowY: "auto", padding: "14px",
@@ -421,13 +519,13 @@ export default function GroupDetailClient({
                 <div style={{ textAlign: "center", padding: "40px 14px", color: T.textMuted, fontSize: 13 }}>
                   🔒 Ce groupe est privé. Demande à un membre de t&apos;inviter pour voir la conversation.
                 </div>
-              ) : messages.length === 0 ? (
+              ) : filteredMessages.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px 14px", color: T.textMuted, fontSize: 13 }}>
-                  💬 Aucun message. Sois le premier à écrire !
+                  {search ? "Aucun message ne correspond à la recherche." : "💬 Aucun message. Sois le premier à écrire !"}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {messages.map((m) => {
+                  {filteredMessages.map((m) => {
                     const isMine = m.user_id === currentUserId;
                     return (
                       <div key={m.id} style={{
@@ -458,11 +556,19 @@ export default function GroupDetailClient({
                             borderRadius: isMine
                               ? "14px 14px 4px 14px"
                               : "14px 14px 14px 4px",
-                            padding: "8px 12px",
+                            padding: m.attachment_url ? "6px 6px 8px" : "8px 12px",
                             fontSize: 14, lineHeight: 1.5,
                             whiteSpace: "pre-wrap", wordBreak: "break-word",
                           }}>
-                            <ContentWithMentions content={m.content} members={memberLookup} />
+                            {/* Attachment render */}
+                            {m.attachment_url && (
+                              <AttachmentRender msg={m} isMine={isMine} onImageClick={(url) => setLightbox(url)} />
+                            )}
+                            {m.content && (
+                              <div style={{ padding: m.attachment_url ? "6px 8px 0" : 0 }}>
+                                <ContentWithMentions content={m.content} members={memberLookup} />
+                              </div>
+                            )}
                           </div>
                           {canDelete(m) && (
                             <button onClick={() => deleteMessage(m.id)} style={{
@@ -487,12 +593,67 @@ export default function GroupDetailClient({
                 padding: "10px 14px", borderTop: `1px solid ${T.borderSoft}`,
                 background: T.card,
               }}>
+                {/* Preview attachment en attente */}
+                {pendingAttachment && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "8px 10px", marginBottom: 8,
+                    background: T.violetSoft, border: `1px solid ${T.violet}33`,
+                    borderRadius: 10,
+                  }}>
+                    <span style={{ fontSize: 20 }}>
+                      {pendingAttachment.type === "image" ? "🖼️"
+                        : pendingAttachment.type === "pdf" ? "📄"
+                        : pendingAttachment.type === "audio" ? "🎵"
+                        : pendingAttachment.type === "video" ? "🎬"
+                        : "📎"}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: 12, fontWeight: 700, color: T.text,
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                      }}>
+                        {pendingAttachment.name}
+                      </div>
+                      <div style={{ fontSize: 10, color: T.textMuted }}>
+                        {(pendingAttachment.size / 1024).toFixed(0)} Ko
+                      </div>
+                    </div>
+                    <button onClick={() => setPendingAttachment(null)} title="Annuler" style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      color: T.textMuted, fontSize: 14,
+                    }}>✕</button>
+                  </div>
+                )}
+
+                <input ref={fileRef} type="file"
+                  accept="image/*,application/pdf,audio/*,video/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadFile(f);
+                    if (fileRef.current) fileRef.current.value = "";
+                  }}
+                />
+
                 <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  <button onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    title="Joindre un fichier"
+                    style={{
+                      background: T.surface2, border: `1px solid ${T.border}`,
+                      borderRadius: 14, padding: "10px 12px",
+                      cursor: uploading ? "wait" : "pointer",
+                      color: T.textMuted, fontSize: 18,
+                      flexShrink: 0, opacity: uploading ? 0.6 : 1,
+                    }}>
+                    {uploading ? "⏳" : "📎"}
+                  </button>
                   <div style={{ flex: 1 }}>
                     <MentionTextarea
                       value={text} onChange={setText}
                       members={memberLookup}
-                      placeholder="Écrire un message… (@ pour mentionner)"
+                      placeholder={pendingAttachment ? "Légende (optionnel)…" : "Écrire un message… (@ pour mentionner)"}
                       multiline
                       rows={1}
                       onKeyDown={(e) => {
@@ -511,14 +672,16 @@ export default function GroupDetailClient({
                       } as React.CSSProperties}
                     />
                   </div>
-                  <button onClick={sendMessage} disabled={sending || !text.trim()} style={{
-                    background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
-                    color: "#fff", border: "none",
-                    borderRadius: 14, padding: "10px 16px",
-                    cursor: sending || !text.trim() ? "not-allowed" : "pointer",
-                    fontWeight: 700, fontSize: 14, fontFamily: F.body,
-                    opacity: !text.trim() ? 0.5 : 1,
-                  }}>
+                  <button onClick={sendMessage}
+                    disabled={sending || (!text.trim() && !pendingAttachment)}
+                    style={{
+                      background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
+                      color: "#fff", border: "none",
+                      borderRadius: 14, padding: "10px 16px",
+                      cursor: sending || (!text.trim() && !pendingAttachment) ? "not-allowed" : "pointer",
+                      fontWeight: 700, fontSize: 14, fontFamily: F.body,
+                      opacity: (!text.trim() && !pendingAttachment) ? 0.5 : 1,
+                    }}>
                     ➤
                   </button>
                 </div>
@@ -550,6 +713,26 @@ export default function GroupDetailClient({
             <MembersList members={members} currentUserId={currentUserId} />
           </div>
         </div>
+
+        {/* Lightbox image */}
+        {lightbox && (
+          <div onClick={() => setLightbox(null)} style={{
+            position: "fixed", inset: 0, zIndex: 2000,
+            background: "rgba(0,0,0,0.92)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 20, cursor: "zoom-out",
+          }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={lightbox} alt=""
+              style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8 }} />
+            <button onClick={(e) => { e.stopPropagation(); setLightbox(null); }} style={{
+              position: "absolute", top: 14, right: 14,
+              background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)",
+              borderRadius: 999, width: 40, height: 40,
+              color: "#fff", fontSize: 18, cursor: "pointer",
+            }}>✕</button>
+          </div>
+        )}
 
         {/* Modal membres mobile */}
         {showMembers && (
@@ -643,6 +826,66 @@ function MembersList({ members, currentUserId }: { members: Member[]; currentUse
         })}
       </div>
     </div>
+  );
+}
+
+function AttachmentRender({ msg, isMine, onImageClick }: {
+  msg: Message; isMine: boolean; onImageClick: (url: string) => void;
+}) {
+  if (!msg.attachment_url) return null;
+  const fname = msg.attachment_name ?? "fichier";
+  const size = msg.attachment_size ? `${(msg.attachment_size / 1024).toFixed(0)} Ko` : "";
+
+  if (msg.attachment_type === "image") {
+    return (
+      <div onClick={() => onImageClick(msg.attachment_url!)} style={{
+        cursor: "pointer", borderRadius: 10, overflow: "hidden", maxWidth: 280,
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={msg.attachment_url} alt={fname}
+          style={{ width: "100%", height: "auto", display: "block", maxHeight: 280, objectFit: "cover" }} />
+      </div>
+    );
+  }
+  if (msg.attachment_type === "video") {
+    return (
+      <video src={msg.attachment_url} controls
+        style={{ width: "100%", maxWidth: 320, borderRadius: 10, display: "block" }} />
+    );
+  }
+  if (msg.attachment_type === "audio") {
+    return (
+      <div style={{
+        background: isMine ? "rgba(0,0,0,0.15)" : T.surface2,
+        borderRadius: 10, padding: "8px 10px", minWidth: 240,
+      }}>
+        <audio src={msg.attachment_url} controls style={{ width: "100%", display: "block" }} />
+      </div>
+    );
+  }
+  // PDF or other
+  return (
+    <a href={msg.attachment_url} target="_blank" rel="noopener" style={{
+      display: "flex", alignItems: "center", gap: 8,
+      background: isMine ? "rgba(0,0,0,0.15)" : T.surface2,
+      borderRadius: 10, padding: "8px 12px",
+      textDecoration: "none",
+      color: isMine ? "#fff" : T.text,
+      maxWidth: 280,
+    }}>
+      <span style={{ fontSize: 26 }}>
+        {msg.attachment_type === "pdf" ? "📄" : "📎"}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 12, fontWeight: 700,
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        }}>
+          {fname}
+        </div>
+        {size && <div style={{ fontSize: 10, opacity: 0.75 }}>{size}</div>}
+      </div>
+    </a>
   );
 }
 
