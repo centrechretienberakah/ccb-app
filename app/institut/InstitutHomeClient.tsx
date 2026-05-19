@@ -15,9 +15,10 @@ interface Props {
   categories: Category[];
   popularCourses: CourseLite[];
   myCourses: CourseLite[];
+  isAdmin?: boolean;
 }
 
-export default function InstitutHomeClient({ categories, popularCourses, myCourses }: Props) {
+export default function InstitutHomeClient({ categories, popularCourses, myCourses, isAdmin = false }: Props) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"discover" | "mine">("discover");
 
@@ -59,7 +60,18 @@ export default function InstitutHomeClient({ categories, popularCourses, myCours
           position: "absolute", top: 0, left: 0, right: 0, height: 3,
           background: `linear-gradient(90deg, ${T.gold}, transparent)`,
         }} />
-        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center", position: "relative" }}>
+          {isAdmin && (
+            <Link href="/institut/admin" style={{
+              position: "absolute", top: 0, right: 0,
+              background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.3)",
+              borderRadius: 999, padding: "6px 14px",
+              color: "#fff", fontSize: 11, fontWeight: 700,
+              textDecoration: "none",
+            }}>
+              🛡️ Admin
+            </Link>
+          )}
           <div style={{ fontSize: 44, marginBottom: 8 }}>🎓</div>
           <h1 className="institut-title" style={{
             fontFamily: F.title, fontWeight: 700,

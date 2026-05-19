@@ -21,6 +21,13 @@ export default async function InstitutPage() {
   let categories: Category[] = [];
   let popularCourses: CourseLite[] = [];
   let myCourses: CourseLite[] = [];
+  let isAdmin = false;
+  try {
+    const { data: roleRow } = await supabase
+      .from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+    const role = roleRow?.role as string | undefined;
+    isAdmin = !!role && ["owner", "admin", "leader", "moderator"].includes(role);
+  } catch { /* noop */ }
 
   try {
     const { data: catData } = await supabase
@@ -94,6 +101,7 @@ export default async function InstitutPage() {
       categories={categories}
       popularCourses={popularCourses}
       myCourses={myCourses}
+      isAdmin={isAdmin}
     />
   );
 }
