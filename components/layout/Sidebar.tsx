@@ -20,6 +20,7 @@ const ALL_ITEMS = [
   { href: "/events",        label: "Événements",        emoji: "📅" },
   { href: "/dons",          label: "Faire un Don",      emoji: "💝" },
   { href: "/galerie",       label: "Galerie",           emoji: "🖼️" },
+  { href: "/institut",      label: "Institut Berakah",  emoji: "🎓" },
   { href: "/jesus-daily",   label: "Jesus Daily",       emoji: "🎬" },
   { href: "/notifications", label: "Notifications",     emoji: "🔔" },
   { href: "/premium",       label: "Premium",           emoji: "👑" },
