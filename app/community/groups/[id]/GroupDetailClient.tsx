@@ -39,7 +39,10 @@ interface Message {
   attachment_type?: "image" | "pdf" | "audio" | "video" | "other" | null;
   attachment_name?: string | null;
   attachment_size?: number | null;
+  reactions?: Record<string, { count: number; mine: boolean }>;
 }
+
+const REACTION_EMOJIS = ["👍", "❤️", "🙏", "🎉", "😂", "🔥"] as const;
 
 interface Props {
   group: Group;
@@ -99,13 +102,142 @@ export default function GroupDetailClient({
     url: string; type: "image" | "pdf" | "audio" | "video" | "other"; name: string; size: number;
   } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map()); // user_id → display_name
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const presenceChannelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
   const catDef = getGroupCategoryDef(group.category);
   const memberLookup: MemberLookup[] = members.map((m) => ({
     user_id: m.user_id, display_name: m.display_name, avatar_url: m.avatar_url,
   }));
+
+  // Chargement initial des réactions + écoute realtime
+  useEffect(() => {
+    if (!isMember && group.type !== "public") return;
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function loadReactions() {
+      try {
+        const { data } = await supabase
+          .from("group_message_reactions")
+          .select("message_id, user_id, emoji")
+          .in("message_id", messages.map((m) => m.id));
+        if (cancelled || !data) return;
+        const reactionsByMessage: Record<string, Record<string, { count: number; mine: boolean }>> = {};
+        for (const r of (data as Array<{ message_id: string; user_id: string; emoji: string }>)) {
+          if (!reactionsByMessage[r.message_id]) reactionsByMessage[r.message_id] = {};
+          const ex = reactionsByMessage[r.message_id][r.emoji] ?? { count: 0, mine: false };
+          ex.count += 1;
+          if (r.user_id === currentUserId) ex.mine = true;
+          reactionsByMessage[r.message_id][r.emoji] = ex;
+        }
+        setMessages((prev) => prev.map((m) => ({ ...m, reactions: reactionsByMessage[m.id] ?? {} })));
+      } catch { /* table v22 may not exist yet */ }
+    }
+    loadReactions();
+
+    const ch = supabase
+      .channel(`ccb-group-reactions-${group.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_message_reactions" }, async (payload) => {
+        type ReactionRow = { message_id: string; user_id: string; emoji: string };
+        const row = (payload.new ?? payload.old) as ReactionRow;
+        if (!row) return;
+        // Vérifie que le message appartient à ce groupe
+        const target = messages.find((m) => m.id === row.message_id);
+        if (!target) return;
+        // Recharge les réactions de ce message uniquement
+        const { data } = await supabase
+          .from("group_message_reactions")
+          .select("user_id, emoji")
+          .eq("message_id", row.message_id);
+        const grouped: Record<string, { count: number; mine: boolean }> = {};
+        for (const r of (data ?? []) as Array<{ user_id: string; emoji: string }>) {
+          const ex = grouped[r.emoji] ?? { count: 0, mine: false };
+          ex.count += 1;
+          if (r.user_id === currentUserId) ex.mine = true;
+          grouped[r.emoji] = ex;
+        }
+        setMessages((prev) => prev.map((m) =>
+          m.id === row.message_id ? { ...m, reactions: grouped } : m,
+        ));
+      })
+      .subscribe();
+
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+
+  }, [group.id, isMember, group.type, messages.length, currentUserId]);
+
+  // Presence typing
+  useEffect(() => {
+    if (!isMember) return;
+    const supabase = createClient();
+    const ch = supabase.channel(`ccb-group-typing-${group.id}`, {
+      config: { presence: { key: currentUserId } },
+    });
+    presenceChannelRef.current = ch;
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState() as Record<string, Array<{ typing?: boolean; name?: string }>>;
+      const newMap = new Map<string, string>();
+      for (const [uid, metas] of Object.entries(state)) {
+        if (uid === currentUserId) continue;
+        const meta = metas[0];
+        if (meta?.typing && meta?.name) newMap.set(uid, meta.name);
+      }
+      setTypingUsers(newMap);
+    });
+    ch.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await ch.track({
+          typing: false,
+          name: currentUserProfile?.display_name || "Un membre",
+        });
+      }
+    });
+    return () => { supabase.removeChannel(ch); presenceChannelRef.current = null; };
+
+  }, [group.id, isMember, currentUserId, currentUserProfile?.display_name]);
+
+  function emitTyping(isTyping: boolean) {
+    const ch = presenceChannelRef.current;
+    if (!ch) return;
+    try {
+      ch.track({
+        typing: isTyping,
+        name: currentUserProfile?.display_name || "Un membre",
+      });
+    } catch { /* noop */ }
+  }
+
+  function handleTextChange(v: string) {
+    setText(v);
+    if (v.length > 0) {
+      emitTyping(true);
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => emitTyping(false), 2500);
+    } else {
+      emitTyping(false);
+    }
+  }
+
+  async function toggleReaction(messageId: string, emoji: string) {
+    const supabase = createClient();
+    const msg = messages.find((m) => m.id === messageId);
+    const already = msg?.reactions?.[emoji]?.mine;
+    if (already) {
+      await supabase.from("group_message_reactions").delete()
+        .eq("message_id", messageId).eq("user_id", currentUserId).eq("emoji", emoji);
+    } else {
+      await supabase.from("group_message_reactions").insert({
+        message_id: messageId, user_id: currentUserId, emoji,
+      });
+    }
+    setEmojiPickerFor(null);
+  }
 
   // Realtime — nouveaux messages
   useEffect(() => {
@@ -263,6 +395,7 @@ export default function GroupDetailClient({
     const insertPayload: Record<string, unknown> = {
       group_id: group.id, user_id: currentUserId, content: t,
     };
+    if (replyTo) insertPayload.reply_to_id = replyTo.id;
     if (pendingAttachment) {
       insertPayload.attachment_url = pendingAttachment.url;
       insertPayload.attachment_type = pendingAttachment.type;
@@ -278,6 +411,8 @@ export default function GroupDetailClient({
     setMessages((prev) => [...prev, { ...row, user_profiles: currentUserProfile }]);
     setText("");
     setPendingAttachment(null);
+    setReplyTo(null);
+    emitTyping(false);
     setSending(false);
 
     // Notif staff sur premier message du groupe (seuil simple : count actuel == 0 avant)
@@ -344,6 +479,10 @@ export default function GroupDetailClient({
           .ccb-grp-members-mobile-trigger { display: none; }
         }
         .ccb-grp-members-sidebar { display: none; }
+        @keyframes ccb-typing-dot {
+          0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+          30% { opacity: 1; transform: translateY(-2px); }
+        }
       `}</style>
 
       {/* Cover + header */}
@@ -409,6 +548,17 @@ export default function GroupDetailClient({
             }}>
               🎥 Réunion
             </button>
+          )}
+          {(myRole === "owner" || myRole === "admin") && (
+            <Link href={`/community/groups/${group.id}/settings`} title="Paramètres du groupe" style={{
+              background: "rgba(0,0,0,0.3)", color: "#fff",
+              border: "1px solid rgba(255,255,255,0.3)",
+              borderRadius: 10, padding: "8px 12px",
+              fontSize: 16, textDecoration: "none",
+              display: "inline-flex", alignItems: "center",
+            }}>
+              ⚙️
+            </Link>
           )}
           {isMember ? (
             <button onClick={leaveGroup} style={{
@@ -527,6 +677,7 @@ export default function GroupDetailClient({
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {filteredMessages.map((m) => {
                     const isMine = m.user_id === currentUserId;
+                    const replyParent = m.reply_to_id ? messages.find((mm) => mm.id === m.reply_to_id) : null;
                     return (
                       <div key={m.id} style={{
                         display: "flex", gap: 8,
@@ -537,6 +688,7 @@ export default function GroupDetailClient({
                           maxWidth: "75%",
                           display: "flex", flexDirection: "column",
                           alignItems: isMine ? "flex-end" : "flex-start",
+                          position: "relative",
                         }}>
                           <div style={{
                             fontSize: 11, fontWeight: 700, color: T.textMuted,
@@ -547,6 +699,28 @@ export default function GroupDetailClient({
                               · {timeAgo(m.created_at)}
                             </span>
                           </div>
+
+                          {/* Reply preview */}
+                          {replyParent && (
+                            <div style={{
+                              borderLeft: `3px solid ${T.violet}`,
+                              background: T.violetSoft,
+                              borderRadius: "0 10px 10px 0",
+                              padding: "5px 10px", marginBottom: 4,
+                              fontSize: 11, maxWidth: "100%",
+                            }}>
+                              <div style={{ fontWeight: 700, color: T.violet, marginBottom: 1 }}>
+                                ↩ {replyParent.user_profiles?.display_name || "Membre"}
+                              </div>
+                              <div style={{
+                                color: T.textMuted, fontStyle: "italic",
+                                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                                maxWidth: 240,
+                              }}>
+                                {replyParent.content || (replyParent.attachment_url ? "📎 Pièce jointe" : "Message")}
+                              </div>
+                            </div>
+                          )}
                           <div style={{
                             background: isMine
                               ? `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`
@@ -570,15 +744,83 @@ export default function GroupDetailClient({
                               </div>
                             )}
                           </div>
-                          {canDelete(m) && (
-                            <button onClick={() => deleteMessage(m.id)} style={{
-                              background: "none", border: "none", cursor: "pointer",
-                              color: T.textMuted, fontSize: 10, padding: "3px 4px",
-                              marginTop: 2,
+                          {/* Réactions sous le message */}
+                          {m.reactions && Object.keys(m.reactions).length > 0 && (
+                            <div style={{
+                              display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap",
+                              justifyContent: isMine ? "flex-end" : "flex-start",
                             }}>
-                              🗑 supprimer
-                            </button>
+                              {Object.entries(m.reactions).map(([emoji, r]) => (
+                                <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} style={{
+                                  background: r.mine ? T.violetSoft : T.card,
+                                  border: `1px solid ${r.mine ? T.violet : T.border}`,
+                                  borderRadius: 999, padding: "1px 8px",
+                                  fontSize: 11, cursor: "pointer",
+                                  fontWeight: r.mine ? 700 : 500,
+                                  color: r.mine ? T.violet : T.textMuted,
+                                  display: "inline-flex", alignItems: "center", gap: 3,
+                                  fontFamily: F.body,
+                                }}>
+                                  <span>{emoji}</span><span>{r.count}</span>
+                                </button>
+                              ))}
+                            </div>
                           )}
+
+                          {/* Actions message (réagir, répondre, supprimer) */}
+                          <div style={{
+                            display: "flex", gap: 6, marginTop: 4,
+                            justifyContent: isMine ? "flex-end" : "flex-start",
+                            fontSize: 10, color: T.textMuted, position: "relative",
+                          }}>
+                            <button onClick={() => setEmojiPickerFor(emojiPickerFor === m.id ? null : m.id)} style={{
+                              background: "none", border: "none", cursor: "pointer",
+                              color: T.textMuted, fontSize: 12, padding: "0 4px",
+                            }}>
+                              😊
+                            </button>
+                            <button onClick={() => setReplyTo(m)} title="Répondre" style={{
+                              background: "none", border: "none", cursor: "pointer",
+                              color: T.textMuted, fontSize: 11, padding: "0 4px",
+                            }}>
+                              ↩
+                            </button>
+                            {canDelete(m) && (
+                              <button onClick={() => deleteMessage(m.id)} style={{
+                                background: "none", border: "none", cursor: "pointer",
+                                color: T.textMuted, fontSize: 11, padding: "0 4px",
+                              }}>
+                                🗑
+                              </button>
+                            )}
+
+                            {/* Emoji picker */}
+                            {emojiPickerFor === m.id && (
+                              <div style={{
+                                position: "absolute",
+                                bottom: 22,
+                                [isMine ? "right" : "left"]: 0,
+                                background: T.card, border: `1px solid ${T.border}`,
+                                borderRadius: 999, padding: "5px 8px",
+                                boxShadow: T.shadowMd, zIndex: 10,
+                                display: "flex", gap: 3,
+                              }}>
+                                {REACTION_EMOJIS.map((emoji) => (
+                                  <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} style={{
+                                    background: "none", border: "none", cursor: "pointer",
+                                    fontSize: 18, padding: "2px 4px",
+                                    borderRadius: 6,
+                                    transition: "transform 0.1s",
+                                  }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.3)")}
+                                    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -593,6 +835,51 @@ export default function GroupDetailClient({
                 padding: "10px 14px", borderTop: `1px solid ${T.borderSoft}`,
                 background: T.card,
               }}>
+                {/* Preview reply en attente */}
+                {replyTo && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "8px 12px", marginBottom: 8,
+                    background: T.violetSoft, borderLeft: `3px solid ${T.violet}`,
+                    borderRadius: "0 10px 10px 0",
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.violet, marginBottom: 2 }}>
+                        ↩ Réponse à {replyTo.user_profiles?.display_name || "Membre"}
+                      </div>
+                      <div style={{
+                        fontSize: 12, color: T.textSoft, lineHeight: 1.4,
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        fontStyle: "italic",
+                      }}>
+                        {replyTo.content || (replyTo.attachment_type === "image" ? "🖼️ Image" : replyTo.attachment_type === "pdf" ? "📄 PDF" : "📎 Pièce jointe")}
+                      </div>
+                    </div>
+                    <button onClick={() => setReplyTo(null)} title="Annuler" style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      color: T.textMuted, fontSize: 14,
+                    }}>✕</button>
+                  </div>
+                )}
+
+                {/* Indicateur typing */}
+                {typingUsers.size > 0 && (
+                  <div style={{
+                    fontSize: 11, color: T.textMuted,
+                    fontStyle: "italic", marginBottom: 6, paddingLeft: 4,
+                    display: "flex", alignItems: "center", gap: 6,
+                  }}>
+                    <span style={{ display: "inline-flex", gap: 2 }}>
+                      <span style={typingDot(0)} />
+                      <span style={typingDot(150)} />
+                      <span style={typingDot(300)} />
+                    </span>
+                    {[...typingUsers.values()].slice(0, 2).join(", ")}
+                    {typingUsers.size > 2 ? ` et ${typingUsers.size - 2} autres` : ""}
+                    {" en train d'écrire…"}
+                  </div>
+                )}
+
                 {/* Preview attachment en attente */}
                 {pendingAttachment && (
                   <div style={{
@@ -651,7 +938,7 @@ export default function GroupDetailClient({
                   </button>
                   <div style={{ flex: 1 }}>
                     <MentionTextarea
-                      value={text} onChange={setText}
+                      value={text} onChange={handleTextChange}
                       members={memberLookup}
                       placeholder={pendingAttachment ? "Légende (optionnel)…" : "Écrire un message… (@ pour mentionner)"}
                       multiline
@@ -827,6 +1114,16 @@ function MembersList({ members, currentUserId }: { members: Member[]; currentUse
       </div>
     </div>
   );
+}
+
+function typingDot(delayMs: number): React.CSSProperties {
+  return {
+    display: "inline-block",
+    width: 5, height: 5, borderRadius: "50%",
+    background: T.violet,
+    animation: `ccb-typing-dot 1.2s ease-in-out infinite`,
+    animationDelay: `${delayMs}ms`,
+  };
 }
 
 function AttachmentRender({ msg, isMine, onImageClick }: {
