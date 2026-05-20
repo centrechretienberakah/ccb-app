@@ -99,7 +99,12 @@ export default function AdminJdtvClient({ categories: initialCats, videos: initi
             {vids.length} vidéo{vids.length > 1 ? "s" : ""} · {cats.length} catégorie{cats.length > 1 ? "s" : ""}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Link href="/jesus-daily/admin/analytics" style={{
+            padding: "10px 14px", background: "rgba(255,255,255,0.06)", color: T.text,
+            border: `1px solid ${T.border}`, borderRadius: 10,
+            fontWeight: 700, fontSize: 13, textDecoration: "none",
+          }}>📊 Analytics</Link>
           <button onClick={() => setNewVid(true)} style={primaryBtn}>＋ Nouvelle vidéo</button>
           <button onClick={() => setNewCat(true)} style={secondaryBtn}>＋ Catégorie</button>
         </div>
