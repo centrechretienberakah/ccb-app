@@ -1,21 +1,111 @@
-import { Metadata } from "next";
-import JesusDailyClient from "./JesusDailyClient";
-import { getSiteContent } from "@/lib/site-content";
+import { createClient } from "@/lib/supabase/server";
+import JdtvHomeClient from "./JdtvHomeClient";
+import type { JdtvCategory, JdtvVideo, JdtvWatchProgress } from "@/lib/jdtv/theme";
+import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Jesus Daily — CCB" };
+export const dynamic = "force-dynamic";
 
-// Fallback statique — utilisé tant que l'admin n'a pas saisi data_json.videos
-const FALLBACK_VIDEOS = [
-  { id: "1", date: "2026-05-13", title: "Jésus : la seule voie", scripture: "Jean 14:6", theme: "Évangile", youtubeId: "", tiktokUrl: "", content: "Jésus lui dit : Je suis le chemin, la vérité et la vie. Nul ne vient au Père que par moi. Le salut n'est pas une religion — c'est une relation avec une personne : Jésus-Christ.", emoji: "✝️" },
-  { id: "2", date: "2026-05-12", title: "Dieu t'a tant aimé", scripture: "Jean 3:16", theme: "Amour de Dieu", youtubeId: "", tiktokUrl: "", content: "Car Dieu a tant aimé le monde qu'il a donné son Fils unique. Avant que tu ne le cherches, il t'a déjà aimé. L'Évangile commence par cet amour inconditionnel.", emoji: "❤️" },
-  { id: "3", date: "2026-05-11", title: "La grâce suffit", scripture: "Éphésiens 2:8-9", theme: "Salut", youtubeId: "", tiktokUrl: "", content: "C'est par la grâce que vous êtes sauvés, par le moyen de la foi. Le salut est un don — pas une récompense. Tu n'as pas à le mériter : tu n'as qu'à le recevoir.", emoji: "🎁" },
-  { id: "4", date: "2026-05-10", title: "Une vie nouvelle", scripture: "2 Corinthiens 5:17", theme: "Nouvelle naissance", youtubeId: "", tiktokUrl: "", content: "Si quelqu'un est en Christ, il est une nouvelle créature. L'Évangile ne t'améliore pas — il te renouvelle. Jésus ne colmate pas les fissures, il refait tout à neuf.", emoji: "🌱" },
-  { id: "5", date: "2026-05-09", title: "Réconciliés avec Dieu", scripture: "Romains 5:1", theme: "Réconciliation", youtubeId: "", tiktokUrl: "", content: "Étant donc justifiés par la foi, nous avons la paix avec Dieu par notre Seigneur Jésus-Christ. Le péché creusait un fossé — la croix l'a comblé. Tu peux t'approcher de Dieu aujourd'hui.", emoji: "🕊️" },
-];
+export const metadata: Metadata = {
+  title: "Jesus Daily TV — Centre Chrétien Berakah",
+  description: "Prédications, podcasts, worship, témoignages et live — la TV chrétienne premium CCB.",
+};
+
+interface ContinueWatchRow {
+  video_id: string;
+  watched_secs: number;
+  is_completed: boolean;
+  last_seen_at: string;
+  completed_at: string | null;
+}
 
 export default async function JesusDailyPage() {
-  const cms = await getSiteContent("jesus-daily");
-  const dynamicVideos = Array.isArray(cms?.data_json?.videos) ? (cms.data_json.videos as typeof FALLBACK_VIDEOS) : null;
-  const videos = dynamicVideos && dynamicVideos.length > 0 ? dynamicVideos : FALLBACK_VIDEOS;
-  return <JesusDailyClient videos={videos} />;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Catégories publiées
+  const { data: catData } = await supabase
+    .from("jdtv_categories")
+    .select("id, slug, name, description, icon, cover_url, order_index, is_published")
+    .eq("is_published", true)
+    .order("order_index", { ascending: true });
+  const categories = (catData ?? []) as JdtvCategory[];
+
+  // Toutes les vidéos publiées
+  const { data: vidData } = await supabase
+    .from("jdtv_videos")
+    .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags")
+    .eq("is_published", true)
+    .order("published_at", { ascending: false })
+    .limit(200);
+  const videos = (vidData ?? []) as JdtvVideo[];
+
+  // Hero featured (live > featured > most recent)
+  const liveNow = videos.find((v) => v.is_live) ?? null;
+  const featured = liveNow ?? videos.find((v) => v.is_featured) ?? videos[0] ?? null;
+
+  // Watchlist + progress
+  let watchlistIds: string[] = [];
+  let progress: JdtvWatchProgress[] = [];
+  let continueVideos: JdtvVideo[] = [];
+  if (user) {
+    try {
+      const { data: wlData } = await supabase
+        .from("jdtv_user_watchlist")
+        .select("video_id, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      watchlistIds = (wlData ?? []).map((r) => (r as { video_id: string }).video_id);
+    } catch { /* table peut-être pas encore migrée */ }
+
+    try {
+      const { data: prData } = await supabase
+        .from("jdtv_user_watch_progress")
+        .select("video_id, watched_secs, is_completed, last_seen_at, completed_at")
+        .eq("user_id", user.id)
+        .order("last_seen_at", { ascending: false })
+        .limit(20);
+      progress = ((prData ?? []) as ContinueWatchRow[]).map((r) => ({
+        video_id: r.video_id,
+        watched_secs: r.watched_secs,
+        is_completed: r.is_completed,
+        last_seen_at: r.last_seen_at,
+        completed_at: r.completed_at,
+      }));
+      const continueIds = progress.filter((p) => !p.is_completed && p.watched_secs > 5).map((p) => p.video_id);
+      continueVideos = continueIds
+        .map((id) => videos.find((v) => v.id === id))
+        .filter((v): v is JdtvVideo => Boolean(v))
+        .slice(0, 10);
+    } catch { /* noop */ }
+  }
+
+  // Mes favoris (watchlist) → vidéos
+  const watchlistVideos = watchlistIds
+    .map((id) => videos.find((v) => v.id === id))
+    .filter((v): v is JdtvVideo => Boolean(v));
+
+  // Detect admin
+  let isAdmin = false;
+  if (user) {
+    try {
+      const { data: roleRow } = await supabase
+        .from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+      const role = (roleRow as { role: string } | null)?.role;
+      if (role && ["owner", "admin", "leader", "moderator"].includes(role)) isAdmin = true;
+    } catch { /* noop */ }
+  }
+
+  return (
+    <JdtvHomeClient
+      featured={featured}
+      categories={categories}
+      videos={videos}
+      watchlistIds={watchlistIds}
+      watchlistVideos={watchlistVideos}
+      continueVideos={continueVideos}
+      progress={progress}
+      isAdmin={isAdmin}
+      isAuth={Boolean(user)}
+    />
+  );
 }
