@@ -9,16 +9,24 @@ interface CourseLite extends Course {
   category_name: string;
   total_lessons: number;
   completed_lessons: number;
+  last_seen_at?: string | null;
+  is_favorite?: boolean;
 }
 
 interface Props {
   categories: Category[];
   popularCourses: CourseLite[];
   myCourses: CourseLite[];
+  continueWatching?: CourseLite[];
+  favorites?: CourseLite[];
   isAdmin?: boolean;
 }
 
-export default function InstitutHomeClient({ categories, popularCourses, myCourses, isAdmin = false }: Props) {
+export default function InstitutHomeClient({
+  categories, popularCourses, myCourses,
+  continueWatching = [], favorites = [],
+  isAdmin = false,
+}: Props) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"discover" | "mine">("discover");
 
@@ -89,6 +97,26 @@ export default function InstitutHomeClient({ categories, popularCourses, myCours
       </div>
 
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "20px 14px 40px" }}>
+
+        {/* Continue Watching */}
+        {continueWatching.length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={sectionTitle}>🔥 Reprends où tu étais</h2>
+            <div className="institut-grid">
+              {continueWatching.map((c) => <CourseCard key={c.id} course={c} />)}
+            </div>
+          </div>
+        )}
+
+        {/* Favoris */}
+        {favorites.length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={sectionTitle}>❤️ Mes favoris</h2>
+            <div className="institut-grid">
+              {favorites.map((c) => <CourseCard key={c.id} course={c} />)}
+            </div>
+          </div>
+        )}
 
         {/* Catégories */}
         <h2 style={sectionTitle}>📚 Explore par thématique</h2>

@@ -11,6 +11,8 @@ interface CourseLite extends Course {
   category_name: string;
   total_lessons: number;
   completed_lessons: number;
+  last_seen_at: string | null;
+  is_favorite: boolean;
 }
 
 export default async function InstitutPage() {
@@ -21,6 +23,8 @@ export default async function InstitutPage() {
   let categories: Category[] = [];
   let popularCourses: CourseLite[] = [];
   let myCourses: CourseLite[] = [];
+  let continueWatching: CourseLite[] = [];
+  let favorites: CourseLite[] = [];
   let isAdmin = false;
   try {
     const { data: roleRow } = await supabase
@@ -37,23 +41,20 @@ export default async function InstitutPage() {
       .order("order_index", { ascending: true });
     categories = (catData ?? []) as Category[];
 
-    // Cours publiés (cap 12 pour la home)
     const { data: courses } = await supabase
       .from("institut_courses")
       .select("id, category_id, subcategory_id, slug, title, subtitle, description, thumbnail_url, trailer_url, level, duration_mins, instructor, is_published, is_premium, order_index")
       .eq("is_published", true)
-      .order("order_index", { ascending: true })
-      .limit(12);
+      .order("order_index", { ascending: true });
     const courseRows = (courses ?? []) as Course[];
 
-    // Map catégorie → slug/name
     const catBySlug: Record<string, { slug: string; name: string }> = {};
     for (const c of categories) catBySlug[c.id] = { slug: c.slug, name: c.name };
 
-    // Stats par cours : total leçons + leçons complétées par l'utilisateur
     const courseIds = courseRows.map((c) => c.id);
     const lessonCountByCourse: Record<string, number> = {};
     const completedByCourse: Record<string, number> = {};
+    const lastSeenByCourse: Record<string, string> = {};
 
     if (courseIds.length > 0) {
       const { data: lessons } = await supabase
@@ -69,15 +70,31 @@ export default async function InstitutPage() {
       if (allLessonIds.length > 0) {
         const { data: progress } = await supabase
           .from("institut_user_progress")
-          .select("course_id, is_completed")
+          .select("course_id, is_completed, last_seen_at")
           .eq("user_id", user.id)
-          .in("lesson_id", allLessonIds)
-          .eq("is_completed", true);
-        for (const p of (progress ?? []) as Array<{ course_id: string; is_completed: boolean }>) {
-          completedByCourse[p.course_id] = (completedByCourse[p.course_id] || 0) + 1;
+          .in("lesson_id", allLessonIds);
+        for (const p of (progress ?? []) as Array<{ course_id: string; is_completed: boolean; last_seen_at: string }>) {
+          if (p.is_completed) {
+            completedByCourse[p.course_id] = (completedByCourse[p.course_id] || 0) + 1;
+          }
+          if (!lastSeenByCourse[p.course_id] || p.last_seen_at > lastSeenByCourse[p.course_id]) {
+            lastSeenByCourse[p.course_id] = p.last_seen_at;
+          }
         }
       }
     }
+
+    // Favoris user
+    let favoriteIds = new Set<string>();
+    try {
+      const { data: favs } = await supabase
+        .from("institut_user_favorites")
+        .select("course_id")
+        .eq("user_id", user.id);
+      for (const f of (favs ?? []) as Array<{ course_id: string }>) {
+        favoriteIds.add(f.course_id);
+      }
+    } catch { /* table v25 may not exist yet */ }
 
     const enriched: CourseLite[] = courseRows.map((c) => {
       const cat = catBySlug[c.category_id] ?? { slug: "", name: "" };
@@ -87,11 +104,22 @@ export default async function InstitutPage() {
         category_name: cat.name,
         total_lessons: lessonCountByCourse[c.id] ?? 0,
         completed_lessons: completedByCourse[c.id] ?? 0,
+        last_seen_at: lastSeenByCourse[c.id] ?? null,
+        is_favorite: favoriteIds.has(c.id),
       };
     });
 
-    popularCourses = enriched;
-    myCourses = enriched.filter((c) => c.completed_lessons > 0);
+    popularCourses = enriched.slice(0, 12);
+    myCourses = enriched.filter((c) => c.completed_lessons > 0 || c.last_seen_at);
+
+    // Continue watching : cours commencés mais pas finis, triés par last_seen DESC
+    continueWatching = enriched
+      .filter((c) => c.last_seen_at && c.total_lessons > 0 && c.completed_lessons < c.total_lessons)
+      .sort((a, b) => (b.last_seen_at ?? "").localeCompare(a.last_seen_at ?? ""))
+      .slice(0, 6);
+
+    // Favorites
+    favorites = enriched.filter((c) => c.is_favorite).slice(0, 8);
   } catch (e) {
     console.error("Institut fetch error:", e);
   }
@@ -101,6 +129,8 @@ export default async function InstitutPage() {
       categories={categories}
       popularCourses={popularCourses}
       myCourses={myCourses}
+      continueWatching={continueWatching}
+      favorites={favorites}
       isAdmin={isAdmin}
     />
   );

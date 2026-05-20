@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useMemo } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   INSTITUT_THEME as T, INSTITUT_FONTS as F,
   formatDuration, formatLessonDuration, getLevelDef, getEmbedUrl,
@@ -23,13 +24,34 @@ interface Props {
   modules: ModuleWithLessons[];
   totalLessons: number;
   completedLessons: number;
+  isFavorite?: boolean;
 }
 
-export default function CourseClient({ course, category, modules, totalLessons, completedLessons }: Props) {
+export default function CourseClient({ course, category, modules, totalLessons, completedLessons, isFavorite: initialFav = false }: Props) {
   const level = getLevelDef(course.level);
   const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
   const isDone = progress === 100;
   const [openModuleId, setOpenModuleId] = useState<string | null>(modules[0]?.id ?? null);
+  const [isFavorite, setIsFavorite] = useState(initialFav);
+  const [favBusy, setFavBusy] = useState(false);
+
+  async function toggleFavorite() {
+    if (favBusy) return;
+    setFavBusy(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setFavBusy(false); return; }
+    if (isFavorite) {
+      await supabase.from("institut_user_favorites")
+        .delete().eq("user_id", user.id).eq("course_id", course.id);
+      setIsFavorite(false);
+    } else {
+      await supabase.from("institut_user_favorites")
+        .insert({ user_id: user.id, course_id: course.id });
+      setIsFavorite(true);
+    }
+    setFavBusy(false);
+  }
 
   // Détermine la "prochaine leçon" à reprendre
   const nextLesson = useMemo(() => {
@@ -126,6 +148,37 @@ export default function CourseClient({ course, category, modules, totalLessons, 
             <span>📖 {totalLessons} leçon{totalLessons > 1 ? "s" : ""}</span>
             {course.duration_mins && <span>⏱ {formatDuration(course.duration_mins)}</span>}
             {course.instructor && <span>🎙️ {course.instructor}</span>}
+          </div>
+
+          {/* Action bar dans le hero */}
+          <div style={{
+            display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap",
+          }}>
+            <button onClick={toggleFavorite} disabled={favBusy} style={{
+              background: isFavorite ? "rgba(255,255,255,0.95)" : "rgba(0,0,0,0.3)",
+              border: `1px solid ${isFavorite ? "transparent" : "rgba(255,255,255,0.3)"}`,
+              borderRadius: 999, padding: "7px 14px",
+              color: isFavorite ? "#C24B7A" : "#fff",
+              fontWeight: 700, fontSize: 12, cursor: favBusy ? "wait" : "pointer",
+              fontFamily: F.body,
+              display: "inline-flex", alignItems: "center", gap: 6,
+            }}>
+              {isFavorite ? "❤️ Favori" : "🤍 Ajouter aux favoris"}
+            </button>
+
+            {isDone && (
+              <Link href={`/institut/cours/${course.slug}/certificat`} style={{
+                background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`,
+                color: "#111",
+                borderRadius: 999, padding: "7px 14px",
+                fontWeight: 700, fontSize: 12, fontFamily: F.body,
+                textDecoration: "none",
+                display: "inline-flex", alignItems: "center", gap: 6,
+                boxShadow: "0 2px 12px rgba(212,175,55,0.4)",
+              }}>
+                🏆 Voir mon certificat
+              </Link>
+            )}
           </div>
         </div>
       </div>

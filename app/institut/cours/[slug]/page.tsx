@@ -82,6 +82,16 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   const totalLessons = lessons.length;
   const completedLessons = Object.values(progMap).filter((p) => p.is_completed).length;
 
+  // Favori ?
+  let isFavorite = false;
+  try {
+    const { data: fav } = await supabase
+      .from("institut_user_favorites")
+      .select("id")
+      .eq("user_id", user.id).eq("course_id", course.id).maybeSingle();
+    isFavorite = !!fav;
+  } catch { /* table v25 may not exist */ }
+
   return (
     <CourseClient
       course={course}
@@ -89,6 +99,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
       modules={modulesWithLessons}
       totalLessons={totalLessons}
       completedLessons={completedLessons}
+      isFavorite={isFavorite}
     />
   );
 }
