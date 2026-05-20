@@ -16,6 +16,7 @@ const QUICK_ACTIONS = [
   { emoji: "🙏", label: "Prions ensemble", sub: "Intercession & demandes", href: "/prayer", gradient: "linear-gradient(145deg, #4c0519 0%, #9f1239 55%, #fb7185 100%)", glow: "rgba(251,113,133,0.35)" },
   { emoji: "👥", label: "Communaute", sub: "Echanges & partages", href: "/community", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #4ade80 100%)", glow: "rgba(74,222,128,0.35)" },
   { emoji: "📺", label: "Jesus Daily TV", sub: "Predications & live", href: "/jesus-daily", gradient: "linear-gradient(145deg, #3d1a72 0%, #5a2ca0 55%, #a78bfa 100%)", glow: "rgba(167,139,250,0.35)" },
+  { emoji: "🎓", label: "Institut Berakah", sub: "Formations & cursus", href: "/institut", gradient: "linear-gradient(145deg, #3e1c70 0%, #7c3aed 55%, #d4af37 100%)", glow: "rgba(212,175,55,0.35)" },
   { emoji: "📅", label: "Evenements", sub: "Calendrier CCB", href: "/events", gradient: "linear-gradient(145deg, #064e3b 0%, #059669 55%, #34d399 100%)", glow: "rgba(52,211,153,0.35)" },
   { emoji: "💝", label: "Faire un don", sub: "Soutenir le ministere", href: "/dons", gradient: "linear-gradient(145deg, #7f1d1d 0%, #dc2626 55%, #f87171 100%)", glow: "rgba(248,113,113,0.35)" },
   { emoji: "🖼️", label: "Galerie", sub: "Photos & souvenirs", href: "/galerie", gradient: "linear-gradient(145deg, #831843 0%, #db2777 55%, #f9a8d4 100%)", glow: "rgba(249,168,212,0.35)" },
