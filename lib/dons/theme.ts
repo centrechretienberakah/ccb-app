@@ -125,6 +125,37 @@ export function modesByRegion(region: PayRegion): PaymentMode[] {
   return PAYMENT_MODES.filter((m) => m.region === region);
 }
 
+// ─── Campagne (DB) ───────────────────────────────────────────────────
+export interface DonationCampaign {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  cover_url: string | null;
+  kind: DonationKind;
+  target_amount_xaf: number;
+  current_amount_xaf: number;
+  donors_count: number;
+  starts_at: string;
+  ends_at: string | null;
+  is_active: boolean;
+  is_featured: boolean;
+  order_index: number;
+}
+
+export function campaignProgress(c: DonationCampaign): number {
+  if (c.target_amount_xaf <= 0) return 0;
+  return Math.min(100, Math.round((c.current_amount_xaf / c.target_amount_xaf) * 100));
+}
+
+export function daysLeft(c: DonationCampaign): number | null {
+  if (!c.ends_at) return null;
+  const ms = new Date(c.ends_at).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+}
+
+
 // ─── Utilisations des dons ───────────────────────────────────────────
 export const DONATION_USES = [
   { emoji: "🎙️", label: "Production de prédications et enseignements" },

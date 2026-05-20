@@ -5,14 +5,17 @@ import {
   DONS_THEME as T,
   DONS_FONTS as F,
   CURRENCIES, type CurrencyCode, getCurrency, formatAmount,
-  DONATION_KINDS, type DonationKind,
+  DONATION_KINDS, type DonationKind, getKind,
   PAYMENT_MODES, type PayRegion, type PaymentMode,
   DONATION_USES,
+  type DonationCampaign, campaignProgress, daysLeft,
 } from "@/lib/dons/theme";
 
 interface Props {
   heroTitle: string;
   heroIntro: string;
+  campaigns: DonationCampaign[];
+  isAdmin: boolean;
 }
 
 const VERSES = [
@@ -33,7 +36,7 @@ const REGION_ORDER: PayRegion[] = ["CM", "EU", "INTL", "CD"];
 
 type Tab = "give" | "where";
 
-export default function DonsClient({ heroTitle, heroIntro }: Props) {
+export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }: Props) {
   const [currency, setCurrency] = useState<CurrencyCode>("XAF");
   const [kind, setKind] = useState<DonationKind>("offering");
   const [amount, setAmount] = useState<number | "">("");
@@ -41,6 +44,20 @@ export default function DonsClient({ heroTitle, heroIntro }: Props) {
   const [region, setRegion] = useState<PayRegion>("CM");
   const [tab, setTab] = useState<Tab>("give");
   const [verseIdx, setVerseIdx] = useState<number>(() => Math.floor(Math.random() * VERSES.length));
+  const [selectedCampaign, setSelectedCampaign] = useState<DonationCampaign | null>(null);
+
+  // Sélectionner une campagne → pré-remplit le wizard
+  function selectCampaign(c: DonationCampaign) {
+    setSelectedCampaign(c);
+    setKind(c.kind);
+    setTab("give");
+    if (typeof window !== "undefined") {
+      setTimeout(() => {
+        const el = document.getElementById("wizard");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }
 
   const cur = getCurrency(currency);
   const verse = VERSES[verseIdx];
@@ -105,8 +122,41 @@ export default function DonsClient({ heroTitle, heroIntro }: Props) {
         </button>
       </div>
 
+      {/* ── Campagnes en cours ────────────────────────────────────── */}
+      {campaigns.length > 0 ? (
+        <div style={{ maxWidth: 1000, margin: "30px auto 0", padding: "0 16px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+            <h2 style={{ fontFamily: F.title, fontSize: 20, margin: 0, fontWeight: 700, color: T.text }}>
+              🎯 Campagnes en cours
+            </h2>
+            <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>
+              {campaigns.length} projet{campaigns.length > 1 ? "s" : ""} actif{campaigns.length > 1 ? "s" : ""}
+            </p>
+          </div>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14,
+          }}>
+            {campaigns.map((c) => (
+              <CampaignCard key={c.id} campaign={c} onSelect={() => selectCampaign(c)} />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Admin badge ──────────────────────────────────────────── */}
+      {isAdmin ? (
+        <div style={{ maxWidth: 1000, margin: "16px auto 0", padding: "0 16px" }}>
+          <Link href="/dons/admin" style={{
+            display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px",
+            background: T.violetSoft, border: `1px solid ${T.violet}`, color: T.violetDark,
+            borderRadius: 999, fontWeight: 700, fontSize: 12.5, textDecoration: "none",
+          }}>⚙️ Gérer les campagnes</Link>
+        </div>
+      ) : null}
+
       {/* ── Tabs ─────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 760, margin: "26px auto 0", padding: "0 16px" }}>
+      <div id="wizard" style={{ maxWidth: 760, margin: "26px auto 0", padding: "0 16px" }}>
         <div style={{
           display: "inline-flex", background: T.surface2, borderRadius: 999,
           padding: 4, gap: 4, border: `1px solid ${T.border}`,
@@ -229,6 +279,19 @@ export default function DonsClient({ heroTitle, heroIntro }: Props) {
 
           {/* 4. Récap */}
           <Section title="4. Récap de ton intention">
+            {selectedCampaign ? (
+              <div style={{
+                marginBottom: 10, padding: "10px 14px",
+                background: T.violetSoft, border: `1px solid ${T.violet}`, borderRadius: 10,
+                fontSize: 12.5, color: T.violetDark, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+              }}>
+                <span>🎯 Affecté à la campagne <strong>{selectedCampaign.title}</strong></span>
+                <button onClick={() => setSelectedCampaign(null)} style={{
+                  background: "transparent", color: T.violetDark, border: "none",
+                  cursor: "pointer", fontWeight: 700, fontSize: 12,
+                }}>× retirer</button>
+              </div>
+            ) : null}
             <div style={{
               padding: "18px 20px", background: T.card,
               border: `1.5px solid ${T.gold}`, borderRadius: 14,
@@ -344,6 +407,103 @@ function TabBtn({ active, onClick, children }: {
       border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer",
       fontFamily: F.body, boxShadow: active ? T.shadowSoft : "none",
     }}>{children}</button>
+  );
+}
+
+function CampaignCard({ campaign, onSelect }: {
+  campaign: DonationCampaign; onSelect: () => void;
+}) {
+  const pct = campaignProgress(campaign);
+  const remaining = Math.max(0, campaign.target_amount_xaf - campaign.current_amount_xaf);
+  const days = daysLeft(campaign);
+  const kindDef = getKind(campaign.kind);
+
+  return (
+    <div style={{
+      background: T.card, border: `1px solid ${T.border}`, borderRadius: 14,
+      overflow: "hidden", display: "flex", flexDirection: "column",
+      boxShadow: T.shadowSoft,
+    }}>
+      {/* Cover */}
+      <div style={{
+        position: "relative", aspectRatio: "16/9",
+        background: campaign.cover_url ? "#000" : `linear-gradient(135deg, ${kindDef.color}, ${T.violetDark})`,
+      }}>
+        {campaign.cover_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={campaign.cover_url} alt={campaign.title}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <div style={{
+            position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 64, color: "rgba(255,255,255,0.85)",
+          }}>{kindDef.emoji}</div>
+        )}
+        <div style={{
+          position: "absolute", top: 10, left: 10,
+          padding: "4px 10px", borderRadius: 6,
+          background: "rgba(0,0,0,0.7)", color: "#fff",
+          fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8,
+        }}>{kindDef.emoji} {kindDef.label.toUpperCase()}</div>
+        {campaign.is_featured ? (
+          <div style={{
+            position: "absolute", top: 10, right: 10,
+            padding: "4px 10px", borderRadius: 6,
+            background: T.gold, color: "#000",
+            fontSize: 10.5, fontWeight: 800, letterSpacing: 0.6,
+          }}>⭐ MIS EN AVANT</div>
+        ) : null}
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+        <h3 style={{ fontFamily: F.title, fontSize: 17, margin: 0, fontWeight: 700, color: T.text, lineHeight: 1.25 }}>
+          {campaign.title}
+        </h3>
+        {campaign.subtitle ? (
+          <p style={{ fontSize: 13, color: T.textSoft, margin: 0, lineHeight: 1.45 }}>{campaign.subtitle}</p>
+        ) : null}
+
+        {/* Jauge */}
+        <div style={{ marginTop: 6 }}>
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "baseline",
+            marginBottom: 4, fontSize: 12, color: T.textMuted, fontWeight: 600,
+          }}>
+            <span style={{ color: T.text, fontWeight: 800, fontSize: 14 }}>
+              {formatAmount(campaign.current_amount_xaf, "XAF")}
+            </span>
+            <span>sur {formatAmount(campaign.target_amount_xaf, "XAF")}</span>
+          </div>
+          <div style={{ height: 8, background: T.surface2, borderRadius: 999, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: `${pct}%`,
+              background: `linear-gradient(90deg, ${kindDef.color}, ${T.gold})`,
+              transition: "width 400ms ease",
+            }} />
+          </div>
+          <div style={{
+            display: "flex", justifyContent: "space-between", marginTop: 4,
+            fontSize: 11, color: T.textMuted, fontWeight: 600,
+          }}>
+            <span style={{ color: T.violet, fontWeight: 800 }}>{pct} % collectés</span>
+            <span>{campaign.donors_count} donateur{campaign.donors_count > 1 ? "s" : ""}</span>
+          </div>
+        </div>
+
+        {/* Meta */}
+        <div style={{ display: "flex", gap: 12, fontSize: 11, color: T.textMuted, marginTop: 2, flexWrap: "wrap" }}>
+          {remaining > 0 ? <span>🎯 Reste {formatAmount(remaining, "XAF")}</span> : <span style={{ color: T.green, fontWeight: 700 }}>✓ Objectif atteint !</span>}
+          {days != null ? <span>⏳ {days} jour{days > 1 ? "s" : ""}</span> : null}
+        </div>
+
+        <button onClick={onSelect} style={{
+          marginTop: "auto", padding: "10px 14px",
+          background: T.heart, color: "#fff", border: "none",
+          borderRadius: 999, fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: F.body,
+        }}>💝 Soutenir cette campagne</button>
+      </div>
+    </div>
   );
 }
 
