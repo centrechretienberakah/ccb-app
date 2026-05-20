@@ -14,6 +14,11 @@ import {
   getYoutubeThumbnail,
   relativeDate,
 } from "@/lib/jdtv/theme";
+import ReactionsBar from "./ReactionsBar";
+import CommentsSection, { type CommentItem } from "./CommentsSection";
+import LiveChat, { type LiveMessage } from "./LiveChat";
+
+type Reaction = "clap" | "love" | "pray" | "fire" | "sparkle";
 
 interface Props {
   video: JdtvVideo;
@@ -23,10 +28,19 @@ interface Props {
   watchedSecs: number;
   canAccessPremium: boolean;
   isAuth: boolean;
+  currentUserId: string | null;
+  isStaff: boolean;
+  initialComments: CommentItem[];
+  initialLikedIds: string[];
+  reactionCounts: Record<Reaction, number>;
+  userReaction: Reaction | null;
+  initialLiveMessages: LiveMessage[];
 }
 
 export default function VideoPlayerClient({
   video, category, recommendations, isInWatchlist, watchedSecs, canAccessPremium, isAuth,
+  currentUserId, isStaff,
+  initialComments, initialLikedIds, reactionCounts, userReaction, initialLiveMessages,
 }: Props) {
   const router = useRouter();
   const [inWl, setInWl] = useState(isInWatchlist);
@@ -195,7 +209,7 @@ export default function VideoPlayerClient({
 
           {/* Tags */}
           {video.tags && video.tags.length > 0 ? (
-            <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", gap: 6 }}>
+            <div style={{ marginTop: 14, marginBottom: 22, display: "flex", flexWrap: "wrap", gap: 6 }}>
               {video.tags.map((t) => (
                 <span key={t} style={{
                   padding: "4px 10px", borderRadius: 999, background: T.violetSoft, color: T.text,
@@ -204,15 +218,49 @@ export default function VideoPlayerClient({
               ))}
             </div>
           ) : null}
+
+          {/* Réactions */}
+          {!isPremiumLocked ? (
+            <ReactionsBar
+              videoId={video.id}
+              initialCounts={reactionCounts}
+              initialUserReaction={userReaction}
+              isAuth={isAuth}
+            />
+          ) : null}
+
+          {/* Commentaires */}
+          {!isPremiumLocked ? (
+            <CommentsSection
+              videoId={video.id}
+              initialComments={initialComments}
+              initialLikedIds={initialLikedIds}
+              currentUserId={currentUserId}
+              isAuth={isAuth}
+              isStaff={isStaff}
+            />
+          ) : null}
         </div>
 
-        {/* Sidebar recommendations */}
-        <aside>
-          <h2 style={{ fontFamily: F.title, fontSize: 18, margin: "0 0 14px" }}>À découvrir</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {recommendations.slice(0, 8).map((v) => (
-              <RecoCard key={v.id} video={v} />
-            ))}
+        {/* Sidebar : live chat (si live) + recommendations */}
+        <aside style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          {video.is_live && !isPremiumLocked ? (
+            <LiveChat
+              videoId={video.id}
+              initialMessages={initialLiveMessages}
+              isAuth={isAuth}
+              currentUserId={currentUserId}
+              isStaff={isStaff}
+            />
+          ) : null}
+
+          <div>
+            <h2 style={{ fontFamily: F.title, fontSize: 18, margin: "0 0 14px" }}>À découvrir</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {recommendations.slice(0, 8).map((v) => (
+                <RecoCard key={v.id} video={v} />
+              ))}
+            </div>
           </div>
         </aside>
       </div>
@@ -222,6 +270,10 @@ export default function VideoPlayerClient({
       <style jsx global>{`
         @media (max-width: 900px) {
           .jdtv-detail-grid { grid-template-columns: 1fr !important; }
+        }
+        @keyframes jdtvPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.85); }
         }
       `}</style>
     </div>
