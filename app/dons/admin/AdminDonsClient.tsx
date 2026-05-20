@@ -19,14 +19,30 @@ function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-async function uploadFile(file: File): Promise<string | null> {
+async function uploadFile(file: File): Promise<{ url: string | null; error: string | null }> {
+  // Quick size guard (≤ 5 Mo)
+  if (file.size > 5 * 1024 * 1024) {
+    return { url: null, error: `Fichier trop volumineux (${(file.size / 1024 / 1024).toFixed(1)} Mo). Max 5 Mo.` };
+  }
   const supabase = createClient();
-  const ext = file.name.split(".").pop() || "bin";
-  const path = `dons/campaigns/${Date.now()}.${ext}`;
-  const { error: upErr } = await supabase.storage.from("posts").upload(path, file);
-  if (upErr) { alert("Erreur upload : " + upErr.message); return null; }
+  const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+  const path = `dons/campaigns/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+  const { error: upErr } = await supabase.storage.from("posts").upload(path, file, {
+    cacheControl: "3600", upsert: false,
+  });
+  if (upErr) {
+    // Détecte les cas typiques pour donner un meilleur message
+    const msg = upErr.message ?? String(upErr);
+    if (/bucket.*not.*found/i.test(msg)) {
+      return { url: null, error: `Bucket "posts" introuvable. Crée-le dans Supabase Storage avec accès public en lecture.` };
+    }
+    if (/row.*level.*security|policy|unauthor/i.test(msg)) {
+      return { url: null, error: `Permission refusée par RLS. Vérifie que tu es bien connecté avec un rôle moderator+ et que le bucket "posts" autorise les uploads.` };
+    }
+    return { url: null, error: msg };
+  }
   const { data } = supabase.storage.from("posts").getPublicUrl(path);
-  return data.publicUrl;
+  return { url: data.publicUrl, error: null };
 }
 
 type AdminTab = "campaigns" | "records";
@@ -206,10 +222,25 @@ export default function AdminDonsClient({
                 onEdit={() => setEditing(c)}
                 onAdjust={() => setAdjusting(c)}
                 onDelete={async () => {
-                  if (!confirm(`Supprimer définitivement "${c.title}" ?`)) return;
+                  if (!confirm(`Supprimer définitivement "${c.title}" ?\n\nLes dons existants ne seront pas supprimés (juste détachés de cette campagne).`)) return;
                   const supabase = createClient();
-                  const { error } = await supabase.from("donations_campaigns").delete().eq("id", c.id);
-                  if (error) { alert("Erreur : " + error.message); return; }
+                  // .select() pour détecter le cas "RLS silent" (0 ligne affectée sans erreur)
+                  const { data, error } = await supabase
+                    .from("donations_campaigns").delete().eq("id", c.id).select("id");
+                  if (error) {
+                    alert("Erreur : " + error.message);
+                    return;
+                  }
+                  if (!data || data.length === 0) {
+                    alert(
+                      "⚠️ Suppression refusée par la base de données.\n\n" +
+                      "Causes possibles :\n" +
+                      "• Ton rôle dans user_roles n'est pas moderator/leader/admin/owner.\n" +
+                      "• La fonction RLS public.is_moderator_or_above() n'existe pas dans la DB.\n\n" +
+                      "Workaround : désactive la campagne (édite ✏️ → décoche 'Active') au lieu de la supprimer."
+                    );
+                    return;
+                  }
                   remove(c.id);
                 }}
               />
@@ -619,10 +650,15 @@ function CampaignForm({ initial, onClose, onSaved }: {
     onSaved(result.data as DonationCampaign);
   }
 
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   async function handleUploadCover(file: File) {
-    setBusy(true);
-    const url = await uploadFile(file);
-    setBusy(false);
+    setUploading(true);
+    setUploadError(null);
+    const { url, error: upError } = await uploadFile(file);
+    setUploading(false);
+    if (upError) { setUploadError(upError); return; }
     if (url) setCoverUrl(url);
   }
 
@@ -683,11 +719,62 @@ function CampaignForm({ initial, onClose, onSaved }: {
         </Field>
       </div>
 
-      <Field label="Cover URL (image 16:9)">
+      <Field label="Cover URL (image 16:9)" hint="Image 16:9 recommandée · max 5 Mo">
         <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
-        <input type="file" accept="image/*"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUploadCover(f); }}
-          style={{ marginTop: 6, fontSize: 12 }} />
+        <div style={{ marginTop: 8, display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+          {/* Preview thumbnail */}
+          {coverUrl ? (
+            <div style={{
+              flex: "0 0 96px", aspectRatio: "16/9",
+              borderRadius: 8, overflow: "hidden",
+              border: `1px solid ${T.border}`, background: "#000",
+              position: "relative",
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={coverUrl} alt="aperçu" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <button type="button" onClick={() => setCoverUrl("")} aria-label="Retirer la couverture"
+                style={{
+                  position: "absolute", top: 4, right: 4,
+                  width: 22, height: 22, borderRadius: 999,
+                  background: "rgba(0,0,0,0.7)", color: "#fff",
+                  border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                }}>×</button>
+            </div>
+          ) : (
+            <div style={{
+              flex: "0 0 96px", aspectRatio: "16/9", borderRadius: 8,
+              border: `1px dashed ${T.border}`, background: T.surface2,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: T.textMuted, fontSize: 22,
+            }}>🖼️</div>
+          )}
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <label style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "8px 12px", background: uploading ? T.surface2 : T.violet,
+              color: uploading ? T.textMuted : "#fff",
+              border: "none", borderRadius: 8,
+              fontSize: 12.5, fontWeight: 700, cursor: uploading ? "wait" : "pointer",
+            }}>
+              {uploading ? "⏳ Upload en cours…" : "📤 Choisir une image"}
+              <input type="file" accept="image/*" disabled={uploading}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUploadCover(f); e.target.value = ""; }}
+                style={{ display: "none" }} />
+            </label>
+            {uploadError ? (
+              <div style={{
+                marginTop: 8, padding: "8px 10px",
+                background: T.heartSoft, border: `1px solid ${T.heart}`,
+                borderRadius: 8, fontSize: 11.5, color: T.heart, lineHeight: 1.5,
+              }}>⚠️ {uploadError}</div>
+            ) : null}
+            {!uploadError && coverUrl ? (
+              <div style={{ marginTop: 6, fontSize: 11, color: T.green, fontWeight: 600 }}>
+                ✓ Couverture prête. Clique &ldquo;Enregistrer&rdquo; pour valider.
+              </div>
+            ) : null}
+          </div>
+        </div>
       </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
