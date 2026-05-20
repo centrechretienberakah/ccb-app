@@ -30,19 +30,51 @@ export interface GroupCategoryDef {
 }
 
 export const GROUP_CATEGORIES: GroupCategoryDef[] = [
-  { id: "cellule",       label: "Cellule",            emoji: "🏠" },
-  { id: "ministere",     label: "Ministère",          emoji: "⛪" },
-  { id: "leadership",    label: "Leadership",         emoji: "👑" },
-  { id: "intercession",  label: "Intercession",       emoji: "🙏" },
-  { id: "jeunesse",      label: "Jeunesse",           emoji: "🎓" },
-  { id: "couple-famille",label: "Couple & Famille",   emoji: "👨‍👩‍👧" },
-  { id: "evangelisation",label: "Évangélisation",     emoji: "📣" },
-  { id: "etude-biblique",label: "Étude biblique",     emoji: "📖" },
-  { id: "general",       label: "Général",            emoji: "💬" },
+  // Brief CCB 2026
+  { id: "leadership",     label: "Leadership",         emoji: "👑" },
+  { id: "intercession",   label: "Intercession",       emoji: "🙏" },
+  { id: "media",          label: "Médias",             emoji: "📸" },
+  { id: "louange",        label: "Louange",            emoji: "🎵" },
+  { id: "formation",      label: "Formation",          emoji: "🎓" },
+  { id: "mentorat",       label: "Mentorat",           emoji: "🤝" },
+  { id: "jeunesse",       label: "Jeunesse",           emoji: "🌟" },
+  { id: "bootcamp",       label: "Bootcamp",           emoji: "🏕️" },
+  { id: "equipe-tech",    label: "Équipe Technique",   emoji: "🛠️" },
+  // Catégories historiques conservées
+  { id: "cellule",        label: "Cellule",            emoji: "🏠" },
+  { id: "ministere",      label: "Ministère",          emoji: "⛪" },
+  { id: "couple-famille", label: "Couple & Famille",   emoji: "👨‍👩‍👧" },
+  { id: "evangelisation", label: "Évangélisation",     emoji: "📣" },
+  { id: "etude-biblique", label: "Étude biblique",     emoji: "📖" },
+  { id: "general",        label: "Général",            emoji: "💬" },
 ];
 
 export function getGroupCategoryDef(id: string | null | undefined): GroupCategoryDef {
   return GROUP_CATEGORIES.find((c) => c.id === id) ?? GROUP_CATEGORIES[GROUP_CATEGORIES.length - 1];
+}
+
+/** Indique si le user peut créer un groupe (matche RLS groups_insert_auth). */
+export function canCreateGroup(role: string | null | undefined): boolean {
+  return role === "owner" || role === "admin" || role === "leader" || role === "moderator";
+}
+
+/** Format relatif court pour la liste type WhatsApp ("12:34", "Hier", "lun.", "12/03") */
+export function formatChatTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) {
+    return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return "Hier";
+  const sevenDays = 7 * 24 * 3600 * 1000;
+  if (now.getTime() - d.getTime() < sevenDays) {
+    return d.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "");
+  }
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
 }
 
 // Helper notif staff

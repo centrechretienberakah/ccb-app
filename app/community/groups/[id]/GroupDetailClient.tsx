@@ -202,6 +202,28 @@ export default function GroupDetailClient({
 
   }, [group.id, isMember, currentUserId, currentUserProfile?.display_name]);
 
+  // Mark messages as read whenever user opens the group (or new messages arrive
+  // while the tab is visible). Best-effort: ignore RPC errors si la migration
+  // n'a pas encore été exécutée.
+  useEffect(() => {
+    if (!isMember) return;
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+    const supabase = createClient();
+    let cancelled = false;
+    (async () => {
+      try {
+        await supabase.rpc("groups_mark_read", { p_group_id: group.id });
+      } catch { /* RPC pas dispo */ }
+      if (cancelled) return;
+    })();
+    function onVisible() {
+      if (document.visibilityState !== "visible") return;
+      supabase.rpc("groups_mark_read", { p_group_id: group.id }).then(() => {/* noop */});
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { cancelled = true; document.removeEventListener("visibilitychange", onVisible); };
+  }, [group.id, isMember, messages.length]);
+
   function emitTyping(isTyping: boolean) {
     const ch = presenceChannelRef.current;
     if (!ch) return;

@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { GROUPS_THEME as T, GROUPS_FONTS as F, GROUP_CATEGORIES, notifyGroupsStaff } from "@/lib/groups/theme";
+import {
+  GROUPS_THEME as T, GROUPS_FONTS as F,
+  GROUP_CATEGORIES, getGroupCategoryDef,
+  canCreateGroup, formatChatTime,
+  notifyGroupsStaff,
+} from "@/lib/groups/theme";
 
 interface GroupLite {
   id: string;
@@ -18,22 +23,31 @@ interface GroupLite {
   member_count: number;
   is_member: boolean;
   my_role: "owner" | "admin" | "member" | null;
+  last_message_content: string | null;
+  last_message_attachment_type: string | null;
+  last_message_at: string | null;
+  unread_count: number;
+  muted_until: string | null;
 }
 
 interface Props {
   initialGroups: GroupLite[];
   currentUserId: string;
+  userRole: string | null;
 }
 
-export default function GroupsListClient({ initialGroups, currentUserId }: Props) {
+type Filter = "all" | "mine" | "public" | "discover";
+
+export default function GroupsListClient({ initialGroups, currentUserId, userRole }: Props) {
   const router = useRouter();
   const [groups, setGroups] = useState<GroupLite[]>(initialGroups);
-  const [filter, setFilter] = useState<"all" | "mine" | "public">("all");
+  const [filter, setFilter] = useState<Filter>("mine");
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const canCreate = canCreateGroup(userRole);
 
-  // Create form state
+  // Create form
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"public" | "private">("public");
@@ -45,8 +59,9 @@ export default function GroupsListClient({ initialGroups, currentUserId }: Props
 
   const filtered = useMemo(() => {
     let out = groups;
-    if (filter === "mine") out = out.filter((g) => g.is_member);
-    else if (filter === "public") out = out.filter((g) => g.type === "public");
+    if (filter === "mine")     out = out.filter((g) => g.is_member);
+    else if (filter === "public")   out = out.filter((g) => g.type === "public");
+    else if (filter === "discover") out = out.filter((g) => !g.is_member && g.type === "public");
     if (search.trim()) {
       const q = search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
       out = out.filter((g) => {
@@ -54,11 +69,21 @@ export default function GroupsListClient({ initialGroups, currentUserId }: Props
         return t.includes(q);
       });
     }
+    // Pour "mine" : tri par dernier message décroissant, puis non lus en haut
+    if (filter === "mine") {
+      return [...out].sort((a, b) => {
+        if ((a.unread_count > 0) !== (b.unread_count > 0)) return a.unread_count > 0 ? -1 : 1;
+        const tA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+        const tB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+        return tB - tA;
+      });
+    }
     return out;
   }, [groups, filter, search]);
 
   async function createGroup() {
     if (!name.trim()) { setError("Le nom est requis."); return; }
+    if (!canCreate) { setError("Permissions insuffisantes."); return; }
     setSaving(true); setError("");
     const supabase = createClient();
     const { data, error: e } = await supabase.from("groups").insert({
@@ -67,22 +92,38 @@ export default function GroupsListClient({ initialGroups, currentUserId }: Props
       type, category,
       created_by: currentUserId,
     }).select("id, name, description, cover_url, type, category, created_by, created_at").single();
-    if (e) { setError(e.message); setSaving(false); return; }
-    const newGroup = data as Omit<GroupLite, "member_count" | "is_member" | "my_role">;
+    if (e) {
+      setSaving(false);
+      // RLS-friendly error
+      if (/policy|permission|denied|row.*level/i.test(e.message)) {
+        setError("Permission refusée. Seuls les owner/admin/leader/moderator peuvent créer un groupe.");
+      } else {
+        setError(e.message);
+      }
+      return;
+    }
+    const newGroup = data as Omit<GroupLite, "member_count" | "is_member" | "my_role" | "unread_count" | "muted_until" | "last_message_content" | "last_message_attachment_type" | "last_message_at">;
 
-    // Auto-join creator as owner
-    await supabase.from("group_members").insert({
-      group_id: newGroup.id, user_id: currentUserId, role: "owner",
-    });
+    // Le trigger SQL groups_auto_owner_membership() crée la ligne owner.
+    // On le fait quand même en best-effort si la migration n'est pas encore exécutée.
+    try {
+      await supabase.from("group_members").upsert({
+        group_id: newGroup.id, user_id: currentUserId, role: "owner",
+      }, { onConflict: "group_id,user_id" });
+    } catch { /* trigger a déjà fait le boulot */ }
 
     setGroups((prev) => [{
       ...newGroup,
       member_count: 1,
       is_member: true,
       my_role: "owner",
+      last_message_content: null,
+      last_message_attachment_type: null,
+      last_message_at: null,
+      unread_count: 0,
+      muted_until: null,
     }, ...prev]);
 
-    // Notif staff
     notifyGroupsStaff(
       `🧑‍🤝‍🧑 Nouveau groupe : ${newGroup.name}`,
       `${type === "public" ? "Public" : "Privé"} · ${description.slice(0, 100) || "Sans description"}`,
@@ -130,9 +171,9 @@ export default function GroupsListClient({ initialGroups, currentUserId }: Props
           .ccb-grp-title { font-size: 2rem; }
           .ccb-grp-tagline { font-size: 14px; white-space: normal; }
         }
-        .ccb-grp-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-        @media (min-width: 640px) { .ccb-grp-grid { grid-template-columns: 1fr 1fr; } }
-        @media (min-width: 1024px) { .ccb-grp-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .ccb-grp-row { transition: background 120ms ease; }
+        .ccb-grp-row:hover { background: ${T.surface2}; }
+        .ccb-grp-row:active { background: ${T.violetSoft}; }
       `}</style>
 
       {/* Hero */}
@@ -156,24 +197,31 @@ export default function GroupsListClient({ initialGroups, currentUserId }: Props
             margin: 0, opacity: 0.9, fontStyle: "italic",
             color: "#EDE7FA",
           }}>
-            Cellules, ministères, intercession — rejoins ou crée ton groupe.
+            Cellules, ministères, intercession — collabore en équipe.
           </p>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "16px 14px 48px" }}>
-        {/* Back + Create button */}
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 14px 48px" }}>
+        {/* Top bar */}
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
-          <Link href="/community" style={{
-            background: T.card, border: `1px solid ${T.border}`,
-            borderRadius: 8, padding: "6px 12px",
-            color: T.violet, fontSize: 12, fontWeight: 700,
-            textDecoration: "none", fontFamily: F.body,
-          }}>← Communauté</Link>
+          <Link href="/community" style={backLink}>← Communauté</Link>
           <div style={{ flex: 1 }} />
-          <button onClick={() => setShowCreate(true)} style={btnPrimary}>
-            ➕ Créer un groupe
-          </button>
+          {canCreate ? (
+            <button onClick={() => setShowCreate(true)} style={btnPrimary}>
+              ➕ Créer un groupe
+            </button>
+          ) : (
+            <span
+              title="Seuls les leader/admin/owner peuvent créer un groupe."
+              style={{
+                fontSize: 11, color: T.textMuted, fontStyle: "italic",
+                padding: "6px 12px", background: T.card,
+                border: `1px solid ${T.border}`, borderRadius: 999,
+              }}>
+              🔒 Création réservée aux leaders
+            </span>
+          )}
         </div>
 
         {/* Search */}
@@ -189,128 +237,40 @@ export default function GroupsListClient({ initialGroups, currentUserId }: Props
         />
 
         {/* Filters */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
-          {(["all", "mine", "public"] as const).map((f) => (
-            <button key={f} onClick={() => setFilter(f)} style={chip(filter === f)}>
-              {f === "all" ? "📚 Tous" : f === "mine" ? "👥 Mes groupes" : "🌍 Publics"}
-            </button>
-          ))}
+        <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", overflowX: "auto" }}>
+          <button onClick={() => setFilter("mine")}     style={chip(filter === "mine")}>💬 Mes groupes</button>
+          <button onClick={() => setFilter("all")}      style={chip(filter === "all")}>📚 Tous</button>
+          <button onClick={() => setFilter("public")}   style={chip(filter === "public")}>🌍 Publics</button>
+          <button onClick={() => setFilter("discover")} style={chip(filter === "discover")}>✨ Découvrir</button>
         </div>
 
-        {/* List */}
+        {/* Liste WhatsApp-style */}
         {filtered.length === 0 ? (
+          <EmptyState
+            isMine={filter === "mine"}
+            canCreate={canCreate}
+            onCreate={() => setShowCreate(true)}
+            totalGroups={groups.length}
+          />
+        ) : (
           <div style={{
             background: T.card, border: `1px solid ${T.border}`,
-            borderRadius: 14, padding: "60px 20px", textAlign: "center",
+            borderRadius: 14, overflow: "hidden",
+            boxShadow: T.shadowSoft,
           }}>
-            <div style={{ fontSize: 48, marginBottom: 10 }}>🧑‍🤝‍🧑</div>
-            <div style={{ color: T.textMuted, fontSize: 14 }}>
-              {groups.length === 0 ? "Aucun groupe pour l'instant. Crée le premier !" : "Aucun groupe ne correspond."}
-            </div>
-          </div>
-        ) : (
-          <div className="ccb-grp-grid">
-            {filtered.map((g) => {
-              const catDef = GROUP_CATEGORIES.find((c) => c.id === g.category);
-              return (
-                <div key={g.id} style={{
-                  background: T.card, border: `1px solid ${g.is_member ? T.violet : T.border}`,
-                  borderRadius: 14, overflow: "hidden",
-                  boxShadow: T.shadowSoft,
-                  display: "flex", flexDirection: "column",
-                }}>
-                  <Link href={`/community/groups/${g.id}`} style={{
-                    background: g.cover_url
-                      ? `url(${g.cover_url}) center/cover`
-                      : `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
-                    height: 100, display: "flex", alignItems: "flex-end",
-                    padding: 12, textDecoration: "none",
-                    color: "#fff", position: "relative",
-                  }}>
-                    <div style={{
-                      position: "absolute", top: 8, left: 8,
-                      background: g.type === "public" ? "rgba(212,175,55,0.85)" : "rgba(94,42,160,0.85)",
-                      color: g.type === "public" ? "#111" : "#fff",
-                      borderRadius: 999, padding: "2px 9px",
-                      fontSize: 10, fontWeight: 700,
-                    }}>
-                      {g.type === "public" ? "🌍 Public" : "🔒 Privé"}
-                    </div>
-                    {catDef && (
-                      <span style={{
-                        background: "rgba(0,0,0,0.4)", padding: "2px 8px",
-                        borderRadius: 999, fontSize: 10, fontWeight: 700,
-                      }}>
-                        {catDef.emoji} {catDef.label}
-                      </span>
-                    )}
-                  </Link>
-
-                  <div style={{ padding: 14, flex: 1, display: "flex", flexDirection: "column" }}>
-                    <Link href={`/community/groups/${g.id}`} style={{
-                      fontFamily: F.title, fontSize: 16, fontWeight: 700,
-                      color: T.text, textDecoration: "none", marginBottom: 4,
-                    }}>
-                      {g.name}
-                    </Link>
-                    {g.description && (
-                      <p style={{
-                        margin: "0 0 10px", fontSize: 12, color: T.textMuted, lineHeight: 1.5,
-                        overflow: "hidden", display: "-webkit-box",
-                        WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const,
-                      }}>
-                        {g.description}
-                      </p>
-                    )}
-                    <div style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      marginTop: "auto", fontSize: 11, color: T.textMuted,
-                    }}>
-                      <span>👥 {g.member_count} membre{g.member_count > 1 ? "s" : ""}</span>
-                    </div>
-                    <div style={{ marginTop: 10 }}>
-                      {g.is_member ? (
-                        <Link href={`/community/groups/${g.id}`} style={{
-                          display: "block", textAlign: "center",
-                          background: T.violetSoft, color: T.violet,
-                          border: `1px solid ${T.violet}`,
-                          borderRadius: 10, padding: "8px 14px",
-                          fontWeight: 700, fontSize: 12, textDecoration: "none",
-                          fontFamily: F.body,
-                        }}>
-                          ✓ Membre · Ouvrir
-                        </Link>
-                      ) : g.type === "public" ? (
-                        <button onClick={() => joinGroup(g.id)} style={{
-                          width: "100%",
-                          background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
-                          color: "#fff", border: "none",
-                          borderRadius: 10, padding: "8px 14px",
-                          fontWeight: 700, fontSize: 12, cursor: "pointer",
-                          fontFamily: F.body,
-                        }}>
-                          + Rejoindre
-                        </button>
-                      ) : (
-                        <div style={{
-                          textAlign: "center", padding: "8px 14px",
-                          background: T.surface2, borderRadius: 10,
-                          fontSize: 11, color: T.textMuted, fontStyle: "italic",
-                        }}>
-                          🔒 Sur invitation
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {filtered.map((g, i) => (
+              <GroupRow
+                key={g.id} group={g}
+                onJoin={joinGroup}
+                isLast={i === filtered.length - 1}
+              />
+            ))}
           </div>
         )}
       </div>
 
       {/* Modal créer */}
-      {showCreate && (
+      {showCreate && canCreate && (
         <div onClick={(e) => { if (e.target === e.currentTarget) setShowCreate(false); }}
           style={{
             position: "fixed", inset: 0, zIndex: 1000,
@@ -330,9 +290,9 @@ export default function GroupsListClient({ initialGroups, currentUserId }: Props
             </div>
 
             <div style={{ marginBottom: 10 }}>
-              <label style={lbl}>NOM</label>
+              <label style={lbl}>NOM *</label>
               <input value={name} onChange={(e) => setName(e.target.value)}
-                placeholder="ex. Cellule Béthel, Intercesseurs CCB…"
+                placeholder="ex. Intercesseurs CCB, Équipe Louange…"
                 maxLength={80}
                 style={inputStyle}
               />
@@ -366,14 +326,24 @@ export default function GroupsListClient({ initialGroups, currentUserId }: Props
               </div>
             </div>
 
+            <div style={{
+              padding: "10px 12px", background: T.violetSoft,
+              border: `1px solid ${T.violet}`, borderRadius: 10,
+              fontSize: 11.5, color: T.violetDark, lineHeight: 1.5, marginBottom: 10,
+            }}>
+              💡 Le groupe inclura automatiquement <strong>CCB MEET</strong>
+              (visio + audio + partage d&apos;écran) accessible via le bouton
+              🎥 dans chaque conversation.
+            </div>
+
             {error && <div style={{ color: "#C24B7A", fontSize: 12, marginBottom: 10 }}>{error}</div>}
 
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 14 }}>
               <button onClick={() => setShowCreate(false)} style={btnGhost}>Annuler</button>
-              <button onClick={createGroup} disabled={saving} style={{
+              <button onClick={createGroup} disabled={saving || !name.trim()} style={{
                 ...btnPrimary,
                 opacity: !name.trim() ? 0.5 : 1,
-                cursor: saving ? "wait" : "pointer",
+                cursor: saving || !name.trim() ? "not-allowed" : "pointer",
               }}>
                 {saving ? "Création…" : "Créer le groupe"}
               </button>
@@ -385,6 +355,152 @@ export default function GroupsListClient({ initialGroups, currentUserId }: Props
   );
 }
 
+// ─── Group row (WhatsApp-style) ────────────────────────────────────
+function GroupRow({ group: g, onJoin, isLast }: {
+  group: GroupLite; onJoin: (id: string) => void; isLast: boolean;
+}) {
+  const catDef = getGroupCategoryDef(g.category);
+  const isMuted = !!(g.muted_until && new Date(g.muted_until).getTime() > Date.now());
+  const hasUnread = g.unread_count > 0;
+
+  // Aperçu du dernier message
+  let preview = g.last_message_content?.trim() || "";
+  if (!preview && g.last_message_attachment_type) {
+    switch (g.last_message_attachment_type) {
+      case "image": preview = "📷 Photo"; break;
+      case "pdf":   preview = "📄 PDF"; break;
+      case "video": preview = "🎬 Vidéo"; break;
+      case "audio": preview = "🎵 Audio"; break;
+      default:      preview = "📎 Pièce jointe";
+    }
+  }
+  if (!preview) preview = g.description?.trim() || `${catDef.emoji} ${catDef.label}`;
+
+  return (
+    <div className="ccb-grp-row" style={{
+      display: "flex", alignItems: "center", gap: 12,
+      padding: "12px 14px",
+      borderBottom: isLast ? "none" : `1px solid ${T.borderSoft}`,
+    }}>
+      {/* Avatar */}
+      <Link href={`/community/groups/${g.id}`} style={{
+        flex: "0 0 48px", width: 48, height: 48, borderRadius: 999,
+        background: g.cover_url
+          ? `url(${g.cover_url}) center/cover`
+          : `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "#fff", fontFamily: F.title, fontSize: 18, fontWeight: 800,
+        textDecoration: "none", textTransform: "uppercase",
+        boxShadow: hasUnread ? `0 0 0 2px ${T.gold}` : "none",
+      }}>
+        {!g.cover_url && (g.name?.[0] ?? "?")}
+      </Link>
+
+      {/* Texte */}
+      <Link href={`/community/groups/${g.id}`} style={{
+        flex: 1, minWidth: 0, textDecoration: "none", color: "inherit",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+          <div style={{
+            fontSize: 14.5, fontWeight: hasUnread ? 800 : 600, color: T.text,
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            minWidth: 0,
+          }}>
+            {g.name}
+            {g.type === "private" && (
+              <span style={{ marginLeft: 6, color: T.textMuted, fontSize: 11 }}>🔒</span>
+            )}
+            {isMuted && (
+              <span style={{ marginLeft: 4, color: T.textMuted, fontSize: 11 }}>🔕</span>
+            )}
+          </div>
+          <span style={{
+            fontSize: 11, color: hasUnread ? T.violet : T.textMuted,
+            fontWeight: hasUnread ? 700 : 500, whiteSpace: "nowrap",
+          }}>
+            {formatChatTime(g.last_message_at)}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+          <span style={{
+            flex: 1, minWidth: 0,
+            fontSize: 12.5, color: hasUnread ? T.text : T.textMuted,
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            fontWeight: hasUnread ? 600 : 400,
+          }}>
+            {preview}
+          </span>
+          {hasUnread && !isMuted && (
+            <span style={{
+              flex: "0 0 auto",
+              minWidth: 20, height: 20, padding: "0 6px",
+              borderRadius: 999,
+              background: T.violet, color: "#fff",
+              fontSize: 11, fontWeight: 800,
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+            }}>
+              {g.unread_count > 99 ? "99+" : g.unread_count}
+            </span>
+          )}
+          {hasUnread && isMuted && (
+            <span style={{
+              flex: "0 0 auto",
+              fontSize: 11, color: T.textMuted, fontWeight: 700,
+            }}>
+              {g.unread_count > 99 ? "99+" : g.unread_count}
+            </span>
+          )}
+        </div>
+      </Link>
+
+      {/* CTA contextuel */}
+      {!g.is_member ? (
+        g.type === "public" ? (
+          <button onClick={() => onJoin(g.id)} style={{
+            flex: "0 0 auto", padding: "6px 12px",
+            background: T.violet, color: "#fff", border: "none",
+            borderRadius: 999, fontSize: 11.5, fontWeight: 700,
+            cursor: "pointer", fontFamily: F.body,
+          }}>
+            ＋ Rejoindre
+          </button>
+        ) : (
+          <span style={{
+            flex: "0 0 auto", padding: "5px 10px",
+            background: T.surface2, color: T.textMuted,
+            borderRadius: 999, fontSize: 11, fontStyle: "italic",
+          }}>🔒 Privé</span>
+        )
+      ) : null}
+    </div>
+  );
+}
+
+function EmptyState({ isMine, canCreate, onCreate, totalGroups }: {
+  isMine: boolean; canCreate: boolean; onCreate: () => void; totalGroups: number;
+}) {
+  return (
+    <div style={{
+      background: T.card, border: `1px solid ${T.border}`,
+      borderRadius: 14, padding: "60px 20px", textAlign: "center",
+    }}>
+      <div style={{ fontSize: 48, marginBottom: 10 }}>{isMine ? "💬" : "🧑‍🤝‍🧑"}</div>
+      <div style={{ color: T.text, fontWeight: 700, marginBottom: 4 }}>
+        {isMine
+          ? "Tu n'es membre d'aucun groupe pour l'instant"
+          : (totalGroups === 0 ? "Aucun groupe pour l'instant" : "Aucun groupe ne correspond")}
+      </div>
+      <div style={{ color: T.textMuted, fontSize: 12.5, marginBottom: 16 }}>
+        {isMine ? "Rejoins-en un (onglet ✨ Découvrir) ou crée le tien." : ""}
+      </div>
+      {canCreate && (
+        <button onClick={onCreate} style={btnPrimary}>➕ Créer un groupe</button>
+      )}
+    </div>
+  );
+}
+
+// ─── styles partagés ─────────────────────────────────────────────────
 const lbl: React.CSSProperties = {
   display: "block", fontSize: 11, fontWeight: 700, color: T.textMuted,
   marginBottom: 4, letterSpacing: 0.4, textTransform: "uppercase",
@@ -407,6 +523,12 @@ const btnGhost: React.CSSProperties = {
   color: T.textMuted, cursor: "pointer", fontSize: 12,
   fontFamily: F.body,
 };
+const backLink: React.CSSProperties = {
+  background: T.card, border: `1px solid ${T.border}`,
+  borderRadius: 8, padding: "6px 12px",
+  color: T.violet, fontSize: 12, fontWeight: 700,
+  textDecoration: "none", fontFamily: F.body,
+};
 function chip(active: boolean): React.CSSProperties {
   return {
     padding: "6px 12px",
@@ -415,5 +537,6 @@ function chip(active: boolean): React.CSSProperties {
     color: active ? T.violet : T.textMuted,
     fontSize: 11, fontWeight: active ? 700 : 500,
     borderRadius: 999, cursor: "pointer", fontFamily: F.body,
+    whiteSpace: "nowrap",
   };
 }
