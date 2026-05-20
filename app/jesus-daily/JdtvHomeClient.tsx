@@ -82,14 +82,44 @@ export default function JdtvHomeClient({
         <EmptyHero isAdmin={isAdmin} />
       )}
 
-      {/* Admin badge */}
-      {isAdmin ? (
-        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px 8px" }}>
+      {/* Toolbar : recherche + nav catégories + admin */}
+      <div style={{
+        maxWidth: 1400, margin: "0 auto",
+        padding: "8px 24px 0", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
+      }}>
+        <Link href="/jesus-daily/recherche" style={{
+          display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px",
+          background: T.card, border: `1px solid ${T.border}`, color: T.textSoft,
+          borderRadius: 999, fontWeight: 600, fontSize: 13, textDecoration: "none",
+          minWidth: 220,
+        }}>🔎 Rechercher une vidéo…</Link>
+        {isAdmin ? (
           <Link href="/jesus-daily/admin" style={{
             display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px",
             background: T.violetSoft, border: `1px solid ${T.violet}`, color: T.text,
             borderRadius: 999, fontWeight: 700, fontSize: 13, textDecoration: "none",
           }}>⚙️ Espace admin JDTV</Link>
+        ) : null}
+      </div>
+
+      {/* Nav catégories cliquable */}
+      {categories.length > 0 ? (
+        <div className="jdtv-cat-nav" style={{
+          maxWidth: 1400, margin: "0 auto",
+          padding: "12px 24px 0", display: "flex", gap: 8, overflowX: "auto",
+          scrollbarWidth: "none",
+        }}>
+          {categories.map((c) => (
+            <Link key={c.id} href={`/jesus-daily/categorie/${c.slug}`} style={{
+              flex: "0 0 auto", padding: "8px 14px",
+              background: "rgba(255,255,255,0.04)", color: T.textSoft,
+              border: `1px solid ${T.border}`, borderRadius: 999,
+              fontSize: 12.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap",
+            }}>{c.icon ?? "📂"} {c.name}</Link>
+          ))}
+          <style jsx global>{`
+            .jdtv-cat-nav::-webkit-scrollbar { display: none; }
+          `}</style>
         </div>
       ) : null}
 
@@ -139,6 +169,7 @@ export default function JdtvHomeClient({
             progressMap={progressByVideo}
             wlIds={wlIds}
             onToggleWl={toggleWatchlist}
+            href={`/jesus-daily/categorie/${cat.slug}`}
           />
         );
       })}
@@ -315,7 +346,7 @@ function EmptyHero({ isAdmin }: { isAdmin: boolean }) {
 
 // ─── RAIL (carousel horizontal) ─────────────────────────────────────
 function Rail({
-  title, subtitle, videos, progressMap, wlIds, onToggleWl,
+  title, subtitle, videos, progressMap, wlIds, onToggleWl, href,
 }: {
   title: string;
   subtitle?: string | null;
@@ -323,6 +354,7 @@ function Rail({
   progressMap: Map<string, JdtvWatchProgress>;
   wlIds: Set<string>;
   onToggleWl: (id: string) => void;
+  href?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   function scroll(dir: 1 | -1) {
@@ -331,11 +363,19 @@ function Rail({
     el.scrollBy({ left: dir * (el.clientWidth * 0.85), behavior: "smooth" });
   }
 
+  const TitleEl = href ? (
+    <Link href={href} style={{ textDecoration: "none", color: "inherit" }}>
+      <h2 style={{ fontFamily: F.title, fontSize: 22, margin: 0, fontWeight: 700 }}>{title} <span style={{ color: T.textMuted, fontSize: 16 }}>›</span></h2>
+    </Link>
+  ) : (
+    <h2 style={{ fontFamily: F.title, fontSize: 22, margin: 0, fontWeight: 700 }}>{title}</h2>
+  );
+
   return (
     <section style={{ maxWidth: 1400, margin: "0 auto", padding: "28px 24px 8px", position: "relative" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12, gap: 10 }}>
         <div>
-          <h2 style={{ fontFamily: F.title, fontSize: 22, margin: 0, fontWeight: 700 }}>{title}</h2>
+          {TitleEl}
           {subtitle ? <p style={{ margin: "4px 0 0", color: T.textMuted, fontSize: 13 }}>{subtitle}</p> : null}
         </div>
         <div style={{ display: "flex", gap: 6 }}>
