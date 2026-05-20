@@ -371,12 +371,18 @@ function RecordRow({ record: r, campaign, onConfirm, onCancel, onDelete }: {
         {r.currency !== "XAF" ? (
           <div style={{ fontSize: 10.5, color: T.textMuted }}>≈ {formatAmount(r.amount_xaf, "XAF")}</div>
         ) : null}
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {r.status === "pending" ? (
             <button onClick={() => run(() => onConfirm(r))} disabled={busy} title="Confirmer la réception" style={{
               padding: "5px 10px", background: T.green, color: "#fff", border: "none",
               borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
             }}>✓ Confirmer</button>
+          ) : null}
+          {r.status === "confirmed" ? (
+            <Link href={`/dons/recu/${r.id}`} title="Voir le reçu" style={{
+              padding: "5px 10px", background: T.gold, color: "#000",
+              borderRadius: 6, fontWeight: 700, fontSize: 11, textDecoration: "none",
+            }}>📄</Link>
           ) : null}
           {r.status !== "cancelled" ? (
             <button onClick={() => run(() => onCancel(r))} disabled={busy} title="Annuler" style={{

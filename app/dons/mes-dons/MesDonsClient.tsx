@@ -212,10 +212,21 @@ export default function MesDonsClient({ records: initial, campaigns }: Props) {
           </section>
 
           <section style={{
-            padding: 14, background: T.violetSoft, border: `1px solid ${T.violet}`,
-            borderRadius: 14, fontSize: 12.5, color: T.violetDark, lineHeight: 1.5,
+            padding: 16, background: `linear-gradient(135deg, ${T.violetSoft}, ${T.goldSoft})`,
+            border: `1px solid ${T.gold}`,
+            borderRadius: 14, fontSize: 13, color: T.text, lineHeight: 1.5,
           }}>
-            💡 Besoin d'un reçu fiscal pour ta déclaration ? <Link href="/contact" style={{ color: T.violet, fontWeight: 700 }}>Contacte-nous</Link>.
+            <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8, color: T.violetDark }}>
+              📋 Déclaration fiscale
+            </div>
+            <p style={{ margin: "0 0 12px", color: T.textSoft, fontSize: 12.5 }}>
+              Télécharge le récapitulatif annuel de tes dons pour ta déclaration d&apos;impôts.
+            </p>
+            <Link href="/dons/declaration-fiscale" style={{
+              display: "inline-block", padding: "9px 16px",
+              background: T.violet, color: "#fff",
+              borderRadius: 999, fontWeight: 700, fontSize: 12.5, textDecoration: "none",
+            }}>📋 Voir / Télécharger</Link>
           </section>
         </aside>
       </div>
@@ -314,6 +325,13 @@ function RecordCard({ record: r, campaign, onCancel }: {
             border: `1px solid ${T.heartSoft}`, borderRadius: 6,
             fontSize: 10.5, fontWeight: 700, cursor: "pointer",
           }}>Annuler</button>
+        ) : null}
+        {r.status === "confirmed" ? (
+          <Link href={`/dons/recu/${r.id}`} style={{
+            marginTop: 4, padding: "3px 9px",
+            background: T.gold, color: "#000", textDecoration: "none",
+            borderRadius: 6, fontSize: 10.5, fontWeight: 800, letterSpacing: 0.4,
+          }}>📄 Reçu</Link>
         ) : null}
       </div>
     </div>

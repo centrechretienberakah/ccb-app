@@ -178,6 +178,7 @@ export interface DonationRecord {
   confirmed_at: string | null;
   cancelled_at: string | null;
   created_at: string;
+  receipt_number?: string | null;
 }
 
 /** Conversion approximative vers XAF (cohérent avec CURRENCIES fromXAF). */

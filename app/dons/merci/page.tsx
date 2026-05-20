@@ -19,7 +19,7 @@ export default async function MerciPage({
     try {
       const { data } = await supabase
         .from("donations_records")
-        .select("id, user_id, campaign_id, kind, amount_native, currency, amount_xaf, payment_mode, reference, status, donor_name, donor_email, is_anonymous, notes, paid_at, confirmed_at, cancelled_at, created_at")
+        .select("id, user_id, campaign_id, kind, amount_native, currency, amount_xaf, payment_mode, reference, status, donor_name, donor_email, is_anonymous, notes, paid_at, confirmed_at, cancelled_at, created_at, receipt_number")
         .eq("id", id).maybeSingle();
       record = (data ?? null) as DonationRecord | null;
     } catch { /* noop */ }
