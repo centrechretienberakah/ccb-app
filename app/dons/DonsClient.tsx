@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -49,6 +49,10 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
   const [selectedCampaign, setSelectedCampaign] = useState<DonationCampaign | null>(null);
   const [selectedMode, setSelectedMode] = useState<PaymentMode | null>(null);
   const [busyConfirm, setBusyConfirm] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [dedication, setDedication] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringDay, setRecurringDay] = useState(1);
   const router = useRouter();
 
   // Sélectionner une campagne → pré-remplit le wizard
@@ -63,6 +67,17 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
       }, 50);
     }
   }
+
+  // Pré-remplit depuis ?campaign=slug (vient d'un QR code)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const slug = url.searchParams.get("campaign");
+    if (!slug || selectedCampaign) return;
+    const match = campaigns.find((c) => c.slug === slug);
+    if (match) selectCampaign(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaigns]);
 
   const cur = getCurrency(currency);
   const verse = VERSES[verseIdx];
@@ -99,7 +114,8 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
       payment_mode: selectedMode?.id ?? null,
       reference: ref,
       status: "pending" as const,
-      is_anonymous: false,
+      is_anonymous: isAnonymous,
+      dedication: dedication.trim() || null,
     };
 
     if (!user) {
@@ -118,13 +134,32 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
     }
 
     const { data, error } = await supabase.from("donations_records").insert(payload).select().single();
-    setBusyConfirm(false);
     if (error) {
+      setBusyConfirm(false);
       // Fallback : si la table n'existe pas encore (SQL v34 non exécuté), on redirige quand même
       router.push("/dons/merci?intent=offline");
       return;
     }
-    router.push(`/dons/merci?id=${(data as { id: string }).id}`);
+
+    // Crée l'engagement récurrent si demandé
+    if (isRecurring) {
+      try {
+        await supabase.from("donations_recurring").insert({
+          user_id: user.id,
+          kind,
+          campaign_id: selectedCampaign?.id ?? null,
+          amount_native: finalAmount,
+          currency,
+          amount_xaf: toXAF(finalAmount, currency),
+          day_of_month: recurringDay,
+          preferred_mode: selectedMode?.id ?? null,
+          is_active: true,
+        });
+      } catch { /* table pas migrée — silencieux */ }
+    }
+
+    setBusyConfirm(false);
+    router.push(`/dons/merci?id=${(data as { id: string }).id}${isRecurring ? "&recurring=1" : ""}`);
   }
 
   return (
@@ -330,6 +365,83 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
             </div>
           </Section>
 
+          {/* 3b. Options */}
+          <Section title="Options (facultatif)" hint="Personnalise ton don selon ta convenance.">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }} className="dons-options-grid">
+              <label style={{
+                display: "flex", alignItems: "flex-start", gap: 10,
+                padding: "12px 14px",
+                background: isAnonymous ? T.violetSoft : T.card,
+                border: `1.5px solid ${isAnonymous ? T.violet : T.border}`,
+                borderRadius: 10, cursor: "pointer", fontFamily: F.body,
+              }}>
+                <input type="checkbox" checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  style={{ marginTop: 3, accentColor: T.violet }} />
+                <span>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: T.text, display: "block" }}>
+                    👤 Donner anonymement
+                  </span>
+                  <span style={{ fontSize: 11.5, color: T.textMuted }}>
+                    Ton nom ne sera mentionné nulle part publiquement.
+                  </span>
+                </span>
+              </label>
+
+              <label style={{
+                display: "flex", alignItems: "flex-start", gap: 10,
+                padding: "12px 14px",
+                background: isRecurring ? T.violetSoft : T.card,
+                border: `1.5px solid ${isRecurring ? T.violet : T.border}`,
+                borderRadius: 10, cursor: "pointer", fontFamily: F.body,
+              }}>
+                <input type="checkbox" checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  style={{ marginTop: 3, accentColor: T.violet }}
+                  disabled={!finalAmount} />
+                <span style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: T.text, display: "block" }}>
+                    🔄 Don récurrent (chaque mois)
+                  </span>
+                  <span style={{ fontSize: 11.5, color: T.textMuted, display: "block", marginBottom: isRecurring ? 6 : 0 }}>
+                    Engagement mensuel. Tu pourras l&apos;arrêter à tout moment.
+                  </span>
+                  {isRecurring ? (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                      <span style={{ fontSize: 11.5 }}>Jour du mois :</span>
+                      <select value={recurringDay}
+                        onChange={(e) => setRecurringDay(parseInt(e.target.value))}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          padding: "3px 8px", background: T.card,
+                          border: `1px solid ${T.border}`, borderRadius: 6,
+                          fontSize: 12, color: T.text,
+                        }}>
+                        {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </span>
+                  ) : null}
+                </span>
+              </label>
+            </div>
+            <label style={{ display: "block", marginTop: 10 }}>
+              <span style={{ fontSize: 12, color: T.textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                🕊️ Dédier ce don (optionnel)
+              </span>
+              <input type="text" value={dedication}
+                onChange={(e) => setDedication(e.target.value)}
+                maxLength={200}
+                placeholder="Ex. En mémoire de mon père · Pour la guérison de Marie"
+                style={{
+                  marginTop: 6, width: "100%", padding: "10px 12px",
+                  background: T.card, color: T.text, border: `1px solid ${T.border}`,
+                  borderRadius: 8, fontSize: 13.5, fontFamily: F.body,
+                }} />
+            </label>
+          </Section>
+
           {/* 4. Récap */}
           <Section title="4. Récap de ton intention">
             {selectedCampaign ? (
@@ -343,6 +455,17 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
                   background: "transparent", color: T.violetDark, border: "none",
                   cursor: "pointer", fontWeight: 700, fontSize: 12,
                 }}>× retirer</button>
+              </div>
+            ) : null}
+            {(isAnonymous || isRecurring || dedication) ? (
+              <div style={{
+                marginBottom: 10, padding: "10px 14px",
+                background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 10,
+                fontSize: 12, color: T.textSoft, display: "flex", gap: 16, flexWrap: "wrap",
+              }}>
+                {isAnonymous ? <span>👤 <strong>Anonyme</strong></span> : null}
+                {isRecurring ? <span>🔄 <strong>Mensuel</strong> (jour {recurringDay})</span> : null}
+                {dedication ? <span>🕊️ <strong>{dedication}</strong></span> : null}
               </div>
             ) : null}
             <div style={{

@@ -1,11 +1,13 @@
 "use client";
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   DONS_THEME as T,
   DONS_FONTS as F,
   type DonationRecord,
+  type DonationRecurring,
   getKind,
   formatAmount,
   PAYMENT_MODES,
@@ -15,14 +17,52 @@ interface CampaignLite { id: string; slug: string; title: string; }
 
 interface Props {
   records: DonationRecord[];
+  recurring: DonationRecurring[];
   campaigns: CampaignLite[];
 }
 
 type FilterStatus = "all" | "pending" | "confirmed" | "cancelled";
 
-export default function MesDonsClient({ records: initial, campaigns }: Props) {
+export default function MesDonsClient({ records: initial, recurring: initialRec, campaigns }: Props) {
+  const router = useRouter();
   const [records, setRecords] = useState<DonationRecord[]>(initial);
+  const [recurring, setRecurring] = useState<DonationRecurring[]>(initialRec);
   const [filter, setFilter] = useState<FilterStatus>("all");
+  const [busyRec, setBusyRec] = useState<string | null>(null);
+
+  async function payMonth(rec: DonationRecurring) {
+    if (busyRec) return;
+    setBusyRec(rec.id);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .rpc("dons_create_record_from_recurring", { p_recurring_id: rec.id });
+    setBusyRec(null);
+    if (error) { alert("Erreur : " + error.message); return; }
+    router.push(`/dons/merci?id=${data}`);
+  }
+
+  async function stopRecurring(rec: DonationRecurring) {
+    if (!confirm(`Arrêter l'engagement de ${formatAmount(rec.amount_native, rec.currency)} / mois ?`)) return;
+    setBusyRec(rec.id);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("donations_recurring")
+      .update({ is_active: false, ended_at: new Date().toISOString() })
+      .eq("id", rec.id);
+    setBusyRec(null);
+    if (error) { alert("Erreur : " + error.message); return; }
+    setRecurring((arr) => arr.map((r) => r.id === rec.id ? { ...r, is_active: false } : r));
+  }
+
+  function alreadyPaidThisMonth(rec: DonationRecurring): boolean {
+    if (!rec.last_paid_at) return false;
+    const d = new Date(rec.last_paid_at);
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+
+  const activeRecurring = recurring.filter((r) => r.is_active);
+  const monthlyTotalXaf = activeRecurring.reduce((acc, r) => acc + r.amount_xaf, 0);
 
   const campaignsById = useMemo(() => {
     const m = new Map<string, CampaignLite>();
@@ -113,6 +153,73 @@ export default function MesDonsClient({ records: initial, campaigns }: Props) {
       }} className="mes-dons-grid">
         {/* Liste */}
         <section>
+          {/* ─── Engagements mensuels actifs ─── */}
+          {activeRecurring.length > 0 ? (
+            <section style={{ marginBottom: 22 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+                <h2 style={{ fontFamily: F.title, fontSize: 18, margin: 0 }}>
+                  🔄 Mes engagements mensuels
+                </h2>
+                <span style={{ fontSize: 12, color: T.textMuted }}>
+                  {activeRecurring.length} actif{activeRecurring.length > 1 ? "s" : ""} · {formatAmount(monthlyTotalXaf, "XAF")} / mois
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {activeRecurring.map((rec) => {
+                  const k = getKind(rec.kind);
+                  const paidThisMonth = alreadyPaidThisMonth(rec);
+                  return (
+                    <div key={rec.id} style={{
+                      display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 12, alignItems: "center",
+                      padding: "12px 14px",
+                      background: T.card,
+                      border: `1px solid ${paidThisMonth ? T.green + "55" : T.gold}`,
+                      borderRadius: 12,
+                    }}>
+                      <div style={{
+                        width: 42, height: 42, borderRadius: 10,
+                        background: `${k.color}22`, color: k.color,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 20,
+                      }}>{k.emoji}</div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>
+                          {k.label} <span style={{ color: T.textMuted, fontWeight: 500 }}>· chaque {rec.day_of_month} du mois</span>
+                        </div>
+                        <div style={{ fontSize: 11.5, color: T.textMuted }}>
+                          {paidThisMonth
+                            ? <span style={{ color: T.green, fontWeight: 700 }}>✓ Honoré ce mois-ci</span>
+                            : <span style={{ color: T.gold, fontWeight: 700 }}>⏳ En attente ce mois-ci</span>}
+                          {rec.last_paid_at ? <span> · dernier {new Date(rec.last_paid_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</span> : null}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                        <div style={{ fontFamily: F.title, fontWeight: 800, fontSize: 16, color: T.text, fontVariantNumeric: "tabular-nums" }}>
+                          {formatAmount(rec.amount_native, rec.currency)}
+                        </div>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {!paidThisMonth ? (
+                            <button onClick={() => payMonth(rec)} disabled={busyRec === rec.id} style={{
+                              padding: "5px 10px", background: T.violet, color: "#fff", border: "none",
+                              borderRadius: 6, fontWeight: 700, fontSize: 11,
+                              cursor: busyRec === rec.id ? "wait" : "pointer", fontFamily: "inherit",
+                            }}>{busyRec === rec.id ? "..." : "💝 Don du mois"}</button>
+                          ) : null}
+                          <button onClick={() => stopRecurring(rec)} disabled={busyRec === rec.id} style={{
+                            padding: "5px 10px", background: "transparent", color: T.heart,
+                            border: `1px solid ${T.heartSoft}`,
+                            borderRadius: 6, fontWeight: 700, fontSize: 11,
+                            cursor: busyRec === rec.id ? "wait" : "pointer", fontFamily: "inherit",
+                          }}>Arrêter</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
             <h2 style={{ fontFamily: F.title, fontSize: 18, margin: 0 }}>Historique</h2>
             <div style={{ display: "inline-flex", background: T.surface2, borderRadius: 999, padding: 3, gap: 3 }}>

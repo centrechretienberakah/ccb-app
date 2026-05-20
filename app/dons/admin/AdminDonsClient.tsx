@@ -12,6 +12,7 @@ import {
   formatAmount,
   campaignProgress,
 } from "@/lib/dons/theme";
+import { notifyDonorConfirmation, notifyMilestone } from "@/lib/dons/notify";
 
 function slugify(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -54,12 +55,21 @@ export default function AdminDonsClient({
 
   async function confirmRecord(r: DonationRecord) {
     const supabase = createClient();
+    // Snapshot du montant campagne AVANT confirm (pour détecter milestone)
+    let previousCampaignXaf = 0;
+    if (r.campaign_id) {
+      const cBefore = campaigns.find((c) => c.id === r.campaign_id);
+      previousCampaignXaf = cBefore?.current_amount_xaf ?? 0;
+    }
+
     const { data, error } = await supabase
       .from("donations_records")
       .update({ status: "confirmed" })
       .eq("id", r.id).select().single();
     if (error) { alert("Erreur : " + error.message); return; }
-    setRecords((arr) => arr.map((x) => x.id === r.id ? (data as DonationRecord) : x));
+    const updatedRecord = data as DonationRecord;
+    setRecords((arr) => arr.map((x) => x.id === r.id ? updatedRecord : x));
+
     // refresh campaigns counters (le trigger SQL les a mis à jour côté DB)
     if (r.campaign_id) {
       const { data: cd } = await supabase
@@ -69,7 +79,34 @@ export default function AdminDonsClient({
       if (cd) {
         const updated = cd as DonationCampaign;
         setCampaigns((arr) => arr.map((c) => c.id === updated.id ? updated : c));
+
+        // ─── Check milestone (paliers 25/50/75/100) ───
+        try {
+          const { data: milestoneData } = await supabase
+            .rpc("dons_check_milestone", {
+              p_campaign_id: r.campaign_id,
+              p_previous_xaf: previousCampaignXaf,
+            });
+          const milestone = milestoneData as number | null;
+          if (milestone && [25, 50, 75, 100].includes(milestone)) {
+            void notifyMilestone({
+              campaignTitle: updated.title,
+              campaignSlug: updated.slug,
+              milestone: milestone as 25 | 50 | 75 | 100,
+            });
+          }
+        } catch { /* RPC pas dispo */ }
       }
+    }
+
+    // ─── Notif au donateur (si compte CCB) ───
+    if (updatedRecord.user_id) {
+      void notifyDonorConfirmation({
+        userId: updatedRecord.user_id,
+        amount: formatAmount(updatedRecord.amount_native, updatedRecord.currency),
+        receiptNumber: updatedRecord.receipt_number ?? null,
+        recordId: updatedRecord.id,
+      });
     }
   }
 
@@ -362,6 +399,8 @@ function RecordRow({ record: r, campaign, onConfirm, onCancel, onDelete }: {
           {r.reference ? <span style={{ fontFamily: "monospace" }}>{r.reference}</span> : null}
           {r.donor_email ? <span>📧 {r.donor_email}</span> : null}
           {r.user_id ? <span style={{ color: T.violet }}>👤 user</span> : <span style={{ color: T.textMuted }}>👻 guest</span>}
+          {r.is_anonymous ? <span style={{ color: T.gold, fontWeight: 700 }}>🕶️ anonyme</span> : null}
+          {r.dedication ? <span style={{ color: T.heart }}>🕊️ {r.dedication}</span> : null}
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
@@ -448,6 +487,8 @@ function CampaignRow({ campaign, onEdit, onAdjust, onDelete }: {
       </div>
 
       <div style={{ display: "flex", gap: 6 }}>
+        <Link href={`/dons/campagne/${campaign.slug}/qr`} title="QR code imprimable"
+          style={{ ...iconBtn, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>🔳</Link>
         <button onClick={onAdjust} title="Ajuster le montant" style={{ ...iconBtn, color: T.gold, borderColor: T.gold }}>💰</button>
         <button onClick={onEdit} title="Modifier" style={iconBtn}>✏️</button>
         <button onClick={onDelete} title="Supprimer" style={{ ...iconBtn, color: T.heart, borderColor: T.heartSoft }}>🗑️</button>

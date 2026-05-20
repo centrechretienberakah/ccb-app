@@ -104,11 +104,16 @@ export default function RecuClient({ record, donorName, campaignTitle }: Props) 
           {/* Donateur */}
           <div style={{ position: "relative", marginBottom: 22, padding: "14px 16px", background: T.surface2, borderRadius: 10 }}>
             <div style={{ fontSize: 10, color: T.textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>
-              Donateur
+              Donateur {record.is_anonymous ? <span style={{ color: T.gold }}>· anonyme publiquement</span> : null}
             </div>
             <div style={{ fontSize: 17, fontWeight: 700, color: T.text }}>{donorName}</div>
             {record.donor_email ? (
               <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>{record.donor_email}</div>
+            ) : null}
+            {record.dedication ? (
+              <div style={{ marginTop: 8, padding: "6px 10px", background: T.heartSoft, borderRadius: 6, fontSize: 12, color: T.heart, fontStyle: "italic" }}>
+                🕊️ {record.dedication}
+              </div>
             ) : null}
           </div>
 

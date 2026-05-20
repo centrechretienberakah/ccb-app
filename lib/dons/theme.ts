@@ -179,6 +179,25 @@ export interface DonationRecord {
   cancelled_at: string | null;
   created_at: string;
   receipt_number?: string | null;
+  dedication?: string | null;
+}
+
+export interface DonationRecurring {
+  id: string;
+  user_id: string;
+  kind: DonationKind;
+  campaign_id: string | null;
+  amount_native: number;
+  currency: CurrencyCode;
+  amount_xaf: number;
+  day_of_month: number;
+  preferred_mode: string | null;
+  is_active: boolean;
+  notes: string | null;
+  started_at: string;
+  last_paid_at: string | null;
+  ended_at: string | null;
+  created_at: string;
 }
 
 /** Conversion approximative vers XAF (cohérent avec CURRENCIES fromXAF). */
