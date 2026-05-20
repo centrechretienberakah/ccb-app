@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -7,6 +7,8 @@ import {
   DONS_FONTS as F,
   DONATION_KINDS, type DonationKind, getKind,
   type DonationCampaign,
+  type DonationRecord,
+  PAYMENT_MODES,
   formatAmount,
   campaignProgress,
 } from "@/lib/dons/theme";
@@ -26,11 +28,69 @@ async function uploadFile(file: File): Promise<string | null> {
   return data.publicUrl;
 }
 
-export default function AdminDonsClient({ initialCampaigns }: { initialCampaigns: DonationCampaign[] }) {
+type AdminTab = "campaigns" | "records";
+
+export default function AdminDonsClient({
+  initialCampaigns, initialRecords, pendingCount,
+}: {
+  initialCampaigns: DonationCampaign[];
+  initialRecords: DonationRecord[];
+  pendingCount: number;
+}) {
+  const [tab, setTab] = useState<AdminTab>(pendingCount > 0 ? "records" : "campaigns");
   const [campaigns, setCampaigns] = useState<DonationCampaign[]>(initialCampaigns);
+  const [records, setRecords] = useState<DonationRecord[]>(initialRecords);
   const [editing, setEditing] = useState<DonationCampaign | null>(null);
   const [creating, setCreating] = useState(false);
   const [adjusting, setAdjusting] = useState<DonationCampaign | null>(null);
+
+  const campaignsById = useMemo(() => {
+    const m = new Map<string, DonationCampaign>();
+    campaigns.forEach((c) => m.set(c.id, c));
+    return m;
+  }, [campaigns]);
+
+  const currentPending = records.filter((r) => r.status === "pending").length;
+
+  async function confirmRecord(r: DonationRecord) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("donations_records")
+      .update({ status: "confirmed" })
+      .eq("id", r.id).select().single();
+    if (error) { alert("Erreur : " + error.message); return; }
+    setRecords((arr) => arr.map((x) => x.id === r.id ? (data as DonationRecord) : x));
+    // refresh campaigns counters (le trigger SQL les a mis à jour côté DB)
+    if (r.campaign_id) {
+      const { data: cd } = await supabase
+        .from("donations_campaigns")
+        .select("id, slug, title, subtitle, description, cover_url, kind, target_amount_xaf, current_amount_xaf, donors_count, starts_at, ends_at, is_active, is_featured, order_index")
+        .eq("id", r.campaign_id).maybeSingle();
+      if (cd) {
+        const updated = cd as DonationCampaign;
+        setCampaigns((arr) => arr.map((c) => c.id === updated.id ? updated : c));
+      }
+    }
+  }
+
+  async function cancelRecord(r: DonationRecord) {
+    if (!confirm("Annuler ce don ?")) return;
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("donations_records")
+      .update({ status: "cancelled" })
+      .eq("id", r.id).select().single();
+    if (error) { alert("Erreur : " + error.message); return; }
+    setRecords((arr) => arr.map((x) => x.id === r.id ? (data as DonationRecord) : x));
+  }
+
+  async function deleteRecord(r: DonationRecord) {
+    if (!confirm("Supprimer définitivement ce record ?")) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("donations_records").delete().eq("id", r.id);
+    if (error) { alert("Erreur : " + error.message); return; }
+    setRecords((arr) => arr.filter((x) => x.id !== r.id));
+  }
 
   function refresh(c: DonationCampaign) {
     setCampaigns((arr) => {
@@ -60,14 +120,37 @@ export default function AdminDonsClient({ initialCampaigns }: { initialCampaigns
             ⚙️ Console Dons & Campagnes
           </h1>
           <p style={{ color: T.textMuted, margin: "4px 0 0", fontSize: 13 }}>
-            {campaigns.length} campagne{campaigns.length > 1 ? "s" : ""}
+            {campaigns.length} campagne{campaigns.length > 1 ? "s" : ""} · {records.length} record{records.length > 1 ? "s" : ""}
+            {currentPending > 0 ? <span style={{ color: T.gold, fontWeight: 700 }}> · {currentPending} en attente</span> : null}
           </p>
         </div>
-        <button onClick={() => setCreating(true)} style={primaryBtn}>＋ Nouvelle campagne</button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Link href="/dons/admin/analytics" style={{
+            padding: "10px 14px", background: T.card, color: T.text,
+            border: `1px solid ${T.border}`, borderRadius: 10,
+            fontWeight: 700, fontSize: 13, textDecoration: "none",
+          }}>📊 Analytics</Link>
+          {tab === "campaigns" ? (
+            <button onClick={() => setCreating(true)} style={primaryBtn}>＋ Nouvelle campagne</button>
+          ) : null}
+        </div>
       </header>
 
+      {/* Tabs */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", gap: 6, borderBottom: `1px solid ${T.border}` }}>
+        <TabBtn active={tab === "campaigns"} onClick={() => setTab("campaigns")}>🎯 Campagnes ({campaigns.length})</TabBtn>
+        <TabBtn active={tab === "records"}   onClick={() => setTab("records")}>
+          💝 Dons reçus ({records.length})
+          {currentPending > 0 ? <span style={{
+            marginLeft: 6, padding: "1px 7px", borderRadius: 999,
+            background: T.gold, color: "#000", fontSize: 10, fontWeight: 800,
+          }}>{currentPending}</span> : null}
+        </TabBtn>
+      </div>
+
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px 80px" }}>
-        {campaigns.length === 0 ? (
+        {tab === "campaigns" ? (
+          campaigns.length === 0 ? (
           <div style={{
             padding: "50px 24px", textAlign: "center",
             background: T.card, border: `1px dashed ${T.border}`, borderRadius: 14,
@@ -95,6 +178,15 @@ export default function AdminDonsClient({ initialCampaigns }: { initialCampaigns
               />
             ))}
           </div>
+          )
+        ) : (
+          <RecordsTab
+            records={records}
+            campaignsById={campaignsById}
+            onConfirm={confirmRecord}
+            onCancel={cancelRecord}
+            onDelete={deleteRecord}
+          />
         )}
       </div>
 
@@ -118,6 +210,192 @@ export default function AdminDonsClient({ initialCampaigns }: { initialCampaigns
 }
 
 // ─── Components ─────────────────────────────────────────────────────
+function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: "12px 18px", background: "transparent", border: "none",
+      color: active ? T.text : T.textMuted, fontWeight: active ? 700 : 500,
+      cursor: "pointer", fontSize: 14, fontFamily: "inherit",
+      borderBottom: `2px solid ${active ? T.violet : "transparent"}`,
+      marginBottom: -1, display: "inline-flex", alignItems: "center", gap: 4,
+    }}>{children}</button>
+  );
+}
+
+function RecordsTab({
+  records, campaignsById, onConfirm, onCancel, onDelete,
+}: {
+  records: DonationRecord[];
+  campaignsById: Map<string, DonationCampaign>;
+  onConfirm: (r: DonationRecord) => Promise<void>;
+  onCancel: (r: DonationRecord) => Promise<void>;
+  onDelete: (r: DonationRecord) => Promise<void>;
+}) {
+  type Filter = "all" | "pending" | "confirmed" | "cancelled";
+  const [filter, setFilter] = useState<Filter>("pending");
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return records.filter((r) => {
+      if (filter !== "all" && r.status !== filter) return false;
+      if (!q) return true;
+      return (
+        (r.reference ?? "").toLowerCase().includes(q) ||
+        (r.donor_email ?? "").toLowerCase().includes(q) ||
+        (r.donor_name ?? "").toLowerCase().includes(q) ||
+        (r.notes ?? "").toLowerCase().includes(q) ||
+        (r.payment_mode ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [records, filter, search]);
+
+  if (records.length === 0) {
+    return (
+      <div style={{
+        padding: "50px 24px", textAlign: "center",
+        background: T.card, border: `1px dashed ${T.border}`, borderRadius: 14,
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 8 }}>💝</div>
+        <h3 style={{ fontFamily: F.title, margin: "0 0 6px", fontSize: 20 }}>Aucun don enregistré</h3>
+        <p style={{ color: T.textMuted, fontSize: 14, margin: 0 }}>
+          Les intentions de dons des fidèles apparaîtront ici dès qu&apos;ils auront cliqué sur &ldquo;Confirmer mon intention&rdquo; sur la page /dons.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Filters */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+        {(["pending","confirmed","cancelled","all"] as Filter[]).map((s) => (
+          <button key={s} onClick={() => setFilter(s)} style={{
+            padding: "6px 12px", borderRadius: 999,
+            background: filter === s ? T.violet : T.card,
+            color: filter === s ? "#fff" : T.textSoft,
+            border: `1px solid ${filter === s ? T.violet : T.border}`,
+            fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+          }}>{recordStatusLabel(s)} {records.filter((r) => s === "all" || r.status === s).length}</button>
+        ))}
+        <input type="search" placeholder="🔎 Recherche (référence, email, notes…)"
+          value={search} onChange={(e) => setSearch(e.target.value)}
+          style={{
+            flex: 1, minWidth: 220, padding: "8px 12px",
+            background: T.card, color: T.text, border: `1px solid ${T.border}`,
+            borderRadius: 999, fontSize: 12.5, fontFamily: "inherit",
+          }} />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {filtered.length === 0 ? (
+          <div style={{ padding: 30, textAlign: "center", color: T.textMuted, fontSize: 13 }}>
+            Aucun résultat.
+          </div>
+        ) : filtered.map((r) => (
+          <RecordRow key={r.id} record={r}
+            campaign={r.campaign_id ? campaignsById.get(r.campaign_id) : undefined}
+            onConfirm={onConfirm} onCancel={onCancel} onDelete={onDelete}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function recordStatusLabel(s: "pending" | "confirmed" | "cancelled" | "all"): string {
+  switch (s) {
+    case "all":       return "Tous";
+    case "pending":   return "⏳ En attente";
+    case "confirmed": return "✅ Confirmés";
+    case "cancelled": return "❌ Annulés";
+  }
+}
+
+function RecordRow({ record: r, campaign, onConfirm, onCancel, onDelete }: {
+  record: DonationRecord;
+  campaign: DonationCampaign | undefined;
+  onConfirm: (r: DonationRecord) => Promise<void>;
+  onCancel: (r: DonationRecord) => Promise<void>;
+  onDelete: (r: DonationRecord) => Promise<void>;
+}) {
+  const k = getKind(r.kind);
+  const mode = r.payment_mode ? PAYMENT_MODES.find((m) => m.id === r.payment_mode) : null;
+  const statusColor = r.status === "confirmed" ? T.green : r.status === "cancelled" ? T.textMuted : T.gold;
+  const dateRef = r.paid_at ?? r.confirmed_at ?? r.created_at;
+  const [busy, setBusy] = useState(false);
+
+  async function run(fn: () => Promise<void>) {
+    setBusy(true); await fn(); setBusy(false);
+  }
+
+  return (
+    <div style={{
+      display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 12, alignItems: "center",
+      padding: "12px 14px",
+      background: T.card,
+      border: `1px solid ${r.status === "pending" ? T.gold : T.border}`,
+      borderRadius: 12,
+    }}>
+      <div style={{
+        width: 42, height: 42, borderRadius: 10,
+        background: `${k.color}22`, color: k.color,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 20,
+      }}>{k.emoji}</div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 3, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontWeight: 700, fontSize: 13.5 }}>{k.label}</span>
+          <span style={{
+            padding: "1.5px 7px", borderRadius: 4,
+            background: `${statusColor}22`, color: statusColor,
+            border: `1px solid ${statusColor}55`,
+            fontSize: 10, fontWeight: 700, letterSpacing: 0.4,
+          }}>{recordStatusLabel(r.status)}</span>
+          {campaign ? (
+            <span style={{ fontSize: 11, color: T.violet, fontWeight: 600 }}>· 🎯 {campaign.title}</span>
+          ) : null}
+        </div>
+        <div style={{ fontSize: 11.5, color: T.textMuted, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <span>📅 {new Date(dateRef).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+          {mode ? <span>{mode.emoji} {mode.title}</span> : null}
+          {r.reference ? <span style={{ fontFamily: "monospace" }}>{r.reference}</span> : null}
+          {r.donor_email ? <span>📧 {r.donor_email}</span> : null}
+          {r.user_id ? <span style={{ color: T.violet }}>👤 user</span> : <span style={{ color: T.textMuted }}>👻 guest</span>}
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+        <div style={{ fontFamily: F.title, fontWeight: 800, fontSize: 16, color: T.text, fontVariantNumeric: "tabular-nums" }}>
+          {formatAmount(r.amount_native, r.currency)}
+        </div>
+        {r.currency !== "XAF" ? (
+          <div style={{ fontSize: 10.5, color: T.textMuted }}>≈ {formatAmount(r.amount_xaf, "XAF")}</div>
+        ) : null}
+        <div style={{ display: "flex", gap: 4 }}>
+          {r.status === "pending" ? (
+            <button onClick={() => run(() => onConfirm(r))} disabled={busy} title="Confirmer la réception" style={{
+              padding: "5px 10px", background: T.green, color: "#fff", border: "none",
+              borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
+            }}>✓ Confirmer</button>
+          ) : null}
+          {r.status !== "cancelled" ? (
+            <button onClick={() => run(() => onCancel(r))} disabled={busy} title="Annuler" style={{
+              padding: "5px 10px", background: "transparent", color: T.heart,
+              border: `1px solid ${T.heartSoft}`,
+              borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
+            }}>Annuler</button>
+          ) : null}
+          <button onClick={() => run(() => onDelete(r))} disabled={busy} title="Supprimer" style={{
+            padding: "5px 10px", background: "transparent", color: T.textMuted,
+            border: `1px solid ${T.border}`,
+            borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
+          }}>🗑️</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CampaignRow({ campaign, onEdit, onAdjust, onDelete }: {
   campaign: DonationCampaign; onEdit: () => void; onAdjust: () => void; onDelete: () => void;
 }) {

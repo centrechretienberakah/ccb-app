@@ -1,10 +1,12 @@
 "use client";
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   DONS_THEME as T,
   DONS_FONTS as F,
-  CURRENCIES, type CurrencyCode, getCurrency, formatAmount,
+  CURRENCIES, type CurrencyCode, getCurrency, formatAmount, toXAF,
   DONATION_KINDS, type DonationKind, getKind,
   PAYMENT_MODES, type PayRegion, type PaymentMode,
   DONATION_USES,
@@ -45,6 +47,9 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
   const [tab, setTab] = useState<Tab>("give");
   const [verseIdx, setVerseIdx] = useState<number>(() => Math.floor(Math.random() * VERSES.length));
   const [selectedCampaign, setSelectedCampaign] = useState<DonationCampaign | null>(null);
+  const [selectedMode, setSelectedMode] = useState<PaymentMode | null>(null);
+  const [busyConfirm, setBusyConfirm] = useState(false);
+  const router = useRouter();
 
   // Sélectionner une campagne → pré-remplit le wizard
   function selectCampaign(c: DonationCampaign) {
@@ -74,6 +79,52 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
 
   function rotateVerse() {
     setVerseIdx((i) => (i + 1) % VERSES.length);
+  }
+
+  async function handleConfirm() {
+    if (busyConfirm) return;
+    if (!finalAmount || finalAmount <= 0) { alert("Sélectionne un montant"); return; }
+    setBusyConfirm(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const ref = `${selectedKind.label} ${formatAmount(finalAmount, currency)}${selectedCampaign ? ` · ${selectedCampaign.title}` : ""}`;
+    const payload = {
+      user_id: user?.id ?? null,
+      campaign_id: selectedCampaign?.id ?? null,
+      kind,
+      amount_native: finalAmount,
+      currency,
+      amount_xaf: toXAF(finalAmount, currency),
+      payment_mode: selectedMode?.id ?? null,
+      reference: ref,
+      status: "pending" as const,
+      is_anonymous: false,
+    };
+
+    if (!user) {
+      // Pas de session → on stocke en sessionStorage et on redirige vers la page merci
+      if (typeof window !== "undefined") {
+        try { sessionStorage.setItem("ccb_donation_intent", JSON.stringify({
+          ...payload,
+          kindLabel: selectedKind.label,
+          modeTitle: selectedMode?.title ?? null,
+          modeInfo: selectedMode?.info ?? null,
+          campaignTitle: selectedCampaign?.title ?? null,
+        })); } catch { /* noop */ }
+      }
+      router.push("/dons/merci?guest=1");
+      return;
+    }
+
+    const { data, error } = await supabase.from("donations_records").insert(payload).select().single();
+    setBusyConfirm(false);
+    if (error) {
+      // Fallback : si la table n'existe pas encore (SQL v34 non exécuté), on redirige quand même
+      router.push("/dons/merci?intent=offline");
+      return;
+    }
+    router.push(`/dons/merci?id=${(data as { id: string }).id}`);
   }
 
   return (
@@ -267,6 +318,8 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
                   amount={finalAmount}
                   currency={currency}
                   kind={selectedKind.label}
+                  selected={selectedMode?.id === m.id}
+                  onSelect={() => setSelectedMode(m)}
                 />
               ))}
               {regionModes.length === 0 ? (
@@ -310,14 +363,20 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
                   </div>
                 ) : null}
               </div>
-              <Link href="/contact" style={{
-                padding: "12px 22px", background: T.heart, color: "#fff",
-                borderRadius: 999, fontWeight: 800, fontSize: 13, textDecoration: "none",
-                whiteSpace: "nowrap",
-              }}>📬 Confirmer mon don</Link>
+              <button onClick={handleConfirm} disabled={busyConfirm || !finalAmount} style={{
+                padding: "12px 22px",
+                background: !finalAmount ? T.textMuted : T.heart,
+                color: "#fff", border: "none",
+                borderRadius: 999, fontWeight: 800, fontSize: 13,
+                cursor: busyConfirm || !finalAmount ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap", fontFamily: F.body,
+                opacity: busyConfirm ? 0.6 : 1,
+              }}>
+                {busyConfirm ? "..." : "💝 Confirmer mon intention"}
+              </button>
             </div>
             <p style={{ fontSize: 11.5, color: T.textMuted, marginTop: 10, textAlign: "center" }}>
-              💡 Pour un reçu fiscal ou un don récurrent, contacte-nous directement après ton virement.
+              💡 Tu reçois les instructions de paiement à l'étape suivante. Aucun débit ici — c'est une déclaration d'intention.
             </p>
           </Section>
         </div>
@@ -507,11 +566,13 @@ function CampaignCard({ campaign, onSelect }: {
   );
 }
 
-function ModeCard({ mode, amount, currency, kind }: {
+function ModeCard({ mode, amount, currency, kind, selected, onSelect }: {
   mode: PaymentMode; amount: number | null; currency: CurrencyCode; kind: string;
+  selected: boolean; onSelect: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  async function copy() {
+  async function copy(e: React.MouseEvent) {
+    e.stopPropagation();
     try {
       await navigator.clipboard.writeText(mode.copyValue ?? mode.info);
       setCopied(true);
@@ -523,11 +584,13 @@ function ModeCard({ mode, amount, currency, kind }: {
     : null;
 
   return (
-    <div style={{
+    <div onClick={onSelect} style={{
       padding: "14px 14px 12px",
-      background: T.card, border: `1.5px solid ${mode.color}33`,
-      borderRadius: 14,
+      background: selected ? `${mode.color}10` : T.card,
+      border: `2px solid ${selected ? mode.color : mode.color + "33"}`,
+      borderRadius: 14, cursor: "pointer",
       display: "flex", flexDirection: "column", gap: 8,
+      transition: "border-color 120ms ease, background 120ms ease",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{
@@ -540,7 +603,13 @@ function ModeCard({ mode, amount, currency, kind }: {
           <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>{mode.title}</div>
           <div style={{ fontSize: 11.5, color: T.textMuted }}>{mode.detail}</div>
         </div>
-        {mode.type === "instant" ? (
+        {selected ? (
+          <span style={{
+            padding: "2px 8px", borderRadius: 6,
+            background: mode.color, color: "#fff",
+            fontSize: 10, fontWeight: 800, letterSpacing: 0.6,
+          }}>✓ CHOISI</span>
+        ) : mode.type === "instant" ? (
           <span style={{
             padding: "2px 8px", borderRadius: 6,
             background: T.green, color: "#fff",

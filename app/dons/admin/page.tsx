@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AdminDonsClient from "./AdminDonsClient";
-import type { DonationCampaign } from "@/lib/dons/theme";
+import type { DonationCampaign, DonationRecord } from "@/lib/dons/theme";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin — Dons & Campagnes" };
@@ -19,6 +19,8 @@ export default async function DonsAdminPage() {
   }
 
   let campaigns: DonationCampaign[] = [];
+  let records: DonationRecord[] = [];
+  let pendingCount = 0;
   try {
     const { data } = await supabase
       .from("donations_campaigns")
@@ -28,5 +30,15 @@ export default async function DonsAdminPage() {
     campaigns = (data ?? []) as DonationCampaign[];
   } catch { /* table pas migrée */ }
 
-  return <AdminDonsClient initialCampaigns={campaigns} />;
+  try {
+    const { data } = await supabase
+      .from("donations_records")
+      .select("id, user_id, campaign_id, kind, amount_native, currency, amount_xaf, payment_mode, reference, status, donor_name, donor_email, is_anonymous, notes, paid_at, confirmed_at, cancelled_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    records = (data ?? []) as DonationRecord[];
+    pendingCount = records.filter((r) => r.status === "pending").length;
+  } catch { /* noop */ }
+
+  return <AdminDonsClient initialCampaigns={campaigns} initialRecords={records} pendingCount={pendingCount} />;
 }

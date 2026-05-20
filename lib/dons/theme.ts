@@ -156,6 +156,39 @@ export function daysLeft(c: DonationCampaign): number | null {
 }
 
 
+// ─── Records ─────────────────────────────────────────────────────────
+export type DonationStatus = "pending" | "confirmed" | "cancelled";
+
+export interface DonationRecord {
+  id: string;
+  user_id: string | null;
+  campaign_id: string | null;
+  kind: DonationKind;
+  amount_native: number;
+  currency: CurrencyCode;
+  amount_xaf: number;
+  payment_mode: string | null;
+  reference: string | null;
+  status: DonationStatus;
+  donor_name: string | null;
+  donor_email: string | null;
+  is_anonymous: boolean;
+  notes: string | null;
+  paid_at: string | null;
+  confirmed_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+}
+
+/** Conversion approximative vers XAF (cohérent avec CURRENCIES fromXAF). */
+export function toXAF(amount: number, currency: CurrencyCode): number {
+  const c = getCurrency(currency);
+  if (currency === "XAF") return Math.round(amount);
+  // amount (native) ÷ taux fromXAF = montant en XAF (puisque fromXAF = 1/taux XAF→native)
+  return Math.round(amount / c.fromXAF);
+}
+
+
 // ─── Utilisations des dons ───────────────────────────────────────────
 export const DONATION_USES = [
   { emoji: "🎙️", label: "Production de prédications et enseignements" },
