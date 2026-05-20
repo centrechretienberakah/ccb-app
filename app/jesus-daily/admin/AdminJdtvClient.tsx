@@ -12,6 +12,7 @@ import {
   getYoutubeThumbnail,
   relativeDate,
 } from "@/lib/jdtv/theme";
+import { notifyJdtvNewVideo, notifyJdtvLiveNow } from "@/lib/jdtv/notify";
 
 interface Props {
   currentUserId: string;
@@ -142,6 +143,14 @@ export default function AdminJdtvClient({ categories: initialCats, videos: initi
                     if (error) { alert("Erreur : " + error.message); return; }
                     removeVid(v.id);
                   }}
+                  onNotify={async () => {
+                    if (!confirm(`Envoyer une notification push 🔴 LIVE à tous les abonnés pour "${v.title}" ?`)) return;
+                    const r = await notifyJdtvLiveNow({
+                      videoTitle: v.title, videoSlug: v.slug, speaker: v.speaker,
+                    });
+                    if (r) alert("📢 Notification envoyée !");
+                    else alert("⚠️ Notification push échouée (VAPID keys ou perm).");
+                  }}
                 />
               ))}
             </div>
@@ -226,8 +235,8 @@ function EmptyState({ emoji, title, text, ctaLabel, onCta }: {
   );
 }
 
-function VideoRow({ video, category, onEdit, onDelete }: {
-  video: JdtvVideo; category: JdtvCategory | null; onEdit: () => void; onDelete: () => void;
+function VideoRow({ video, category, onEdit, onDelete, onNotify }: {
+  video: JdtvVideo; category: JdtvCategory | null; onEdit: () => void; onDelete: () => void; onNotify: () => void;
 }) {
   const thumb = video.thumbnail_url || getYoutubeThumbnail(video.video_url);
   return (
@@ -274,6 +283,10 @@ function VideoRow({ video, category, onEdit, onDelete }: {
       </div>
 
       <div style={{ display: "flex", gap: 6 }}>
+        {video.is_live && video.is_published ? (
+          <button onClick={onNotify} title="Notifier le LIVE"
+            style={{ ...iconBtn, color: T.live, borderColor: T.live }}>📢</button>
+        ) : null}
         <button onClick={onEdit} style={iconBtn}>✏️</button>
         <button onClick={onDelete} style={{ ...iconBtn, color: "#ff5470" }}>🗑️</button>
       </div>
@@ -514,7 +527,37 @@ function VideoForm({ initial, categories, allVideos, onClose, onSaved }: {
     }
     setBusy(false);
     if (result.error) { alert("Erreur : " + result.error.message); return; }
-    onSaved(result.data as JdtvVideo);
+
+    // ─── Notifications push ──────────────────────────────────────────
+    const saved = result.data as JdtvVideo;
+    const catName = saved.category_id
+      ? (categories.find((c) => c.id === saved.category_id)?.name ?? null)
+      : null;
+    const wasLive = initial?.is_live ?? false;
+    const wasPublished = initial?.is_published ?? false;
+    const goingLive = isLive && !wasLive && isPublished;
+    const newlyPublished = isPublished && !wasPublished; // includes nouvelle vidéo et republication
+
+    if (goingLive) {
+      const ok = confirm("🔴 Envoyer une notification push à TOUS les abonnés (Live démarré) ?");
+      if (ok) {
+        const r = await notifyJdtvLiveNow({
+          videoTitle: saved.title, videoSlug: saved.slug, speaker: saved.speaker,
+        });
+        if (!r) alert("⚠️ Notification push échouée (VAPID keys ou perm).");
+      }
+    } else if (newlyPublished && !isLive) {
+      const ok = confirm("✨ Envoyer une notification push à TOUS les abonnés (Nouvelle vidéo publiée) ?");
+      if (ok) {
+        const r = await notifyJdtvNewVideo({
+          videoTitle: saved.title, videoSlug: saved.slug,
+          categoryName: catName, speaker: saved.speaker,
+        });
+        if (!r) alert("⚠️ Notification push échouée (VAPID keys ou perm).");
+      }
+    }
+
+    onSaved(saved);
   }
 
   async function handleUpload(file: File, target: "thumb" | "hero") {
