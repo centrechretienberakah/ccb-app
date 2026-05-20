@@ -110,7 +110,7 @@ export default function LoginPage() {
             {[
               { icon: "📖", text: "Bible LSG complete avec plan de lecture" },
               { icon: "🙏", text: "Mur d'intercession communautaire" },
-              { icon: "🎦", text: "Jesus Daily — videos prophetiques quotidiennes" },
+              { icon: "📺", text: "Jesus Daily TV — predications, podcasts & live" },
               { icon: "🎓", text: "Classes et formations bibliques en ligne" },
             ].map(({ icon, text }) => (
               <div key={text} className="auth-panel-feature">

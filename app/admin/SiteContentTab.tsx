@@ -19,7 +19,7 @@ const labelStyle: React.CSSProperties = { display: "block", color: "var(--text-m
 const PAGES: { key: string; label: string; icon: string; hint?: string }[] = [
   { key: "a-propos",    label: "À propos",    icon: "⛪", hint: "Texte de présentation du Centre" },
   { key: "dons",        label: "Faire un don", icon: "💝", hint: "Présentation des moyens de soutien" },
-  { key: "jesus-daily", label: "Jesus Daily",  icon: "🎬", hint: "Description de la rubrique vidéos" },
+  { key: "jesus-daily", label: "Jesus Daily TV", icon: "📺", hint: "Description de la rubrique vidéos" },
   { key: "nous-suivre", label: "Nous suivre",  icon: "📡", hint: "Liens vers réseaux sociaux (JSON: { links: [{ platform, url, label }] })" },
 ];
 

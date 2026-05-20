@@ -4,10 +4,10 @@ import { getSiteContent } from "@/lib/site-content";
 export const metadata: Metadata = { title: "Nous Suivre — CCB" };
 
 const DEFAULT_PLATFORMS = [
-  { name: "YouTube", handle: "@CentreChrétienBerakah", url: "https://youtube.com/@centrechretienberakah", emoji: "▶️", color: "#FF0000", bg: "rgba(255,0,0,0.08)", border: "rgba(255,0,0,0.25)", desc: "Sermons, enseignements, Jesus Daily et tous nos cultes en replay", cta: "S'abonner" },
+  { name: "YouTube", handle: "@CentreChrétienBerakah", url: "https://youtube.com/@centrechretienberakah", emoji: "▶️", color: "#FF0000", bg: "rgba(255,0,0,0.08)", border: "rgba(255,0,0,0.25)", desc: "Sermons, enseignements, Jesus Daily TV et tous nos cultes en replay", cta: "S'abonner" },
   { name: "Facebook", handle: "Centre Chrétien Berakah", url: "https://facebook.com/centrechretienberakah", emoji: "📘", color: "#1877F2", bg: "rgba(24,119,242,0.08)", border: "rgba(24,119,242,0.25)", desc: "Annonces, photos, événements et interactions avec la communauté", cta: "Aimer la page" },
   { name: "Instagram", handle: "@ccb_berakah", url: "https://instagram.com/ccb_berakah", emoji: "📸", color: "#E1306C", bg: "rgba(225,48,108,0.08)", border: "rgba(225,48,108,0.25)", desc: "Stories, reels, photos inspirantes et coulisses du ministère", cta: "Suivre" },
-  { name: "TikTok", handle: "@jesusdaily_ccb", url: "https://tiktok.com/@jesusdaily_ccb", emoji: "🎵", color: "#69C9D0", bg: "rgba(105,201,208,0.08)", border: "rgba(105,201,208,0.25)", desc: "Jesus Daily — podcast d'évangélisation de 45 secondes chaque matin", cta: "Suivre" },
+  { name: "TikTok", handle: "@jesusdaily_ccb", url: "https://tiktok.com/@jesusdaily_ccb", emoji: "🎵", color: "#69C9D0", bg: "rgba(105,201,208,0.08)", border: "rgba(105,201,208,0.25)", desc: "Jesus Daily TV — podcast d'évangélisation de 45 secondes chaque matin", cta: "Suivre" },
   { name: "WhatsApp", handle: "Canal CCB", url: "https://whatsapp.com/channel/CCB", emoji: "💬", color: "#25D366", bg: "rgba(37,211,102,0.08)", border: "rgba(37,211,102,0.25)", desc: "Annonces rapides, versets du jour et messages d'encouragement", cta: "Rejoindre le canal" },
   { name: "Newsletter", handle: "centrechretienberakah@gmail.com", url: "mailto:centrechretienberakah@gmail.com?subject=Inscription Newsletter CCB", emoji: "📧", color: "#D4AF37", bg: "rgba(212,175,55,0.08)", border: "rgba(212,175,55,0.25)", desc: "Lettre hebdomadaire : messages, annonces et ressources du ministère", cta: "S'inscrire" },
 ];

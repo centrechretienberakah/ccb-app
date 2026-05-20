@@ -314,7 +314,7 @@ export default function DevotionClient({
   return (
     <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 16px 80px" }}>
 
-      {/* ─── Header centré façon Jesus Daily ─── */}
+      {/* ─── Header centré façon Jesus Daily TV ─── */}
       <div style={{ textAlign: "center", marginBottom: 28 }}>
         <div style={{ fontSize: 56, marginBottom: 8 }}>☀️</div>
         <h1 style={{
