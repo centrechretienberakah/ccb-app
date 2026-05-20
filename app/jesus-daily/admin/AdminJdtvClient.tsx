@@ -494,6 +494,11 @@ function VideoForm({ initial, categories, allVideos, onClose, onSaved }: {
   const [introEndSecs, setIntroEndSecs] = useState<number | "">(initial?.intro_end_secs ?? "");
   const [nextVideoId, setNextVideoId] = useState<string>(initial?.next_video_id ?? "");
   const [tagsInput, setTagsInput] = useState((initial?.tags ?? []).join(", "));
+  const [chaptersJson, setChaptersJson] = useState<string>(
+    initial?.chapters ? JSON.stringify(initial.chapters, null, 2) : ""
+  );
+  const [chaptersError, setChaptersError] = useState<string | null>(null);
+  const [transcriptMd, setTranscriptMd] = useState(initial?.transcript_md ?? "");
   const [busy, setBusy] = useState(false);
 
   const finalSlug = slug.trim() || slugify(title);
@@ -502,6 +507,28 @@ function VideoForm({ initial, categories, allVideos, onClose, onSaved }: {
     if (busy) return;
     if (!title.trim()) { alert("Titre requis"); return; }
     if (!videoUrl.trim()) { alert("URL vidéo requise (YouTube, Vimeo ou mp4)"); return; }
+    // Validate chapters JSON
+    let chaptersValue: Array<{ time_secs: number; title: string }> | null = null;
+    setChaptersError(null);
+    if (chaptersJson.trim()) {
+      try {
+        const parsed = JSON.parse(chaptersJson);
+        if (!Array.isArray(parsed)) {
+          setChaptersError("Le JSON doit être un tableau []");
+          return;
+        }
+        for (const c of parsed) {
+          if (typeof c.time_secs !== "number" || c.time_secs < 0 || typeof c.title !== "string" || !c.title) {
+            setChaptersError("Chaque chapitre doit avoir { time_secs: nombre ≥ 0, title: string }");
+            return;
+          }
+        }
+        chaptersValue = parsed;
+      } catch (e) {
+        setChaptersError("JSON invalide : " + (e as Error).message);
+        return;
+      }
+    }
     setBusy(true);
     const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
     const supabase = createClient();
@@ -522,6 +549,8 @@ function VideoForm({ initial, categories, allVideos, onClose, onSaved }: {
       is_featured: isFeatured,
       intro_end_secs: introEndSecs === "" ? null : Number(introEndSecs),
       next_video_id: nextVideoId || null,
+      chapters: chaptersValue,
+      transcript_md: transcriptMd.trim() || null,
       tags,
     };
     let result;
@@ -648,6 +677,35 @@ function VideoForm({ initial, categories, allVideos, onClose, onSaved }: {
           </select>
         </Field>
       </div>
+
+      <Field
+        label="🗂️ Chapitres (JSON)"
+        hint='Format : [{ "time_secs": 0, "title": "Intro" }, { "time_secs": 120, "title": "Point 1" }, ...]'
+      >
+        <textarea
+          value={chaptersJson}
+          onChange={(e) => { setChaptersJson(e.target.value); setChaptersError(null); }}
+          rows={5}
+          placeholder='[{ "time_secs": 0, "title": "Introduction" }]'
+          style={{
+            ...inputStyle, resize: "vertical", fontFamily: "monospace", fontSize: 12.5,
+            borderColor: chaptersError ? T.live : T.border,
+          }}
+        />
+        {chaptersError ? (
+          <span style={{ fontSize: 11, color: T.live }}>{chaptersError}</span>
+        ) : null}
+      </Field>
+
+      <Field label="📜 Transcription (Markdown / texte brut)" hint="Affichée sous forme dépliable sur la page vidéo">
+        <textarea
+          value={transcriptMd}
+          onChange={(e) => setTranscriptMd(e.target.value)}
+          rows={6}
+          placeholder="Bonjour à tous, aujourd'hui nous allons parler de…"
+          style={{ ...inputStyle, resize: "vertical", fontSize: 13.5 }}
+        />
+      </Field>
 
       <Field label="Ordre"><input type="number" value={orderIndex} onChange={(e) => setOrderIndex(parseInt(e.target.value) || 0)} style={inputStyle} /></Field>
 

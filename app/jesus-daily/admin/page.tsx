@@ -23,7 +23,7 @@ export default async function JdtvAdminPage() {
       .select("id, slug, name, description, icon, cover_url, order_index, is_published")
       .order("order_index", { ascending: true }),
     supabase.from("jdtv_videos")
-      .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags, intro_end_secs, outro_start_secs, next_video_id")
+      .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags, intro_end_secs, outro_start_secs, next_video_id, chapters, transcript_md")
       .order("published_at", { ascending: false }),
   ]);
 

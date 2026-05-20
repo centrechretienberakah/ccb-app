@@ -75,6 +75,13 @@ export interface JdtvVideo {
   intro_end_secs?: number | null;
   outro_start_secs?: number | null;
   next_video_id?: string | null;
+  chapters?: JdtvChapter[] | null;
+  transcript_md?: string | null;
+}
+
+export interface JdtvChapter {
+  time_secs: number;
+  title: string;
 }
 
 export interface JdtvWatchProgress {

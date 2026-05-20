@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +19,9 @@ import CommentsSection, { type CommentItem } from "./CommentsSection";
 import LiveChat, { type LiveMessage } from "./LiveChat";
 import WatchTracker from "./WatchTracker";
 import UpNextCard from "./UpNextCard";
+import ChaptersPanel from "./ChaptersPanel";
+import Transcript from "./Transcript";
+import PersonalNotes from "./PersonalNotes";
 
 type Reaction = "clap" | "love" | "pray" | "fire" | "sparkle";
 
@@ -53,6 +56,49 @@ export default function VideoPlayerClient({
   const startedRef = useRef(false);
   const [showUpNext, setShowUpNext] = useState(false);
   const [upNextDismissed, setUpNextDismissed] = useState(false);
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [startAt, setStartAt] = useState<number>(0); // sec, read from ?t=
+  const [currentTime, setCurrentTime] = useState<number>(0);
+
+  // Parse ?t= on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const t = url.searchParams.get("t");
+    if (!t) return;
+    const secs = parseInt(t, 10);
+    if (!isNaN(secs) && secs > 0) {
+      setStartAt(secs);
+      setCurrentTime(secs);
+    }
+  }, []);
+
+  // Seek helper : works for HTML5 video directly, and reloads iframe with &start= for YouTube/Vimeo
+  const seekTo = useCallback((secs: number) => {
+    if (videoElRef.current) {
+      videoElRef.current.currentTime = secs;
+      void videoElRef.current.play().catch(() => undefined);
+      setCurrentTime(secs);
+      return;
+    }
+    // Iframe : force re-render with new start
+    setStartAt(secs);
+    setCurrentTime(secs);
+  }, []);
+
+  // Copy current timestamp link
+  const [tsCopied, setTsCopied] = useState(false);
+  async function copyTimestampLink() {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("t", String(Math.max(0, Math.round(currentTime))));
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setTsCopied(true);
+      setTimeout(() => setTsCopied(false), 1800);
+    } catch { /* noop */ }
+  }
 
   // Next video : explicit next_video_id from admin > first reco
   const nextVideo: JdtvVideo | null = (() => {
@@ -168,9 +214,22 @@ export default function VideoPlayerClient({
         }}>
           {isPremiumLocked ? (
             <PremiumLock />
-          ) : embed?.provider === "youtube" || embed?.provider === "vimeo" ? (
+          ) : embed?.provider === "youtube" ? (
             <iframe
-              src={`${embed.src}${embed.provider === "youtube" ? "&autoplay=1" : "?autoplay=1"}`}
+              ref={iframeRef}
+              // Use startAt as part of key/url so seeking reloads with new start time
+              key={`yt-${startAt}`}
+              src={`${embed.src}&autoplay=1${startAt > 0 ? `&start=${startAt}` : ""}`}
+              title={video.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+            />
+          ) : embed?.provider === "vimeo" ? (
+            <iframe
+              ref={iframeRef}
+              key={`vm-${startAt}`}
+              src={`${embed.src}?autoplay=1${startAt > 0 ? `#t=${startAt}s` : ""}`}
               title={video.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -178,8 +237,13 @@ export default function VideoPlayerClient({
             />
           ) : embed ? (
             <video
+              ref={videoElRef}
               src={embed.src}
               controls autoPlay
+              onLoadedMetadata={(e) => {
+                if (startAt > 0) (e.currentTarget as HTMLVideoElement).currentTime = startAt;
+              }}
+              onTimeUpdate={(e) => setCurrentTime((e.currentTarget as HTMLVideoElement).currentTime)}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
             />
           ) : (
@@ -234,6 +298,11 @@ export default function VideoPlayerClient({
                 ▶ Vidéo suivante
               </Link>
             ) : null}
+            {!isPremiumLocked ? (
+              <button onClick={copyTimestampLink} style={actionBtn(false)} title="Copier le lien à ce moment précis">
+                {tsCopied ? "✓ Lien copié" : "📋 Copier ce moment"}
+              </button>
+            ) : null}
           </div>
 
           {/* Description */}
@@ -254,6 +323,26 @@ export default function VideoPlayerClient({
                 }}>#{t}</span>
               ))}
             </div>
+          ) : null}
+
+          {/* Chapitres */}
+          {!isPremiumLocked && video.chapters && video.chapters.length > 0 ? (
+            <ChaptersPanel chapters={video.chapters} onJump={seekTo} />
+          ) : null}
+
+          {/* Transcript */}
+          {!isPremiumLocked && video.transcript_md ? (
+            <Transcript markdown={video.transcript_md} />
+          ) : null}
+
+          {/* Notes personnelles */}
+          {!isPremiumLocked ? (
+            <PersonalNotes
+              videoId={video.id}
+              isAuth={isAuth}
+              currentTimeSecs={currentTime}
+              onJump={seekTo}
+            />
           ) : null}
 
           {/* Réactions */}

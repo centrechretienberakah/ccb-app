@@ -34,7 +34,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
 
   const { data: vidData } = await supabase
     .from("jdtv_videos")
-    .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags, intro_end_secs, outro_start_secs, next_video_id")
+    .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags, intro_end_secs, outro_start_secs, next_video_id, chapters, transcript_md")
     .eq("slug", slug).maybeSingle();
   if (!vidData) return notFound();
   const video = vidData as JdtvVideo;
@@ -54,7 +54,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
   if (video.category_id) {
     const { data: recData } = await supabase
       .from("jdtv_videos")
-      .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags, intro_end_secs, outro_start_secs, next_video_id")
+      .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags, intro_end_secs, outro_start_secs, next_video_id, chapters, transcript_md")
       .eq("category_id", video.category_id)
       .eq("is_published", true)
       .neq("id", video.id)
@@ -65,7 +65,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
   if (recommendations.length < 6) {
     const { data: extra } = await supabase
       .from("jdtv_videos")
-      .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags, intro_end_secs, outro_start_secs, next_video_id")
+      .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags, intro_end_secs, outro_start_secs, next_video_id, chapters, transcript_md")
       .eq("is_published", true)
       .neq("id", video.id)
       .order("published_at", { ascending: false })
