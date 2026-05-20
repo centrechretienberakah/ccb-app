@@ -102,6 +102,16 @@ export interface Module {
   order_index: number;
 }
 
+export interface QuizOption {
+  text: string;
+  correct: boolean;
+}
+
+export interface QuizQuestion {
+  q: string;
+  options: QuizOption[];
+}
+
 export interface Lesson {
   id: string;
   module_id: string;
@@ -116,6 +126,7 @@ export interface Lesson {
   duration_secs: number | null;
   order_index: number;
   is_premium: boolean;
+  quiz_questions?: QuizQuestion[] | null;
 }
 
 export interface UserProgress {

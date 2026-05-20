@@ -28,7 +28,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
 
   const { data: lessonData } = await supabase
     .from("institut_lessons")
-    .select("id, module_id, course_id, slug, title, description, content_md, video_url, audio_url, pdf_url, duration_secs, order_index, is_premium")
+    .select("id, module_id, course_id, slug, title, description, content_md, video_url, audio_url, pdf_url, duration_secs, order_index, is_premium, quiz_questions")
     .eq("slug", slug).maybeSingle();
   if (!lessonData) return notFound();
   const lesson = lessonData as Lesson;
@@ -66,12 +66,38 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
   const prevLesson = idx > 0 ? allLessons[idx - 1] : null;
   const nextLesson = idx < allLessons.length - 1 ? allLessons[idx + 1] : null;
 
-  // Progression actuelle
+  // Progression actuelle + quiz
   const { data: progRow } = await supabase
     .from("institut_user_progress")
-    .select("is_completed, watched_secs")
+    .select("is_completed, watched_secs, quiz_score, quiz_max, quiz_completed_at")
     .eq("user_id", user.id).eq("lesson_id", lesson.id).maybeSingle();
-  const progress = (progRow ?? null) as { is_completed: boolean; watched_secs: number } | null;
+  const progress = (progRow ?? null) as {
+    is_completed: boolean; watched_secs: number;
+    quiz_score: number | null; quiz_max: number | null; quiz_completed_at: string | null;
+  } | null;
+
+  // Premium gate : si lesson ou cours est premium, vérifier le rôle de l'utilisateur
+  // Les rôles staff (owner/admin/leader/moderator) bypassent le premium
+  // Les autres : nécessite un is_premium sur user_profiles (à implémenter plus tard)
+  const isPremiumContent = !!(lesson.is_premium || course.is_premium);
+  let canAccessPremium = !isPremiumContent;
+  if (isPremiumContent) {
+    try {
+      const { data: roleRow } = await supabase
+        .from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+      const role = (roleRow as { role: string } | null)?.role;
+      if (role && ["owner", "admin", "leader", "moderator"].includes(role)) {
+        canAccessPremium = true;
+      } else {
+        // Vérifie aussi user_profiles.is_premium si la colonne existe
+        try {
+          const { data: profRow } = await supabase
+            .from("user_profiles").select("is_premium").eq("user_id", user.id).maybeSingle();
+          if ((profRow as { is_premium: boolean } | null)?.is_premium) canAccessPremium = true;
+        } catch { /* colonne is_premium pas dispo */ }
+      }
+    } catch { /* noop */ }
+  }
 
   return (
     <LessonClient
@@ -82,8 +108,11 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
       prevLesson={prevLesson}
       nextLesson={nextLesson}
       isCompleted={progress?.is_completed ?? false}
+      quizScore={progress?.quiz_score ?? null}
+      quizMax={progress?.quiz_max ?? null}
       lessonIndex={idx + 1}
       totalLessons={allLessons.length}
+      canAccessPremium={canAccessPremium}
     />
   );
 }

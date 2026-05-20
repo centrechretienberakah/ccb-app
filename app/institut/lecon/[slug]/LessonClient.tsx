@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   INSTITUT_THEME as T, INSTITUT_FONTS as F,
   getEmbedUrl,
-  type Lesson, type Course, type Module, type Category,
+  type Lesson, type Course, type Module, type Category, type QuizQuestion,
 } from "@/lib/institut/theme";
 
 interface LessonNav { id: string; slug: string; title: string }
@@ -20,19 +20,25 @@ interface Props {
   prevLesson: LessonNav | null;
   nextLesson: LessonNav | null;
   isCompleted: boolean;
+  quizScore?: number | null;
+  quizMax?: number | null;
   lessonIndex: number;
   totalLessons: number;
+  canAccessPremium?: boolean;
 }
 
 export default function LessonClient({
   lesson, course, module, category, prevLesson, nextLesson,
-  isCompleted: initialCompleted, lessonIndex, totalLessons,
+  isCompleted: initialCompleted, quizScore: initialQuizScore = null, quizMax: initialQuizMax = null,
+  lessonIndex, totalLessons, canAccessPremium = true,
 }: Props) {
   const router = useRouter();
   const [isCompleted, setIsCompleted] = useState(initialCompleted);
   const [saving, setSaving] = useState(false);
 
   const video = lesson.video_url ? getEmbedUrl(lesson.video_url) : null;
+  const isPremiumLocked = !canAccessPremium && (lesson.is_premium || course.is_premium);
+  const hasQuiz = Array.isArray(lesson.quiz_questions) && lesson.quiz_questions.length > 0;
 
   async function toggleCompleted() {
     setSaving(true);
@@ -114,8 +120,54 @@ export default function LessonClient({
 
       <div className="lesson-layout">
 
+        {/* Premium gate */}
+        {isPremiumLocked && (
+          <div style={{
+            background: T.card, border: `2px solid ${T.gold}`,
+            borderRadius: 16, padding: "40px 24px", textAlign: "center",
+            marginBottom: 16, boxShadow: T.shadowMd,
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 10 }}>👑</div>
+            <h2 style={{
+              fontFamily: F.title, fontSize: 22, fontWeight: 700,
+              color: T.violet, margin: "0 0 8px",
+            }}>
+              Contenu Premium
+            </h2>
+            <p style={{
+              fontSize: 14, color: T.textSoft, lineHeight: 1.6,
+              maxWidth: 480, margin: "0 auto 22px",
+            }}>
+              Cette leçon fait partie d&apos;une formation Premium réservée aux membres
+              {course.is_premium ? " du programme complet" : " du contenu avancé"}.
+              Rejoins le programme pour débloquer toutes les leçons.
+            </p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+              <Link href="/premium" style={{
+                background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`,
+                color: "#111", padding: "11px 24px", borderRadius: 999,
+                fontWeight: 700, fontSize: 13, fontFamily: F.body,
+                textDecoration: "none",
+                boxShadow: "0 4px 18px rgba(212,175,55,0.4)",
+                display: "inline-flex", alignItems: "center", gap: 6,
+              }}>
+                👑 Devenir Premium
+              </Link>
+              <Link href={`/institut/cours/${course.slug}`} style={{
+                background: T.bg, color: T.violet,
+                border: `1px solid ${T.violet}`,
+                padding: "11px 22px", borderRadius: 999,
+                fontWeight: 700, fontSize: 13, fontFamily: F.body,
+                textDecoration: "none",
+              }}>
+                ← Retour au cours
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Vidéo */}
-        {video && (
+        {!isPremiumLocked && video && (
           <div style={{
             marginBottom: 16, borderRadius: 14, overflow: "hidden",
             aspectRatio: "16/9", background: "#000",
@@ -133,7 +185,7 @@ export default function LessonClient({
         )}
 
         {/* Audio standalone */}
-        {!video && lesson.audio_url && (
+        {!isPremiumLocked && !video && lesson.audio_url && (
           <div style={{
             marginBottom: 16, padding: 14,
             background: T.card, border: `1px solid ${T.border}`,
@@ -150,7 +202,7 @@ export default function LessonClient({
         )}
 
         {/* Description courte */}
-        {lesson.description && (
+        {!isPremiumLocked && lesson.description && (
           <div style={{
             background: T.card, border: `1px solid ${T.border}`,
             borderRadius: 14, padding: 16, marginBottom: 16,
@@ -166,7 +218,7 @@ export default function LessonClient({
         )}
 
         {/* Contenu markdown */}
-        {lesson.content_md && (
+        {!isPremiumLocked && lesson.content_md && (
           <div style={{
             background: T.card, border: `1px solid ${T.border}`,
             borderRadius: 14, padding: "18px 22px", marginBottom: 16,
@@ -183,7 +235,7 @@ export default function LessonClient({
         )}
 
         {/* PDF + Audio compagnon */}
-        {(lesson.pdf_url || (video && lesson.audio_url)) && (
+        {!isPremiumLocked && (lesson.pdf_url || (video && lesson.audio_url)) && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
             {lesson.pdf_url && (
               <a href={lesson.pdf_url} target="_blank" rel="noopener"
@@ -215,7 +267,7 @@ export default function LessonClient({
         )}
 
         {/* Aucune ressource */}
-        {!video && !lesson.audio_url && !lesson.content_md && !lesson.description && !lesson.pdf_url && (
+        {!isPremiumLocked && !video && !lesson.audio_url && !lesson.content_md && !lesson.description && !lesson.pdf_url && (
           <div style={{
             background: T.card, border: `1px dashed ${T.border}`,
             borderRadius: 14, padding: 40, textAlign: "center", marginBottom: 16,
@@ -227,8 +279,19 @@ export default function LessonClient({
           </div>
         )}
 
+        {/* Quiz */}
+        {!isPremiumLocked && hasQuiz && (
+          <QuizBlock
+            lessonId={lesson.id}
+            courseId={lesson.course_id}
+            questions={lesson.quiz_questions as QuizQuestion[]}
+            initialScore={initialQuizScore}
+            initialMax={initialQuizMax}
+          />
+        )}
+
         {/* Action principale */}
-        <div style={{
+        {!isPremiumLocked && <div style={{
           background: T.card, border: `1px solid ${T.border}`,
           borderRadius: 14, padding: 16, marginBottom: 16,
           display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
@@ -261,7 +324,7 @@ export default function LessonClient({
               Leçon suivante →
             </button>
           )}
-        </div>
+        </div>}
 
         {/* Nav prev/next */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -290,6 +353,201 @@ export default function LessonClient({
             </Link>
           ) : <div />}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── QuizBlock ────────────────────────────────────────────────────────
+function QuizBlock({ lessonId, courseId, questions, initialScore, initialMax }: {
+  lessonId: string;
+  courseId: string;
+  questions: QuizQuestion[];
+  initialScore: number | null;
+  initialMax: number | null;
+}) {
+  // answers[questionIdx] = selectedOptionIdx (number) ou null
+  const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null));
+  const [submitted, setSubmitted] = useState(initialScore !== null && initialMax !== null);
+  const [score, setScore] = useState<number | null>(initialScore);
+  const [busy, setBusy] = useState(false);
+
+  function selectOption(qIdx: number, oIdx: number) {
+    if (submitted) return;
+    setAnswers((prev) => prev.map((a, i) => i === qIdx ? oIdx : a));
+  }
+
+  async function submitQuiz() {
+    if (busy || submitted) return;
+    // Vérifie que toutes les questions sont répondues
+    if (answers.some((a) => a === null)) {
+      alert("Réponds à toutes les questions avant de soumettre.");
+      return;
+    }
+    setBusy(true);
+    let correct = 0;
+    questions.forEach((q, i) => {
+      const selected = answers[i];
+      if (selected !== null && q.options[selected]?.correct) correct += 1;
+    });
+    setScore(correct);
+    setSubmitted(true);
+
+    // Sauvegarde
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const now = new Date().toISOString();
+        await supabase.from("institut_user_progress").upsert({
+          user_id: user.id,
+          lesson_id: lessonId,
+          course_id: courseId,
+          quiz_score: correct,
+          quiz_max: questions.length,
+          quiz_completed_at: now,
+          last_seen_at: now,
+        }, { onConflict: "user_id,lesson_id" });
+      }
+    } catch { /* noop */ }
+    setBusy(false);
+  }
+
+  function resetQuiz() {
+    setAnswers(questions.map(() => null));
+    setSubmitted(false);
+    setScore(null);
+  }
+
+  const maxScore = questions.length;
+  const successRate = score !== null ? Math.round((score / maxScore) * 100) : 0;
+  const isPassing = successRate >= 70;
+
+  return (
+    <div style={{
+      background: T.card, border: `1px solid ${T.border}`,
+      borderRadius: 14, padding: 18, marginBottom: 16,
+      boxShadow: T.shadowSoft,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+        <h2 style={{
+          fontFamily: F.title, fontSize: 16, fontWeight: 700,
+          color: T.violet, margin: 0, letterSpacing: 0.04,
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          🧠 Quiz de la leçon
+        </h2>
+        {submitted && score !== null && (
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            background: isPassing ? "rgba(46,155,71,0.1)" : T.surface2,
+            border: `1px solid ${isPassing ? T.completed : T.border}`,
+            color: isPassing ? T.completed : T.textSoft,
+            borderRadius: 999, padding: "5px 12px",
+            fontSize: 12, fontWeight: 700,
+          }}>
+            {isPassing ? "✓" : "○"} {score}/{maxScore} · {successRate}%
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {questions.map((q, qIdx) => {
+          const selected = answers[qIdx];
+          return (
+            <div key={qIdx}>
+              <div style={{
+                fontSize: 14, fontWeight: 700, color: T.text,
+                marginBottom: 8, fontFamily: F.body,
+              }}>
+                Q{qIdx + 1}. {q.q}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {q.options.map((opt, oIdx) => {
+                  const isSelected = selected === oIdx;
+                  let bg: string = T.bg;
+                  let border: string = T.border;
+                  let color: string = T.textSoft;
+                  if (submitted) {
+                    if (opt.correct) {
+                      bg = "rgba(46,155,71,0.1)";
+                      border = T.completed;
+                      color = T.completed;
+                    } else if (isSelected) {
+                      bg = "rgba(194,75,122,0.1)";
+                      border = "#C24B7A";
+                      color = "#C24B7A";
+                    }
+                  } else if (isSelected) {
+                    bg = T.violetSoft;
+                    border = T.violet;
+                    color = T.violet;
+                  }
+                  return (
+                    <button key={oIdx} onClick={() => selectOption(qIdx, oIdx)} disabled={submitted}
+                      style={{
+                        textAlign: "left", padding: "10px 14px",
+                        background: bg, border: `1.5px solid ${border}`,
+                        color, fontSize: 13, fontWeight: isSelected || (submitted && opt.correct) ? 700 : 500,
+                        borderRadius: 10,
+                        cursor: submitted ? "default" : "pointer",
+                        fontFamily: F.body, display: "flex", alignItems: "center", gap: 8,
+                      }}>
+                      <span style={{
+                        width: 18, height: 18, borderRadius: "50%",
+                        border: `2px solid ${border}`,
+                        background: isSelected ? border : "transparent",
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0,
+                      }}>
+                        {submitted && opt.correct ? (
+                          <span style={{ color: "#fff", fontSize: 10 }}>✓</span>
+                        ) : submitted && isSelected && !opt.correct ? (
+                          <span style={{ color: "#fff", fontSize: 10 }}>✕</span>
+                        ) : null}
+                      </span>
+                      <span style={{ flex: 1 }}>{opt.text}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{
+        display: "flex", gap: 8, justifyContent: "flex-end",
+        marginTop: 16, flexWrap: "wrap",
+      }}>
+        {submitted ? (
+          <>
+            <div style={{
+              flex: 1, padding: "6px 0", fontSize: 12,
+              color: isPassing ? T.completed : T.textMuted,
+              fontWeight: 600, fontStyle: isPassing ? "normal" : "italic",
+            }}>
+              {isPassing ? "🎉 Bravo, tu as validé le quiz !" : "Tu peux réessayer pour améliorer ton score."}
+            </div>
+            <button onClick={resetQuiz} style={{
+              background: T.surface2, border: `1px solid ${T.border}`,
+              borderRadius: 10, padding: "9px 18px",
+              color: T.textMuted, cursor: "pointer", fontSize: 12,
+              fontFamily: F.body,
+            }}>
+              ↻ Recommencer
+            </button>
+          </>
+        ) : (
+          <button onClick={submitQuiz} disabled={busy} style={{
+            background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
+            border: "none", borderRadius: 10, padding: "10px 22px",
+            color: "#fff", fontWeight: 700, fontSize: 13,
+            cursor: busy ? "wait" : "pointer", fontFamily: F.body,
+          }}>
+            {busy ? "Calcul…" : "✓ Soumettre mes réponses"}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -868,6 +868,10 @@ function LessonForm({ row, onSave, onCancel }: {
   const [isPremium, setIsPremium] = useState(row?.is_premium ?? false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [quizJson, setQuizJson] = useState<string>(
+    row?.quiz_questions ? JSON.stringify(row.quiz_questions, null, 2) : "",
+  );
+  const [quizError, setQuizError] = useState<string>("");
 
   async function handleAudioUpload(file: File) {
     setUploadingAudio(true);
@@ -884,6 +888,33 @@ function LessonForm({ row, onSave, onCancel }: {
 
   function submit() {
     if (!title.trim()) { alert("Titre requis"); return; }
+    // Parse quiz JSON
+    let quizValue: unknown = null;
+    if (quizJson.trim()) {
+      try {
+        const parsed = JSON.parse(quizJson);
+        if (!Array.isArray(parsed)) {
+          setQuizError("Le quiz doit être un tableau []");
+          return;
+        }
+        for (const q of parsed) {
+          if (!q.q || !Array.isArray(q.options) || q.options.length < 2) {
+            setQuizError("Chaque question doit avoir 'q' (texte) et 'options' (≥ 2)");
+            return;
+          }
+          const hasCorrect = q.options.some((o: { correct?: boolean }) => o.correct === true);
+          if (!hasCorrect) {
+            setQuizError("Chaque question doit avoir au moins une option correct: true");
+            return;
+          }
+        }
+        quizValue = parsed;
+        setQuizError("");
+      } catch (e) {
+        setQuizError("JSON invalide : " + (e as Error).message);
+        return;
+      }
+    }
     onSave({
       title: title.trim(),
       slug: (slug.trim() || slugify(title) + "-" + Date.now().toString(36).slice(-4)),
@@ -895,6 +926,7 @@ function LessonForm({ row, onSave, onCancel }: {
       duration_secs: durationSecs ? parseInt(durationSecs) : null,
       order_index: orderIdx,
       is_premium: isPremium,
+      quiz_questions: quizValue,
     });
   }
 
@@ -929,6 +961,17 @@ function LessonForm({ row, onSave, onCancel }: {
         <Field label="Durée (secondes)"><input type="number" value={durationSecs} onChange={(e) => setDurationSecs(e.target.value)} style={inputStyle} placeholder="ex. 600 = 10 min" /></Field>
         <Field label="Ordre"><input type="number" value={orderIdx} onChange={(e) => setOrderIdx(parseInt(e.target.value) || 0)} style={inputStyle} /></Field>
       </div>
+      <Field label="Quiz (JSON, optionnel)">
+        <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 6, lineHeight: 1.5 }}>
+          Format : <code style={{ background: T.surface2, padding: "1px 4px", borderRadius: 4 }}>{"[{\"q\":\"Question?\",\"options\":[{\"text\":\"A\",\"correct\":true},{\"text\":\"B\",\"correct\":false}]}]"}</code>
+        </div>
+        <textarea value={quizJson} onChange={(e) => setQuizJson(e.target.value)}
+          rows={8} placeholder='[{"q":"...","options":[{"text":"...","correct":true}]}]'
+          style={{ ...inputStyle, resize: "vertical", fontFamily: "monospace", fontSize: 11 } as React.CSSProperties} />
+        {quizError && (
+          <div style={{ color: "#C24B7A", fontSize: 11, marginTop: 4, fontWeight: 600 }}>{quizError}</div>
+        )}
+      </Field>
       <CheckField checked={isPremium} onChange={setIsPremium} label="👑 Leçon premium" />
     </FormShell>
   );
