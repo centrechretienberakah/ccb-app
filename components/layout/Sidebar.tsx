@@ -9,24 +9,26 @@ import {
   IconUser, IconSettings, IconLogOut,
 } from "@/components/icons";
 
-// Toutes les rubriques — ordre alphabétique (Accueil en premier)
+// Ordre aligné sur l'accès rapide du Dashboard
 const ALL_ITEMS = [
   { href: "/dashboard",     label: "Accueil",           emoji: "🏠" },
-  { href: "/bible",         label: "Ma Bible",          emoji: "📖" },
-  { href: "/bibliotheque",  label: "Bibliothèque",      emoji: "📚" },
-  { href: "/community",     label: "Communauté",        emoji: "👥" },
-  { href: "/contact",       label: "Contact",           emoji: "📬" },
   { href: "/devotion",      label: "Méditons ensemble", emoji: "☀️" },
+  { href: "/bible",         label: "Ma Bible",          emoji: "📖" },
+  { href: "/prayer",        label: "Prions ensemble",   emoji: "🙏" },
+  { href: "/community",     label: "Communauté",        emoji: "👥" },
+  { href: "/jesus-daily",   label: "Jesus Daily TV",    emoji: "📺" },
+  { href: "/institut",      label: "Institut Berakah",  emoji: "🎓" },
   { href: "/events",        label: "Événements",        emoji: "📅" },
   { href: "/dons",          label: "Faire un Don",      emoji: "💝" },
   { href: "/galerie",       label: "Galerie",           emoji: "🖼️" },
-  { href: "/institut",      label: "Institut Berakah",  emoji: "🎓" },
-  { href: "/jesus-daily",   label: "Jesus Daily TV",    emoji: "📺" },
-  { href: "/notifications", label: "Notifications",     emoji: "🔔" },
-  { href: "/premium",       label: "Premium",           emoji: "👑" },
-  { href: "/prayer",        label: "Prions ensemble",   emoji: "🙏" },
+  { href: "/bibliotheque",  label: "Bibliothèque",      emoji: "📚" },
   { href: "/rendez-vous",   label: "Rendez-vous",       emoji: "🗓️" },
   { href: "/temoignages",   label: "Témoignages",       emoji: "✨" },
+  { href: "/contact",       label: "Contact",           emoji: "📬" },
+  { href: "/nous-suivre",   label: "Nous Suivre",       emoji: "📡" },
+  { href: "/a-propos",      label: "À Propos",          emoji: "⛪" },
+  { href: "/notifications", label: "Notifications",     emoji: "🔔" },
+  { href: "/premium",       label: "Premium",           emoji: "👑" },
 ];
 
 export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
@@ -61,7 +63,7 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
         </div>
       </div>
 
-      {/* Menu — ordre alphabétique */}
+      {/* Menu — ordre aligné sur l'accès rapide */}
       <nav className="sidebar-nav">
         <div className="sidebar-nav-label">MENU</div>
         {ALL_ITEMS.map(({ href, label, emoji }) => {
