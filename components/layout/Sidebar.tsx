@@ -21,7 +21,7 @@ const ALL_ITEMS = [
   { href: "/dons",          label: "Faire un Don",      emoji: "💝" },
   { href: "/galerie",       label: "Galerie",           emoji: "🖼️" },
   { href: "/institut",      label: "Institut Berakah",  emoji: "🎓" },
-  { href: "/jesus-daily",   label: "Jesus Daily",       emoji: "🎬" },
+  { href: "/jesus-daily",   label: "Jesus Daily TV",    emoji: "📺" },
   { href: "/notifications", label: "Notifications",     emoji: "🔔" },
   { href: "/premium",       label: "Premium",           emoji: "👑" },
   { href: "/prayer",        label: "Prions ensemble",   emoji: "🙏" },

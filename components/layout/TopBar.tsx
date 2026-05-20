@@ -13,7 +13,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/prayer":         "Prions ensemble",
   "/community":     "Communaute",
   "/devotion":      "Méditons ensemble",
-  "/jesus-daily":   "Jesus Daily",
+  "/jesus-daily":   "Jesus Daily TV",
   "/dons":          "Dons",
   "/premium":       "Premium",
   "/profile":       "Mon profil",
