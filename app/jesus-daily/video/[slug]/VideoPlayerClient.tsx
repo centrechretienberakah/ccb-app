@@ -17,6 +17,8 @@ import {
 import ReactionsBar from "./ReactionsBar";
 import CommentsSection, { type CommentItem } from "./CommentsSection";
 import LiveChat, { type LiveMessage } from "./LiveChat";
+import WatchTracker from "./WatchTracker";
+import UpNextCard from "./UpNextCard";
 
 type Reaction = "clap" | "love" | "pray" | "fire" | "sparkle";
 
@@ -49,6 +51,17 @@ export default function VideoPlayerClient({
   const embed = getEmbedUrl(video.video_url);
   const isPremiumLocked = video.is_premium && !canAccessPremium;
   const startedRef = useRef(false);
+  const [showUpNext, setShowUpNext] = useState(false);
+  const [upNextDismissed, setUpNextDismissed] = useState(false);
+
+  // Next video : explicit next_video_id from admin > first reco
+  const nextVideo: JdtvVideo | null = (() => {
+    if (video.next_video_id) {
+      const explicit = recommendations.find((r) => r.id === video.next_video_id);
+      if (explicit) return explicit;
+    }
+    return recommendations.find((r) => !r.is_live) ?? recommendations[0] ?? null;
+  })();
 
   // Track view + initialize progress on mount
   useEffect(() => {
@@ -121,6 +134,25 @@ export default function VideoPlayerClient({
 
   return (
     <div style={{ minHeight: "100vh", background: T.bgGrad, color: T.text, fontFamily: F.body }}>
+      {/* Invisible heartbeat tracker */}
+      {!isPremiumLocked && !video.is_live ? (
+        <WatchTracker
+          videoId={video.id}
+          initialWatchedSecs={watchedSecs}
+          durationSecs={video.duration_secs ?? null}
+          isAuth={isAuth}
+          onComplete={() => { if (!upNextDismissed && nextVideo) setShowUpNext(true); }}
+        />
+      ) : null}
+
+      {/* Up Next floating card */}
+      {showUpNext && nextVideo && !upNextDismissed ? (
+        <UpNextCard
+          nextVideo={nextVideo}
+          onCancel={() => { setShowUpNext(false); setUpNextDismissed(true); }}
+        />
+      ) : null}
+
       {/* Breadcrumb */}
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "16px 24px 0", fontSize: 13, color: T.textMuted }}>
         <Link href="/jesus-daily" style={{ color: T.textMuted, textDecoration: "none" }}>📺 Jesus Daily TV</Link>
@@ -196,6 +228,11 @@ export default function VideoPlayerClient({
               <button onClick={markCompleted} style={actionBtn(false)}>
                 ✓ Marquer comme vu
               </button>
+            ) : null}
+            {nextVideo && !isPremiumLocked ? (
+              <Link href={`/jesus-daily/video/${nextVideo.slug}`} style={{ ...actionBtn(false), textDecoration: "none" }}>
+                ▶ Vidéo suivante
+              </Link>
             ) : null}
           </div>
 

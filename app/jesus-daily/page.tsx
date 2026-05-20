@@ -33,7 +33,7 @@ export default async function JesusDailyPage() {
   // Toutes les vidéos publiées
   const { data: vidData } = await supabase
     .from("jdtv_videos")
-    .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags")
+    .select("id, category_id, slug, title, subtitle, description, thumbnail_url, hero_url, video_url, duration_secs, speaker, scripture, published_at, is_published, is_premium, is_live, is_featured, view_count, order_index, tags, intro_end_secs, outro_start_secs, next_video_id")
     .eq("is_published", true)
     .order("published_at", { ascending: false })
     .limit(200);

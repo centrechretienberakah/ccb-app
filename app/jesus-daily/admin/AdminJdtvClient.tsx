@@ -179,6 +179,7 @@ export default function AdminJdtvClient({ categories: initialCats, videos: initi
         <VideoForm
           initial={editingVid}
           categories={cats}
+          allVideos={vids}
           onClose={() => { setNewVid(false); setEditingVid(null); }}
           onSaved={(v) => { refreshVid(v); setNewVid(false); setEditingVid(null); }}
         />
@@ -453,8 +454,8 @@ function CategoryForm({ initial, onClose, onSaved }: {
 }
 
 // ─── VideoForm ──────────────────────────────────────────────────────
-function VideoForm({ initial, categories, onClose, onSaved }: {
-  initial: JdtvVideo | null; categories: JdtvCategory[]; onClose: () => void; onSaved: (v: JdtvVideo) => void;
+function VideoForm({ initial, categories, allVideos, onClose, onSaved }: {
+  initial: JdtvVideo | null; categories: JdtvCategory[]; allVideos: JdtvVideo[]; onClose: () => void; onSaved: (v: JdtvVideo) => void;
 }) {
   const [categoryId, setCategoryId] = useState<string>(initial?.category_id ?? (categories[0]?.id ?? ""));
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -472,6 +473,8 @@ function VideoForm({ initial, categories, onClose, onSaved }: {
   const [isPremium, setIsPremium] = useState(initial?.is_premium ?? false);
   const [isLive, setIsLive] = useState(initial?.is_live ?? false);
   const [isFeatured, setIsFeatured] = useState(initial?.is_featured ?? false);
+  const [introEndSecs, setIntroEndSecs] = useState<number | "">(initial?.intro_end_secs ?? "");
+  const [nextVideoId, setNextVideoId] = useState<string>(initial?.next_video_id ?? "");
   const [tagsInput, setTagsInput] = useState((initial?.tags ?? []).join(", "));
   const [busy, setBusy] = useState(false);
 
@@ -499,6 +502,8 @@ function VideoForm({ initial, categories, onClose, onSaved }: {
       is_premium: isPremium,
       is_live: isLive,
       is_featured: isFeatured,
+      intro_end_secs: introEndSecs === "" ? null : Number(introEndSecs),
+      next_video_id: nextVideoId || null,
       tags,
     };
     let result;
@@ -579,6 +584,22 @@ function VideoForm({ initial, categories, onClose, onSaved }: {
       <Field label="Tags" hint="Séparés par des virgules">
         <input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="évangile, foi, espérance" style={inputStyle} />
       </Field>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <Field label="Skip Intro (secondes)" hint="Permet de sauter l'intro (HTML5 vidéo)">
+          <input type="number" value={introEndSecs}
+            onChange={(e) => setIntroEndSecs(e.target.value === "" ? "" : parseInt(e.target.value))}
+            placeholder="ex. 12" style={inputStyle} />
+        </Field>
+        <Field label="Vidéo suivante" hint="Auto-play après la fin (sinon recommandation auto)">
+          <select value={nextVideoId} onChange={(e) => setNextVideoId(e.target.value)} style={inputStyle}>
+            <option value="">— Auto (recommandation) —</option>
+            {allVideos
+              .filter((v) => v.id !== initial?.id)
+              .map((v) => <option key={v.id} value={v.id}>{v.title}</option>)}
+          </select>
+        </Field>
+      </div>
 
       <Field label="Ordre"><input type="number" value={orderIndex} onChange={(e) => setOrderIndex(parseInt(e.target.value) || 0)} style={inputStyle} /></Field>
 

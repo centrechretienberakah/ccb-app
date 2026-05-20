@@ -72,6 +72,9 @@ export interface JdtvVideo {
   view_count: number;
   order_index: number;
   tags: string[] | null;
+  intro_end_secs?: number | null;
+  outro_start_secs?: number | null;
+  next_video_id?: string | null;
 }
 
 export interface JdtvWatchProgress {
