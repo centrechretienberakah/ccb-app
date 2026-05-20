@@ -96,7 +96,7 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
     setVerseIdx((i) => (i + 1) % VERSES.length);
   }
 
-  async function handleConfirm() {
+  async function handleConfirm(payNow: boolean = false) {
     if (busyConfirm) return;
     if (!finalAmount || finalAmount <= 0) { alert("Sélectionne un montant"); return; }
     setBusyConfirm(true);
@@ -129,6 +129,11 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
           campaignTitle: selectedCampaign?.title ?? null,
         })); } catch { /* noop */ }
       }
+      // Pour payer maintenant, il faut être loggé
+      if (payNow) {
+        router.push(`/auth/login?redirect=/dons`);
+        return;
+      }
       router.push("/dons/merci?guest=1");
       return;
     }
@@ -159,7 +164,12 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
     }
 
     setBusyConfirm(false);
-    router.push(`/dons/merci?id=${(data as { id: string }).id}${isRecurring ? "&recurring=1" : ""}`);
+    const recordId = (data as { id: string }).id;
+    if (payNow) {
+      router.push(`/dons/payer/${recordId}`);
+    } else {
+      router.push(`/dons/merci?id=${recordId}${isRecurring ? "&recurring=1" : ""}`);
+    }
   }
 
   return (
@@ -486,20 +496,34 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
                   </div>
                 ) : null}
               </div>
-              <button onClick={handleConfirm} disabled={busyConfirm || !finalAmount} style={{
-                padding: "12px 22px",
-                background: !finalAmount ? T.textMuted : T.heart,
-                color: "#fff", border: "none",
-                borderRadius: 999, fontWeight: 800, fontSize: 13,
-                cursor: busyConfirm || !finalAmount ? "not-allowed" : "pointer",
-                whiteSpace: "nowrap", fontFamily: F.body,
-                opacity: busyConfirm ? 0.6 : 1,
-              }}>
-                {busyConfirm ? "..." : "💝 Confirmer mon intention"}
-              </button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                <button onClick={() => handleConfirm(false)} disabled={busyConfirm || !finalAmount} style={{
+                  padding: "12px 22px",
+                  background: !finalAmount ? T.textMuted : T.card,
+                  color: !finalAmount ? "#fff" : T.text,
+                  border: `1.5px solid ${T.border}`,
+                  borderRadius: 999, fontWeight: 700, fontSize: 13,
+                  cursor: busyConfirm || !finalAmount ? "not-allowed" : "pointer",
+                  whiteSpace: "nowrap", fontFamily: F.body,
+                  opacity: busyConfirm ? 0.6 : 1,
+                }}>
+                  💝 Déclarer l&apos;intention
+                </button>
+                <button onClick={() => handleConfirm(true)} disabled={busyConfirm || !finalAmount} style={{
+                  padding: "12px 22px",
+                  background: !finalAmount ? T.textMuted : T.heart,
+                  color: "#fff", border: "none",
+                  borderRadius: 999, fontWeight: 800, fontSize: 13,
+                  cursor: busyConfirm || !finalAmount ? "not-allowed" : "pointer",
+                  whiteSpace: "nowrap", fontFamily: F.body,
+                  opacity: busyConfirm ? 0.6 : 1,
+                }}>
+                  ⚡ Payer maintenant
+                </button>
+              </div>
             </div>
             <p style={{ fontSize: 11.5, color: T.textMuted, marginTop: 10, textAlign: "center" }}>
-              💡 Tu reçois les instructions de paiement à l'étape suivante. Aucun débit ici — c'est une déclaration d'intention.
+              💡 <strong>Payer maintenant</strong> : PayPal / Mobile Money en quelques clics. <strong>Déclarer l&apos;intention</strong> : instructions pour virement / cash manuel.
             </p>
           </Section>
         </div>

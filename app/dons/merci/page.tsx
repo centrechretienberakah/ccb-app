@@ -8,7 +8,7 @@ export const metadata = { title: "Merci — Don déclaré" };
 export default async function MerciPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; guest?: string; intent?: string }>;
+  searchParams: Promise<{ id?: string; guest?: string; intent?: string; paid?: string }>;
 }) {
   const params = await searchParams;
   const id = params?.id ?? null;
@@ -36,5 +36,5 @@ export default async function MerciPage({
     } catch { /* noop */ }
   }
 
-  return <MerciClient record={record} campaignTitle={campaignTitle} isGuest={params?.guest === "1"} />;
+  return <MerciClient record={record} campaignTitle={campaignTitle} isGuest={params?.guest === "1"} isPaid={params?.paid === "1"} />;
 }

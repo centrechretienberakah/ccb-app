@@ -180,6 +180,9 @@ export interface DonationRecord {
   created_at: string;
   receipt_number?: string | null;
   dedication?: string | null;
+  payment_provider?: "paypal" | "notchpay" | "manual" | null;
+  provider_ref?: string | null;
+  provider_status?: string | null;
 }
 
 export interface DonationRecurring {

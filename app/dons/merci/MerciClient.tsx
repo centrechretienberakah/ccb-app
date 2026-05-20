@@ -24,11 +24,12 @@ interface GuestIntent {
 }
 
 export default function MerciClient({
-  record, campaignTitle, isGuest,
+  record, campaignTitle, isGuest, isPaid = false,
 }: {
   record: DonationRecord | null;
   campaignTitle: string | null;
   isGuest: boolean;
+  isPaid?: boolean;
 }) {
   const [guestIntent, setGuestIntent] = useState<GuestIntent | null>(null);
 
@@ -79,13 +80,15 @@ export default function MerciClient({
         background: `linear-gradient(135deg, ${T.violetDark} 0%, ${T.violet} 60%, ${T.goldDark} 100%)`,
         color: "#fff", textAlign: "center",
       }}>
-        <div style={{ fontSize: 64, marginBottom: 10 }}>🙏</div>
+        <div style={{ fontSize: 64, marginBottom: 10 }}>{isPaid ? "🎉" : "🙏"}</div>
         <h1 style={{
           fontFamily: F.title, fontSize: "clamp(28px, 4.5vw, 38px)", margin: "0 0 8px",
           fontWeight: 800, lineHeight: 1.15,
-        }}>Merci pour ton geste de générosité</h1>
+        }}>{isPaid ? "Paiement confirmé — Gloire à Dieu !" : "Merci pour ton geste de générosité"}</h1>
         <p style={{ color: "rgba(255,255,255,0.9)", fontSize: 14.5, margin: 0, lineHeight: 1.6 }}>
-          Ton intention a été enregistrée. Voici les instructions pour la concrétiser.
+          {isPaid
+            ? "Ton don a été reçu avec succès. Un reçu officiel est disponible dans Mes dons."
+            : "Ton intention a été enregistrée. Voici les instructions pour la concrétiser."}
         </p>
       </div>
 
