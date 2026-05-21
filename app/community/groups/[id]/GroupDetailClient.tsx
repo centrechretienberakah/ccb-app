@@ -116,6 +116,10 @@ export default function GroupDetailClient({
   const [activeSession, setActiveSession] = useState<{
     id: string; mode: "audio" | "video"; started_at: string; active_count: number;
   } | null>(null);
+  // mounted = true seulement après hydratation — évite les mismatch SSR/client
+  // sur le contenu time-formatted du bandeau "Appel en cours"
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const fileRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -719,6 +723,10 @@ export default function GroupDetailClient({
           0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
           30% { opacity: 1; transform: translateY(-2px); }
         }
+        @keyframes ccb-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.7); }
+          50%      { box-shadow: 0 0 0 8px rgba(212,175,55,0); }
+        }
 
         /* ── Composer fixé en bas du viewport sur mobile + tablette ── */
         /* MOBILE (< 640px) : juste au-dessus de la nav bar du bas */
@@ -922,15 +930,16 @@ export default function GroupDetailClient({
         )}
       </div>
 
-      {/* Bandeau "Appel en cours" — visible par tous les membres */}
-      {activeSession && (isMember || group.type === "public") && (
+      {/* Bandeau "Appel en cours" — visible par tous les membres
+          (rendu uniquement après mount pour éviter les mismatch d'hydratation) */}
+      {mounted && activeSession && (isMember || group.type === "public") && (
         <div className="ccb-grp-detail" style={{
           padding: "10px 14px",
           background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
           color: "#fff",
           display: "flex", alignItems: "center", gap: 12,
           borderBottom: `1px solid ${T.borderSoft}`,
-        }}>
+        }} suppressHydrationWarning>
           <div style={{
             width: 36, height: 36, borderRadius: "50%",
             background: "rgba(255,255,255,0.15)",
@@ -940,17 +949,11 @@ export default function GroupDetailClient({
           }}>
             {activeSession.mode === "audio" ? "📞" : "🎥"}
           </div>
-          <style>{`
-            @keyframes ccb-pulse {
-              0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.7); }
-              50%      { box-shadow: 0 0 0 8px rgba(212,175,55,0); }
-            }
-          `}</style>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 13.5 }}>
               {activeSession.mode === "audio" ? "Appel vocal en cours" : "Réunion vidéo en cours"}
             </div>
-            <div style={{ fontSize: 11.5, opacity: 0.85 }}>
+            <div style={{ fontSize: 11.5, opacity: 0.85 }} suppressHydrationWarning>
               👥 {activeSession.active_count} participant{activeSession.active_count > 1 ? "s" : ""} · démarré à{" "}
               {new Date(activeSession.started_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
             </div>
