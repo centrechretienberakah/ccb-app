@@ -7,8 +7,10 @@ interface SendOpts {
   title: string;
   body: string;
   url?: string;
-  audience?: "all" | "admins" | "user_ids";
+  audience?: "all" | "admins" | "user_ids" | "group_members";
   userIds?: string[];
+  groupId?: string;
+  excludeMuted?: boolean;
 }
 
 async function sendPush(opts: SendOpts): Promise<boolean> {
@@ -62,7 +64,7 @@ export async function fetchUnmutedMembers(
 
 /**
  * Notif nouveau message dans un groupe. Envoyée à tous les membres
- * non mutés sauf l'auteur.
+ * non mutés sauf l'auteur. Côté serveur (audience: group_members).
  */
 export async function notifyGroupMessage(opts: {
   groupId: string;
@@ -71,14 +73,14 @@ export async function notifyGroupMessage(opts: {
   snippet: string;
   excludeUserId: string;
 }): Promise<boolean> {
-  const targets = await fetchUnmutedMembers(opts.groupId, opts.excludeUserId);
-  if (targets.length === 0) return false;
+  void opts.excludeUserId; // l'API serveur exclut l'appelant automatiquement
   return sendPush({
     title: `💬 ${opts.authorName} · ${opts.groupName}`,
     body: opts.snippet.slice(0, 140) || "📎 Pièce jointe",
     url: `/community/groups/${opts.groupId}`,
-    audience: "user_ids",
-    userIds: targets,
+    audience: "group_members",
+    groupId: opts.groupId,
+    excludeMuted: true,
   });
 }
 
@@ -104,21 +106,24 @@ export async function notifyGroupMention(opts: {
 
 /**
  * Notif "réunion démarrée". Envoyée aux membres non mutés sauf l'organisateur.
+ * Côté serveur (audience: group_members).
  */
 export async function notifyGroupMeeting(opts: {
   groupId: string;
   groupName: string;
   authorName: string;
   excludeUserId: string;
+  mode?: "audio" | "video";
 }): Promise<boolean> {
-  const targets = await fetchUnmutedMembers(opts.groupId, opts.excludeUserId);
-  if (targets.length === 0) return false;
+  void opts.excludeUserId; // exclu côté serveur
+  const isAudio = opts.mode === "audio";
   return sendPush({
-    title: `🎥 ${opts.authorName} démarre une réunion`,
+    title: `${isAudio ? "📞" : "🎥"} ${opts.authorName} ${isAudio ? "lance un appel" : "démarre une réunion"}`,
     body: `Rejoins « ${opts.groupName} » maintenant`,
-    url: `/community/groups/${opts.groupId}/meeting`,
-    audience: "user_ids",
-    userIds: targets,
+    url: `/community/groups/${opts.groupId}/meeting${isAudio ? "?mode=audio" : ""}`,
+    audience: "group_members",
+    groupId: opts.groupId,
+    excludeMuted: true,
   });
 }
 

@@ -54,20 +54,23 @@ interface PushSubscriptionRow {
 }
 
 // POST /api/notifications/send
-// Body : { title, body, url?, audience?: "all" | "admins" | "user_ids", userIds?: string[] }
+// Body : { title, body, url?, audience?: "all" | "admins" | "user_ids" | "group_members", userIds?: string[], groupId?: string }
 //
 // Audiences :
-// - "all"      → tous les abonnés (réservé moderator+)
-// - "admins"   → uniquement le staff (owner/admin/leader/moderator) — accessible à tout user authentifié
-// - "user_ids" → liste précise (réservé moderator+)
+// - "all"            → tous les abonnés (réservé moderator+)
+// - "admins"         → uniquement le staff (owner/admin/leader/moderator) — tout user authentifié
+// - "user_ids"       → liste précise (réservé moderator+)
+// - "group_members"  → tous les membres du groupe (sauf l'auteur + les mutés)
+//                      Accessible à tout membre du groupe (vérifié côté serveur).
+//                      Body : { ..., groupId: <uuid>, excludeMuted?: boolean = true }
 export async function POST(req: NextRequest) {
   const reqBody = await req.json();
-  const { title, body, url, audience, userIds } = reqBody;
+  const { title, body, url, audience, userIds, groupId, excludeMuted } = reqBody;
   if (!title || !body) return NextResponse.json({ error: "title et body requis" }, { status: 400 });
 
-  // Si audience=admins, n'importe quel user authentifié peut ping le staff.
-  // Sinon, on requiert le rôle modérateur ou supérieur.
-  const auth = audience === "admins"
+  // Audience "admins" et "group_members" : tout user authentifié
+  // Sinon ("all" / "user_ids" / défaut) : modérateur+ requis
+  const auth = (audience === "admins" || audience === "group_members")
     ? await assertAuthenticated()
     : await assertModerator();
   if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: auth.status });
@@ -104,6 +107,50 @@ export async function POST(req: NextRequest) {
     query = query.in("user_id", others);
   } else if (audience === "user_ids" && Array.isArray(userIds) && userIds.length > 0) {
     query = query.in("user_id", userIds);
+  } else if (audience === "group_members") {
+    if (!groupId || typeof groupId !== "string") {
+      return NextResponse.json({ error: "groupId requis pour audience=group_members" }, { status: 400 });
+    }
+    // Vérifie que l'appelant est bien membre du groupe (sécurité)
+    const { data: myMembership } = await admin
+      .from("group_members")
+      .select("user_id")
+      .eq("group_id", groupId).eq("user_id", auth.userId).maybeSingle();
+    if (!myMembership) {
+      return NextResponse.json({ error: "Tu n'es pas membre de ce groupe" }, { status: 403 });
+    }
+    // Récupère tous les autres membres
+    const { data: gmRows } = await admin
+      .from("group_members")
+      .select("user_id")
+      .eq("group_id", groupId)
+      .neq("user_id", auth.userId);
+    const memberIds = (gmRows ?? []).map((r) => (r as { user_id: string }).user_id);
+    if (memberIds.length === 0) {
+      return NextResponse.json({ sent: 0, failed: 0, message: "Pas d'autre membre à notifier." });
+    }
+    // Exclut les mutés (best-effort, si table group_user_state existe)
+    let targets = memberIds;
+    if (excludeMuted !== false) {
+      try {
+        const { data: muted } = await admin
+          .from("group_user_state")
+          .select("user_id, muted_until")
+          .eq("group_id", groupId)
+          .in("user_id", memberIds);
+        const nowIso = new Date().toISOString();
+        const mutedSet = new Set(
+          (muted ?? [])
+            .filter((r) => (r as { muted_until: string | null }).muted_until && (r as { muted_until: string }).muted_until > nowIso)
+            .map((r) => (r as { user_id: string }).user_id),
+        );
+        targets = memberIds.filter((id) => !mutedSet.has(id));
+      } catch { /* table v39 pas migrée → ignore */ }
+    }
+    if (targets.length === 0) {
+      return NextResponse.json({ sent: 0, failed: 0, message: "Tous les autres membres sont en mute." });
+    }
+    query = query.in("user_id", targets);
   }
 
   const { data: subs, error: dbErr } = await query;

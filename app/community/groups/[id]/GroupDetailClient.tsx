@@ -459,6 +459,7 @@ export default function GroupDetailClient({
     void notifyGroupMeeting({
       groupId: group.id, groupName: group.name,
       authorName: author, excludeUserId: currentUserId,
+      mode,
     });
     notifyGroupsStaff(
       `${labelEmoji} ${labelText[0].toUpperCase() + labelText.slice(1)} : ${group.name}`,
