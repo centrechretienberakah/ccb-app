@@ -326,12 +326,22 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
             text-overflow: ellipsis;
             overflow: hidden;
           }
+          /* Sur mobile étroit, on raccourcit "Mes groupes" en "Mes" */
+          .ccb-grp-filter-short { display: none; }
+          @media (max-width: 480px) {
+            .ccb-grp-filter-long  { display: none; }
+            .ccb-grp-filter-short { display: inline; }
+          }
         `}</style>
         <div className="ccb-grp-filters">
           <button onClick={() => setFilter("all")}     style={chip(filter === "all")}>📚 Tous</button>
           <button onClick={() => setFilter("public")}  style={chip(filter === "public")}>🌍 Publics</button>
           <button onClick={() => setFilter("private")} style={chip(filter === "private")}>🔒 Privés</button>
-          <button onClick={() => setFilter("mine")}    style={chip(filter === "mine")}>💬 Mes groupes</button>
+          <button onClick={() => setFilter("mine")}    style={chip(filter === "mine")}>
+            💬{" "}
+            <span className="ccb-grp-filter-long">Mes groupes</span>
+            <span className="ccb-grp-filter-short">Mes</span>
+          </button>
         </div>
 
         {/* Liste WhatsApp-style */}
