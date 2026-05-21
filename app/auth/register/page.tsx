@@ -22,11 +22,34 @@ export default function RegisterPage() {
 
   // Step 2
   const [displayName, setDisplayName] = useState("");
-  const [cellGroup, setCellGroup] = useState("");
+  const [bio, setBio] = useState("");
+  const [country, setCountry] = useState("Cameroun");
+  const [city, setCity] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) {
+      setError("Image trop volumineuse (max 5 Mo).");
+      return;
+    }
+    if (!f.type.startsWith("image/")) {
+      setError("Le fichier doit être une image.");
+      return;
+    }
+    setError("");
+    setAvatarFile(f);
+    const reader = new FileReader();
+    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+    reader.readAsDataURL(f);
+  }
 
   // ── Auto-prompt push notifications après signup réussi (étape 3) ──
   const push = usePushNotifications();
@@ -74,7 +97,9 @@ export default function RegisterPage() {
       options: {
         data: {
           display_name: displayName.trim(),
-          cell_group: cellGroup.trim() || null,
+          bio: bio.trim() || null,
+          country: country.trim() || "Cameroun",
+          city: city.trim() || null,
         },
       },
     });
@@ -89,12 +114,35 @@ export default function RegisterPage() {
       return;
     }
 
-    // Upsert user_profiles
+    // Upload avatar (best-effort, ne bloque pas la création du compte)
+    let avatarUrl: string | null = null;
+    if (data.user && avatarFile) {
+      setUploadingAvatar(true);
+      try {
+        const ext = (avatarFile.name.split(".").pop() || "jpg").toLowerCase();
+        // Path attendu par la policy RLS : <user_id>/<filename>
+        const path = `${data.user.id}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("avatars").upload(path, avatarFile, {
+          upsert: true, cacheControl: "3600",
+        });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+          avatarUrl = urlData.publicUrl;
+        }
+      } catch { /* silencieux */ }
+      setUploadingAvatar(false);
+    }
+
+    // Upsert user_profiles avec tous les champs
     if (data.user) {
       await supabase.from("user_profiles").upsert({
         user_id: data.user.id,
         display_name: displayName.trim(),
-        cell_group: cellGroup.trim() || null,
+        full_name: displayName.trim(),
+        bio: bio.trim() || null,
+        country: country.trim() || "Cameroun",
+        city: city.trim() || null,
+        avatar_url: avatarUrl,
       });
     }
 
@@ -268,29 +316,136 @@ export default function RegisterPage() {
 
             {/* ── ETAPE 2 ── */}
             {step === 2 && (
-              <form onSubmit={handleStep2} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <form onSubmit={handleStep2} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+                {/* Photo de profil */}
+                <div className="auth-field" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <label htmlFor="register-avatar" style={{
+                    cursor: "pointer", flexShrink: 0, position: "relative",
+                    width: 72, height: 72, borderRadius: "50%",
+                    background: avatarPreview
+                      ? `url(${avatarPreview}) center/cover`
+                      : "linear-gradient(135deg, var(--violet), #3E1C70)",
+                    border: "2px solid var(--violet)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 24, color: "#fff",
+                    boxShadow: "0 4px 14px rgba(90,44,160,0.25)",
+                  }}>
+                    {!avatarPreview && (
+                      <span style={{ opacity: 0.8 }}>📷</span>
+                    )}
+                    <span style={{
+                      position: "absolute", bottom: -2, right: -2,
+                      width: 24, height: 24, borderRadius: "50%",
+                      background: "var(--gold)", color: "#000",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, fontWeight: 800,
+                      border: "2px solid var(--surface-2)",
+                    }}>+</span>
+                    <input id="register-avatar" type="file" accept="image/*"
+                      onChange={handleAvatarChange}
+                      style={{ display: "none" }} />
+                  </label>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>
+                      Photo de profil
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                      {avatarFile ? avatarFile.name.slice(0, 32) : "Optionnel · JPG/PNG · max 5 Mo"}
+                    </div>
+                    {avatarPreview && (
+                      <button type="button"
+                        onClick={() => { setAvatarFile(null); setAvatarPreview(null); }}
+                        style={{
+                          marginTop: 4, padding: "3px 9px",
+                          background: "transparent", color: "var(--text-muted)",
+                          border: "1px solid var(--border)", borderRadius: 999,
+                          fontSize: 10.5, fontWeight: 600, cursor: "pointer",
+                        }}>Retirer</button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Prénom / Nom d'affichage */}
                 <div className="auth-field">
-                  <label className="auth-label">Prenom / Nom d&apos;affichage</label>
+                  <label className="auth-label">Prénom / Nom d&apos;affichage *</label>
                   <input
                     className="auth-input"
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Ex: Jean-Pierre ou Soeur Marie"
+                    placeholder="Ex: Jean-Pierre, Sœur Marie..."
                     required
                   />
                 </div>
+
+                {/* Bio */}
                 <div className="auth-field">
-                  <label className="auth-label">Groupe de cellule (optionnel)</label>
-                  <input
+                  <label className="auth-label">Bio (optionnel)</label>
+                  <textarea
                     className="auth-input"
-                    type="text"
-                    value={cellGroup}
-                    onChange={(e) => setCellGroup(e.target.value)}
-                    placeholder="Ex: Cellule Bastos, Groupe Alpha..."
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Quelques mots sur ton parcours, ta vocation, ton ministère..."
+                    rows={3}
+                    maxLength={300}
+                    style={{ resize: "vertical", minHeight: 64 }}
                   />
+                  <div style={{ fontSize: 10.5, color: "var(--text-muted)", textAlign: "right", marginTop: 2 }}>
+                    {bio.length}/300
+                  </div>
                 </div>
+
+                {/* Pays + Ville (ligne) */}
                 <div style={{ display: "flex", gap: 10 }}>
+                  <div className="auth-field" style={{ flex: 1 }}>
+                    <label className="auth-label">Pays</label>
+                    <select
+                      className="auth-input"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                    >
+                      <option value="Cameroun">🇨🇲 Cameroun</option>
+                      <option value="Belgique">🇧🇪 Belgique</option>
+                      <option value="France">🇫🇷 France</option>
+                      <option value="Côte d&apos;Ivoire">🇨🇮 Côte d&apos;Ivoire</option>
+                      <option value="Sénégal">🇸🇳 Sénégal</option>
+                      <option value="RD Congo">🇨🇩 RD Congo</option>
+                      <option value="Congo">🇨🇬 Congo</option>
+                      <option value="Gabon">🇬🇦 Gabon</option>
+                      <option value="Bénin">🇧🇯 Bénin</option>
+                      <option value="Togo">🇹🇬 Togo</option>
+                      <option value="Mali">🇲🇱 Mali</option>
+                      <option value="Burkina Faso">🇧🇫 Burkina Faso</option>
+                      <option value="Niger">🇳🇪 Niger</option>
+                      <option value="Tchad">🇹🇩 Tchad</option>
+                      <option value="Guinée">🇬🇳 Guinée</option>
+                      <option value="Madagascar">🇲🇬 Madagascar</option>
+                      <option value="Maroc">🇲🇦 Maroc</option>
+                      <option value="Tunisie">🇹🇳 Tunisie</option>
+                      <option value="Algérie">🇩🇿 Algérie</option>
+                      <option value="Canada">🇨🇦 Canada</option>
+                      <option value="USA">🇺🇸 États-Unis</option>
+                      <option value="Royaume-Uni">🇬🇧 Royaume-Uni</option>
+                      <option value="Suisse">🇨🇭 Suisse</option>
+                      <option value="Allemagne">🇩🇪 Allemagne</option>
+                      <option value="Pays-Bas">🇳🇱 Pays-Bas</option>
+                      <option value="Autre">🌍 Autre</option>
+                    </select>
+                  </div>
+                  <div className="auth-field" style={{ flex: 1 }}>
+                    <label className="auth-label">Ville</label>
+                    <input
+                      className="auth-input"
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Ex: Douala, Bruxelles..."
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                   <button
                     type="button"
                     onClick={() => { setStep(1); setError(""); }}
@@ -305,10 +460,12 @@ export default function RegisterPage() {
                   <button
                     type="submit"
                     className="auth-btn"
-                    disabled={loading}
+                    disabled={loading || uploadingAvatar}
                     style={{ flex: 2 }}
                   >
-                    {loading ? "Creation..." : "Creer mon compte 🎉"}
+                    {loading
+                      ? (uploadingAvatar ? "Upload photo…" : "Création…")
+                      : "Créer mon compte 🎉"}
                   </button>
                 </div>
               </form>
