@@ -1,11 +1,25 @@
 "use client";
 
+import "@livekit/components-styles";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import Script from "next/script";
+import { useRouter } from "next/navigation";
+import {
+  LiveKitRoom,
+  VideoConference,
+  PreJoin,
+  RoomAudioRenderer,
+  formatChatMessageLinks,
+} from "@livekit/components-react";
+import { Track } from "livekit-client";
 import { GROUPS_THEME as T, GROUPS_FONTS as F } from "@/lib/groups/theme";
 
-interface Group { id: string; name: string; type: "public" | "private"; description: string | null }
+interface Group {
+  id: string;
+  name: string;
+  type: "public" | "private";
+  description: string | null;
+}
 
 interface Props {
   group: Group;
@@ -15,191 +29,373 @@ interface Props {
   mode?: "audio" | "video";
 }
 
-// Types minimaux pour l'API Jitsi
-interface JitsiAPI {
-  dispose: () => void;
-  addListener: (event: string, cb: () => void) => void;
-  executeCommand: (cmd: string, ...args: unknown[]) => void;
-}
-interface JitsiAPIConstructor {
-  new (domain: string, options: Record<string, unknown>): JitsiAPI;
+interface TokenResponse {
+  token: string;
+  url: string;
+  room: string;
+  identity: string;
+  displayName: string;
 }
 
-declare global {
-  interface Window {
-    JitsiMeetExternalAPI?: JitsiAPIConstructor;
-  }
-}
-
-export default function MeetingClient({ group, displayName, avatarUrl, userEmail, mode = "video" }: Props) {
+export default function MeetingClient({ group, displayName: initialDisplayName, avatarUrl, userEmail, mode = "video" }: Props) {
+  const router = useRouter();
   const isAudio = mode === "audio";
-  const containerRef = useRef<HTMLDivElement>(null);
-  const apiRef = useRef<JitsiAPI | null>(null);
-  const [ready, setReady] = useState(false);
+
+  const [token, setToken] = useState<string | null>(null);
+  const [serverUrl, setServerUrl] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [setupNeeded, setSetupNeeded] = useState(false);
+  const [joined, setJoined] = useState(false);
+  // Préférence utilisateur (PreJoin)
+  const [userName, setUserName] = useState(initialDisplayName || "Membre CCB");
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [videoEnabled, setVideoEnabled] = useState(!isAudio);
 
-  // Nom de salle déterministe et collision-resistant
-  // (URL Jitsi : https://meet.jit.si/CCB-Berakah-Group-{id})
-  const roomName = `CCB-Berakah-Group-${group.id}`;
-
-  function initJitsi() {
-    if (!window.JitsiMeetExternalAPI || !containerRef.current || apiRef.current) return;
+  // Fetch token au démarrage
+  async function fetchToken() {
+    setConnecting(true);
+    setError(null);
     try {
-      const api = new window.JitsiMeetExternalAPI("meet.jit.si", {
-        roomName,
-        parentNode: containerRef.current,
-        width: "100%",
-        height: "100%",
-        userInfo: {
-          displayName,
-          email: userEmail,
-        },
-        configOverwrite: {
-          startWithAudioMuted: false,                // micro actif dès l'entrée
-          startWithVideoMuted: isAudio,              // pas de vidéo si audio-only
-          startAudioOnly: isAudio,                   // mode audio explicite
-          prejoinPageEnabled: false,                 // évite l'écran intermédiaire qui demande micro
-          disableDeepLinking: true,
-          subject: group.name + (isAudio ? " · 📞 Appel vocal" : " · 🎥 Réunion vidéo"),
-        },
-        interfaceConfigOverwrite: {
-          DEFAULT_BACKGROUND: "#5A2CA0",
-          DEFAULT_LOCAL_DISPLAY_NAME: displayName,
-          DEFAULT_REMOTE_DISPLAY_NAME: "Membre CCB",
-          DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
-          MOBILE_APP_PROMO: false,
-          SHOW_JITSI_WATERMARK: false,
-          SHOW_BRAND_WATERMARK: false,
-          SHOW_POWERED_BY: false,
-          TOOLBAR_BUTTONS: isAudio
-            ? [
-                // Mode appel vocal : toolbar épurée, focus audio
-                "microphone", "hangup", "fodeviceselection",
-                "profile", "chat", "raisehand", "settings",
-              ]
-            : [
-                // Mode vidéo complet
-                "microphone", "camera", "closedcaptions", "desktop", "fullscreen",
-                "fodeviceselection", "hangup", "profile", "chat", "raisehand",
-                "videoquality", "filmstrip", "tileview", "select-background",
-              ],
-        },
+      const res = await fetch("/api/livekit/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId: group.id, mode }),
       });
-      apiRef.current = api;
-      api.addListener("readyToClose", () => {
-        // Quand l'utilisateur quitte la réunion
-        window.location.href = `/community/groups/${group.id}`;
-      });
-      setReady(true);
+      if (res.status === 503) {
+        setSetupNeeded(true);
+        setConnecting(false);
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? `HTTP ${res.status}`);
+        setConnecting(false);
+        return;
+      }
+      const data = (await res.json()) as TokenResponse;
+      setToken(data.token);
+      setServerUrl(data.url);
+      if (data.displayName) setUserName(data.displayName);
     } catch (e) {
-      setError("Impossible de charger Jitsi : " + (e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setConnecting(false);
     }
   }
 
   useEffect(() => {
-    return () => {
-      if (apiRef.current) {
-        try { apiRef.current.dispose(); } catch { /* noop */ }
-        apiRef.current = null;
-      }
-    };
-  }, []);
+    void fetchToken();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group.id, mode]);
 
-  // Si l'avatar est dispo on l'utilise (Jitsi le récupère via Gravatar email, donc skip)
   void avatarUrl;
+  void userEmail;
 
-  return (
-    <div style={{
-      background: "#000", color: "#fff", fontFamily: F.body,
-      height: "100vh", display: "flex", flexDirection: "column",
-    }}>
-      {/* Header compact */}
-      <div style={{
-        background: T.violet, color: "#fff",
-        padding: "10px 14px",
-        display: "flex", alignItems: "center", gap: 10,
-        boxShadow: T.shadowMd, flexShrink: 0,
-      }}>
-        <Link href={`/community/groups/${group.id}`} style={{
-          background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.25)",
-          borderRadius: 8, padding: "6px 12px",
-          color: "#fff", fontSize: 12, fontWeight: 700,
-          textDecoration: "none",
-        }}>← Retour</Link>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: F.title, fontSize: 14, fontWeight: 700,
-            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          }}>
-            {isAudio ? "📞" : "🎥"} {group.name}
-          </div>
-          <div style={{ fontSize: 10, opacity: 0.8 }}>
-            Salle : {roomName}
-          </div>
-        </div>
-        <div style={{
-          background: "#dc2626", color: "#fff",
-          padding: "3px 10px", borderRadius: 999,
-          fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-          animation: "ccb-pulse 2s ease-in-out infinite",
+  function handleDisconnect() {
+    router.push(`/community/groups/${group.id}`);
+  }
+
+  function handlePreJoinSubmit(values: { username: string; audioEnabled: boolean; videoEnabled: boolean }) {
+    setUserName(values.username || initialDisplayName || "Membre CCB");
+    setAudioEnabled(values.audioEnabled);
+    setVideoEnabled(values.videoEnabled);
+    setJoined(true);
+  }
+
+  // ─── États : config manquante, erreur, chargement ─────────────────
+  if (setupNeeded) {
+    return (
+      <ScreenShell mode={mode} title={group.name}>
+        <SetupScreen onBack={() => router.push(`/community/groups/${group.id}`)} />
+      </ScreenShell>
+    );
+  }
+  if (error) {
+    return (
+      <ScreenShell mode={mode} title={group.name}>
+        <ErrorScreen error={error} onRetry={fetchToken}
+          onBack={() => router.push(`/community/groups/${group.id}`)} />
+      </ScreenShell>
+    );
+  }
+  if (connecting || !token || !serverUrl) {
+    return (
+      <ScreenShell mode={mode} title={group.name}>
+        <LoadingScreen mode={mode} groupName={group.name} />
+      </ScreenShell>
+    );
+  }
+
+  // ─── PreJoin : permet de tester audio/video avant de joindre ──────
+  if (!joined) {
+    return (
+      <ScreenShell mode={mode} title={group.name} hideHeader>
+        <div data-lk-theme="ccb" style={{
+          height: "100dvh",
+          background: "#0F0A1F",
+          display: "flex", flexDirection: "column",
         }}>
-          ● LIVE
-        </div>
-        <style>{`
-          @keyframes ccb-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.55 } }
-        `}</style>
-      </div>
-
-      {/* Container Jitsi */}
-      <div style={{ flex: 1, position: "relative", background: "#0a0a0a" }}>
-        {error ? (
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: 20, textAlign: "center", color: "#fff",
-          }}>
-            <div>
-              <div style={{ fontSize: 44, marginBottom: 10 }}>⚠️</div>
-              <div style={{ fontSize: 14, marginBottom: 14 }}>{error}</div>
-              <Link href={`/community/groups/${group.id}`} style={{
-                display: "inline-block",
-                background: T.violet, color: "#fff",
-                padding: "10px 22px", borderRadius: 10,
-                fontWeight: 700, textDecoration: "none",
-              }}>Retour au groupe</Link>
-            </div>
-          </div>
-        ) : (
-          <>
-            {!ready && (
-              <div style={{
-                position: "absolute", inset: 0,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#fff", fontSize: 14,
-              }}>
-                <div style={{ textAlign: "center" }}>
-                  <style>{`@keyframes ccb-spin { to { transform: rotate(360deg); } }`}</style>
-                  <div style={{
-                    width: 40, height: 40, border: "3px solid rgba(255,255,255,0.2)",
-                    borderTopColor: T.gold, borderRadius: "50%",
-                    animation: "ccb-spin 0.9s linear infinite", margin: "0 auto 14px",
-                  }} />
-                  Chargement de la réunion…
-                </div>
+          {/* Header simple */}
+          <div style={lobbyHeaderStyle}>
+            <Link href={`/community/groups/${group.id}`} aria-label="Retour"
+              style={lobbyBackStyle}>←</Link>
+            <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+              <div style={{ fontFamily: F.title, fontSize: 14, fontWeight: 700, letterSpacing: 0.4 }}>
+                {isAudio ? "📞" : "🎥"} {group.name}
               </div>
-            )}
-            <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-          </>
-        )}
-      </div>
+              <div style={{ fontSize: 10.5, opacity: 0.7 }}>
+                {isAudio ? "Appel vocal CCB" : "Réunion vidéo CCB"} · CCB MEET
+              </div>
+            </div>
+            <div style={{ width: 36 }} />
+          </div>
 
-      {/* Script Jitsi loaded once at the top */}
-      <Script
-        src="https://meet.jit.si/external_api.js"
-        strategy="afterInteractive"
-        onLoad={initJitsi}
-        onError={() => setError("Échec du chargement du script Jitsi")}
-      />
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <PreJoin
+              defaults={{
+                username: userName,
+                videoEnabled: videoEnabled && !isAudio,
+                audioEnabled: audioEnabled,
+              }}
+              onSubmit={handlePreJoinSubmit}
+              joinLabel={isAudio ? "Rejoindre l'appel" : "Rejoindre la réunion"}
+              micLabel="Micro"
+              camLabel={isAudio ? "Caméra (désactivée en mode appel)" : "Caméra"}
+              userLabel="Ton nom"
+            />
+          </div>
+        </div>
+      </ScreenShell>
+    );
+  }
+
+  // ─── In-call : LiveKitRoom + VideoConference ──────────────────────
+  return (
+    <div data-lk-theme="ccb" style={{ height: "100dvh", background: "#0F0A1F" }}>
+      <LiveKitRoom
+        token={token}
+        serverUrl={serverUrl}
+        connect
+        video={!isAudio && videoEnabled}
+        audio={audioEnabled}
+        connectOptions={{ autoSubscribe: true }}
+        options={{
+          adaptiveStream: true,
+          dynacast: true,
+          publishDefaults: {
+            // mode audio-only : empêche aussi la souscription des vidéos distantes
+            videoCodec: "vp9",
+            audioPreset: { maxBitrate: 32_000 }, // 32 kbps suffit en parole
+          },
+        }}
+        onDisconnected={handleDisconnect}
+        data-lk-theme="ccb"
+        style={{ height: "100%" }}>
+        <RoomAudioRenderer />
+        <VideoConference
+          chatMessageFormatter={formatChatMessageLinks}
+        />
+      </LiveKitRoom>
+      <CcbBrandingStyles isAudio={isAudio} />
     </div>
   );
 }
+
+// ─── Écrans : Setup / Erreur / Chargement ──────────────────────────
+function ScreenShell({ children, mode, title, hideHeader = false }: {
+  children: React.ReactNode; mode: "audio" | "video"; title: string; hideHeader?: boolean;
+}) {
+  return (
+    <div style={{
+      height: "100dvh", background: "#0F0A1F", color: "#fff",
+      fontFamily: F.body, display: "flex", flexDirection: "column",
+    }}>
+      {!hideHeader && (
+        <div style={lobbyHeaderStyle}>
+          <Link href={`/community/groups/${title}`} aria-label="Retour"
+            style={lobbyBackStyle}>←</Link>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <div style={{ fontFamily: F.title, fontSize: 14, fontWeight: 700, letterSpacing: 0.4 }}>
+              {mode === "audio" ? "📞 Appel vocal" : "🎥 Réunion vidéo"}
+            </div>
+            <div style={{ fontSize: 10.5, opacity: 0.7 }}>CCB MEET</div>
+          </div>
+          <div style={{ width: 36 }} />
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function LoadingScreen({ mode, groupName }: { mode: "audio" | "video"; groupName: string }) {
+  return (
+    <div style={loadCenterStyle}>
+      <style>{`@keyframes ccb-mt-spin { to { transform: rotate(360deg) } }`}</style>
+      <div style={{
+        width: 56, height: 56, borderRadius: "50%",
+        border: "3px solid rgba(255,255,255,0.12)",
+        borderTopColor: T.gold,
+        animation: "ccb-mt-spin 0.9s linear infinite",
+        marginBottom: 18,
+      }} />
+      <div style={{ fontFamily: F.title, fontSize: 17, fontWeight: 700, marginBottom: 4, color: "#fff" }}>
+        Connexion à CCB MEET…
+      </div>
+      <div style={{ fontSize: 12.5, opacity: 0.7, color: "#fff" }}>
+        {mode === "audio" ? "Appel vocal" : "Réunion vidéo"} · {groupName}
+      </div>
+    </div>
+  );
+}
+
+function ErrorScreen({ error, onRetry, onBack }: { error: string; onRetry: () => void; onBack: () => void }) {
+  return (
+    <div style={loadCenterStyle}>
+      <div style={{ fontSize: 48, marginBottom: 14 }}>⚠️</div>
+      <div style={{ fontFamily: F.title, fontSize: 17, fontWeight: 700, marginBottom: 6, color: "#fff" }}>
+        Impossible de rejoindre
+      </div>
+      <div style={{ fontSize: 12.5, opacity: 0.78, marginBottom: 22, maxWidth: 380, textAlign: "center", padding: "0 20px", color: "#fff" }}>
+        {error}
+      </div>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={onRetry} style={primaryBtnStyle}>Réessayer</button>
+        <button onClick={onBack} style={ghostBtnStyle}>Retour au groupe</button>
+      </div>
+    </div>
+  );
+}
+
+function SetupScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <div style={{ ...loadCenterStyle, padding: "30px 22px" }}>
+      <div style={{ fontSize: 48, marginBottom: 14 }}>⚙️</div>
+      <div style={{ fontFamily: F.title, fontSize: 18, fontWeight: 700, marginBottom: 8, color: "#fff" }}>
+        CCB MEET — Configuration requise
+      </div>
+      <div style={{
+        fontSize: 13, opacity: 0.85, lineHeight: 1.6,
+        maxWidth: 480, textAlign: "left", color: "#fff",
+        background: "rgba(255,255,255,0.05)", padding: "16px 18px",
+        borderRadius: 14, marginBottom: 20,
+      }}>
+        Pour activer les appels et réunions, configure LiveKit Cloud :
+        <ol style={{ paddingLeft: 18, marginTop: 8, marginBottom: 0 }}>
+          <li>Crée un projet gratuit sur <strong>livekit.io</strong></li>
+          <li>Récupère ton WS URL + API Key + API Secret</li>
+          <li>Ajoute dans Vercel :
+            <pre style={{ background: "rgba(0,0,0,0.4)", padding: 8, borderRadius: 6, fontSize: 11, margin: "4px 0", overflowX: "auto" }}>
+{`LIVEKIT_URL=https://...livekit.cloud
+LIVEKIT_API_KEY=AP...
+LIVEKIT_API_SECRET=...
+NEXT_PUBLIC_LIVEKIT_URL=https://...livekit.cloud`}
+            </pre>
+          </li>
+          <li>Redéploie</li>
+        </ol>
+      </div>
+      <button onClick={onBack} style={primaryBtnStyle}>← Retour au groupe</button>
+    </div>
+  );
+}
+
+// ─── CCB branding via CSS variables LiveKit ────────────────────────
+function CcbBrandingStyles({ isAudio }: { isAudio: boolean }) {
+  return (
+    <style>{`
+      /* LiveKit theme override — full CCB branding */
+      [data-lk-theme="ccb"] {
+        --lk-bg: #0F0A1F;
+        --lk-bg2: #1A1230;
+        --lk-fg: #FFFFFF;
+        --lk-accent-bg: #5A2CA0;
+        --lk-accent-fg: #FFFFFF;
+        --lk-accent2: #D4AF37;
+        --lk-control-bg: rgba(255,255,255,0.08);
+        --lk-control-fg: #FFFFFF;
+        --lk-control-hover-bg: rgba(90,44,160,0.55);
+        --lk-control-active-bg: #5A2CA0;
+        --lk-danger-bg: #DC2626;
+        --lk-danger-fg: #FFFFFF;
+        --lk-border-color: rgba(255,255,255,0.10);
+        --lk-radius: 12px;
+        font-family: var(--font-montserrat), system-ui, sans-serif;
+      }
+      [data-lk-theme="ccb"] .lk-button {
+        font-family: inherit;
+      }
+      [data-lk-theme="ccb"] .lk-button-group .lk-button {
+        background: var(--lk-control-bg);
+        color: var(--lk-control-fg);
+        border-radius: 999px;
+      }
+      [data-lk-theme="ccb"] .lk-button-group .lk-button[aria-pressed="true"],
+      [data-lk-theme="ccb"] .lk-button-group .lk-button[data-lk-source="true"] {
+        background: var(--lk-accent-bg);
+      }
+      [data-lk-theme="ccb"] .lk-disconnect-button {
+        background: var(--lk-danger-bg) !important;
+        border-radius: 999px !important;
+      }
+      [data-lk-theme="ccb"] .lk-participant-name {
+        font-family: var(--font-cinzel), Georgia, serif;
+        letter-spacing: 0.4px;
+      }
+      [data-lk-theme="ccb"] .lk-participant-tile {
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      ${isAudio ? `
+        /* En mode audio, on masque la tile vidéo et on centre les avatars */
+        [data-lk-theme="ccb"] .lk-grid-layout video {
+          display: none;
+        }
+        [data-lk-theme="ccb"] .lk-participant-tile {
+          background: linear-gradient(135deg, #5A2CA0, #3E1C70);
+          aspect-ratio: 1;
+        }
+      ` : ""}
+    `}</style>
+  );
+}
+
+// ─── Styles ─────────────────────────────────────────────────────────
+const lobbyHeaderStyle: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 10,
+  padding: "12px 14px",
+  background: "rgba(0,0,0,0.4)",
+  borderBottom: "1px solid rgba(255,255,255,0.05)",
+  color: "#fff",
+  flexShrink: 0,
+  backdropFilter: "blur(8px)",
+};
+const lobbyBackStyle: React.CSSProperties = {
+  width: 36, height: 36, borderRadius: 999,
+  background: "rgba(255,255,255,0.10)", color: "#fff",
+  textDecoration: "none",
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  fontSize: 18, flexShrink: 0,
+};
+const loadCenterStyle: React.CSSProperties = {
+  flex: 1, display: "flex", flexDirection: "column",
+  alignItems: "center", justifyContent: "center",
+  color: "#fff", padding: "0 20px", textAlign: "center",
+};
+const primaryBtnStyle: React.CSSProperties = {
+  background: T.violet, color: "#fff",
+  border: "none", borderRadius: 12,
+  padding: "12px 22px", fontWeight: 700, fontSize: 13.5,
+  cursor: "pointer", fontFamily: F.body,
+  boxShadow: "0 4px 14px rgba(90,44,160,0.45)",
+};
+const ghostBtnStyle: React.CSSProperties = {
+  background: "rgba(255,255,255,0.10)", color: "#fff",
+  border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12,
+  padding: "12px 22px", fontWeight: 700, fontSize: 13.5,
+  cursor: "pointer", fontFamily: F.body,
+};
+
+// Empêche le warning lint sur l'export indirect
+void Track;
