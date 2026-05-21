@@ -503,15 +503,15 @@ function CcbBrandingStyles({ isAudio }: { isAudio: boolean }) {
         overflow: hidden;
       }
 
-      /* ─── GridLayout : grille responsive sur tous les écrans ─── */
-      /* Notre custom layout utilise <GridLayout> qui rend un .lk-grid-layout.
-         On force une grille auto-fit qui montre TOUS les participants. */
+      /* ─── GridLayout : grille dense — au moins 9 participants visibles ─── */
+      /* Objectif : voir un maximum de participants d'un coup d'œil.
+         Sur mobile : grille 3×3 (9 tuiles visibles). */
       [data-lk-theme="ccb"] .lk-grid-layout {
         display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
-        grid-auto-rows: minmax(150px, 1fr) !important;
-        gap: 8px !important;
-        padding: 8px !important;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+        grid-auto-rows: minmax(110px, 1fr) !important;
+        gap: 6px !important;
+        padding: 6px !important;
         height: 100% !important;
         width: 100% !important;
         align-content: stretch !important;
@@ -523,20 +523,35 @@ function CcbBrandingStyles({ isAudio }: { isAudio: boolean }) {
         height: 100% !important;
         aspect-ratio: auto !important;
       }
-      /* Mobile : tiles plus compactes pour en montrer plus */
-      @media (max-width: 640px) {
+      /* Tablette (641-1023px) : 4 colonnes → jusqu'à 12-16 tuiles visibles */
+      @media (min-width: 641px) and (max-width: 1023px) {
         [data-lk-theme="ccb"] .lk-grid-layout {
-          grid-template-columns: repeat(2, 1fr) !important;
+          grid-template-columns: repeat(4, 1fr) !important;
           grid-auto-rows: minmax(120px, 1fr) !important;
-          gap: 4px !important;
-          padding: 4px !important;
         }
       }
-      /* Très petit : 1 colonne quand mode audio (avatars plus grands) */
+      /* Mobile (≤640px) : 3 colonnes (3×3 = 9 tuiles visibles) */
+      @media (max-width: 640px) {
+        [data-lk-theme="ccb"] .lk-grid-layout {
+          grid-template-columns: repeat(3, 1fr) !important;
+          grid-auto-rows: minmax(95px, 1fr) !important;
+          gap: 3px !important;
+          padding: 3px !important;
+        }
+      }
+      /* Petit mobile (≤380px) : 3 colonnes mais tuiles plus petites */
       @media (max-width: 380px) {
         [data-lk-theme="ccb"] .lk-grid-layout {
-          grid-template-columns: repeat(2, 1fr) !important;
+          grid-template-columns: repeat(3, 1fr) !important;
+          grid-auto-rows: minmax(85px, 1fr) !important;
+          gap: 2px !important;
+          padding: 2px !important;
         }
+      }
+      /* En mode audio, on contraint moins fort car les avatars peuvent
+         rester lisibles même petits */
+      [data-lk-theme="ccb"] .lk-grid-layout .lk-participant-tile .lk-participant-placeholder {
+        font-size: clamp(20px, 5vw, 48px) !important;
       }
       /* Control bar : toujours en bas, sticky */
       [data-lk-theme="ccb"] .lk-control-bar {
