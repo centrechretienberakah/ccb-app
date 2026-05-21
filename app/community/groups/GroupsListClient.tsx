@@ -208,9 +208,17 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
           <Link href="/community" style={backLink}>← Communauté</Link>
           <div style={{ flex: 1 }} />
           {canCreate ? (
-            <button onClick={() => setShowCreate(true)} style={btnPrimary}>
-              ➕ Créer un groupe
-            </button>
+            <>
+              <Link href="/community/groups/admin" style={{
+                padding: "6px 12px", background: T.violetSoft, color: T.violet,
+                border: `1px solid ${T.violet}`,
+                borderRadius: 999, fontSize: 11, fontWeight: 700,
+                textDecoration: "none", whiteSpace: "nowrap",
+              }}>⚙️ Dashboard admin</Link>
+              <button onClick={() => setShowCreate(true)} style={btnPrimary}>
+                ➕ Créer un groupe
+              </button>
+            </>
           ) : (
             <span
               title="Seuls les leader/admin/owner peuvent créer un groupe."
