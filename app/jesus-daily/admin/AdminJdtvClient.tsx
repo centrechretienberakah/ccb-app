@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -45,6 +45,8 @@ export default function AdminJdtvClient({ categories: initialCats, videos: initi
   const [editingVid, setEditingVid] = useState<JdtvVideo | null>(null);
   const [newCat, setNewCat] = useState(false);
   const [newVid, setNewVid] = useState(false);
+  const [showYoutubeImport, setShowYoutubeImport] = useState(false);
+  const [ytPrefill, setYtPrefill] = useState<Partial<JdtvVideo> | null>(null);
   const [filter, setFilter] = useState("");
 
   const catsById = useMemo(() => {
@@ -105,6 +107,11 @@ export default function AdminJdtvClient({ categories: initialCats, videos: initi
             border: `1px solid ${T.border}`, borderRadius: 10,
             fontWeight: 700, fontSize: 13, textDecoration: "none",
           }}>📊 Analytics</Link>
+          <button onClick={() => setShowYoutubeImport(true)} style={{
+            ...secondaryBtn,
+            background: "linear-gradient(135deg, #FF0000, #CC0000)",
+            color: "#fff", borderColor: "transparent",
+          }}>▶ Importer depuis YouTube</button>
           <button onClick={() => setNewVid(true)} style={primaryBtn}>＋ Nouvelle vidéo</button>
           <button onClick={() => setNewCat(true)} style={secondaryBtn}>＋ Catégorie</button>
         </div>
@@ -194,8 +201,22 @@ export default function AdminJdtvClient({ categories: initialCats, videos: initi
           initial={editingVid}
           categories={cats}
           allVideos={vids}
-          onClose={() => { setNewVid(false); setEditingVid(null); }}
-          onSaved={(v) => { refreshVid(v); setNewVid(false); setEditingVid(null); }}
+          prefill={ytPrefill}
+          onClose={() => { setNewVid(false); setEditingVid(null); setYtPrefill(null); }}
+          onSaved={(v) => { refreshVid(v); setNewVid(false); setEditingVid(null); setYtPrefill(null); }}
+        />
+      ) : null}
+
+      {showYoutubeImport ? (
+        <YouTubeImportModal
+          existingUrls={vids.map((v) => v.video_url)}
+          defaultCategoryId={cats[0]?.id ?? ""}
+          onClose={() => setShowYoutubeImport(false)}
+          onImport={(payload) => {
+            setShowYoutubeImport(false);
+            setYtPrefill(payload);
+            setNewVid(true);
+          }}
         />
       ) : null}
     </div>
@@ -472,33 +493,37 @@ function CategoryForm({ initial, onClose, onSaved }: {
 }
 
 // ─── VideoForm ──────────────────────────────────────────────────────
-function VideoForm({ initial, categories, allVideos, onClose, onSaved }: {
-  initial: JdtvVideo | null; categories: JdtvCategory[]; allVideos: JdtvVideo[]; onClose: () => void; onSaved: (v: JdtvVideo) => void;
+function VideoForm({ initial, categories, allVideos, prefill, onClose, onSaved }: {
+  initial: JdtvVideo | null; categories: JdtvCategory[]; allVideos: JdtvVideo[];
+  prefill?: Partial<JdtvVideo> | null;
+  onClose: () => void; onSaved: (v: JdtvVideo) => void;
 }) {
-  const [categoryId, setCategoryId] = useState<string>(initial?.category_id ?? (categories[0]?.id ?? ""));
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [slug, setSlug] = useState(initial?.slug ?? "");
-  const [subtitle, setSubtitle] = useState(initial?.subtitle ?? "");
-  const [description, setDescription] = useState(initial?.description ?? "");
-  const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnail_url ?? "");
-  const [heroUrl, setHeroUrl] = useState(initial?.hero_url ?? "");
-  const [videoUrl, setVideoUrl] = useState(initial?.video_url ?? "");
-  const [durationSecs, setDurationSecs] = useState<number | "">(initial?.duration_secs ?? "");
-  const [speaker, setSpeaker] = useState(initial?.speaker ?? "");
-  const [scripture, setScripture] = useState(initial?.scripture ?? "");
-  const [orderIndex, setOrderIndex] = useState(initial?.order_index ?? 0);
-  const [isPublished, setIsPublished] = useState(initial?.is_published ?? true);
-  const [isPremium, setIsPremium] = useState(initial?.is_premium ?? false);
-  const [isLive, setIsLive] = useState(initial?.is_live ?? false);
-  const [isFeatured, setIsFeatured] = useState(initial?.is_featured ?? false);
-  const [introEndSecs, setIntroEndSecs] = useState<number | "">(initial?.intro_end_secs ?? "");
-  const [nextVideoId, setNextVideoId] = useState<string>(initial?.next_video_id ?? "");
-  const [tagsInput, setTagsInput] = useState((initial?.tags ?? []).join(", "));
+  // Si on a un initial (edit) → on l'utilise. Sinon, on retombe sur prefill (import YouTube) puis valeurs par défaut.
+  const src = initial ?? prefill ?? null;
+  const [categoryId, setCategoryId] = useState<string>(src?.category_id ?? (categories[0]?.id ?? ""));
+  const [title, setTitle] = useState(src?.title ?? "");
+  const [slug, setSlug] = useState(src?.slug ?? "");
+  const [subtitle, setSubtitle] = useState(src?.subtitle ?? "");
+  const [description, setDescription] = useState(src?.description ?? "");
+  const [thumbnailUrl, setThumbnailUrl] = useState(src?.thumbnail_url ?? "");
+  const [heroUrl, setHeroUrl] = useState(src?.hero_url ?? "");
+  const [videoUrl, setVideoUrl] = useState(src?.video_url ?? "");
+  const [durationSecs, setDurationSecs] = useState<number | "">(src?.duration_secs ?? "");
+  const [speaker, setSpeaker] = useState(src?.speaker ?? "");
+  const [scripture, setScripture] = useState(src?.scripture ?? "");
+  const [orderIndex, setOrderIndex] = useState(src?.order_index ?? 0);
+  const [isPublished, setIsPublished] = useState(src?.is_published ?? true);
+  const [isPremium, setIsPremium] = useState(src?.is_premium ?? false);
+  const [isLive, setIsLive] = useState(src?.is_live ?? false);
+  const [isFeatured, setIsFeatured] = useState(src?.is_featured ?? false);
+  const [introEndSecs, setIntroEndSecs] = useState<number | "">(src?.intro_end_secs ?? "");
+  const [nextVideoId, setNextVideoId] = useState<string>(src?.next_video_id ?? "");
+  const [tagsInput, setTagsInput] = useState((src?.tags ?? []).join(", "));
   const [chaptersJson, setChaptersJson] = useState<string>(
-    initial?.chapters ? JSON.stringify(initial.chapters, null, 2) : ""
+    src?.chapters ? JSON.stringify(src.chapters, null, 2) : ""
   );
   const [chaptersError, setChaptersError] = useState<string | null>(null);
-  const [transcriptMd, setTranscriptMd] = useState(initial?.transcript_md ?? "");
+  const [transcriptMd, setTranscriptMd] = useState(src?.transcript_md ?? "");
   const [busy, setBusy] = useState(false);
 
   const finalSlug = slug.trim() || slugify(title);
@@ -729,5 +754,187 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
       <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
       <span>{label}</span>
     </label>
+  );
+}
+
+// ─── YouTubeImportModal ─────────────────────────────────────────────
+interface YtItem {
+  id: { videoId: string };
+  snippet: {
+    title: string;
+    description: string;
+    publishedAt: string;
+    thumbnails?: Record<string, { url: string }>;
+  };
+  durationSecs: number | null;
+  viewCount: number | null;
+  liveStatus: "live" | "upcoming" | "none";
+}
+
+function YouTubeImportModal({
+  existingUrls, defaultCategoryId, onClose, onImport,
+}: {
+  existingUrls: string[];
+  defaultCategoryId: string;
+  onClose: () => void;
+  onImport: (payload: Partial<JdtvVideo>) => void;
+}) {
+  const [items, setItems] = useState<YtItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/youtube");
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          if (!cancelled) {
+            setError(j.error ?? `HTTP ${res.status}`);
+            setLoading(false);
+          }
+          return;
+        }
+        const data = await res.json() as { items?: YtItem[] };
+        if (!cancelled) {
+          setItems((data.items ?? []).filter((i) => i.id?.videoId));
+          setLoading(false);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError((e as Error).message);
+          setLoading(false);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  function isAlreadyImported(videoId: string): boolean {
+    return existingUrls.some((u) => u.includes(videoId));
+  }
+
+  function importVideo(it: YtItem) {
+    const videoId = it.id.videoId;
+    const thumb = it.snippet.thumbnails?.maxres?.url
+      ?? it.snippet.thumbnails?.high?.url
+      ?? it.snippet.thumbnails?.medium?.url
+      ?? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    const isLive = it.liveStatus === "live";
+    const payload: Partial<JdtvVideo> = {
+      title: it.snippet.title.slice(0, 200),
+      slug: slugify(it.snippet.title).slice(0, 80),
+      subtitle: null,
+      description: it.snippet.description.slice(0, 2000),
+      thumbnail_url: thumb,
+      hero_url: thumb,
+      video_url: `https://www.youtube.com/watch?v=${videoId}`,
+      duration_secs: it.durationSecs ?? null,
+      speaker: null,
+      scripture: null,
+      category_id: defaultCategoryId || null,
+      is_published: true,
+      is_premium: false,
+      is_live: isLive,
+      is_featured: false,
+      order_index: 0,
+      tags: ["youtube", "import"],
+    };
+    onImport(payload);
+  }
+
+  return (
+    <Modal
+      title="▶ Importer depuis YouTube"
+      onClose={onClose}
+      footer={<button onClick={onClose} style={secondaryBtn}>Fermer</button>}>
+      <p style={{ margin: "-4px 0 4px", fontSize: 12.5, color: T.textMuted }}>
+        Sélectionne une vidéo récente de la chaîne <strong>@CentreChrétienBerakah</strong>.
+        Le formulaire d&apos;édition s&apos;ouvrira pré-rempli — tu pourras choisir
+        la catégorie, le statut premium, etc. avant d&apos;enregistrer.
+      </p>
+
+      {loading ? (
+        <div style={{ padding: 30, textAlign: "center", color: T.textMuted, fontSize: 13 }}>
+          ⏳ Chargement des vidéos YouTube…
+        </div>
+      ) : error ? (
+        <div style={{
+          padding: 16, background: "rgba(225,29,72,0.08)",
+          border: "1px solid #ff5470", borderRadius: 10,
+          color: "#ff5470", fontSize: 12.5,
+        }}>
+          ⚠️ {error} — vérifie que <code>YOUTUBE_API_KEY</code> est configurée en production.
+        </div>
+      ) : items.length === 0 ? (
+        <div style={{ padding: 24, textAlign: "center", color: T.textMuted, fontSize: 13 }}>
+          Aucune vidéo trouvée sur la chaîne.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {items.map((it) => {
+            const videoId = it.id.videoId;
+            const alreadyImported = isAlreadyImported(videoId);
+            const thumb = it.snippet.thumbnails?.medium?.url
+              ?? it.snippet.thumbnails?.default?.url
+              ?? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+            const isLive = it.liveStatus === "live";
+            return (
+              <div key={videoId} style={{
+                display: "grid", gridTemplateColumns: "120px 1fr auto", gap: 12, alignItems: "center",
+                padding: 10, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10,
+                opacity: alreadyImported ? 0.55 : 1,
+              }}>
+                <div style={{
+                  position: "relative", aspectRatio: "16/9",
+                  background: "#000", borderRadius: 6, overflow: "hidden",
+                }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  {isLive && (
+                    <span style={{
+                      position: "absolute", top: 3, left: 3,
+                      padding: "1px 5px", borderRadius: 3,
+                      background: "#FF0000", color: "#fff",
+                      fontSize: 8, fontWeight: 800, letterSpacing: 0.4,
+                    }}>🔴 LIVE</span>
+                  )}
+                  {it.durationSecs ? (
+                    <span style={{
+                      position: "absolute", bottom: 3, right: 3,
+                      padding: "1px 5px", borderRadius: 3,
+                      background: "rgba(0,0,0,0.75)", color: "#fff",
+                      fontSize: 9, fontWeight: 700, fontVariantNumeric: "tabular-nums",
+                    }}>{formatVideoDuration(it.durationSecs)}</span>
+                  ) : null}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{
+                    fontWeight: 700, fontSize: 13.5, color: T.text,
+                    display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2,
+                    overflow: "hidden", lineHeight: 1.3, marginBottom: 4,
+                  }}>{it.snippet.title}</div>
+                  <div style={{ fontSize: 11, color: T.textMuted, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <span>📅 {new Date(it.snippet.publishedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    {it.viewCount != null ? <span>👁️ {formatViewCount(it.viewCount)}</span> : null}
+                  </div>
+                </div>
+                {alreadyImported ? (
+                  <span style={{
+                    padding: "6px 12px", background: T.green, color: "#fff",
+                    borderRadius: 6, fontSize: 11, fontWeight: 700, letterSpacing: 0.4, whiteSpace: "nowrap",
+                  }}>✓ Importée</span>
+                ) : (
+                  <button onClick={() => importVideo(it)} style={{
+                    ...primaryBtn, padding: "8px 12px", fontSize: 11.5, whiteSpace: "nowrap",
+                  }}>＋ Importer</button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Modal>
   );
 }
