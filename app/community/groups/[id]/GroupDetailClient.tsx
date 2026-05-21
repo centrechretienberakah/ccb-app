@@ -1609,7 +1609,6 @@ function QuickAction({ icon, label, onClick, href, active = false }: {
   onClick?: () => void; href?: string;
   active?: boolean;
 }) {
-  const T = T;
   const style: React.CSSProperties = {
     flex: "0 0 auto",
     display: "inline-flex", alignItems: "center", gap: 6,
