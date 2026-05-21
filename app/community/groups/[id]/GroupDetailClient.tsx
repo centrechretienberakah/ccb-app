@@ -433,19 +433,21 @@ export default function GroupDetailClient({
     });
   }
 
-  async function startMeeting() {
+  async function startMeeting(mode: "audio" | "video" = "video") {
     const author = currentUserProfile?.display_name || "Un membre";
+    const labelEmoji = mode === "audio" ? "📞" : "🎥";
+    const labelText  = mode === "audio" ? "appel vocal" : "réunion vidéo";
     // Notif push aux autres membres non mutés (best-effort)
     void notifyGroupMeeting({
       groupId: group.id, groupName: group.name,
       authorName: author, excludeUserId: currentUserId,
     });
     notifyGroupsStaff(
-      `🎥 Réunion lancée : ${group.name}`,
-      `${author} démarre une réunion`,
-      `/community/groups/${group.id}/meeting`,
+      `${labelEmoji} ${labelText[0].toUpperCase() + labelText.slice(1)} : ${group.name}`,
+      `${author} démarre ${mode === "audio" ? "un" : "une"} ${labelText}`,
+      `/community/groups/${group.id}/meeting${mode === "audio" ? "?mode=audio" : ""}`,
     );
-    router.push(`/community/groups/${group.id}/meeting`);
+    router.push(`/community/groups/${group.id}/meeting${mode === "audio" ? "?mode=audio" : ""}`);
   }
 
   async function leaveGroup() {
@@ -706,17 +708,30 @@ export default function GroupDetailClient({
             </div>
           </div>
           {isMember && (
-            <button onClick={startMeeting} style={{
-              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`,
-              color: "#111", border: "none",
-              borderRadius: 10, padding: "8px 16px",
-              fontWeight: 700, fontSize: 12, fontFamily: F.body,
-              cursor: "pointer",
-              display: "inline-flex", alignItems: "center", gap: 6,
-              boxShadow: "0 2px 12px rgba(212,175,55,0.4)",
-            }}>
-              🎥 Réunion
-            </button>
+            <div style={{ display: "inline-flex", gap: 6 }}>
+              <button onClick={() => startMeeting("audio")} title="Démarrer un appel vocal (audio uniquement)" style={{
+                background: "rgba(255,255,255,0.18)",
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: 10, padding: "8px 14px",
+                fontWeight: 700, fontSize: 12, fontFamily: F.body,
+                cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: 6,
+              }}>
+                📞 Appel
+              </button>
+              <button onClick={() => startMeeting("video")} title="Démarrer une réunion vidéo + partage écran" style={{
+                background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`,
+                color: "#111", border: "none",
+                borderRadius: 10, padding: "8px 14px",
+                fontWeight: 700, fontSize: 12, fontFamily: F.body,
+                cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: 6,
+                boxShadow: "0 2px 12px rgba(212,175,55,0.4)",
+              }}>
+                🎥 Vidéo
+              </button>
+            </div>
           )}
           {(myRole === "owner" || myRole === "admin") && (
             <Link href={`/community/groups/${group.id}/settings`} title="Paramètres du groupe" style={{

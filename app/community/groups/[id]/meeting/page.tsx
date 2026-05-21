@@ -11,11 +11,18 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: data ? `Réunion : ${(data as { name: string }).name} — CCB` : "Réunion" };
 }
 
-export default async function MeetingPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MeetingPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ mode?: string }>;
+}) {
   const { id } = await params;
+  const sp = await searchParams;
+  const mode: "audio" | "video" = sp?.mode === "audio" ? "audio" : "video";
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/auth/login?redirect=/community/groups/${id}/meeting`);
+  if (!user) redirect(`/auth/login?redirect=/community/groups/${id}/meeting${mode === "audio" ? "?mode=audio" : ""}`);
 
   // Vérifie que le groupe existe et que l'utilisateur peut y accéder
   const { data: groupData } = await supabase
@@ -48,6 +55,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
       displayName={(profile as { display_name: string | null } | null)?.display_name || "Membre CCB"}
       avatarUrl={(profile as { avatar_url: string | null } | null)?.avatar_url || ""}
       userEmail={user.email || ""}
+      mode={mode}
     />
   );
 }

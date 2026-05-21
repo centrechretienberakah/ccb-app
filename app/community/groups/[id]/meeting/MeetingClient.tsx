@@ -12,6 +12,7 @@ interface Props {
   displayName: string;
   avatarUrl: string;
   userEmail: string;
+  mode?: "audio" | "video";
 }
 
 // Types minimaux pour l'API Jitsi
@@ -30,7 +31,8 @@ declare global {
   }
 }
 
-export default function MeetingClient({ group, displayName, avatarUrl, userEmail }: Props) {
+export default function MeetingClient({ group, displayName, avatarUrl, userEmail, mode = "video" }: Props) {
+  const isAudio = mode === "audio";
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiAPI | null>(null);
   const [ready, setReady] = useState(false);
@@ -53,11 +55,12 @@ export default function MeetingClient({ group, displayName, avatarUrl, userEmail
           email: userEmail,
         },
         configOverwrite: {
-          startWithAudioMuted: true,
-          startWithVideoMuted: false,
-          prejoinPageEnabled: true,
+          startWithAudioMuted: false,                // micro actif dès l'entrée
+          startWithVideoMuted: isAudio,              // pas de vidéo si audio-only
+          startAudioOnly: isAudio,                   // mode audio explicite
+          prejoinPageEnabled: false,                 // évite l'écran intermédiaire qui demande micro
           disableDeepLinking: true,
-          subject: group.name,
+          subject: group.name + (isAudio ? " · 📞 Appel vocal" : " · 🎥 Réunion vidéo"),
         },
         interfaceConfigOverwrite: {
           DEFAULT_BACKGROUND: "#5A2CA0",
@@ -68,11 +71,18 @@ export default function MeetingClient({ group, displayName, avatarUrl, userEmail
           SHOW_JITSI_WATERMARK: false,
           SHOW_BRAND_WATERMARK: false,
           SHOW_POWERED_BY: false,
-          TOOLBAR_BUTTONS: [
-            "microphone", "camera", "closedcaptions", "desktop", "fullscreen",
-            "fodeviceselection", "hangup", "profile", "chat", "raisehand",
-            "videoquality", "filmstrip", "tileview", "select-background",
-          ],
+          TOOLBAR_BUTTONS: isAudio
+            ? [
+                // Mode appel vocal : toolbar épurée, focus audio
+                "microphone", "hangup", "fodeviceselection",
+                "profile", "chat", "raisehand", "settings",
+              ]
+            : [
+                // Mode vidéo complet
+                "microphone", "camera", "closedcaptions", "desktop", "fullscreen",
+                "fodeviceselection", "hangup", "profile", "chat", "raisehand",
+                "videoquality", "filmstrip", "tileview", "select-background",
+              ],
         },
       });
       apiRef.current = api;
@@ -121,7 +131,7 @@ export default function MeetingClient({ group, displayName, avatarUrl, userEmail
             fontFamily: F.title, fontSize: 14, fontWeight: 700,
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           }}>
-            🎥 {group.name}
+            {isAudio ? "📞" : "🎥"} {group.name}
           </div>
           <div style={{ fontSize: 10, opacity: 0.8 }}>
             Salle : {roomName}
