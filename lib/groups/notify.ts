@@ -121,3 +121,79 @@ export async function notifyGroupMeeting(opts: {
     userIds: targets,
   });
 }
+
+/**
+ * Notif "nouveau membre" envoyée aux admins du groupe.
+ */
+export async function notifyNewMember(opts: {
+  groupId: string;
+  groupName: string;
+  newMemberName: string;
+}): Promise<boolean> {
+  // Récupère les owner/admin du groupe (lecture publique des group_members)
+  try {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("group_members")
+      .select("user_id, role")
+      .eq("group_id", opts.groupId)
+      .in("role", ["owner", "admin"]);
+    const adminIds = ((data ?? []) as Array<{ user_id: string; role: string }>).map((m) => m.user_id);
+    if (adminIds.length === 0) return false;
+    return sendPush({
+      title: `🧑‍🤝‍🧑 Nouveau membre dans ${opts.groupName}`,
+      body: `${opts.newMemberName} vient de rejoindre le groupe`,
+      url: `/community/groups/${opts.groupId}/settings`,
+      audience: "user_ids",
+      userIds: adminIds,
+    });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Notif "demande d'accès" envoyée aux admins du groupe.
+ */
+export async function notifyJoinRequest(opts: {
+  groupId: string;
+  groupName: string;
+  applicantName: string;
+}): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("group_members")
+      .select("user_id, role")
+      .eq("group_id", opts.groupId)
+      .in("role", ["owner", "admin"]);
+    const adminIds = ((data ?? []) as Array<{ user_id: string; role: string }>).map((m) => m.user_id);
+    if (adminIds.length === 0) return false;
+    return sendPush({
+      title: `📨 ${opts.applicantName} demande à rejoindre ${opts.groupName}`,
+      body: "Approuve ou refuse la demande depuis les paramètres du groupe.",
+      url: `/community/groups/${opts.groupId}/settings`,
+      audience: "user_ids",
+      userIds: adminIds,
+    });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Notif au demandeur quand sa demande est approuvée.
+ */
+export async function notifyRequestApproved(opts: {
+  groupId: string;
+  groupName: string;
+  userId: string;
+}): Promise<boolean> {
+  return sendPush({
+    title: `🎉 Bienvenue dans ${opts.groupName}`,
+    body: "Ta demande d'accès a été approuvée — viens dire bonjour !",
+    url: `/community/groups/${opts.groupId}`,
+    audience: "user_ids",
+    userIds: [opts.userId],
+  });
+}

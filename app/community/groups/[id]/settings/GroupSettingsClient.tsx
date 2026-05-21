@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GROUPS_THEME as T, GROUPS_FONTS as F, GROUP_CATEGORIES } from "@/lib/groups/theme";
+import { notifyRequestApproved, notifyNewMember } from "@/lib/groups/notify";
 
 interface Group {
   id: string;
@@ -22,17 +23,67 @@ interface Member {
   display_name: string | null;
   avatar_url: string | null;
 }
+interface JoinRequest {
+  id: string;
+  user_id: string;
+  message: string | null;
+  created_at: string;
+  display_name: string | null;
+  avatar_url: string | null;
+}
 
 interface Props {
   group: Group;
   members: Member[];
   myRole: "owner" | "admin" | "member";
   currentUserId: string;
+  joinRequests: JoinRequest[];
 }
 
-export default function GroupSettingsClient({ group, members: initialMembers, myRole, currentUserId }: Props) {
+export default function GroupSettingsClient({ group, members: initialMembers, myRole, currentUserId, joinRequests: initialRequests }: Props) {
   const router = useRouter();
   const [members, setMembers] = useState<Member[]>(initialMembers);
+  const [requests, setRequests] = useState<JoinRequest[]>(initialRequests);
+  const [busyReq, setBusyReq] = useState<Set<string>>(new Set());
+
+  async function approveRequest(r: JoinRequest) {
+    if (busyReq.has(r.id)) return;
+    setBusyReq((p) => new Set(p).add(r.id));
+    const supabase = createClient();
+    const { error } = await supabase.rpc("groups_approve_request", { p_request_id: r.id });
+    setBusyReq((p) => { const n = new Set(p); n.delete(r.id); return n; });
+    if (error) { flash("Erreur : " + error.message); return; }
+    // Ajoute le membre localement
+    setMembers((prev) => prev.some((m) => m.user_id === r.user_id)
+      ? prev
+      : [...prev, {
+          user_id: r.user_id, role: "member",
+          joined_at: new Date().toISOString(),
+          display_name: r.display_name, avatar_url: r.avatar_url,
+        }]);
+    setRequests((prev) => prev.filter((x) => x.id !== r.id));
+    flash(`✓ ${r.display_name ?? "Demande"} approuvée`);
+    // Notifs : au demandeur + aux autres admins
+    void notifyRequestApproved({
+      groupId: group.id, groupName: group.name, userId: r.user_id,
+    });
+    void notifyNewMember({
+      groupId: group.id, groupName: group.name,
+      newMemberName: r.display_name ?? "Un nouveau membre",
+    });
+  }
+
+  async function rejectRequest(r: JoinRequest) {
+    if (busyReq.has(r.id)) return;
+    if (!confirm(`Refuser la demande de ${r.display_name ?? "ce membre"} ?`)) return;
+    setBusyReq((p) => new Set(p).add(r.id));
+    const supabase = createClient();
+    const { error } = await supabase.rpc("groups_reject_request", { p_request_id: r.id });
+    setBusyReq((p) => { const n = new Set(p); n.delete(r.id); return n; });
+    if (error) { flash("Erreur : " + error.message); return; }
+    setRequests((prev) => prev.filter((x) => x.id !== r.id));
+    flash("Demande refusée");
+  }
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description ?? "");
   const [type, setType] = useState<"public" | "private">(group.type);
@@ -241,6 +292,64 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
             {saving ? "Sauvegarde…" : "💾 Enregistrer les modifications"}
           </button>
         </Section>
+
+        {/* Section : Demandes d'accès pendantes */}
+        {requests.length > 0 && (
+          <Section title={`📨 Demandes d'accès (${requests.length})`}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {requests.map((r) => {
+                const initials = (r.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                const isBusy = busyReq.has(r.id);
+                return (
+                  <div key={r.id} style={{
+                    display: "grid", gridTemplateColumns: "36px 1fr auto", gap: 10, alignItems: "center",
+                    padding: "10px 12px",
+                    background: "rgba(212,175,55,0.06)",
+                    border: `1px solid ${T.gold}`,
+                    borderRadius: 10,
+                  }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 999,
+                      background: r.avatar_url
+                        ? `url(${r.avatar_url}) center/cover`
+                        : `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#fff", fontWeight: 700, fontSize: 13,
+                    }}>{!r.avatar_url && initials}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13.5, color: T.text }}>
+                        {r.display_name || "Membre"}
+                      </div>
+                      {r.message ? (
+                        <div style={{
+                          fontSize: 11.5, color: T.textSoft, fontStyle: "italic", marginTop: 2,
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        }}>« {r.message} »</div>
+                      ) : null}
+                      <div style={{ fontSize: 10.5, color: T.textMuted, marginTop: 2 }}>
+                        {new Date(r.created_at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => approveRequest(r)} disabled={isBusy} style={{
+                        padding: "6px 12px", background: T.violet, color: "#fff",
+                        border: "none", borderRadius: 999,
+                        fontSize: 11.5, fontWeight: 700,
+                        cursor: isBusy ? "wait" : "pointer", fontFamily: F.body,
+                      }}>✓ Approuver</button>
+                      <button onClick={() => rejectRequest(r)} disabled={isBusy} style={{
+                        padding: "6px 12px", background: T.card, color: "#C24B7A",
+                        border: `1px solid ${T.border}`, borderRadius: 999,
+                        fontSize: 11.5, fontWeight: 700,
+                        cursor: isBusy ? "wait" : "pointer", fontFamily: F.body,
+                      }}>✕ Refuser</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+        )}
 
         {/* Section : Membres */}
         <Section title={`👥 Membres (${members.length})`}>

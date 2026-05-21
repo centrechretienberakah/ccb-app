@@ -79,5 +79,47 @@ export default async function GroupSettingsPage({ params }: { params: Promise<{ 
     avatar_url: profilesMap[m.user_id]?.avatar_url ?? null,
   }));
 
-  return <GroupSettingsClient group={group} members={members} myRole={myRole} currentUserId={user.id} />;
+  // Demandes d'accès pendantes (fallback graceful si v42 non migrée)
+  let joinRequests: JoinRequestRow[] = [];
+  try {
+    const { data: jr } = await supabase
+      .from("group_join_requests")
+      .select("id, user_id, message, status, created_at")
+      .eq("group_id", id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+    const rows = (jr ?? []) as Array<{ id: string; user_id: string; message: string | null; status: string; created_at: string }>;
+    if (rows.length > 0) {
+      const requesterIds = rows.map((r) => r.user_id);
+      const missing = requesterIds.filter((uid) => !profilesMap[uid]);
+      if (missing.length > 0) {
+        const { data: pf2 } = await supabase
+          .from("user_profiles")
+          .select("user_id, display_name, avatar_url")
+          .in("user_id", missing);
+        for (const p of (pf2 ?? []) as Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>) {
+          profilesMap[p.user_id] = { display_name: p.display_name, avatar_url: p.avatar_url };
+        }
+      }
+      joinRequests = rows.map((r) => ({
+        id: r.id,
+        user_id: r.user_id,
+        message: r.message,
+        created_at: r.created_at,
+        display_name: profilesMap[r.user_id]?.display_name ?? null,
+        avatar_url: profilesMap[r.user_id]?.avatar_url ?? null,
+      }));
+    }
+  } catch { /* table v42 pas migrée */ }
+
+  return <GroupSettingsClient group={group} members={members} myRole={myRole} currentUserId={user.id} joinRequests={joinRequests} />;
+}
+
+export interface JoinRequestRow {
+  id: string;
+  user_id: string;
+  message: string | null;
+  created_at: string;
+  display_name: string | null;
+  avatar_url: string | null;
 }

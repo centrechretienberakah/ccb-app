@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -10,6 +10,7 @@ import {
   canCreateGroup, formatChatTime,
   notifyGroupsStaff,
 } from "@/lib/groups/theme";
+import { notifyJoinRequest, notifyNewMember } from "@/lib/groups/notify";
 
 interface GroupLite {
   id: string;
@@ -45,7 +46,30 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [joinRequests, setJoinRequests] = useState<Map<string, "pending" | "rejected">>(new Map());
   const canCreate = canCreateGroup(userRole);
+
+  // Charge les demandes pendantes du user pour les afficher comme "⏳ En attente"
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      try {
+        const { data } = await supabase
+          .from("group_join_requests")
+          .select("group_id, status")
+          .eq("user_id", currentUserId)
+          .in("status", ["pending", "rejected"]);
+        if (cancelled || !data) return;
+        const m = new Map<string, "pending" | "rejected">();
+        for (const r of data as Array<{ group_id: string; status: "pending" | "rejected" }>) {
+          m.set(r.group_id, r.status);
+        }
+        setJoinRequests(m);
+      } catch { /* table v42 pas migrée */ }
+    })();
+    return () => { cancelled = true; };
+  }, [currentUserId]);
 
   // Create form
   const [name, setName] = useState("");
@@ -143,12 +167,66 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
       group_id: groupId, user_id: currentUserId, role: "member",
     });
     if (error) { flash("Erreur : " + error.message); return; }
+    const grp = groups.find((g) => g.id === groupId);
     setGroups((prev) => prev.map((g) =>
       g.id === groupId
         ? { ...g, is_member: true, my_role: "member", member_count: g.member_count + 1 }
         : g,
     ));
     flash("✅ Tu as rejoint le groupe !");
+
+    // Notif aux admins du groupe
+    if (grp) {
+      const { data: { user } } = await supabase.auth.getUser();
+      let displayName = user?.email?.split("@")[0] ?? "Un membre";
+      try {
+        const { data: prof } = await supabase
+          .from("user_profiles").select("display_name").eq("user_id", currentUserId).maybeSingle();
+        const p = prof as { display_name: string | null } | null;
+        if (p?.display_name) displayName = p.display_name;
+      } catch { /* noop */ }
+      void notifyNewMember({
+        groupId, groupName: grp.name, newMemberName: displayName,
+      });
+    }
+  }
+
+  async function requestJoin(groupId: string) {
+    const supabase = createClient();
+    const grp = groups.find((g) => g.id === groupId);
+    const msg = prompt(
+      `Demande à rejoindre « ${grp?.name ?? "ce groupe"} »\n\nAjoute un mot pour les admins (optionnel) :`,
+      ""
+    );
+    if (msg === null) return; // cancelled
+
+    const { error } = await supabase.rpc("groups_request_join", {
+      p_group_id: groupId,
+      p_message: msg.trim() || null,
+    });
+    if (error) { flash("Erreur : " + error.message); return; }
+
+    setJoinRequests((prev) => {
+      const next = new Map(prev);
+      next.set(groupId, "pending");
+      return next;
+    });
+    flash("📨 Demande envoyée — un admin va l'examiner.");
+
+    // Notif aux admins
+    if (grp) {
+      const { data: { user } } = await supabase.auth.getUser();
+      let applicantName = user?.email?.split("@")[0] ?? "Un membre";
+      try {
+        const { data: prof } = await supabase
+          .from("user_profiles").select("display_name").eq("user_id", currentUserId).maybeSingle();
+        const p = prof as { display_name: string | null } | null;
+        if (p?.display_name) applicantName = p.display_name;
+      } catch { /* noop */ }
+      void notifyJoinRequest({
+        groupId, groupName: grp.name, applicantName,
+      });
+    }
   }
 
   return (
@@ -270,6 +348,8 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
               <GroupRow
                 key={g.id} group={g}
                 onJoin={joinGroup}
+                onRequestJoin={requestJoin}
+                requestStatus={joinRequests.get(g.id) ?? null}
                 isLast={i === filtered.length - 1}
               />
             ))}
@@ -364,8 +444,12 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
 }
 
 // ─── Group row (WhatsApp-style) ────────────────────────────────────
-function GroupRow({ group: g, onJoin, isLast }: {
-  group: GroupLite; onJoin: (id: string) => void; isLast: boolean;
+function GroupRow({ group: g, onJoin, onRequestJoin, requestStatus, isLast }: {
+  group: GroupLite;
+  onJoin: (id: string) => void;
+  onRequestJoin: (id: string) => void;
+  requestStatus: "pending" | "rejected" | null;
+  isLast: boolean;
 }) {
   const catDef = getGroupCategoryDef(g.category);
   const isMuted = !!(g.muted_until && new Date(g.muted_until).getTime() > Date.now());
@@ -472,12 +556,22 @@ function GroupRow({ group: g, onJoin, isLast }: {
           }}>
             ＋ Rejoindre
           </button>
-        ) : (
+        ) : requestStatus === "pending" ? (
           <span style={{
             flex: "0 0 auto", padding: "5px 10px",
-            background: T.surface2, color: T.textMuted,
-            borderRadius: 999, fontSize: 11, fontStyle: "italic",
-          }}>🔒 Privé</span>
+            background: "rgba(212,175,55,0.15)", color: T.goldDark,
+            border: `1px solid ${T.gold}`,
+            borderRadius: 999, fontSize: 11, fontWeight: 700,
+          }}>⏳ En attente</span>
+        ) : (
+          <button onClick={() => onRequestJoin(g.id)} style={{
+            flex: "0 0 auto", padding: "6px 12px",
+            background: T.gold, color: "#000", border: "none",
+            borderRadius: 999, fontSize: 11.5, fontWeight: 700,
+            cursor: "pointer", fontFamily: F.body,
+          }}>
+            📨 Demander
+          </button>
         )
       ) : null}
     </div>

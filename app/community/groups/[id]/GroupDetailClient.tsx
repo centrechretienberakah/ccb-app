@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GROUPS_THEME as T, GROUPS_FONTS as F, getGroupCategoryDef, notifyGroupsStaff } from "@/lib/groups/theme";
-import { notifyGroupMention, notifyGroupMeeting } from "@/lib/groups/notify";
+import { notifyGroupMention, notifyGroupMeeting, notifyNewMember } from "@/lib/groups/notify";
 import { getMentionedUserIds, renderSegments, type MemberLookup } from "@/lib/community/mentions";
 import MentionTextarea from "@/components/community/MentionTextarea";
 
@@ -110,6 +110,7 @@ export default function GroupDetailClient({
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map()); // user_id → display_name
   const [memberReadAt, setMemberReadAt] = useState<Map<string, string>>(new Map()); // user_id → last_read_at ISO
+  const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -424,6 +425,12 @@ export default function GroupDetailClient({
       }]);
     }
     flash("✅ Tu as rejoint le groupe !");
+    // Notif aux admins du groupe
+    void notifyNewMember({
+      groupId: group.id,
+      groupName: group.name,
+      newMemberName: currentUserProfile?.display_name || "Un nouveau membre",
+    });
   }
 
   async function startMeeting() {
@@ -832,11 +839,49 @@ export default function GroupDetailClient({
               />
             )}
 
-            {/* Messages */}
-            <div ref={scrollRef} style={{
-              flex: 1, overflowY: "auto", padding: "14px",
-              background: T.bg,
-            }}>
+            {/* Messages — avec drag&drop fichiers si membre */}
+            <div ref={scrollRef}
+              onDragEnter={canChat ? (e) => {
+                e.preventDefault();
+                if (e.dataTransfer?.types?.includes("Files")) setIsDragging(true);
+              } : undefined}
+              onDragOver={canChat ? (e) => { e.preventDefault(); } : undefined}
+              onDragLeave={canChat ? (e) => {
+                // Ne quitte le state que si on sort vraiment du container
+                if (e.currentTarget === e.target) setIsDragging(false);
+              } : undefined}
+              onDrop={canChat ? (e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const files = Array.from(e.dataTransfer?.files ?? []);
+                if (files.length > 0) {
+                  void uploadFile(files[0]);
+                }
+              } : undefined}
+              style={{
+                flex: 1, overflowY: "auto", padding: "14px",
+                background: T.bg, position: "relative",
+              }}>
+              {/* Overlay drag&drop */}
+              {isDragging && canChat && (
+                <div style={{
+                  position: "absolute", inset: 8, zIndex: 50,
+                  background: "rgba(90,44,160,0.92)", color: "#fff",
+                  border: `3px dashed ${T.gold}`, borderRadius: 16,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  pointerEvents: "none",
+                }}>
+                  <div style={{ textAlign: "center", padding: 24 }}>
+                    <div style={{ fontSize: 56, marginBottom: 10 }}>📎</div>
+                    <div style={{ fontFamily: F.title, fontSize: 20, fontWeight: 700 }}>
+                      Dépose le fichier ici
+                    </div>
+                    <div style={{ fontSize: 12, opacity: 0.85, marginTop: 4 }}>
+                      Image · PDF · Audio · Vidéo · max 25 Mo
+                    </div>
+                  </div>
+                </div>
+              )}
               {!canChat && group.type === "private" ? (
                 <div style={{ textAlign: "center", padding: "40px 14px", color: T.textMuted, fontSize: 13 }}>
                   🔒 Ce groupe est privé. Demande à un membre de t&apos;inviter pour voir la conversation.
