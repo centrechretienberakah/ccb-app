@@ -285,7 +285,7 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
           <Link href="/community" style={backLink}>← Communauté</Link>
           <div style={{ flex: 1 }} />
-          {canCreate ? (
+          {canCreate && (
             <>
               <Link href="/community/groups/admin" style={{
                 padding: "6px 12px", background: T.violetSoft, color: T.violet,
@@ -297,16 +297,6 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
                 ➕ Créer un groupe
               </button>
             </>
-          ) : (
-            <span
-              title="Seuls les leader/admin/owner peuvent créer un groupe."
-              style={{
-                fontSize: 11, color: T.textMuted, fontStyle: "italic",
-                padding: "6px 12px", background: T.card,
-                border: `1px solid ${T.border}`, borderRadius: 999,
-              }}>
-              🔒 Création réservée aux leaders
-            </span>
           )}
         </div>
 
