@@ -400,6 +400,50 @@ function CcbBrandingStyles({ isAudio }: { isAudio: boolean }) {
         border-radius: 16px;
         overflow: hidden;
       }
+
+      /* ─── MOBILE / TABLETTE : grille multi-participants ─────────── */
+      /* Par défaut LiveKit utilise un focus layout (1 grand + carousel)
+         qui ne montre qu'un seul participant à la fois sur petit écran.
+         On force une vraie grille pour voir tout le monde d'un coup. */
+      @media (max-width: 900px) {
+        [data-lk-theme="ccb"] .lk-grid-layout,
+        [data-lk-theme="ccb"] .lk-focus-layout {
+          display: grid !important;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+          grid-template-rows: none !important;
+          grid-auto-rows: minmax(140px, 1fr) !important;
+          gap: 6px !important;
+          padding: 6px !important;
+          align-content: start !important;
+        }
+        /* Si focus actif, le speaker prend toute la largeur en haut */
+        [data-lk-theme="ccb"] .lk-focus-layout > .lk-focused-participant,
+        [data-lk-theme="ccb"] .lk-focus-layout > .lk-focus-participant {
+          grid-column: 1 / -1 !important;
+          max-height: 45vh !important;
+        }
+        /* Le carousel des autres participants devient des items normaux
+           de la grille (au lieu d'un strip horizontal scrollable) */
+        [data-lk-theme="ccb"] .lk-carousel {
+          display: contents !important;
+          overflow: visible !important;
+        }
+        [data-lk-theme="ccb"] .lk-carousel .lk-participant-tile,
+        [data-lk-theme="ccb"] .lk-grid-layout .lk-participant-tile {
+          min-height: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          aspect-ratio: 4 / 3;
+        }
+      }
+      /* Sur très petit écran (≤ 380px) on passe à 1 colonne au-dessus
+         du speaker focal, sinon 2 colonnes */
+      @media (max-width: 380px) {
+        [data-lk-theme="ccb"] .lk-grid-layout,
+        [data-lk-theme="ccb"] .lk-focus-layout {
+          grid-template-columns: repeat(2, 1fr) !important;
+        }
+      }
       ${isAudio ? `
         /* ─── MODE AUDIO : masque caméra mais GARDE les tuiles ─── */
         /* 1. PreJoin — masque preview caméra et bouton caméra */
