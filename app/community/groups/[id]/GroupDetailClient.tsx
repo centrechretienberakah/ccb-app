@@ -113,6 +113,9 @@ export default function GroupDetailClient({
   const [isDragging, setIsDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [infoExpanded, setInfoExpanded] = useState(false);
+  const [activeSession, setActiveSession] = useState<{
+    id: string; mode: "audio" | "video"; started_at: string; active_count: number;
+  } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -123,6 +126,34 @@ export default function GroupDetailClient({
   const memberLookup: MemberLookup[] = members.map((m) => ({
     user_id: m.user_id, display_name: m.display_name, avatar_url: m.avatar_url,
   }));
+
+  // Polling : détecte les sessions Meet actives du groupe (toutes les 15s)
+  useEffect(() => {
+    if (!isMember && group.type !== "public") return;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    let cancelled = false;
+
+    async function fetchActive() {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("meet_sessions_with_stats")
+          .select("id, mode, started_at, active_count, is_active")
+          .eq("group_id", group.id)
+          .eq("is_active", true)
+          .order("started_at", { ascending: false })
+          .limit(1);
+        if (cancelled) return;
+        const row = (data ?? [])[0] as {
+          id: string; mode: "audio" | "video"; started_at: string; active_count: number; is_active: boolean;
+        } | undefined;
+        setActiveSession(row ? { id: row.id, mode: row.mode, started_at: row.started_at, active_count: row.active_count } : null);
+      } catch { /* vue meet_sessions_with_stats pas migrée → silencieux */ }
+    }
+    void fetchActive();
+    timer = setInterval(fetchActive, 15_000);
+    return () => { cancelled = true; if (timer) clearInterval(timer); };
+  }, [group.id, isMember, group.type]);
 
   // Chargement initial des réactions + écoute realtime
   useEffect(() => {
@@ -455,7 +486,22 @@ export default function GroupDetailClient({
     const author = currentUserProfile?.display_name || "Un membre";
     const labelEmoji = mode === "audio" ? "📞" : "🎥";
     const labelText  = mode === "audio" ? "appel vocal" : "réunion vidéo";
-    // Notif push aux autres membres non mutés (best-effort)
+    const meetingUrl = `/community/groups/${group.id}/meeting${mode === "audio" ? "?mode=audio" : ""}`;
+
+    // 1) Insère un message système dans le chat du groupe (visible
+    //    instantanément par tous les membres via realtime)
+    try {
+      const supabase = createClient();
+      await supabase.from("group_messages").insert({
+        group_id: group.id,
+        user_id: currentUserId,
+        content: mode === "audio"
+          ? `📞 ${author} a lancé un appel vocal — Rejoignez en cliquant sur 📞 dans le bandeau du groupe`
+          : `🎥 ${author} a démarré une réunion vidéo — Rejoignez en cliquant sur 🎥 dans le bandeau du groupe`,
+      });
+    } catch { /* RLS / réseau : on continue quand même */ }
+
+    // 2) Notif push aux autres membres non mutés (best-effort)
     void notifyGroupMeeting({
       groupId: group.id, groupName: group.name,
       authorName: author, excludeUserId: currentUserId,
@@ -464,9 +510,9 @@ export default function GroupDetailClient({
     notifyGroupsStaff(
       `${labelEmoji} ${labelText[0].toUpperCase() + labelText.slice(1)} : ${group.name}`,
       `${author} démarre ${mode === "audio" ? "un" : "une"} ${labelText}`,
-      `/community/groups/${group.id}/meeting${mode === "audio" ? "?mode=audio" : ""}`,
+      meetingUrl,
     );
-    router.push(`/community/groups/${group.id}/meeting${mode === "audio" ? "?mode=audio" : ""}`);
+    router.push(meetingUrl);
   }
 
   async function leaveGroup() {
@@ -875,6 +921,55 @@ export default function GroupDetailClient({
           </div>
         )}
       </div>
+
+      {/* Bandeau "Appel en cours" — visible par tous les membres */}
+      {activeSession && (isMember || group.type === "public") && (
+        <div className="ccb-grp-detail" style={{
+          padding: "10px 14px",
+          background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
+          color: "#fff",
+          display: "flex", alignItems: "center", gap: 12,
+          borderBottom: `1px solid ${T.borderSoft}`,
+        }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: "50%",
+            background: "rgba(255,255,255,0.15)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 18, flexShrink: 0,
+            animation: "ccb-pulse 1.6s ease-in-out infinite",
+          }}>
+            {activeSession.mode === "audio" ? "📞" : "🎥"}
+          </div>
+          <style>{`
+            @keyframes ccb-pulse {
+              0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.7); }
+              50%      { box-shadow: 0 0 0 8px rgba(212,175,55,0); }
+            }
+          `}</style>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 13.5 }}>
+              {activeSession.mode === "audio" ? "Appel vocal en cours" : "Réunion vidéo en cours"}
+            </div>
+            <div style={{ fontSize: 11.5, opacity: 0.85 }}>
+              👥 {activeSession.active_count} participant{activeSession.active_count > 1 ? "s" : ""} · démarré à{" "}
+              {new Date(activeSession.started_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+            </div>
+          </div>
+          <button
+            onClick={() => router.push(`/community/groups/${group.id}/meeting${activeSession.mode === "audio" ? "?mode=audio" : ""}`)}
+            style={{
+              padding: "8px 18px",
+              background: T.gold, color: "#111",
+              border: "none", borderRadius: 999,
+              fontWeight: 800, fontSize: 12,
+              cursor: "pointer", fontFamily: F.body,
+              flexShrink: 0,
+              boxShadow: "0 4px 12px rgba(212,175,55,0.35)",
+            }}>
+            ＋ Rejoindre
+          </button>
+        </div>
+      )}
 
       {/* CTA Join si non membre (banderole compacte) */}
       {!isMember && (
