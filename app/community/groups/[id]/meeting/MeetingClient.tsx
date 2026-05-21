@@ -1,7 +1,7 @@
 "use client";
 
 import "@livekit/components-styles";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,6 +12,7 @@ import {
   formatChatMessageLinks,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import { createClient } from "@/lib/supabase/client";
 import { GROUPS_THEME as T, GROUPS_FONTS as F } from "@/lib/groups/theme";
 
 interface Group {
@@ -47,6 +48,7 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
   const [error, setError] = useState<string | null>(null);
   const [setupNeeded, setSetupNeeded] = useState(false);
   const [joined, setJoined] = useState(false);
+  const sessionIdRef = useRef<string | null>(null);
   // Préférence utilisateur (PreJoin)
   const [userName, setUserName] = useState(initialDisplayName || "Membre CCB");
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -92,7 +94,53 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
   void avatarUrl;
   void userEmail;
 
+  // ─── Tracking de la session côté DB ────────────────────────────────
+  async function recordJoin() {
+    const supabase = createClient();
+    try {
+      const { data } = await supabase.rpc("meet_session_join", {
+        p_group_id: group.id,
+        p_mode: mode,
+      });
+      if (typeof data === "string") sessionIdRef.current = data;
+    } catch { /* RPC pas migré → silencieux */ }
+  }
+
+  async function recordLeave() {
+    const sid = sessionIdRef.current;
+    if (!sid) return;
+    try {
+      const supabase = createClient();
+      await supabase.rpc("meet_session_user_leave", { p_session_id: sid });
+    } catch { /* noop */ }
+    sessionIdRef.current = null;
+  }
+
+  // Filet de sécurité : si l'utilisateur ferme l'onglet brutalement
+  useEffect(() => {
+    function onUnload() {
+      const sid = sessionIdRef.current;
+      if (!sid) return;
+      // navigator.sendBeacon serait idéal mais Supabase RPC ne s'y prête pas.
+      // Fire-and-forget keepalive fetch via service_role n'est pas accessible
+      // → on accepte que le close_stale cleanup (6h) prenne le relais
+      // au pire des cas.
+      try {
+        const supabase = createClient();
+        void supabase.rpc("meet_session_user_leave", { p_session_id: sid });
+      } catch { /* noop */ }
+    }
+    window.addEventListener("beforeunload", onUnload);
+    return () => {
+      window.removeEventListener("beforeunload", onUnload);
+      // Sur cleanup (navigation interne), on enregistre aussi
+      void recordLeave();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group.id]);
+
   function handleDisconnect() {
+    void recordLeave();
     router.push(`/community/groups/${group.id}`);
   }
 
@@ -101,6 +149,7 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
     setAudioEnabled(values.audioEnabled);
     setVideoEnabled(values.videoEnabled);
     setJoined(true);
+    void recordJoin();
   }
 
   // ─── États : config manquante, erreur, chargement ─────────────────
