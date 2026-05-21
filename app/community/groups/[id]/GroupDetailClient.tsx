@@ -781,6 +781,12 @@ export default function GroupDetailClient({
                 overflow: "hidden",
                 animation: "ccb-menu-in 140ms ease-out",
               }}>
+                <style>{`
+                  @keyframes ccb-menu-in {
+                    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+                    to   { opacity: 1; transform: translateY(0) scale(1); }
+                  }
+                `}</style>
                 {!isMember && group.type === "public" && (
                   <MenuItem icon="＋" label="Rejoindre le groupe" onClick={() => { setMenuOpen(false); joinGroup(); }} />
                 )}
@@ -822,27 +828,6 @@ export default function GroupDetailClient({
           </div>
         )}
       </div>
-
-      {/* ─── 3. Quick actions bar (membres seulement) ─── */}
-      {isMember && (
-        <div className="ccb-grp-detail" style={{
-          display: "flex", gap: 8, padding: "12px 14px 4px",
-          overflowX: "auto", scrollbarWidth: "none",
-        }}>
-          <style>{`
-            .ccb-grp-quick::-webkit-scrollbar { display: none; }
-            @keyframes ccb-menu-in {
-              from { opacity: 0; transform: translateY(-4px) scale(0.98); }
-              to   { opacity: 1; transform: translateY(0) scale(1); }
-            }
-          `}</style>
-          <QuickAction icon="🔍" label="Rechercher" onClick={() => setShowSearch((s) => !s)} active={showSearch} />
-          <QuickAction icon="📎" label="Fichiers" href={`/community/groups/${group.id}/files`} />
-          <QuickAction icon="🎥" label="CCB Meet" onClick={() => startMeeting("video")} />
-          <QuickAction icon="📞" label="Appel" onClick={() => startMeeting("audio")} />
-          <QuickAction icon="👥" label="Membres" onClick={() => setShowMembers(true)} />
-        </div>
-      )}
 
       {/* CTA Join si non membre (banderole compacte) */}
       {!isMember && (
@@ -887,7 +872,7 @@ export default function GroupDetailClient({
             height: "min(72vh, 720px)",
             boxShadow: "0 2px 14px rgba(31,20,60,0.04)",
           }}>
-            {/* Search bar (toggled via TopBar menu ou QuickAction) */}
+            {/* Search bar (toggled via le menu 3-points) */}
             {showSearch && (
               <div style={{
                 padding: "8px 14px", borderBottom: `1px solid ${T.borderSoft}`,
@@ -1601,49 +1586,6 @@ function MenuItem({ icon, label, onClick, href, danger = false }: {
       onMouseEnter={(e) => handleMouse(e, true)}
       onMouseLeave={(e) => handleMouse(e, false)}>
       <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{icon}</span>
-      <span>{label}</span>
-    </button>
-  );
-}
-
-function QuickAction({ icon, label, onClick, href, active = false }: {
-  icon: string; label: string;
-  onClick?: () => void; href?: string;
-  active?: boolean;
-}) {
-  const style: React.CSSProperties = {
-    flex: "0 0 auto",
-    display: "inline-flex", alignItems: "center", gap: 6,
-    padding: "8px 14px",
-    background: active ? T.violetSoft : T.card,
-    color: active ? T.violet : T.textSoft,
-    border: `1px solid ${active ? T.violet : T.border}`,
-    borderRadius: 999, fontSize: 12.5, fontWeight: 600,
-    cursor: "pointer", whiteSpace: "nowrap",
-    fontFamily: F.body, textDecoration: "none",
-    transition: "all 150ms ease",
-  };
-  function handleMouse(e: React.MouseEvent<HTMLElement>, on: boolean) {
-    if (active) return;
-    e.currentTarget.style.background = on ? T.surface2 : T.card;
-    e.currentTarget.style.borderColor = on ? T.violet : T.border;
-    e.currentTarget.style.color = on ? T.violet : T.textSoft;
-  }
-  if (href) {
-    return (
-      <Link href={href} style={style}
-        onMouseEnter={(e) => handleMouse(e, true)}
-        onMouseLeave={(e) => handleMouse(e, false)}>
-        <span style={{ fontSize: 14 }}>{icon}</span>
-        <span>{label}</span>
-      </Link>
-    );
-  }
-  return (
-    <button onClick={onClick} style={style}
-      onMouseEnter={(e) => handleMouse(e, true)}
-      onMouseLeave={(e) => handleMouse(e, false)}>
-      <span style={{ fontSize: 14 }}>{icon}</span>
       <span>{label}</span>
     </button>
   );
