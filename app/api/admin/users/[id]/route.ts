@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 
+// Roles autorisés à gérer les comptes utilisateurs (invite / delete).
+// owner = rang max, admin = rang admin. leader/moderator restent exclus
+// du hard-delete pour des raisons de sécurité (action irréversible).
+const ADMIN_ROLES = new Set(["owner", "admin"]);
+
 async function assertAdmin() {
   const sb = await createServerClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { ok: false as const, status: 401 as const };
-  const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).single();
-  if (roleRow?.role !== "admin") return { ok: false as const, status: 403 as const };
+  const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+  const role = (roleRow as { role?: string } | null)?.role;
+  if (!role || !ADMIN_ROLES.has(role)) return { ok: false as const, status: 403 as const };
   return { ok: true as const, userId: user.id };
 }
 

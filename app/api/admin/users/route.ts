@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 
-// Vérifie que l'appelant est admin (cookie session).
+// Roles autorisés à inviter/gérer les comptes utilisateurs.
+// owner = rang max, admin = rang admin. leader/moderator exclus du
+// management de comptes (création / suppression utilisateurs).
+const ADMIN_ROLES = new Set(["owner", "admin"]);
+
 async function assertAdmin() {
   const sb = await createServerClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { ok: false, status: 401 as const };
-  const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).single();
-  if (roleRow?.role !== "admin") return { ok: false, status: 403 as const };
+  const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+  const role = (roleRow as { role?: string } | null)?.role;
+  if (!role || !ADMIN_ROLES.has(role)) return { ok: false, status: 403 as const };
   return { ok: true as const, userId: user.id };
 }
 
