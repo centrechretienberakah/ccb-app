@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { rescuePushSubscription } from "@/lib/push-notifications";
 
 export default function RegisterSW() {
   const [showInstall, setShowInstall] = useState(false);
@@ -16,10 +17,16 @@ export default function RegisterSW() {
         // Vérifier immédiatement si une nouvelle version existe
         reg.update().catch(() => {});
 
+        // Filet de sécurité : si une subscription navigateur existe mais
+        // n'est pas associée en DB (cas du signup où getUser() était null),
+        // on la (re)connecte automatiquement à l'user courant.
+        rescuePushSubscription().catch(() => {});
+
         // Re-vérifier à chaque fois que l'onglet reprend le focus
         const onVisible = () => {
           if (document.visibilityState === "visible") {
             reg.update().catch(() => {});
+            rescuePushSubscription().catch(() => {});
           }
         };
         document.addEventListener("visibilitychange", onVisible);

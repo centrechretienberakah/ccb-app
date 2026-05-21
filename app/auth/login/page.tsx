@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { subscribeUserToPush } from "@/lib/push-notifications";
 
 function LoginForm() {
   const router = useRouter();
@@ -21,11 +22,21 @@ function LoginForm() {
     setLoading(true);
     setError("");
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError("Email ou mot de passe incorrect. Veuillez reessayer.");
       setLoading(false);
     } else {
+      // Auto-(ré)active les notifs push si possible (silencieux, non bloquant).
+      // Couvre le cas où le user s'est inscrit ailleurs sans push ou a perdu
+      // sa subscription DB.
+      if (data?.user?.id) {
+        void subscribeUserToPush(data.user.id).then((r) => {
+          if (typeof window !== "undefined") {
+            console.log("[CCB push] auto-subscribe login →", r);
+          }
+        });
+      }
       router.push(redirect);
       router.refresh();
     }

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { usePushNotifications } from "@/lib/push-notifications";
+import { usePushNotifications, subscribeUserToPush } from "@/lib/push-notifications";
 
 const STEPS = [
   { label: "Compte", icon: "✉" },
@@ -52,18 +52,21 @@ export default function RegisterPage() {
   }
 
   // ── Auto-prompt push notifications après signup réussi (étape 3) ──
+  // On utilise subscribeUserToPush(userId) avec l'id récupéré dans signUp,
+  // pour éviter le bug où getUser() renvoie null juste après création de compte
+  // (session pas encore propagée → la subscription DB échoue silencieusement).
   const push = usePushNotifications();
+  const [signedUpUserId, setSignedUpUserId] = useState<string | null>(null);
   useEffect(() => {
-    if (step !== 3) return;
-    // Délai court pour laisser le rendu se stabiliser, puis demander permission
-    const timer = setTimeout(() => {
-      if (push.state === "default") {
-        push.subscribe().catch(() => { /* silencieux — utilisateur peut refuser */ });
+    if (step !== 3 || !signedUpUserId) return;
+    const timer = setTimeout(async () => {
+      const result = await subscribeUserToPush(signedUpUserId);
+      if (typeof window !== "undefined") {
+        console.log("[CCB push] auto-subscribe register →", result);
       }
     }, 800);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  }, [step, signedUpUserId]);
 
   /* ── Step 1: valider email + mot de passe ── */
   function handleStep1(e: React.FormEvent) {
@@ -152,6 +155,9 @@ export default function RegisterPage() {
         likes: true, comments: true, prayer_reply: true, new_post: true, system: true,
       }));
     } catch {}
+
+    // Capture user.id pour auto-subscribe push (step 3) — bypass la latence de session
+    if (data.user) setSignedUpUserId(data.user.id);
 
     setStep(3);
     setLoading(false);
