@@ -6,10 +6,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   LiveKitRoom,
-  VideoConference,
   PreJoin,
   RoomAudioRenderer,
-  formatChatMessageLinks,
+  GridLayout,
+  ParticipantTile,
+  ControlBar,
+  useTracks,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { createClient } from "@/lib/supabase/client";
@@ -286,7 +288,7 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
     );
   }
 
-  // ─── In-call : LiveKitRoom + VideoConference ──────────────────────
+  // ─── In-call : LiveKitRoom + custom grid layout ───────────────────
   return (
     <div data-lk-theme="ccb" style={{ height: "100dvh", background: "#0F0A1F" }}>
       <LiveKitRoom
@@ -300,20 +302,57 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
           adaptiveStream: true,
           dynacast: true,
           publishDefaults: {
-            // mode audio-only : empêche aussi la souscription des vidéos distantes
             videoCodec: "vp9",
-            audioPreset: { maxBitrate: 32_000 }, // 32 kbps suffit en parole
+            audioPreset: { maxBitrate: 32_000 },
           },
         }}
         onDisconnected={handleDisconnect}
         data-lk-theme="ccb"
         style={{ height: "100%" }}>
         <RoomAudioRenderer />
-        <VideoConference
-          chatMessageFormatter={formatChatMessageLinks}
-        />
+        <CcbCallStage isAudio={isAudio} />
       </LiveKitRoom>
       <CcbBrandingStyles isAudio={isAudio} />
+    </div>
+  );
+}
+
+// ─── Layout custom : grille de TOUS les participants + control bar
+// On utilise les primitives LiveKit (GridLayout + ParticipantTile) au
+// lieu du component VideoConference prebuilt → on contrôle totalement
+// l'affichage et la grille montre toujours tout le monde sur mobile.
+function CcbCallStage({ isAudio }: { isAudio: boolean }) {
+  // Tous les tracks Camera (avec placeholder pour ceux sans cam = mode audio)
+  // + tracks ScreenShare si quelqu'un partage
+  const tracks = useTracks(
+    [
+      { source: Track.Source.Camera, withPlaceholder: true },
+      { source: Track.Source.ScreenShare, withPlaceholder: false },
+    ],
+    { onlySubscribed: false },
+  );
+
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column",
+      height: "100%", width: "100%",
+      background: "#0F0A1F",
+    }}>
+      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+        <GridLayout tracks={tracks} style={{ height: "100%" }}>
+          <ParticipantTile />
+        </GridLayout>
+      </div>
+      <ControlBar
+        variation="minimal"
+        controls={{
+          camera: !isAudio,
+          screenShare: !isAudio,
+          microphone: true,
+          chat: false,
+          leave: true,
+        }}
+      />
     </div>
   );
 }
@@ -464,48 +503,47 @@ function CcbBrandingStyles({ isAudio }: { isAudio: boolean }) {
         overflow: hidden;
       }
 
-      /* ─── MOBILE / TABLETTE : grille multi-participants ─────────── */
-      /* Par défaut LiveKit utilise un focus layout (1 grand + carousel)
-         qui ne montre qu'un seul participant à la fois sur petit écran.
-         On force une vraie grille pour voir tout le monde d'un coup. */
-      @media (max-width: 900px) {
-        [data-lk-theme="ccb"] .lk-grid-layout,
-        [data-lk-theme="ccb"] .lk-focus-layout {
-          display: grid !important;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
-          grid-template-rows: none !important;
-          grid-auto-rows: minmax(140px, 1fr) !important;
-          gap: 6px !important;
-          padding: 6px !important;
-          align-content: start !important;
-        }
-        /* Si focus actif, le speaker prend toute la largeur en haut */
-        [data-lk-theme="ccb"] .lk-focus-layout > .lk-focused-participant,
-        [data-lk-theme="ccb"] .lk-focus-layout > .lk-focus-participant {
-          grid-column: 1 / -1 !important;
-          max-height: 45vh !important;
-        }
-        /* Le carousel des autres participants devient des items normaux
-           de la grille (au lieu d'un strip horizontal scrollable) */
-        [data-lk-theme="ccb"] .lk-carousel {
-          display: contents !important;
-          overflow: visible !important;
-        }
-        [data-lk-theme="ccb"] .lk-carousel .lk-participant-tile,
-        [data-lk-theme="ccb"] .lk-grid-layout .lk-participant-tile {
-          min-height: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          aspect-ratio: 4 / 3;
+      /* ─── GridLayout : grille responsive sur tous les écrans ─── */
+      /* Notre custom layout utilise <GridLayout> qui rend un .lk-grid-layout.
+         On force une grille auto-fit qui montre TOUS les participants. */
+      [data-lk-theme="ccb"] .lk-grid-layout {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+        grid-auto-rows: minmax(150px, 1fr) !important;
+        gap: 8px !important;
+        padding: 8px !important;
+        height: 100% !important;
+        width: 100% !important;
+        align-content: stretch !important;
+      }
+      [data-lk-theme="ccb"] .lk-grid-layout .lk-participant-tile {
+        min-height: 0 !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        aspect-ratio: auto !important;
+      }
+      /* Mobile : tiles plus compactes pour en montrer plus */
+      @media (max-width: 640px) {
+        [data-lk-theme="ccb"] .lk-grid-layout {
+          grid-template-columns: repeat(2, 1fr) !important;
+          grid-auto-rows: minmax(120px, 1fr) !important;
+          gap: 4px !important;
+          padding: 4px !important;
         }
       }
-      /* Sur très petit écran (≤ 380px) on passe à 1 colonne au-dessus
-         du speaker focal, sinon 2 colonnes */
+      /* Très petit : 1 colonne quand mode audio (avatars plus grands) */
       @media (max-width: 380px) {
-        [data-lk-theme="ccb"] .lk-grid-layout,
-        [data-lk-theme="ccb"] .lk-focus-layout {
+        [data-lk-theme="ccb"] .lk-grid-layout {
           grid-template-columns: repeat(2, 1fr) !important;
         }
+      }
+      /* Control bar : toujours en bas, sticky */
+      [data-lk-theme="ccb"] .lk-control-bar {
+        background: rgba(15,10,31,0.95) !important;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding: 10px !important;
+        flex-shrink: 0;
       }
       ${isAudio ? `
         /* ─── MODE AUDIO : masque caméra mais GARDE les tuiles ─── */
