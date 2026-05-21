@@ -672,6 +672,52 @@ export default function GroupDetailClient({
           0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
           30% { opacity: 1; transform: translateY(-2px); }
         }
+
+        /* ── Composer fixé en bas du viewport sur mobile + tablette ── */
+        /* MOBILE (< 640px) : juste au-dessus de la nav bar du bas */
+        @media (max-width: 639px) {
+          .ccb-grp-chat-card {
+            height: auto !important;
+            min-height: 60vh;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+          }
+          .ccb-grp-composer {
+            position: fixed !important;
+            left: 0; right: 0;
+            bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+            z-index: 25;
+            background: ${T.card};
+            border-top: 1px solid ${T.borderSoft};
+            padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+            box-shadow: 0 -4px 16px rgba(31,20,60,0.08);
+          }
+          .ccb-grp-messages {
+            padding-bottom: 84px !important;
+          }
+        }
+        /* TABLETTE (640px – 1023px) : pas de bottom-nav, collé en bas */
+        @media (min-width: 640px) and (max-width: 1023px) {
+          .ccb-grp-chat-card {
+            height: auto !important;
+            min-height: 70vh;
+            overflow: visible !important;
+          }
+          .ccb-grp-composer {
+            position: fixed !important;
+            left: 64px; right: 0;
+            bottom: 0;
+            z-index: 25;
+            background: ${T.card};
+            border-top: 1px solid ${T.borderSoft};
+            box-shadow: 0 -4px 16px rgba(31,20,60,0.08);
+          }
+          .ccb-grp-messages {
+            padding-bottom: 84px !important;
+          }
+        }
       `}</style>
 
       {/* ─── 1. TopBar sticky compact (WhatsApp-style) ─── */}
@@ -865,7 +911,7 @@ export default function GroupDetailClient({
         <div className="ccb-grp-detail-grid">
 
           {/* Main : Chat */}
-          <div style={{
+          <div className="ccb-grp-chat-card" style={{
             background: T.card, border: `1px solid ${T.border}`,
             borderRadius: 18, overflow: "hidden",
             display: "flex", flexDirection: "column",
@@ -905,6 +951,7 @@ export default function GroupDetailClient({
 
             {/* Messages — avec drag&drop fichiers si membre */}
             <div ref={scrollRef}
+              className="ccb-grp-messages"
               onDragEnter={canChat ? (e) => {
                 e.preventDefault();
                 if (e.dataTransfer?.types?.includes("Files")) setIsDragging(true);
@@ -1154,7 +1201,7 @@ export default function GroupDetailClient({
 
             {/* Composer */}
             {canChat ? (
-              <div style={{
+              <div className="ccb-grp-composer" style={{
                 padding: "10px 14px", borderTop: `1px solid ${T.borderSoft}`,
                 background: T.card,
               }}>
@@ -1297,7 +1344,7 @@ export default function GroupDetailClient({
                 </div>
               </div>
             ) : (
-              <div style={{
+              <div className="ccb-grp-composer" style={{
                 padding: "14px", borderTop: `1px solid ${T.borderSoft}`,
                 background: T.surface2, textAlign: "center",
               }}>
