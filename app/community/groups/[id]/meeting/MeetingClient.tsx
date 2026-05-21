@@ -149,7 +149,9 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
   function handlePreJoinSubmit(values: { username: string; audioEnabled: boolean; videoEnabled: boolean }) {
     setUserName(values.username || initialDisplayName || "Membre CCB");
     setAudioEnabled(values.audioEnabled);
-    setVideoEnabled(values.videoEnabled);
+    // En mode audio, on FORCE videoEnabled à false même si l'utilisateur
+    // a réussi à toggler le bouton caméra dans la PreJoin (sécurité UX).
+    setVideoEnabled(isAudio ? false : values.videoEnabled);
     setJoined(true);
     void recordJoin();
   }
@@ -399,13 +401,35 @@ function CcbBrandingStyles({ isAudio }: { isAudio: boolean }) {
         overflow: hidden;
       }
       ${isAudio ? `
-        /* En mode audio, on masque la tile vidéo et on centre les avatars */
-        [data-lk-theme="ccb"] .lk-grid-layout video {
-          display: none;
+        /* ─── MODE AUDIO : masque TOUT ce qui touche à la caméra ─── */
+        /* 1. PreJoin — masque la preview vidéo et le bouton caméra */
+        [data-lk-theme="ccb"] .lk-prejoin .lk-camera-button,
+        [data-lk-theme="ccb"] .lk-prejoin video,
+        [data-lk-theme="ccb"] .lk-prejoin .lk-video-container,
+        [data-lk-theme="ccb"] .lk-prejoin [data-lk-source="camera"],
+        [data-lk-theme="ccb"] .lk-prejoin label:has(input[name*="video"]) {
+          display: none !important;
         }
+        /* 2. En appel — masque toutes les vidéos + boutons caméra/écran */
+        [data-lk-theme="ccb"] .lk-grid-layout video,
+        [data-lk-theme="ccb"] .lk-focus-layout video,
+        [data-lk-theme="ccb"] .lk-camera-button,
+        [data-lk-theme="ccb"] .lk-button[data-lk-source="camera"],
+        [data-lk-theme="ccb"] .lk-button[data-lk-source="screen_share"],
+        [data-lk-theme="ccb"] .lk-screen-share-button,
+        [data-lk-theme="ccb"] .lk-camera-preset-select,
+        [data-lk-theme="ccb"] .lk-toggle-source-button[data-lk-source="camera"] {
+          display: none !important;
+        }
+        /* 3. Tile = grand avatar carré dégradé violet, plus immersif */
         [data-lk-theme="ccb"] .lk-participant-tile {
           background: linear-gradient(135deg, #5A2CA0, #3E1C70);
           aspect-ratio: 1;
+          max-width: 320px;
+          margin: auto;
+        }
+        [data-lk-theme="ccb"] .lk-participant-tile .lk-participant-placeholder {
+          font-size: 56px;
         }
       ` : ""}
     `}</style>
