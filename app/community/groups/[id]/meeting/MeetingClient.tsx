@@ -118,33 +118,75 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
     sessionIdRef.current = null;
   }
 
-  // Filet de sécurité : si l'utilisateur ferme l'onglet brutalement
-  useEffect(() => {
-    function onUnload() {
-      const sid = sessionIdRef.current;
-      if (!sid) return;
-      // navigator.sendBeacon serait idéal mais Supabase RPC ne s'y prête pas.
-      // Fire-and-forget keepalive fetch via service_role n'est pas accessible
-      // → on accepte que le close_stale cleanup (6h) prenne le relais
-      // au pire des cas.
-      try {
-        const supabase = createClient();
-        void supabase.rpc("meet_session_user_leave", { p_session_id: sid });
-      } catch { /* noop */ }
-    }
-    window.addEventListener("beforeunload", onUnload);
-    return () => {
-      window.removeEventListener("beforeunload", onUnload);
-      // Sur cleanup (navigation interne), on enregistre aussi
-      void recordLeave();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [group.id]);
+  // Politique de "leave" :
+  //   - On NE PROVOQUE PAS de leave côté client sur cleanup (navigation
+  //     SPA, refresh, hot reload, tab close) → l'utilisateur garde sa
+  //     place côté SESSION DB.
+  //   - LiveKit Cloud détecte automatiquement les déconnexions WebRTC
+  //     (~15-30s timeout) et envoie un webhook participant_left qui
+  //     ferme le participant côté serveur.
+  //   - Si le user revient dans la fenêtre (refresh = quelques secondes),
+  //     son participant est encore actif → instant reconnect.
+  //   - Seul handleDisconnect() (clic Raccrocher) marque un leave
+  //     instantané côté DB.
 
   function handleDisconnect() {
+    // Quitter explicitement (clic Raccrocher) → enregistre + retour groupe
+    try { sessionStorage.removeItem(autoRejoinKey); } catch { /* noop */ }
     void recordLeave();
     router.push(`/community/groups/${group.id}`);
   }
+
+  // ─── Auto-rejoin : si l'utilisateur vient juste d'être en réunion
+  // (refresh / re-ouverture rapide), on saute la PreJoin pour reprendre
+  // direct là où il en était. Fenêtre : 60 secondes.
+  const autoRejoinKey = `ccb-meet-rejoin-${group.id}-${mode}`;
+  useEffect(() => {
+    if (joined) return;
+    try {
+      const raw = sessionStorage.getItem(autoRejoinKey);
+      if (!raw) return;
+      const data = JSON.parse(raw) as { ts: number; name: string; audio: boolean; video: boolean };
+      if (Date.now() - data.ts > 60_000) {
+        sessionStorage.removeItem(autoRejoinKey);
+        return;
+      }
+      // Rejoin automatique avec les mêmes préférences
+      setUserName(data.name);
+      setAudioEnabled(data.audio);
+      setVideoEnabled(isAudio ? false : data.video);
+      setJoined(true);
+      void recordJoin();
+    } catch { /* noop */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]); // au moment où on a le token et qu'on peut afficher la PreJoin
+
+  // Pendant qu'il est dans l'appel, on enregistre les préfs pour permettre
+  // un auto-rejoin sur la fenêtre suivante (refresh / pagehide)
+  useEffect(() => {
+    if (!joined) return;
+    try {
+      sessionStorage.setItem(autoRejoinKey, JSON.stringify({
+        ts: Date.now(),
+        name: userName,
+        audio: audioEnabled,
+        video: videoEnabled,
+      }));
+    } catch { /* noop */ }
+    // Refresh du ts à intervalles pour rester dans la fenêtre 60s même
+    // pendant un long appel
+    const t = setInterval(() => {
+      try {
+        sessionStorage.setItem(autoRejoinKey, JSON.stringify({
+          ts: Date.now(),
+          name: userName,
+          audio: audioEnabled,
+          video: videoEnabled,
+        }));
+      } catch { /* noop */ }
+    }, 15_000);
+    return () => clearInterval(t);
+  }, [joined, userName, audioEnabled, videoEnabled, autoRejoinKey]);
 
   function handlePreJoinSubmit(values: { username: string; audioEnabled: boolean; videoEnabled: boolean }) {
     setUserName(values.username || initialDisplayName || "Membre CCB");
