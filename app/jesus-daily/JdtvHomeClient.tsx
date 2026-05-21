@@ -14,6 +14,7 @@ import {
   getEmbedUrl,
   getYoutubeThumbnail,
 } from "@/lib/jdtv/theme";
+import YouTubeRail from "./_components/YouTubeRail";
 
 interface Props {
   featured: JdtvVideo | null;
@@ -122,6 +123,9 @@ export default function JdtvHomeClient({
           `}</style>
         </div>
       ) : null}
+
+      {/* Dernières vidéos YouTube CCB (fetch /api/youtube, cache 1h) */}
+      <YouTubeRail />
 
       {/* Continue watching */}
       {continueVideos.length > 0 ? (
