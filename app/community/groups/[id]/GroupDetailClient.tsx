@@ -787,6 +787,7 @@ export default function GroupDetailClient({
                 <MenuItem icon="🔍" label="Rechercher" onClick={() => { setMenuOpen(false); setShowSearch(true); }} />
                 <MenuItem icon="📎" label="Fichiers partagés" href={`/community/groups/${group.id}/files`} onClick={() => setMenuOpen(false)} />
                 <MenuItem icon="👥" label={`Voir les membres (${members.length})`} onClick={() => { setMenuOpen(false); setShowMembers(true); }} />
+                <MenuItem icon="🗓️" label="Réunions programmées" href={`/community/groups/${group.id}/meeting/scheduled`} onClick={() => setMenuOpen(false)} />
                 <MenuItem icon="📜" label="Historique des appels" href={`/community/groups/${group.id}/meeting/history`} onClick={() => setMenuOpen(false)} />
                 {(myRole === "owner" || myRole === "admin") && (
                   <MenuItem icon="⚙️" label="Paramètres du groupe" href={`/community/groups/${group.id}/settings`} onClick={() => setMenuOpen(false)} />
