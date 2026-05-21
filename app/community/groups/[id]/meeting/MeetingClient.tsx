@@ -71,7 +71,9 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
       }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ?? `HTTP ${res.status}`);
+        const msg = data.error ?? `HTTP ${res.status}`;
+        const details = data.details ? ` (${String(data.details).slice(0, 200)})` : "";
+        setError(msg + details);
         setConnecting(false);
         return;
       }
