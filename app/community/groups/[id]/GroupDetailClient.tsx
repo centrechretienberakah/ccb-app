@@ -111,7 +111,10 @@ export default function GroupDetailClient({
   const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map()); // user_id → display_name
   const [memberReadAt, setMemberReadAt] = useState<Map<string, string>>(new Map()); // user_id → last_read_at ISO
   const [isDragging, setIsDragging] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [infoExpanded, setInfoExpanded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const presenceChannelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
@@ -207,6 +210,21 @@ export default function GroupDetailClient({
     return () => { supabase.removeChannel(ch); presenceChannelRef.current = null; };
 
   }, [group.id, isMember, currentUserId, currentUserProfile?.display_name]);
+
+  // Close 3-dot menu on outside click / Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setMenuOpen(false); }
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   // Mark messages as read whenever user opens the group (or new messages arrive
   // while the tab is visible). Best-effort: ignore RPC errors si la migration
@@ -656,174 +674,218 @@ export default function GroupDetailClient({
         }
       `}</style>
 
-      {/* Cover + header */}
-      <div style={{
-        background: group.cover_url
-          ? `url(${group.cover_url}) center/cover`
-          : `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
-        color: "#fff", padding: "32px 16px 22px",
-        position: "relative", overflow: "hidden",
-        boxShadow: T.shadowGlow,
+      {/* ─── 1. TopBar sticky compact (WhatsApp-style) ─── */}
+      <div className="ccb-grp-topbar" style={{
+        position: "sticky", top: 0, zIndex: 30,
+        background: `linear-gradient(180deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
+        color: "#fff",
+        boxShadow: "0 1px 0 rgba(0,0,0,0.18), 0 4px 18px rgba(90,44,160,0.18)",
       }}>
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: 3,
-          background: `linear-gradient(90deg, ${T.gold}, transparent)`,
-        }} />
         <div className="ccb-grp-detail" style={{
-          display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap",
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "10px 12px",
         }}>
-          <Link href="/community/groups" style={{
-            background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.25)",
-            borderRadius: 8, padding: "6px 12px",
-            color: "#fff", fontSize: 12, fontWeight: 700,
-            textDecoration: "none",
-          }}>← Tous les groupes</Link>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <h1 style={{
-              fontFamily: F.title, fontSize: "clamp(1.3rem, 4vw, 1.8rem)",
-              fontWeight: 700, margin: "0 0 4px", letterSpacing: "0.02em",
-            }}>
-              {group.name}
-            </h1>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11 }}>
-              <span style={{
-                background: group.type === "public" ? "rgba(212,175,55,0.25)" : "rgba(255,255,255,0.15)",
-                color: group.type === "public" ? "#fff" : "rgba(255,255,255,0.85)",
-                padding: "2px 10px", borderRadius: 999, fontWeight: 700,
-              }}>
-                {group.type === "public" ? "🌍 Public" : "🔒 Privé"}
-              </span>
-              <span style={{
-                background: "rgba(0,0,0,0.25)", padding: "2px 10px",
-                borderRadius: 999, fontWeight: 700,
-              }}>
-                {catDef.emoji} {catDef.label}
-              </span>
-              <span style={{
-                background: "rgba(0,0,0,0.25)", padding: "2px 10px",
-                borderRadius: 999, fontWeight: 600,
-              }}>
-                👥 {members.length} membre{members.length > 1 ? "s" : ""}
-              </span>
-            </div>
-          </div>
-          {isMember && (
-            <div style={{ display: "inline-flex", gap: 6 }}>
-              <button onClick={() => startMeeting("audio")} title="Démarrer un appel vocal (audio uniquement)" style={{
-                background: "rgba(255,255,255,0.18)",
-                color: "#fff",
-                border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: 10, padding: "8px 14px",
-                fontWeight: 700, fontSize: 12, fontFamily: F.body,
-                cursor: "pointer",
-                display: "inline-flex", alignItems: "center", gap: 6,
-              }}>
-                📞 Appel
-              </button>
-              <button onClick={() => startMeeting("video")} title="Démarrer une réunion vidéo + partage écran" style={{
-                background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`,
-                color: "#111", border: "none",
-                borderRadius: 10, padding: "8px 14px",
-                fontWeight: 700, fontSize: 12, fontFamily: F.body,
-                cursor: "pointer",
-                display: "inline-flex", alignItems: "center", gap: 6,
-                boxShadow: "0 2px 12px rgba(212,175,55,0.4)",
-              }}>
-                🎥 Vidéo
-              </button>
-            </div>
-          )}
-          {(myRole === "owner" || myRole === "admin") && (
-            <Link href={`/community/groups/${group.id}/settings`} title="Paramètres du groupe" style={{
-              background: "rgba(0,0,0,0.3)", color: "#fff",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: 10, padding: "8px 12px",
-              fontSize: 16, textDecoration: "none",
-              display: "inline-flex", alignItems: "center",
-            }}>
-              ⚙️
-            </Link>
-          )}
-          {isMember ? (
-            <button onClick={leaveGroup} style={{
-              background: "rgba(0,0,0,0.3)", color: "#fff",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: 10, padding: "8px 14px",
-              fontWeight: 700, fontSize: 12, cursor: "pointer",
-              fontFamily: F.body,
-            }}>
-              Quitter
-            </button>
-          ) : group.type === "public" ? (
-            <button onClick={joinGroup} style={{
-              background: T.gold, color: "#111",
-              border: "none", borderRadius: 10, padding: "8px 16px",
-              fontWeight: 700, fontSize: 12, cursor: "pointer",
-              fontFamily: F.body,
-            }}>
-              + Rejoindre
-            </button>
-          ) : (
-            <div style={{
-              background: "rgba(0,0,0,0.3)", color: "rgba(255,255,255,0.85)",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: 10, padding: "8px 14px",
-              fontSize: 11, fontStyle: "italic",
-            }}>
-              🔒 Invitation requise
-            </div>
-          )}
-        </div>
-        {group.description && (
-          <div className="ccb-grp-detail" style={{
-            marginTop: 10, fontSize: 13, opacity: 0.95, lineHeight: 1.5,
+          <Link href="/community/groups" aria-label="Retour"
+            style={{
+              width: 36, height: 36, borderRadius: 999,
+              background: "rgba(255,255,255,0.12)", color: "#fff",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              fontSize: 18, textDecoration: "none", flexShrink: 0,
+              transition: "background 150ms ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.22)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}>
+            ←
+          </Link>
+
+          {/* Avatar groupe */}
+          <div style={{
+            width: 40, height: 40, borderRadius: 999, flexShrink: 0,
+            background: group.cover_url
+              ? `url(${group.cover_url}) center/cover`
+              : "rgba(212,175,55,0.25)",
+            border: "1.5px solid rgba(212,175,55,0.55)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#fff", fontFamily: F.title, fontWeight: 800, fontSize: 16,
+            textTransform: "uppercase",
           }}>
-            {group.description}
+            {!group.cover_url && (group.name?.[0] ?? "?")}
+          </div>
+
+          {/* Identité */}
+          <button onClick={() => setInfoExpanded((v) => !v)}
+            style={{
+              flex: 1, minWidth: 0, textAlign: "left",
+              background: "none", border: "none", color: "#fff",
+              cursor: "pointer", padding: 0, fontFamily: F.body,
+            }}>
+            <div style={{
+              fontFamily: F.title, fontWeight: 700,
+              fontSize: 15, lineHeight: 1.15,
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              letterSpacing: 0.2,
+            }}>{group.name}</div>
+            <div style={{
+              fontSize: 11, opacity: 0.82, marginTop: 1,
+              display: "flex", gap: 6, alignItems: "center",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              <span>{members.length} membre{members.length > 1 ? "s" : ""}</span>
+              <span style={{ opacity: 0.5 }}>·</span>
+              <span>{group.type === "public" ? "🌍 Public" : "🔒 Privé"}</span>
+              {typingUsers.size > 0 && (
+                <>
+                  <span style={{ opacity: 0.5 }}>·</span>
+                  <span style={{ fontStyle: "italic", color: T.gold }}>écrit…</span>
+                </>
+              )}
+            </div>
+          </button>
+
+          {/* Actions principales */}
+          {isMember && (
+            <>
+              <button onClick={() => startMeeting("audio")} title="Appel vocal"
+                style={topbarIconBtn()}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.22)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}>
+                <PhoneIcon />
+              </button>
+              <button onClick={() => startMeeting("video")} title="Réunion vidéo"
+                style={topbarIconBtn()}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.22)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}>
+                <VideoIcon />
+              </button>
+            </>
+          )}
+
+          {/* Menu 3 points */}
+          <div ref={menuRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Menu"
+              style={topbarIconBtn()}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.22)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = menuOpen ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.12)")}>
+              <DotsIcon />
+            </button>
+            {menuOpen && (
+              <div role="menu" style={{
+                position: "absolute", top: "calc(100% + 6px)", right: 0,
+                minWidth: 220,
+                background: T.card, color: T.text,
+                border: `1px solid ${T.border}`,
+                borderRadius: 12,
+                boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
+                overflow: "hidden",
+                animation: "ccb-menu-in 140ms ease-out",
+              }}>
+                {!isMember && group.type === "public" && (
+                  <MenuItem icon="＋" label="Rejoindre le groupe" onClick={() => { setMenuOpen(false); joinGroup(); }} />
+                )}
+                <MenuItem icon="🔍" label="Rechercher" onClick={() => { setMenuOpen(false); setShowSearch(true); }} />
+                <MenuItem icon="📎" label="Fichiers partagés" href={`/community/groups/${group.id}/files`} onClick={() => setMenuOpen(false)} />
+                <MenuItem icon="👥" label={`Voir les membres (${members.length})`} onClick={() => { setMenuOpen(false); setShowMembers(true); }} />
+                {(myRole === "owner" || myRole === "admin") && (
+                  <MenuItem icon="⚙️" label="Paramètres du groupe" href={`/community/groups/${group.id}/settings`} onClick={() => setMenuOpen(false)} />
+                )}
+                {isMember && myRole !== "owner" && (
+                  <>
+                    <div style={{ height: 1, background: T.borderSoft, margin: "4px 0" }} />
+                    <MenuItem icon="🚪" label="Quitter le groupe" danger onClick={() => { setMenuOpen(false); leaveGroup(); }} />
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ─── 2. Info strip déroulante ─── */}
+        {infoExpanded && (
+          <div className="ccb-grp-detail" style={{
+            padding: "8px 16px 14px",
+            background: "rgba(0,0,0,0.15)",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            fontSize: 12.5, lineHeight: 1.55,
+          }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: group.description ? 8 : 0 }}>
+              <span style={pill()}>{catDef.emoji} {catDef.label}</span>
+              <span style={pill()}>{group.type === "public" ? "🌍 Public" : "🔒 Privé"}</span>
+              <span style={pill()}>👥 {members.length} membre{members.length > 1 ? "s" : ""}</span>
+            </div>
+            {group.description && (
+              <div style={{ opacity: 0.92 }}>{group.description}</div>
+            )}
           </div>
         )}
       </div>
 
-      <div className="ccb-grp-detail" style={{ padding: "16px 14px 32px" }}>
+      {/* ─── 3. Quick actions bar (membres seulement) ─── */}
+      {isMember && (
+        <div className="ccb-grp-detail" style={{
+          display: "flex", gap: 8, padding: "12px 14px 4px",
+          overflowX: "auto", scrollbarWidth: "none",
+        }}>
+          <style>{`
+            .ccb-grp-quick::-webkit-scrollbar { display: none; }
+            @keyframes ccb-menu-in {
+              from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+              to   { opacity: 1; transform: translateY(0) scale(1); }
+            }
+          `}</style>
+          <QuickAction icon="🔍" label="Rechercher" onClick={() => setShowSearch((s) => !s)} active={showSearch} />
+          <QuickAction icon="📎" label="Fichiers" href={`/community/groups/${group.id}/files`} />
+          <QuickAction icon="🎥" label="CCB Meet" onClick={() => startMeeting("video")} />
+          <QuickAction icon="📞" label="Appel" onClick={() => startMeeting("audio")} />
+          <QuickAction icon="👥" label="Membres" onClick={() => setShowMembers(true)} />
+        </div>
+      )}
+
+      {/* CTA Join si non membre (banderole compacte) */}
+      {!isMember && (
+        <div className="ccb-grp-detail" style={{
+          padding: "14px 16px",
+          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+          borderBottom: `1px solid ${T.borderSoft}`,
+        }}>
+          {group.description && (
+            <div style={{ flex: 1, minWidth: 200, fontSize: 13, color: T.textSoft, lineHeight: 1.5 }}>
+              {group.description}
+            </div>
+          )}
+          {group.type === "public" ? (
+            <button onClick={joinGroup} style={{
+              padding: "10px 22px",
+              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`,
+              color: "#111", border: "none",
+              borderRadius: 999, fontWeight: 800, fontSize: 13,
+              cursor: "pointer", fontFamily: F.body,
+              boxShadow: "0 4px 14px rgba(212,175,55,0.4)",
+            }}>＋ Rejoindre le groupe</button>
+          ) : (
+            <span style={{
+              padding: "10px 18px",
+              background: T.surface2, color: T.textMuted,
+              borderRadius: 999, fontSize: 12.5, fontStyle: "italic",
+              border: `1px solid ${T.border}`,
+            }}>🔒 Invitation requise</span>
+          )}
+        </div>
+      )}
+
+      <div className="ccb-grp-detail" style={{ padding: "12px 14px 32px" }}>
         <div className="ccb-grp-detail-grid">
 
           {/* Main : Chat */}
           <div style={{
             background: T.card, border: `1px solid ${T.border}`,
-            borderRadius: 16, overflow: "hidden",
+            borderRadius: 18, overflow: "hidden",
             display: "flex", flexDirection: "column",
-            height: "min(70vh, 700px)",
+            height: "min(72vh, 720px)",
+            boxShadow: "0 2px 14px rgba(31,20,60,0.04)",
           }}>
-            {/* Header chat */}
-            <div style={{
-              padding: "10px 14px", borderBottom: `1px solid ${T.borderSoft}`,
-              display: "flex", alignItems: "center", gap: 8,
-              background: T.surface2,
-            }}>
-              <div style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: T.text }}>
-                💬 Conversation
-              </div>
-              <div style={{ flex: 1 }} />
-              <Link href={`/community/groups/${group.id}/files`} title="Fichiers partagés" style={{
-                background: "none", border: "none", cursor: "pointer",
-                color: T.textMuted, fontSize: 16, padding: "4px 6px",
-                textDecoration: "none",
-              }}>📎</Link>
-              <button onClick={() => setShowSearch((s) => !s)} title="Rechercher" style={{
-                background: showSearch ? T.violetSoft : "none", border: "none", cursor: "pointer",
-                color: showSearch ? T.violet : T.textMuted, fontSize: 16,
-                padding: "4px 6px", borderRadius: 6,
-              }}>🔍</button>
-              <button onClick={() => setShowMembers(!showMembers)}
-                className="ccb-grp-members-mobile-trigger"
-                style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  color: T.violet, fontSize: 12, fontWeight: 700,
-                }}>
-                👥 {members.length}
-              </button>
-            </div>
-
-            {/* Search bar */}
+            {/* Search bar (toggled via TopBar menu ou QuickAction) */}
             {showSearch && (
               <div style={{
                 padding: "8px 14px", borderBottom: `1px solid ${T.borderSoft}`,
@@ -1461,6 +1523,131 @@ function AttachmentRender({ msg, isMine, onImageClick }: {
 }
 
 // Render content with @mention links
+// ─── Icons SVG modernes (style Lucide) ──────────────────────────────
+function PhoneIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    </svg>
+  );
+}
+function VideoIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polygon points="23 7 16 12 23 17 23 7"/>
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+    </svg>
+  );
+}
+function DotsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <circle cx="12" cy="5" r="2"/>
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="12" cy="19" r="2"/>
+    </svg>
+  );
+}
+
+// ─── Helpers UI TopBar ──────────────────────────────────────────────
+function topbarIconBtn(): React.CSSProperties {
+  return {
+    width: 36, height: 36, borderRadius: 999,
+    background: "rgba(255,255,255,0.12)", color: "#fff",
+    border: "none", cursor: "pointer", flexShrink: 0,
+    display: "inline-flex", alignItems: "center", justifyContent: "center",
+    transition: "background 150ms ease",
+  };
+}
+function pill(): React.CSSProperties {
+  return {
+    background: "rgba(0,0,0,0.25)", color: "#fff",
+    padding: "3px 10px", borderRadius: 999,
+    fontSize: 11, fontWeight: 700,
+  };
+}
+
+function MenuItem({ icon, label, onClick, href, danger = false }: {
+  icon: string; label: string; onClick?: () => void; href?: string; danger?: boolean;
+}) {
+  const style: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: 12,
+    width: "100%", padding: "10px 14px",
+    background: "none", border: "none",
+    color: danger ? "#C24B7A" : T.text,
+    fontSize: 13.5, fontFamily: F.body, fontWeight: 600,
+    cursor: "pointer", textAlign: "left", textDecoration: "none",
+    transition: "background 120ms ease",
+  };
+  function handleMouse(e: React.MouseEvent<HTMLElement>, on: boolean) {
+    e.currentTarget.style.background = on ? T.surface2 : "transparent";
+  }
+  if (href) {
+    return (
+      <Link href={href} style={style} onClick={onClick}
+        onMouseEnter={(e) => handleMouse(e, true)}
+        onMouseLeave={(e) => handleMouse(e, false)}>
+        <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{icon}</span>
+        <span>{label}</span>
+      </Link>
+    );
+  }
+  return (
+    <button onClick={onClick} style={style}
+      onMouseEnter={(e) => handleMouse(e, true)}
+      onMouseLeave={(e) => handleMouse(e, false)}>
+      <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function QuickAction({ icon, label, onClick, href, active = false }: {
+  icon: string; label: string;
+  onClick?: () => void; href?: string;
+  active?: boolean;
+}) {
+  const T = T;
+  const style: React.CSSProperties = {
+    flex: "0 0 auto",
+    display: "inline-flex", alignItems: "center", gap: 6,
+    padding: "8px 14px",
+    background: active ? T.violetSoft : T.card,
+    color: active ? T.violet : T.textSoft,
+    border: `1px solid ${active ? T.violet : T.border}`,
+    borderRadius: 999, fontSize: 12.5, fontWeight: 600,
+    cursor: "pointer", whiteSpace: "nowrap",
+    fontFamily: F.body, textDecoration: "none",
+    transition: "all 150ms ease",
+  };
+  function handleMouse(e: React.MouseEvent<HTMLElement>, on: boolean) {
+    if (active) return;
+    e.currentTarget.style.background = on ? T.surface2 : T.card;
+    e.currentTarget.style.borderColor = on ? T.violet : T.border;
+    e.currentTarget.style.color = on ? T.violet : T.textSoft;
+  }
+  if (href) {
+    return (
+      <Link href={href} style={style}
+        onMouseEnter={(e) => handleMouse(e, true)}
+        onMouseLeave={(e) => handleMouse(e, false)}>
+        <span style={{ fontSize: 14 }}>{icon}</span>
+        <span>{label}</span>
+      </Link>
+    );
+  }
+  return (
+    <button onClick={onClick} style={style}
+      onMouseEnter={(e) => handleMouse(e, true)}
+      onMouseLeave={(e) => handleMouse(e, false)}>
+      <span style={{ fontSize: 14 }}>{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
 function ContentWithMentions({ content, members }: { content: string; members: MemberLookup[] }) {
   if (members.length === 0) return <>{content}</>;
   const segments = renderSegments(content, members);
