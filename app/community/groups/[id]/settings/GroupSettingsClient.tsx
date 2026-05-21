@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GROUPS_THEME as T, GROUPS_FONTS as F, GROUP_CATEGORIES } from "@/lib/groups/theme";
 import { notifyRequestApproved, notifyNewMember } from "@/lib/groups/notify";
+
+interface UserCandidate {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  country: string | null;
+}
 
 interface Group {
   id: string;
@@ -45,6 +53,72 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [requests, setRequests] = useState<JoinRequest[]>(initialRequests);
   const [busyReq, setBusyReq] = useState<Set<string>>(new Set());
+
+  // — Ajout de membres (recherche + ajout)
+  const [addSearch, setAddSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<UserCandidate[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function onSearchChange(value: string) {
+    setAddSearch(value);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!value.trim()) { setSearchResults([]); return; }
+    searchTimer.current = setTimeout(() => { void runSearch(value); }, 250);
+  }
+
+  async function runSearch(q: string) {
+    setSearching(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("groups_search_users", {
+        p_group_id: group.id,
+        p_query: q,
+      });
+      if (error) { flash("Recherche : " + error.message); setSearchResults([]); return; }
+      setSearchResults((data ?? []) as UserCandidate[]);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function addMember(candidate: UserCandidate) {
+    if (addingId) return;
+    setAddingId(candidate.user_id);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("groups_add_member", {
+        p_group_id: group.id,
+        p_user_id: candidate.user_id,
+        p_role: "member",
+      });
+      if (error) { flash("Erreur : " + error.message); return; }
+      // Ajoute localement
+      setMembers((prev) => prev.some((m) => m.user_id === candidate.user_id)
+        ? prev
+        : [...prev, {
+            user_id: candidate.user_id,
+            role: "member",
+            joined_at: new Date().toISOString(),
+            display_name: candidate.display_name,
+            avatar_url: candidate.avatar_url,
+          }]);
+      // Retire des résultats
+      setSearchResults((prev) => prev.filter((u) => u.user_id !== candidate.user_id));
+      flash(`✓ ${candidate.display_name ?? "Membre"} ajouté`);
+      // Notif au nouvel arrivant + aux admins
+      void notifyRequestApproved({
+        groupId: group.id, groupName: group.name, userId: candidate.user_id,
+      });
+      void notifyNewMember({
+        groupId: group.id, groupName: group.name,
+        newMemberName: candidate.display_name ?? "Un nouveau membre",
+      });
+    } finally {
+      setAddingId(null);
+    }
+  }
 
   async function approveRequest(r: JoinRequest) {
     if (busyReq.has(r.id)) return;
@@ -350,6 +424,92 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
             </div>
           </Section>
         )}
+
+        {/* Section : Ajouter des membres */}
+        <Section title="➕ Ajouter des membres">
+          <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 10 }}>
+            Recherche un membre du Centre Chrétien Berakah par son nom ou sa ville,
+            puis clique sur <strong style={{ color: T.violet }}>Ajouter</strong>.
+          </div>
+          <div style={{ position: "relative", marginBottom: 10 }}>
+            <input
+              value={addSearch}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="🔎 Tape un nom (ex: « jean »)…"
+              style={{ ...inputStyle, paddingLeft: 14 }}
+            />
+            {searching && (
+              <div style={{
+                position: "absolute", right: 12, top: "50%",
+                transform: "translateY(-50%)", color: T.textMuted, fontSize: 11,
+              }}>⏳</div>
+            )}
+          </div>
+          {searchResults.length === 0 && addSearch.trim() && !searching && (
+            <div style={{
+              fontSize: 12, color: T.textMuted, fontStyle: "italic",
+              padding: "10px 4px",
+            }}>
+              Aucun résultat (ou tous déjà membres).
+            </div>
+          )}
+          {searchResults.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {searchResults.map((u) => {
+                const initials = (u.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                const busy = addingId === u.user_id;
+                return (
+                  <div key={u.user_id} style={{
+                    display: "grid", gridTemplateColumns: "36px 1fr auto", gap: 10, alignItems: "center",
+                    padding: "8px 10px",
+                    background: T.bg, border: `1px solid ${T.borderSoft}`, borderRadius: 10,
+                  }}>
+                    {u.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={u.avatar_url} alt={u.display_name || ""}
+                        style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{
+                        width: 36, height: 36, borderRadius: "50%",
+                        background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 13, fontWeight: 700, color: "#fff",
+                      }}>{initials}</div>
+                    )}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13.5, color: T.text }}>
+                        {u.display_name || "Membre"}
+                      </div>
+                      {(u.city || u.country) && (
+                        <div style={{ fontSize: 11, color: T.textMuted }}>
+                          {[u.city, u.country].filter(Boolean).join(" · ")}
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={() => addMember(u)} disabled={busy} style={{
+                      padding: "6px 14px",
+                      background: busy ? T.textMuted : T.violet,
+                      color: "#fff", border: "none", borderRadius: 999,
+                      fontSize: 11.5, fontWeight: 700,
+                      cursor: busy ? "wait" : "pointer", fontFamily: F.body,
+                      whiteSpace: "nowrap",
+                    }}>
+                      {busy ? "⏳ Ajout…" : "+ Ajouter"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {!addSearch.trim() && (
+            <div style={{
+              fontSize: 11.5, color: T.textMuted,
+              padding: "4px 2px",
+            }}>
+              💡 Astuce : tape le début du nom pour voir les suggestions.
+            </div>
+          )}
+        </Section>
 
         {/* Section : Membres */}
         <Section title={`👥 Membres (${members.length})`}>
