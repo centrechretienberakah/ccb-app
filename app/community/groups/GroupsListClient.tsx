@@ -37,12 +37,12 @@ interface Props {
   userRole: string | null;
 }
 
-type Filter = "all" | "mine" | "public" | "discover";
+type Filter = "all" | "mine" | "public" | "private";
 
 export default function GroupsListClient({ initialGroups, currentUserId, userRole }: Props) {
   const router = useRouter();
   const [groups, setGroups] = useState<GroupLite[]>(initialGroups);
-  const [filter, setFilter] = useState<Filter>("mine");
+  const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -84,8 +84,8 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
   const filtered = useMemo(() => {
     let out = groups;
     if (filter === "mine")     out = out.filter((g) => g.is_member);
-    else if (filter === "public")   out = out.filter((g) => g.type === "public");
-    else if (filter === "discover") out = out.filter((g) => !g.is_member && g.type === "public");
+    else if (filter === "public")  out = out.filter((g) => g.type === "public");
+    else if (filter === "private") out = out.filter((g) => g.type === "private");
     if (search.trim()) {
       const q = search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
       out = out.filter((g) => {
@@ -312,12 +312,26 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
           }}
         />
 
-        {/* Filters */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", overflowX: "auto" }}>
-          <button onClick={() => setFilter("mine")}     style={chip(filter === "mine")}>💬 Mes groupes</button>
-          <button onClick={() => setFilter("all")}      style={chip(filter === "all")}>📚 Tous</button>
-          <button onClick={() => setFilter("public")}   style={chip(filter === "public")}>🌍 Publics</button>
-          <button onClick={() => setFilter("discover")} style={chip(filter === "discover")}>✨ Découvrir</button>
+        {/* Filters — 4 chips alignés sur 1 ligne (équi-répartis) */}
+        <style>{`
+          .ccb-grp-filters {
+            display: flex; gap: 6px; margin-bottom: 12px;
+            flex-wrap: nowrap; overflow-x: auto;
+            scrollbar-width: none;
+          }
+          .ccb-grp-filters::-webkit-scrollbar { display: none; }
+          .ccb-grp-filters > button {
+            flex: 1 1 0;
+            min-width: 0;
+            text-overflow: ellipsis;
+            overflow: hidden;
+          }
+        `}</style>
+        <div className="ccb-grp-filters">
+          <button onClick={() => setFilter("all")}     style={chip(filter === "all")}>📚 Tous</button>
+          <button onClick={() => setFilter("public")}  style={chip(filter === "public")}>🌍 Publics</button>
+          <button onClick={() => setFilter("private")} style={chip(filter === "private")}>🔒 Privés</button>
+          <button onClick={() => setFilter("mine")}    style={chip(filter === "mine")}>💬 Mes groupes</button>
         </div>
 
         {/* Liste WhatsApp-style */}
@@ -583,7 +597,7 @@ function EmptyState({ isMine, canCreate, onCreate, totalGroups }: {
           : (totalGroups === 0 ? "Aucun groupe pour l'instant" : "Aucun groupe ne correspond")}
       </div>
       <div style={{ color: T.textMuted, fontSize: 12.5, marginBottom: 16 }}>
-        {isMine ? "Rejoins-en un (onglet ✨ Découvrir) ou crée le tien." : ""}
+        {isMine ? "Rejoins-en un (onglet 🌍 Publics) ou crée le tien." : ""}
       </div>
       {canCreate && (
         <button onClick={onCreate} style={btnPrimary}>➕ Créer un groupe</button>
@@ -623,12 +637,12 @@ const backLink: React.CSSProperties = {
 };
 function chip(active: boolean): React.CSSProperties {
   return {
-    padding: "6px 12px",
+    padding: "6px 8px",
     background: active ? T.violetSoft : T.card,
     border: `1px solid ${active ? T.violet : T.border}`,
     color: active ? T.violet : T.textMuted,
     fontSize: 11, fontWeight: active ? 700 : 500,
     borderRadius: 999, cursor: "pointer", fontFamily: F.body,
-    whiteSpace: "nowrap",
+    whiteSpace: "nowrap", textAlign: "center",
   };
 }
