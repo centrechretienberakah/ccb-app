@@ -20,8 +20,20 @@ async function sendPush(opts: SendOpts): Promise<boolean> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(opts),
     });
+    // Log diagnostic dans la console pour debug rapide
+    try {
+      const data = await res.json();
+      if (typeof window !== "undefined") {
+        console.log("[CCB push] /api/notifications/send →", res.status, data);
+      }
+    } catch { /* noop */ }
     return res.ok;
-  } catch { return false; }
+  } catch (e) {
+    if (typeof window !== "undefined") {
+      console.error("[CCB push] erreur réseau", e);
+    }
+    return false;
+  }
 }
 
 /**

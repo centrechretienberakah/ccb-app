@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
       .neq("user_id", auth.userId);
     const memberIds = (gmRows ?? []).map((r) => (r as { user_id: string }).user_id);
     if (memberIds.length === 0) {
-      return NextResponse.json({ sent: 0, failed: 0, message: "Pas d'autre membre à notifier." });
+      return NextResponse.json({ sent: 0, failed: 0, message: "Pas d'autre membre à notifier.", group_other_members: 0 });
     }
     // Exclut les mutés (best-effort, si table group_user_state existe)
     let targets = memberIds;
@@ -147,8 +147,25 @@ export async function POST(req: NextRequest) {
         targets = memberIds.filter((id) => !mutedSet.has(id));
       } catch { /* table v39 pas migrée → ignore */ }
     }
+    // Compte les subs ENABLED pour ces targets (diagnostic)
+    const { count: subsEnabledCount } = await admin
+      .from("push_subscriptions")
+      .select("*", { count: "exact", head: true })
+      .in("user_id", targets)
+      .eq("enabled", true);
     if (targets.length === 0) {
-      return NextResponse.json({ sent: 0, failed: 0, message: "Tous les autres membres sont en mute." });
+      return NextResponse.json({ sent: 0, failed: 0, message: "Tous les autres membres sont en mute.",
+        group_other_members: memberIds.length, group_muted: memberIds.length });
+    }
+    if ((subsEnabledCount ?? 0) === 0) {
+      return NextResponse.json({
+        sent: 0, failed: 0,
+        message: `Aucun des ${targets.length} membres n'a activé les notifications push.`,
+        group_other_members: memberIds.length,
+        group_targets: targets.length,
+        subs_enabled_count: 0,
+        hint: "Demande aux membres d'activer les notifs dans Réglages → Notifications.",
+      });
     }
     query = query.in("user_id", targets);
   }

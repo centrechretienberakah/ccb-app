@@ -401,16 +401,15 @@ function CcbBrandingStyles({ isAudio }: { isAudio: boolean }) {
         overflow: hidden;
       }
       ${isAudio ? `
-        /* ─── MODE AUDIO : masque TOUT ce qui touche à la caméra ─── */
-        /* 1. PreJoin — masque la preview vidéo et le bouton caméra */
+        /* ─── MODE AUDIO : masque caméra mais GARDE les tuiles ─── */
+        /* 1. PreJoin — masque preview caméra et bouton caméra */
         [data-lk-theme="ccb"] .lk-prejoin .lk-camera-button,
         [data-lk-theme="ccb"] .lk-prejoin video,
         [data-lk-theme="ccb"] .lk-prejoin .lk-video-container,
-        [data-lk-theme="ccb"] .lk-prejoin [data-lk-source="camera"],
-        [data-lk-theme="ccb"] .lk-prejoin label:has(input[name*="video"]) {
+        [data-lk-theme="ccb"] .lk-prejoin [data-lk-source="camera"] {
           display: none !important;
         }
-        /* 2. En appel — masque toutes les vidéos + boutons caméra/écran */
+        /* 2. En appel — masque flux vidéo + boutons caméra/écran */
         [data-lk-theme="ccb"] .lk-grid-layout video,
         [data-lk-theme="ccb"] .lk-focus-layout video,
         [data-lk-theme="ccb"] .lk-camera-button,
@@ -421,15 +420,32 @@ function CcbBrandingStyles({ isAudio }: { isAudio: boolean }) {
         [data-lk-theme="ccb"] .lk-toggle-source-button[data-lk-source="camera"] {
           display: none !important;
         }
-        /* 3. Tile = grand avatar carré dégradé violet, plus immersif */
+        /* 3. IMPORTANT : on GARDE les tuiles participants visibles, juste
+              en mode "avatar gros + nom" (la grille LiveKit fait le reste) */
         [data-lk-theme="ccb"] .lk-participant-tile {
-          background: linear-gradient(135deg, #5A2CA0, #3E1C70);
-          aspect-ratio: 1;
-          max-width: 320px;
-          margin: auto;
+          background: linear-gradient(135deg, #5A2CA0, #3E1C70) !important;
+          border-radius: 16px !important;
+          overflow: hidden !important;
+          min-height: 140px;
         }
         [data-lk-theme="ccb"] .lk-participant-tile .lk-participant-placeholder {
-          font-size: 56px;
+          font-size: clamp(28px, 6vw, 56px) !important;
+          color: rgba(255,255,255,0.9) !important;
+          background: transparent !important;
+        }
+        /* Le nom et l'indicateur audio restent visibles */
+        [data-lk-theme="ccb"] .lk-participant-metadata {
+          background: rgba(0,0,0,0.45) !important;
+          backdrop-filter: blur(6px);
+        }
+        [data-lk-theme="ccb"] .lk-participant-name {
+          color: #fff !important;
+          font-weight: 700;
+        }
+        /* L'indicateur de niveau audio (cercle qui pulse autour de l'avatar) */
+        [data-lk-theme="ccb"] .lk-participant-tile[data-lk-speaking="true"] {
+          outline: 3px solid #D4AF37 !important;
+          outline-offset: -3px;
         }
       ` : ""}
     `}</style>
