@@ -130,62 +130,83 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
   //   - Seul handleDisconnect() (clic Raccrocher) marque un leave
   //     instantané côté DB.
 
+  // ─── Auto-rejoin : reprise instantanée après refresh / tab close récent
+  // Stocké en localStorage (survit aux refreshs, PWA, fermetures de tab).
+  // TTL : 10 minutes — large fenêtre pour reconnect après mauvaise réception,
+  // changement d'app, mise en veille, etc.
+  const autoRejoinKey = `ccb-meet-rejoin-${group.id}-${mode}`;
+  const AUTO_REJOIN_TTL_MS = 10 * 60 * 1000; // 10 min
+  const [autoRejoining, setAutoRejoining] = useState(false);
+
+  function clearAutoRejoin() {
+    try { localStorage.removeItem(autoRejoinKey); } catch { /* noop */ }
+    try { sessionStorage.removeItem(autoRejoinKey); } catch { /* noop */ }
+  }
+
   function handleDisconnect() {
     // Quitter explicitement (clic Raccrocher) → enregistre + retour groupe
-    try { sessionStorage.removeItem(autoRejoinKey); } catch { /* noop */ }
+    clearAutoRejoin();
     void recordLeave();
     router.push(`/community/groups/${group.id}`);
   }
 
-  // ─── Auto-rejoin : si l'utilisateur vient juste d'être en réunion
-  // (refresh / re-ouverture rapide), on saute la PreJoin pour reprendre
-  // direct là où il en était. Fenêtre : 60 secondes.
-  const autoRejoinKey = `ccb-meet-rejoin-${group.id}-${mode}`;
+  // ─── Vérifie l'auto-rejoin AU PLUS TÔT (avant même le fetchToken)
+  // pour éviter le flash de PreJoin pendant le refresh.
   useEffect(() => {
     if (joined) return;
     try {
-      const raw = sessionStorage.getItem(autoRejoinKey);
-      if (!raw) return;
-      const data = JSON.parse(raw) as { ts: number; name: string; audio: boolean; video: boolean };
-      if (Date.now() - data.ts > 60_000) {
-        sessionStorage.removeItem(autoRejoinKey);
+      // Tentative localStorage d'abord (survit), fallback sessionStorage
+      const raw = localStorage.getItem(autoRejoinKey) ?? sessionStorage.getItem(autoRejoinKey);
+      if (!raw) {
+        if (typeof window !== "undefined") console.log("[CCB meet] auto-rejoin: pas d'entrée");
         return;
       }
-      // Rejoin automatique avec les mêmes préférences
+      const data = JSON.parse(raw) as { ts: number; name: string; audio: boolean; video: boolean };
+      const age = Date.now() - data.ts;
+      if (age > AUTO_REJOIN_TTL_MS) {
+        clearAutoRejoin();
+        if (typeof window !== "undefined") console.log("[CCB meet] auto-rejoin: entrée expirée", { ageMs: age });
+        return;
+      }
+      if (typeof window !== "undefined") console.log("[CCB meet] auto-rejoin: ON →", { ageS: Math.round(age/1000), data });
+      setAutoRejoining(true);
       setUserName(data.name);
       setAudioEnabled(data.audio);
       setVideoEnabled(isAudio ? false : data.video);
       setJoined(true);
       void recordJoin();
-    } catch { /* noop */ }
+    } catch (e) {
+      if (typeof window !== "undefined") console.error("[CCB meet] auto-rejoin error:", e);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]); // au moment où on a le token et qu'on peut afficher la PreJoin
+  }, []); // une seule fois au mount
 
-  // Pendant qu'il est dans l'appel, on enregistre les préfs pour permettre
-  // un auto-rejoin sur la fenêtre suivante (refresh / pagehide)
+  // Pendant qu'il est dans l'appel, persiste les préfs en localStorage
   useEffect(() => {
     if (!joined) return;
-    try {
-      sessionStorage.setItem(autoRejoinKey, JSON.stringify({
-        ts: Date.now(),
-        name: userName,
-        audio: audioEnabled,
-        video: videoEnabled,
-      }));
-    } catch { /* noop */ }
-    // Refresh du ts à intervalles pour rester dans la fenêtre 60s même
-    // pendant un long appel
-    const t = setInterval(() => {
+    function persist() {
       try {
-        sessionStorage.setItem(autoRejoinKey, JSON.stringify({
+        const payload = JSON.stringify({
           ts: Date.now(),
           name: userName,
           audio: audioEnabled,
           video: videoEnabled,
-        }));
+        });
+        localStorage.setItem(autoRejoinKey, payload);
       } catch { /* noop */ }
-    }, 15_000);
-    return () => clearInterval(t);
+    }
+    persist();
+    const t = setInterval(persist, 15_000);
+    // Persist aussi sur pagehide / beforeunload pour garantir une entrée fraîche
+    // au prochain reload (sans appeler recordLeave).
+    function onUnload() { persist(); }
+    window.addEventListener("beforeunload", onUnload);
+    window.addEventListener("pagehide", onUnload);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("beforeunload", onUnload);
+      window.removeEventListener("pagehide", onUnload);
+    };
   }, [joined, userName, audioEnabled, videoEnabled, autoRejoinKey]);
 
   function handlePreJoinSubmit(values: { username: string; audioEnabled: boolean; videoEnabled: boolean }) {
@@ -217,7 +238,7 @@ export default function MeetingClient({ group, displayName: initialDisplayName, 
   if (connecting || !token || !serverUrl) {
     return (
       <ScreenShell mode={mode} title={group.name}>
-        <LoadingScreen mode={mode} groupName={group.name} />
+        <LoadingScreen mode={mode} groupName={group.name} reconnecting={autoRejoining} />
       </ScreenShell>
     );
   }
@@ -324,7 +345,7 @@ function ScreenShell({ children, mode, title, hideHeader = false }: {
   );
 }
 
-function LoadingScreen({ mode, groupName }: { mode: "audio" | "video"; groupName: string }) {
+function LoadingScreen({ mode, groupName, reconnecting }: { mode: "audio" | "video"; groupName: string; reconnecting?: boolean }) {
   return (
     <div style={loadCenterStyle}>
       <style>{`@keyframes ccb-mt-spin { to { transform: rotate(360deg) } }`}</style>
@@ -336,7 +357,7 @@ function LoadingScreen({ mode, groupName }: { mode: "audio" | "video"; groupName
         marginBottom: 18,
       }} />
       <div style={{ fontFamily: F.title, fontSize: 17, fontWeight: 700, marginBottom: 4, color: "#fff" }}>
-        Connexion à CCB MEET…
+        {reconnecting ? "Reconnexion en cours…" : "Connexion à CCB MEET…"}
       </div>
       <div style={{ fontSize: 12.5, opacity: 0.7, color: "#fff" }}>
         {mode === "audio" ? "Appel vocal" : "Réunion vidéo"} · {groupName}
