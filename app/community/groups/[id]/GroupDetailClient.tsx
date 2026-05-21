@@ -438,8 +438,8 @@ export default function GroupDetailClient({
   }
 
   async function uploadFile(file: File) {
-    if (file.size > 25 * 1024 * 1024) {
-      flash("Fichier trop volumineux (max 25 Mo)");
+    if (file.size > 500 * 1024 * 1024) {
+      flash("Fichier trop volumineux (max 500 Mo)");
       return;
     }
     setUploading(true);
@@ -1087,7 +1087,7 @@ export default function GroupDetailClient({
                       Dépose le fichier ici
                     </div>
                     <div style={{ fontSize: 12, opacity: 0.85, marginTop: 4 }}>
-                      Image · PDF · Audio · Vidéo · max 25 Mo
+                      Image · PDF · Audio · Vidéo · max 500 Mo
                     </div>
                   </div>
                 </div>
