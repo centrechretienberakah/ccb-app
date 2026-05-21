@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GROUPS_THEME as T, GROUPS_FONTS as F, getGroupCategoryDef, notifyGroupsStaff } from "@/lib/groups/theme";
+import { notifyGroupMention, notifyGroupMeeting } from "@/lib/groups/notify";
 import { getMentionedUserIds, renderSegments, type MemberLookup } from "@/lib/community/mentions";
 import MentionTextarea from "@/components/community/MentionTextarea";
 
@@ -39,6 +40,9 @@ interface Message {
   attachment_type?: "image" | "pdf" | "audio" | "video" | "other" | null;
   attachment_name?: string | null;
   attachment_size?: number | null;
+  is_pinned?: boolean;
+  pinned_at?: string | null;
+  pinned_by?: string | null;
   reactions?: Record<string, { count: number; mine: boolean }>;
 }
 
@@ -105,6 +109,7 @@ export default function GroupDetailClient({
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map()); // user_id → display_name
+  const [memberReadAt, setMemberReadAt] = useState<Map<string, string>>(new Map()); // user_id → last_read_at ISO
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -224,6 +229,49 @@ export default function GroupDetailClient({
     return () => { cancelled = true; document.removeEventListener("visibilitychange", onVisible); };
   }, [group.id, isMember, messages.length]);
 
+  // ─── Read receipts : fetch group_user_state pour calculer "lu par X" ──
+  // Polling léger toutes les 15s (Realtime sur group_user_state n'est pas
+  // activé par défaut côté Supabase). Si la table n'existe pas (migration
+  // v39 non exécutée), on retombe silencieusement sur une Map vide.
+  useEffect(() => {
+    if (!isMember || members.length <= 1) return;
+    const supabase = createClient();
+    let cancelled = false;
+    const memberIds = members.map((m) => m.user_id);
+
+    async function loadReadStates() {
+      try {
+        const { data } = await supabase
+          .from("group_user_state")
+          .select("user_id, last_read_at")
+          .eq("group_id", group.id)
+          .in("user_id", memberIds);
+        if (cancelled || !data) return;
+        const m = new Map<string, string>();
+        for (const r of data as Array<{ user_id: string; last_read_at: string }>) {
+          if (r.last_read_at) m.set(r.user_id, r.last_read_at);
+        }
+        setMemberReadAt(m);
+      } catch { /* migration v39 non exécutée */ }
+    }
+
+    loadReadStates();
+    const itv = setInterval(loadReadStates, 15000);
+    return () => { cancelled = true; clearInterval(itv); };
+  }, [group.id, isMember, members]);
+
+  /** Combien de membres ont lu ce message (excluant l'auteur). */
+  function readByCount(msg: Message): number {
+    if (memberReadAt.size === 0) return 0;
+    const msgT = new Date(msg.created_at).getTime();
+    let n = 0;
+    for (const [uid, lastReadAt] of memberReadAt) {
+      if (uid === msg.user_id) continue;
+      if (new Date(lastReadAt).getTime() >= msgT) n++;
+    }
+    return n;
+  }
+
   function emitTyping(isTyping: boolean) {
     const ch = presenceChannelRef.current;
     if (!ch) return;
@@ -284,6 +332,16 @@ export default function GroupDetailClient({
           } : null;
           return [...prev, { ...row, user_profiles: userProfile }];
         });
+      })
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "group_messages",
+        filter: `group_id=eq.${group.id}`,
+      }, (payload) => {
+        const row = payload.new as Omit<Message, "user_profiles">;
+        setMessages((prev) => prev.map((m) => m.id === row.id
+          ? { ...m, ...row, user_profiles: m.user_profiles }
+          : m
+        ));
       })
       .on("postgres_changes", {
         event: "DELETE", schema: "public", table: "group_messages",
@@ -369,28 +427,15 @@ export default function GroupDetailClient({
   }
 
   async function startMeeting() {
-    // Notif push aux autres membres (best-effort, n'échoue pas si KO)
-    const otherMembers = members.filter((m) => m.user_id !== currentUserId).map((m) => m.user_id);
-    if (otherMembers.length > 0) {
-      const author = currentUserProfile?.display_name || "Un membre";
-      try {
-        await fetch("/api/notifications/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: `🎥 ${author} démarre une réunion`,
-            body: `Rejoins « ${group.name} » maintenant`,
-            url: `/community/groups/${group.id}/meeting`,
-            audience: "user_ids",
-            userIds: otherMembers,
-          }),
-        });
-      } catch { /* noop */ }
-    }
-    // Notif staff
+    const author = currentUserProfile?.display_name || "Un membre";
+    // Notif push aux autres membres non mutés (best-effort)
+    void notifyGroupMeeting({
+      groupId: group.id, groupName: group.name,
+      authorName: author, excludeUserId: currentUserId,
+    });
     notifyGroupsStaff(
       `🎥 Réunion lancée : ${group.name}`,
-      `${currentUserProfile?.display_name || "Un membre"} démarre une réunion`,
+      `${author} démarre une réunion`,
       `/community/groups/${group.id}/meeting`,
     );
     router.push(`/community/groups/${group.id}/meeting`);
@@ -426,7 +471,7 @@ export default function GroupDetailClient({
     }
     const { data, error } = await supabase.from("group_messages")
       .insert(insertPayload)
-      .select("id, group_id, user_id, content, reply_to_id, created_at, edited_at, attachment_url, attachment_type, attachment_name, attachment_size")
+      .select("id, group_id, user_id, content, reply_to_id, created_at, edited_at, attachment_url, attachment_type, attachment_name, attachment_size, is_pinned, pinned_at, pinned_by")
       .single();
     if (error) { flash("Erreur : " + error.message); setSending(false); return; }
     const row = data as Omit<Message, "user_profiles">;
@@ -437,33 +482,74 @@ export default function GroupDetailClient({
     emitTyping(false);
     setSending(false);
 
-    // Notif staff sur premier message du groupe (seuil simple : count actuel == 0 avant)
+    const authorName = currentUserProfile?.display_name || "Un membre";
+    const snippet = t || (pendingAttachment ? `📎 ${pendingAttachment.name}` : "");
+
+    // Notif staff sur premier message du groupe
     if (messages.length === 0) {
       notifyGroupsStaff(
         `💬 Premier message dans : ${group.name}`,
-        t.slice(0, 120),
+        snippet.slice(0, 120),
         `/community/groups/${group.id}`,
       );
     }
 
-    // Notif mentions
-    const mentionedIds = getMentionedUserIds(t, memberLookup);
+    // Notif mention → uniquement aux mentionnés (ignore mute)
+    const mentionedIds = getMentionedUserIds(t, memberLookup)
+      .filter((uid) => uid !== currentUserId);
     if (mentionedIds.length > 0) {
-      const authorName = currentUserProfile?.display_name || "Un membre";
+      void notifyGroupMention({
+        groupId: group.id, groupName: group.name,
+        authorName, snippet,
+        mentionedUserIds: mentionedIds,
+      });
+    }
+
+    // Notif nouveau message → tous les membres non mutés, EXCEPT ceux déjà
+    // notifiés via mention (évite la double notification).
+    void (async () => {
       try {
+        const supabase = createClient();
+        const { data: gm } = await supabase
+          .from("group_members").select("user_id").eq("group_id", group.id);
+        const allIds = ((gm ?? []) as Array<{ user_id: string }>).map((m) => m.user_id);
+        const targets = allIds.filter((uid) => uid !== currentUserId && !mentionedIds.includes(uid));
+        if (targets.length === 0) return;
+
+        // Filtre mute
+        let mutedIds = new Set<string>();
+        try {
+          const { data: ms } = await supabase
+            .from("group_user_state")
+            .select("user_id, muted_until")
+            .eq("group_id", group.id)
+            .in("user_id", targets);
+          const nowMs = Date.now();
+          for (const row of (ms ?? []) as Array<{ user_id: string; muted_until: string | null }>) {
+            if (row.muted_until && new Date(row.muted_until).getTime() > nowMs) {
+              mutedIds.add(row.user_id);
+            }
+          }
+        } catch { /* table v39 non migrée */ }
+
+        const finalTargets = targets.filter((id) => !mutedIds.has(id));
+        if (finalTargets.length === 0) return;
+
+        // Réutilise le helper en construisant directement les userIds — on ne
+        // veut pas que notifyGroupMessage re-filtre les mentionnés.
         await fetch("/api/notifications/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: `🔔 ${authorName} t'a mentionné dans ${group.name}`,
-            body: t.slice(0, 140),
+            title: `💬 ${authorName} · ${group.name}`,
+            body: snippet.slice(0, 140) || "📎 Pièce jointe",
             url: `/community/groups/${group.id}`,
             audience: "user_ids",
-            userIds: mentionedIds.filter((uid) => uid !== currentUserId),
+            userIds: finalTargets,
           }),
         });
       } catch { /* noop */ }
-    }
+    })();
   }
 
   async function deleteMessage(messageId: string) {
@@ -474,8 +560,62 @@ export default function GroupDetailClient({
     setMessages((prev) => prev.filter((m) => m.id !== messageId));
   }
 
+  async function togglePin(msg: Message) {
+    if (!isGroupAdmin) { flash("Réservé aux admins du groupe."); return; }
+    const supabase = createClient();
+    const willPin = !msg.is_pinned;
+    // Optimistic update
+    setMessages((prev) => prev.map((m) => m.id === msg.id
+      ? { ...m, is_pinned: willPin, pinned_at: willPin ? new Date().toISOString() : null, pinned_by: willPin ? currentUserId : null }
+      : m
+    ));
+    const { data, error } = await supabase
+      .from("group_messages")
+      .update({
+        is_pinned: willPin,
+        pinned_at: willPin ? new Date().toISOString() : null,
+        pinned_by: willPin ? currentUserId : null,
+      })
+      .eq("id", msg.id)
+      .select("id, is_pinned, pinned_at, pinned_by");
+    if (error) {
+      flash("Erreur pin : " + error.message);
+      // Rollback
+      setMessages((prev) => prev.map((m) => m.id === msg.id
+        ? { ...m, is_pinned: msg.is_pinned, pinned_at: msg.pinned_at, pinned_by: msg.pinned_by }
+        : m
+      ));
+      return;
+    }
+    if (!data || data.length === 0) {
+      flash("Permission refusée. Vérifie que tu es admin du groupe.");
+      setMessages((prev) => prev.map((m) => m.id === msg.id
+        ? { ...m, is_pinned: msg.is_pinned, pinned_at: msg.pinned_at, pinned_by: msg.pinned_by }
+        : m
+      ));
+      return;
+    }
+    flash(willPin ? "📌 Message épinglé" : "Épinglage retiré");
+  }
+
   const canChat = isMember;
-  const canDelete = (msg: Message) => msg.user_id === currentUserId || myRole === "owner" || myRole === "admin";
+  const isGroupAdmin = myRole === "owner" || myRole === "admin";
+  const canDelete = (msg: Message) => msg.user_id === currentUserId || isGroupAdmin;
+  const pinnedMessages = useMemo(
+    () => messages.filter((m) => m.is_pinned).sort((a, b) =>
+      new Date(b.pinned_at || b.created_at).getTime() - new Date(a.pinned_at || a.created_at).getTime()
+    ),
+    [messages]
+  );
+
+  function scrollToMessage(messageId: string) {
+    const el = document.getElementById(`msg-${messageId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.style.transition = "background 800ms ease";
+    el.style.background = T.violetSoft;
+    setTimeout(() => { if (el) el.style.background = ""; }, 1400);
+  }
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body }}>
@@ -682,6 +822,16 @@ export default function GroupDetailClient({
               </div>
             )}
 
+            {/* Bandeau messages épinglés */}
+            {pinnedMessages.length > 0 && canChat && (
+              <PinnedBanner
+                pinned={pinnedMessages}
+                onClick={(id) => scrollToMessage(id)}
+                isGroupAdmin={isGroupAdmin}
+                onUnpin={(m) => togglePin(m)}
+              />
+            )}
+
             {/* Messages */}
             <div ref={scrollRef} style={{
               flex: 1, overflowY: "auto", padding: "14px",
@@ -701,9 +851,10 @@ export default function GroupDetailClient({
                     const isMine = m.user_id === currentUserId;
                     const replyParent = m.reply_to_id ? messages.find((mm) => mm.id === m.reply_to_id) : null;
                     return (
-                      <div key={m.id} style={{
+                      <div key={m.id} id={`msg-${m.id}`} style={{
                         display: "flex", gap: 8,
                         flexDirection: isMine ? "row-reverse" : "row",
+                        borderRadius: 8, padding: 2,
                       }}>
                         <Avatar profile={m.user_profiles} size={32} />
                         <div style={{
@@ -715,11 +866,19 @@ export default function GroupDetailClient({
                           <div style={{
                             fontSize: 11, fontWeight: 700, color: T.textMuted,
                             marginBottom: 3, padding: "0 4px",
+                            display: "flex", gap: 6, alignItems: "center",
+                            flexDirection: isMine ? "row-reverse" : "row",
                           }}>
-                            {isMine ? "Moi" : (m.user_profiles?.display_name || "Membre")}
-                            <span style={{ marginLeft: 6, fontWeight: 400, opacity: 0.7 }}>
-                              · {timeAgo(m.created_at)}
-                            </span>
+                            <span>{isMine ? "Moi" : (m.user_profiles?.display_name || "Membre")}</span>
+                            <span style={{ fontWeight: 400, opacity: 0.7 }}>· {timeAgo(m.created_at)}</span>
+                            {m.is_pinned && (
+                              <span style={{
+                                color: T.gold, fontWeight: 700,
+                                background: "rgba(212,175,55,0.12)",
+                                padding: "1px 6px", borderRadius: 4,
+                                fontSize: 9, letterSpacing: 0.4,
+                              }}>📌 ÉPINGLÉ</span>
+                            )}
                           </div>
 
                           {/* Reply preview */}
@@ -789,6 +948,31 @@ export default function GroupDetailClient({
                             </div>
                           )}
 
+                          {/* Read receipts sous mes messages */}
+                          {isMine && (() => {
+                            const total = Math.max(0, members.length - 1);
+                            if (total === 0) return null;
+                            const read = readByCount(m);
+                            const allRead = read >= total && total > 0;
+                            const someRead = read > 0;
+                            return (
+                              <div style={{
+                                marginTop: 2, padding: "0 4px",
+                                display: "flex", justifyContent: "flex-end",
+                                fontSize: 10.5, color: allRead ? T.violet : T.textMuted, fontWeight: 600,
+                                letterSpacing: 0.3,
+                              }}
+                                title={allRead
+                                  ? `Lu par tous (${read}/${total})`
+                                  : someRead
+                                    ? `Lu par ${read}/${total} membre${read > 1 ? "s" : ""}`
+                                    : "Envoyé"}
+                              >
+                                {allRead ? "✓✓ Lu par tous" : someRead ? `✓✓ ${read}/${total}` : "✓ Envoyé"}
+                              </div>
+                            );
+                          })()}
+
                           {/* Actions message (réagir, répondre, supprimer) */}
                           <div style={{
                             display: "flex", gap: 6, marginTop: 4,
@@ -807,6 +991,14 @@ export default function GroupDetailClient({
                             }}>
                               ↩
                             </button>
+                            {isGroupAdmin && (
+                              <button onClick={() => togglePin(m)} title={m.is_pinned ? "Désépingler" : "Épingler"} style={{
+                                background: "none", border: "none", cursor: "pointer",
+                                color: m.is_pinned ? T.gold : T.textMuted, fontSize: 11, padding: "0 4px",
+                              }}>
+                                {m.is_pinned ? "📌" : "📍"}
+                              </button>
+                            )}
                             {canDelete(m) && (
                               <button onClick={() => deleteMessage(m.id)} style={{
                                 background: "none", border: "none", cursor: "pointer",
@@ -1226,5 +1418,68 @@ function ContentWithMentions({ content, members }: { content: string; members: M
         return <span key={i}>{s.content}</span>;
       })}
     </>
+  );
+}
+
+// ─── Pinned banner ───────────────────────────────────────────────────
+function PinnedBanner({ pinned, onClick, isGroupAdmin, onUnpin }: {
+  pinned: Message[];
+  onClick: (id: string) => void;
+  isGroupAdmin: boolean;
+  onUnpin: (msg: Message) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const visibleCount = expanded ? pinned.length : 1;
+  return (
+    <div style={{
+      borderBottom: `1px solid ${T.border}`, background: "rgba(212,175,55,0.07)",
+      padding: "8px 14px",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: T.gold, fontWeight: 800, letterSpacing: 0.4, marginBottom: pinned.length > 0 ? 6 : 0 }}>
+        <span>📌 Épinglé{pinned.length > 1 ? "s" : ""} ({pinned.length})</span>
+        <span style={{ flex: 1 }} />
+        {pinned.length > 1 && (
+          <button onClick={() => setExpanded((v) => !v)} style={{
+            background: "transparent", border: "none", cursor: "pointer",
+            color: T.violet, fontWeight: 700, fontSize: 11,
+          }}>
+            {expanded ? "Réduire ▲" : "Tout voir ▼"}
+          </button>
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {pinned.slice(0, visibleCount).map((m) => {
+          const preview = (m.content || "").trim() || (m.attachment_url ? `📎 ${m.attachment_name || "Pièce jointe"}` : "");
+          const author = m.user_profiles?.display_name || "Membre";
+          return (
+            <div key={m.id} style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "6px 10px", background: T.card,
+              border: `1px solid ${T.borderSoft}`, borderRadius: 8,
+            }}>
+              <button onClick={() => onClick(m.id)} style={{
+                flex: 1, minWidth: 0, background: "none", border: "none",
+                cursor: "pointer", textAlign: "left",
+                color: T.text, fontFamily: F.body,
+              }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: T.violet, marginBottom: 1 }}>
+                  ↗ {author}
+                </div>
+                <div style={{
+                  fontSize: 12.5, color: T.textSoft,
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}>{preview || "Message épinglé"}</div>
+              </button>
+              {isGroupAdmin && (
+                <button onClick={() => onUnpin(m)} title="Désépingler" style={{
+                  background: "transparent", border: "none", cursor: "pointer",
+                  color: T.textMuted, fontSize: 13, padding: "2px 6px",
+                }}>×</button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
