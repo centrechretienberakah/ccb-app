@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconHome, IconUsers, IconBook, IconSun } from "@/components/icons";
+import { IconHome, IconUsers, IconBook, IconPlay } from "@/components/icons";
 
 const PRIMARY_ITEMS = [
-  { href: "/dashboard", label: "Accueil",    Icon: IconHome },
-  { href: "/bible",     label: "Ma Bible",   Icon: IconBook },
-  { href: "/devotion",  label: "Méditons",   Icon: IconSun },
-  { href: "/community", label: "Communauté", Icon: IconUsers },
+  { href: "/dashboard",   label: "Accueil",    Icon: IconHome },
+  { href: "/bible",       label: "Ma Bible",   Icon: IconBook },
+  { href: "/jesus-daily", label: "JDTV",       Icon: IconPlay },
+  { href: "/community",   label: "Communauté", Icon: IconUsers },
 ];
 
 export default function BottomNav() {
