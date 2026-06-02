@@ -145,6 +145,7 @@ export default function GroupDetailClient({
           .select("id, mode, started_at, active_count, is_active")
           .eq("group_id", group.id)
           .eq("is_active", true)
+          .gt("active_count", 0) // filet de sécurité : pas de bandeau si 0 participants actifs
           .order("started_at", { ascending: false })
           .limit(1);
         if (cancelled) return;

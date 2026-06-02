@@ -133,15 +133,30 @@ export async function POST(req: NextRequest) {
           .eq("user_id", participantIdentity)
           .is("left_at", null)
           .maybeSingle();
-        if (!part) break;
-        const p = part as { id: string; joined_at: string };
-        const totalSeconds = Math.floor(
-          (Date.now() - new Date(p.joined_at).getTime()) / 1000
-        );
-        await admin
+        if (part) {
+          const p = part as { id: string; joined_at: string };
+          const totalSeconds = Math.floor(
+            (Date.now() - new Date(p.joined_at).getTime()) / 1000
+          );
+          await admin
+            .from("meet_session_participants")
+            .update({ left_at: new Date().toISOString(), total_seconds: totalSeconds })
+            .eq("id", p.id);
+        }
+
+        // IMPORTANT : si plus aucun participant actif après ce leave,
+        // ferme immédiatement la session côté DB (n'attend pas que LiveKit
+        // envoie room_finished, ce qui peut prendre 5+ minutes après que la
+        // room soit vidée). Sans ça le bandeau "Appel en cours" reste collé
+        // alors qu'il n'y a plus personne.
+        const { count: remaining } = await admin
           .from("meet_session_participants")
-          .update({ left_at: new Date().toISOString(), total_seconds: totalSeconds })
-          .eq("id", p.id);
+          .select("id", { count: "exact", head: true })
+          .eq("session_id", sid)
+          .is("left_at", null);
+        if ((remaining ?? 0) === 0) {
+          await admin.rpc("meet_session_end", { p_session_id: sid });
+        }
         break;
       }
 
