@@ -136,7 +136,10 @@ export default function LoginPage() {
       <div className="auth-panel-right">
         <div className="auth-form-container">
           <div className="auth-form-header">
-            <div className="auth-form-logo-mobile">&#10013;</div>
+            <div className="auth-form-logo-mobile">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
+            </div>
             <h1 className="auth-form-title">Bon retour !</h1>
             <p className="auth-form-subtitle">Connectez-vous a votre espace CCB</p>
           </div>
