@@ -116,29 +116,75 @@ export default function DevotionClient({
   }, [active.id, userId]);
 
   const [likeError, setLikeError] = useState<string | null>(null);
+  const [ensuring, setEnsuring] = useState(false);
+
+  // Garantit que la méditation active a un ID réel en base. Si elle vient
+  // du fallback statique (id null), on l'enregistre via /api/devotion/ensure
+  // et on met à jour le state local avec le vrai UUID. Renvoie l'id ou null.
+  async function ensureDevotionId(): Promise<string | null> {
+    if (active.id) return active.id;
+    setEnsuring(true);
+    try {
+      const res = await fetch("/api/devotion/ensure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: active.date,
+          title: active.title,
+          verse_ref: active.verse_ref,
+          verse_text: active.verse_text,
+          content: active.content,
+          application: active.application,
+          prayer: active.prayer,
+          declaration: active.declaration,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.id) return null;
+      // Met à jour le state local avec le vrai UUID
+      setActive((prev) => ({ ...prev, id: data.id as string }));
+      return data.id as string;
+    } catch {
+      return null;
+    } finally {
+      setEnsuring(false);
+    }
+  }
 
   async function toggleLike() {
     if (!userId) { window.location.href = "/auth/login?redirect=/devotion"; return; }
-    if (!active.id) { setLikeError("Cette méditation n'est pas encore enregistrée en base."); return; }
-    const sb = createClient();
     setLikeError(null);
+    // Si la méditation n'a pas d'ID réel (fallback statique), on l'enregistre
+    // d'abord en base via l'API, puis on continue.
+    let devotionId = active.id;
+    if (!devotionId) {
+      devotionId = await ensureDevotionId();
+      if (!devotionId) {
+        setLikeError("Impossible d'enregistrer la méditation pour le moment. Réessaie dans un instant.");
+        setTimeout(() => setLikeError(null), 4000);
+        return;
+      }
+    }
+    const sb = createClient();
     // Optimistic update
     const prevLiked = userLiked;
     const prevCount = likeCount;
     if (userLiked) {
       setUserLiked(false); setLikeCount((c) => Math.max(0, c - 1));
-      const { error } = await sb.from("devotion_likes").delete().eq("devotion_id", active.id).eq("user_id", userId);
+      const { error } = await sb.from("devotion_likes").delete().eq("devotion_id", devotionId).eq("user_id", userId);
       if (error) {
         // Rollback
         setUserLiked(prevLiked); setLikeCount(prevCount);
         setLikeError("Impossible de retirer le j'aime. Vérifiez que la table devotion_likes existe.");
+        setTimeout(() => setLikeError(null), 4000);
       }
     } else {
       setUserLiked(true); setLikeCount((c) => c + 1);
-      const { error } = await sb.from("devotion_likes").insert({ devotion_id: active.id, user_id: userId });
+      const { error } = await sb.from("devotion_likes").insert({ devotion_id: devotionId, user_id: userId });
       if (error) {
         setUserLiked(prevLiked); setLikeCount(prevCount);
         setLikeError("Impossible de liker. La table devotion_likes n'existe pas encore en base.");
+        setTimeout(() => setLikeError(null), 4000);
       } else {
         // Notifie le staff
         notifyAdmins(
@@ -147,7 +193,6 @@ export default function DevotionClient({
         );
       }
     }
-    if (likeError) setTimeout(() => setLikeError(null), 4000);
   }
 
   async function loadComments() {
@@ -229,12 +274,23 @@ export default function DevotionClient({
 
   async function submitComment() {
     if (!userId) { window.location.href = "/auth/login?redirect=/devotion"; return; }
-    if (!active.id || commentText.trim().length < 2) return;
+    if (commentText.trim().length < 2) return;
     setPostingComment(true);
     setCommentError(null);
+    // Garantit un ID réel (enregistre la méditation si fallback statique)
+    let devotionId = active.id;
+    if (!devotionId) {
+      devotionId = await ensureDevotionId();
+      if (!devotionId) {
+        setCommentError("Impossible d'enregistrer la méditation pour le moment. Réessaie dans un instant.");
+        setTimeout(() => setCommentError(null), 4000);
+        setPostingComment(false);
+        return;
+      }
+    }
     const sb = createClient();
     const { error } = await sb.from("devotion_comments")
-      .insert({ devotion_id: active.id, user_id: userId, content: commentText.trim() });
+      .insert({ devotion_id: devotionId, user_id: userId, content: commentText.trim() });
     if (!error) {
       const text = commentText.trim();
       setCommentText("");
@@ -519,17 +575,19 @@ export default function DevotionClient({
       <div style={{ display: "flex", gap: 8, marginBottom: 32 }}>
         <button
           onClick={toggleLike}
+          disabled={ensuring}
           style={{
             flex: 1,
             background: userLiked ? "rgba(248,113,113,0.15)" : "var(--card-bg)",
             border: `1px solid ${userLiked ? "rgba(248,113,113,0.4)" : "var(--border)"}`,
             borderRadius: 9999, padding: "10px 14px",
-            fontWeight: 700, fontSize: 13, cursor: "pointer",
+            fontWeight: 700, fontSize: 13, cursor: ensuring ? "wait" : "pointer",
             color: userLiked ? "#fca5a5" : "var(--text-primary)",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            opacity: ensuring ? 0.6 : 1,
           }}
         >
-          {userLiked ? "❤️" : "🤍"} {likeCount}
+          {ensuring ? "⏳" : (userLiked ? "❤️" : "🤍")} {likeCount}
         </button>
         <button
           onClick={openComments}
