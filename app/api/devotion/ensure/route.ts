@@ -96,9 +96,10 @@ export async function POST(req: NextRequest) {
   //    dynamiquement toute colonne que PostgREST signale comme inexistante
   //    (erreur PGRST204 "Could not find the 'X' column"). Ça absorbe
   //    n'importe quelle variation de schéma entre environnements.
+  // NB : on N'inclut PAS `date` (souvent colonne GENERATED ALWAYS, alias de
+  // devotion_date → insérer une valeur dedans est une erreur Postgres).
   const payload: Record<string, unknown> = {
     devotion_date: date,
-    date: date, // certains schémas utilisent `date` au lieu de devotion_date
     title: body.title,
     verse_reference: body.verse_ref || "",
     verse_ref: body.verse_ref || "", // alias possible
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest) {
   const attempts: string[] = [];
   let lastErr = "";
 
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 14; i++) {
     const ins = await admin.from("devotions").insert(payload).select("id").single();
     if (!ins.error && ins.data?.id) {
       return NextResponse.json({ id: ins.data.id, created: true });
@@ -130,6 +131,17 @@ export async function POST(req: NextRequest) {
       ?? lastErr.match(/'([a-z_]+)' column/i);
     if (colMatch && colMatch[1] && colMatch[1] in payload) {
       delete payload[colMatch[1]];
+      continue;
+    }
+
+    // a-bis) Colonne GENERATED ALWAYS (ex: `date`) → on l'enlève
+    //    Message : 'cannot insert a non-DEFAULT value into column "date"'
+    //    ou 'column "date" can only be updated to DEFAULT'
+    const genMatch = lastErr.match(/column "([^"]+)" can only be updated to DEFAULT/i)
+      ?? lastErr.match(/non-DEFAULT value into column "([^"]+)"/i)
+      ?? lastErr.match(/generated column "([^"]+)"/i);
+    if (genMatch && genMatch[1] && genMatch[1] in payload) {
+      delete payload[genMatch[1]];
       continue;
     }
 

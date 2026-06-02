@@ -144,10 +144,16 @@ export default function DevotionClient({
       });
       const data = await res.json().catch(() => ({}));
       if (typeof window !== "undefined") {
-        console.log("[CCB devotion] /api/devotion/ensure →", res.status, data);
+        // JSON.stringify pour que l'objet soit lisible directement dans la
+        // console (sinon affiché replié comme "Object")
+        console.log("[CCB devotion] ensure →", res.status, JSON.stringify(data));
       }
       if (!res.ok || !data.id) {
-        ensureErrRef.current = (data && data.error) ? String(data.error) : `HTTP ${res.status}`;
+        const base = (data && data.error) ? String(data.error) : `HTTP ${res.status}`;
+        const att = (data && Array.isArray(data.attempts) && data.attempts.length)
+          ? " — détails: " + data.attempts.join(" | ")
+          : "";
+        ensureErrRef.current = base + att;
         return null;
       }
       // Met à jour le state local avec le vrai UUID
