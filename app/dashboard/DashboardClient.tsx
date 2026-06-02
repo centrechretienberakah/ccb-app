@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { IconCalendar, IconZap } from "@/components/icons";
+import { IconCalendar } from "@/components/icons";
 import DevotionHomeCard from "./DevotionHomeCard";
 import type { UnifiedDevotion } from "@/lib/devotion/fetch";
 
@@ -103,7 +103,7 @@ export default function DashboardClient({ displayName, avatarUrl, devotion, devo
       </div>
 
       {/* Upcoming events */}
-      <div className="dashboard-section">
+      <div className="dashboard-section" style={{ paddingBottom: 32 }}>
         <div className="dashboard-section-header">
           <h3 className="dashboard-section-title">A venir</h3>
           <Link href="/events" className="dashboard-see-all">Voir tout</Link>
@@ -124,18 +124,6 @@ export default function DashboardClient({ displayName, avatarUrl, devotion, devo
               </div>
             </Link>
           ))}
-        </div>
-      </div>
-
-      {/* CTA Banner */}
-      <div className="dashboard-section" style={{ paddingBottom: 32 }}>
-        <div className="dashboard-cta-banner">
-          <IconZap size={20} />
-          <div>
-            <div className="dashboard-cta-title">Pret pour la Parole ?</div>
-            <div className="dashboard-cta-sub">Commence ta méditation du jour</div>
-          </div>
-          <Link href="/devotion" className="dashboard-cta-btn">Commencer</Link>
         </div>
       </div>
 
