@@ -502,7 +502,7 @@ function Visionnaire() {
             {imgOk ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src="/rev-elvis.jpg"
+                src="/rev-elvis-v2.jpg"
                 alt="Rév. Elvis NGUIFFO — Visionnaire du Centre Chrétien Berakah"
                 className="ccb-vision-img"
                 onError={() => setImgOk(false)}
