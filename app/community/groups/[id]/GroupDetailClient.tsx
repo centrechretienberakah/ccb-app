@@ -140,6 +140,11 @@ export default function GroupDetailClient({
     async function fetchActive() {
       try {
         const supabase = createClient();
+        // Avant de lire l'état actif, on déclenche un cleanup côté serveur
+        // pour fermer les sessions zombies (0 participants actifs ou > 1h).
+        // Ne bloque pas si RPC indisponible (v49 pas encore migrée).
+        try { await supabase.rpc("meet_session_close_stale"); } catch { /* noop */ }
+
         const { data } = await supabase
           .from("meet_sessions_with_stats")
           .select("id, mode, started_at, active_count, is_active")
