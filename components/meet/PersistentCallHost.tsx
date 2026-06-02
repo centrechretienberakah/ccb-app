@@ -69,12 +69,14 @@ export default function PersistentCallHost() {
   );
 }
 
-// ─── Tracking session DB (join/leave) ─────────────────────────────────
+// ─── Tracking session DB (join/leave + heartbeat) ─────────────────────
 function SessionTracker({ groupId, mode }: { groupId: string; mode: "audio" | "video" }) {
   const sessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
     async function rec() {
       try {
         const supabase = createClient();
@@ -83,12 +85,26 @@ function SessionTracker({ groupId, mode }: { groupId: string; mode: "audio" | "v
         });
         if (!cancelled && typeof data === "string") {
           sessionIdRef.current = data;
+          // Démarre le heartbeat : refresh last_seen_at toutes les 30s
+          // → la vue meet_sessions_with_stats considère un participant
+          //   inactif si last_seen_at > 90s (cf SQL v50). Avec un heartbeat
+          //   à 30s on a 3 chances de rafraîchir avant timeout.
+          // Si la RPC heartbeat n'existe pas (v50 pas migrée), silent ignore.
+          heartbeatTimer = setInterval(() => {
+            const sid = sessionIdRef.current;
+            if (!sid) return;
+            try {
+              const sb = createClient();
+              void sb.rpc("meet_session_heartbeat", { p_session_id: sid });
+            } catch { /* noop */ }
+          }, 30_000);
         }
       } catch { /* noop */ }
     }
     void rec();
     return () => {
       cancelled = true;
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       const sid = sessionIdRef.current;
       if (!sid) return;
       try {
