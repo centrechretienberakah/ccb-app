@@ -508,60 +508,72 @@ function CcbBrandingStyles({ isAudio }: { isAudio: boolean }) {
       }
 
       /* ─── ccb-meet-grid : grille dense personnalisée ─────────────── */
-      /* On utilise TrackLoop (pas GridLayout) qui ne pagine pas et rend
-         simplement chaque ParticipantTile en enfant direct du container.
-         Le container .ccb-meet-grid est une vraie grille CSS que NOUS
-         contrôlons 100% — pas d'interférence avec la logique interne
-         de LiveKit. */
+      /* CLEF : grid-auto-rows: auto (PAS 1fr) → les rangs prennent juste
+         l'aspect-ratio des tuiles, ne s'étirent pas pour remplir la hauteur.
+         Avec 3 tuiles dans 4 colonnes, on a 3 carrés en haut, pas 3 longues
+         barres pleine hauteur. */
       .ccb-meet-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        grid-auto-rows: minmax(110px, 1fr);
         gap: 6px;
         padding: 6px;
-        height: 100%;
         width: 100%;
-        align-content: start;
         box-sizing: border-box;
+        align-content: start;
+        /* Mobile-first : 2 colonnes par défaut */
+        grid-template-columns: repeat(2, 1fr);
       }
+      /* Chaque tile = carré 1:1 (joli pour avatars audio + vidéos 4:3) */
       .ccb-meet-grid > .lk-participant-tile,
       .ccb-meet-grid .lk-participant-tile {
         min-height: 0 !important;
         min-width: 0 !important;
         width: 100% !important;
-        height: 100% !important;
-        aspect-ratio: auto !important;
+        height: auto !important;
+        aspect-ratio: 1 / 1 !important;
         border-radius: 12px !important;
         overflow: hidden !important;
       }
-      /* Tablette (641-1023px) : 5 colonnes → 15-20 tuiles visibles */
-      @media (min-width: 641px) and (max-width: 1023px) {
+      /* Petit mobile (≤380px) : 3 colonnes serrées */
+      @media (max-width: 380px) {
         .ccb-meet-grid {
-          grid-template-columns: repeat(5, 1fr);
-          grid-auto-rows: minmax(110px, 1fr);
-        }
-      }
-      /* Mobile (≤640px) : 4 colonnes × 3 rangs visibles = 12 tuiles */
-      @media (max-width: 640px) {
-        .ccb-meet-grid {
-          grid-template-columns: repeat(4, 1fr);
-          grid-auto-rows: minmax(80px, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 3px;
           padding: 3px;
         }
       }
-      /* Petit mobile (≤380px) : 4 colonnes plus compactes */
-      @media (max-width: 380px) {
+      /* Mobile classique (381-640px) : 3 colonnes */
+      @media (min-width: 381px) and (max-width: 640px) {
+        .ccb-meet-grid {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 4px;
+          padding: 4px;
+        }
+      }
+      /* Tablette (641-1023px) : 4 colonnes */
+      @media (min-width: 641px) and (max-width: 1023px) {
         .ccb-meet-grid {
           grid-template-columns: repeat(4, 1fr);
-          grid-auto-rows: minmax(72px, 1fr);
-          gap: 2px;
-          padding: 2px;
+          gap: 6px;
+        }
+      }
+      /* Desktop (≥1024px) : 5 colonnes */
+      @media (min-width: 1024px) {
+        .ccb-meet-grid {
+          grid-template-columns: repeat(5, 1fr);
+          gap: 8px;
         }
       }
       /* Placeholder (avatar quand pas de vidéo) — taille adaptative */
       .ccb-meet-grid .lk-participant-placeholder {
-        font-size: clamp(20px, 5vw, 48px) !important;
+        font-size: clamp(24px, 8vw, 56px) !important;
+      }
+      /* Empêche le nom de wrapper en lettres verticales */
+      .ccb-meet-grid .lk-participant-name {
+        font-size: clamp(10px, 2.5vw, 13px) !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: calc(100% - 8px) !important;
       }
       /* Control bar : toujours en bas, sticky */
       [data-lk-theme="ccb"] .lk-control-bar {

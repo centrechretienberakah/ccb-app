@@ -11,6 +11,9 @@ import { useHeartbeat } from "@/lib/presence";
 function shouldShowShell(pathname: string): boolean {
   if (pathname === "/") return false;
   if (pathname.startsWith("/auth")) return false;
+  // Meeting room actif (LiveKit) : doit prendre tout l'écran sans TopBar/BottomNav.
+  // Match exactement /community/groups/<id>/meeting (pas /meeting/scheduled ni /meeting/history)
+  if (/^\/community\/groups\/[^/]+\/meeting$/.test(pathname)) return false;
   return true;
 }
 
