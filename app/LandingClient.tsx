@@ -109,14 +109,15 @@ function Hero() {
 
         <Reveal delay={180}>
           <h1 className="ccb-hero-title">
-            Centre Chrétien<br /><span className="ccb-grad">Berakah</span>
+            <span className="ccb-title-main">Centre Chrétien</span>{" "}
+            <span className="ccb-grad ccb-title-accent">Berakah</span>
           </h1>
         </Reveal>
 
         <Reveal delay={260}>
           <p className="ccb-hero-tagline">
-            Former des disciples. Transformer des vies.<br />
-            <span className="ccb-gold-text">Manifester la bénédiction.</span>
+            <span className="ccb-tag-1">Former des disciples. Transformer des vies.</span>
+            <span className="ccb-gold-text ccb-tag-2">Manifester la bénédiction.</span>
           </p>
         </Reveal>
 
@@ -792,10 +793,17 @@ function LandingStyles() {
         background:color-mix(in srgb,var(--v) 8%,transparent);padding:8px 18px;border-radius:999px;
         border:1px solid color-mix(in srgb,var(--v) 22%,transparent);}
       [data-theme="dark"] .ccb-pill{color:#c4a7f5;}
+      /* TITRE — 1 ligne par défaut (desktop + tablette), nowrap auto-fit */
       .ccb-hero-title{font-family:'Cinzel',serif;font-weight:900;margin:4px 0 0;
-        font-size:clamp(2.6rem,9vw,5rem);line-height:1.02;letter-spacing:0.04em;color:var(--text);text-transform:uppercase;}
-      .ccb-hero-tagline{font-family:'Cinzel',serif;font-weight:600;font-size:clamp(1rem,3vw,1.5rem);
-        line-height:1.4;color:var(--text);margin:6px 0 0;}
+        font-size:clamp(1.9rem,5.6vw,3.6rem);line-height:1.04;letter-spacing:0.04em;
+        color:var(--text);text-transform:uppercase;white-space:nowrap;}
+      .ccb-title-main{color:var(--text);}
+      .ccb-title-accent{display:inline;}
+      /* TAGLINE — flex colonne ; 1er segment toujours sur une ligne */
+      .ccb-hero-tagline{font-family:'Cinzel',serif;font-weight:600;line-height:1.45;
+        color:var(--text);margin:6px 0 0;display:flex;flex-direction:column;align-items:center;gap:2px;}
+      .ccb-tag-1{white-space:nowrap;font-size:clamp(0.72rem,3.2vw,1.42rem);}
+      .ccb-tag-2{font-size:clamp(0.9rem,2.9vw,1.4rem);}
       .ccb-hero-sub{font-size:clamp(0.92rem,2.2vw,1.06rem);line-height:1.7;color:var(--text-soft);
         max-width:600px;margin:6px 0 4px;}
       .ccb-hero-cta{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
@@ -1027,14 +1035,21 @@ function LandingStyles() {
         .ccb-footer-bottom{flex-direction:column;align-items:flex-start;gap:12px;}
       }
 
+      /* ---- TITRE EN 2 LIGNES SUR MOBILE (≤ 600px) ---- */
+      /* Desktop + tablette : "Centre Chrétien Berakah" sur une seule ligne.
+         Mobile : "Centre Chrétien" (ligne 1) + "Berakah" (ligne 2). */
+      @media(max-width:600px){
+        .ccb-hero-title{white-space:normal;font-size:clamp(2.4rem,12vw,3.4rem);line-height:1.06;}
+        .ccb-title-main{display:block;font-size:0.56em;letter-spacing:0.1em;margin-bottom:2px;}
+        .ccb-title-accent{display:block;}
+      }
+
       /* ---- PETIT MOBILE (≤ 430px) ---- */
       @media(max-width:430px){
         .ccb-container{padding:0 16px;}
         .ccb-section{padding:42px 0;}
         .ccb-h2{font-size:1.42rem;line-height:1.22;}
         .ccb-lead{font-size:0.96rem;}
-        .ccb-hero-title{font-size:clamp(2.1rem,12vw,3rem);}
-        .ccb-hero-tagline{font-size:1.02rem;}
         .ccb-hero-sub{font-size:0.92rem;}
         .ccb-pill{font-size:9.5px;letter-spacing:0.2em;padding:7px 14px;}
         /* compteurs + stats en 2 colonnes serrées */
