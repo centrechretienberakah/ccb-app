@@ -151,6 +151,9 @@ export default function GroupDetailClient({
           .eq("group_id", group.id)
           .eq("is_active", true)
           .gt("active_count", 0) // filet de sécurité : pas de bandeau si 0 participants actifs
+          // Sécurité finale : ne JAMAIS afficher de bandeau pour une session
+          // démarrée il y a > 1 semaine (probable zombie restée trop longtemps)
+          .gte("started_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
           .order("started_at", { ascending: false })
           .limit(1);
         if (cancelled) return;
