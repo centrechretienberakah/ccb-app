@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isModerator } from "@/lib/rbac";
@@ -33,7 +33,21 @@ const ALL_ITEMS = [
 
 export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      const sb = createClient();
+      await sb.auth.signOut();
+    } catch { /* on déconnecte quand même côté navigation */ }
+    onLinkClick?.(); // ferme le drawer mobile
+    router.push("/");
+    router.refresh();
+  }
 
   useEffect(() => {
     const sb = createClient();
@@ -111,9 +125,11 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
           <IconSettings size={16} />
           <span>Paramètres</span>
         </Link>
-        <button className="sidebar-footer-link sidebar-footer-btn">
+        <button className="sidebar-footer-link sidebar-footer-btn"
+          onClick={handleSignOut} disabled={signingOut}
+          style={{ cursor: signingOut ? "wait" : "pointer", opacity: signingOut ? 0.6 : 1 }}>
           <IconLogOut size={16} />
-          <span>Déconnexion</span>
+          <span>{signingOut ? "Déconnexion…" : "Déconnexion"}</span>
         </button>
       </div>
     </aside>
