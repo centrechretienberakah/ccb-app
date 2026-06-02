@@ -92,7 +92,32 @@ export const STATIC_DEVOTIONS: Devotion[] = [
   },
 ];
 
+// ─── Helpers fuseau Europe/Paris ─────────────────────────────────────
+// La méditation du jour bascule à 00:00 heure de Paris (et non en UTC).
+// On utilise Intl pour obtenir la date/jour à Paris quel que soit le
+// fuseau du serveur (Vercel tourne en UTC).
+
+/** Date du jour au format YYYY-MM-DD en fuseau Europe/Paris. */
+export function getParisDateString(d: Date = new Date()): string {
+  // "en-CA" formate en YYYY-MM-DD
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(d);
+}
+
+/** Jour de la semaine (0=dimanche … 6=samedi) en fuseau Europe/Paris. */
+export function getParisDayIndex(d: Date = new Date()): number {
+  const wd = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Paris", weekday: "short",
+  }).format(d);
+  const map: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  return map[wd] ?? 0;
+}
+
 export function getDailyDevotion(): Devotion {
-  const dayIndex = new Date().getDay(); // 0 = dimanche
+  const dayIndex = getParisDayIndex(); // bascule à 00:00 Paris
   return STATIC_DEVOTIONS[dayIndex];
 }

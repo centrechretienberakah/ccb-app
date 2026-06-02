@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { getParisDateString } from "@/app/devotion/devotions-data";
+import { ensureDevotionInDb } from "@/lib/devotion/ensure";
 
 export const runtime = "nodejs";
 
@@ -64,114 +66,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Body JSON invalide" }, { status: 400 });
   }
 
-  const date = (body.date || new Date().toISOString().split("T")[0]).trim();
+  const date = (body.date || getParisDateString()).trim();
   if (!body.title || !body.verse_text) {
     return NextResponse.json({ error: "title et verse_text requis" }, { status: 400 });
   }
 
-  // 1) Existe déjà ? (par devotion_date puis date)
-  try {
-    const { data: existing } = await admin
-      .from("devotions")
-      .select("id")
-      .eq("devotion_date", date)
-      .maybeSingle();
-    if (existing?.id) {
-      return NextResponse.json({ id: existing.id, created: false });
-    }
-  } catch { /* la colonne devotion_date peut ne pas exister → on tente date */ }
-
-  try {
-    const { data: existing2 } = await admin
-      .from("devotions")
-      .select("id")
-      .eq("date", date)
-      .maybeSingle();
-    if (existing2?.id) {
-      return NextResponse.json({ id: existing2.id, created: false });
-    }
-  } catch { /* noop */ }
-
-  // 2) Insert ADAPTATIF : on part d'un payload complet et on retire
-  //    dynamiquement toute colonne que PostgREST signale comme inexistante
-  //    (erreur PGRST204 "Could not find the 'X' column"). Ça absorbe
-  //    n'importe quelle variation de schéma entre environnements.
-  // NB : on N'inclut PAS `date` (souvent colonne GENERATED ALWAYS, alias de
-  // devotion_date → insérer une valeur dedans est une erreur Postgres).
-  const payload: Record<string, unknown> = {
-    devotion_date: date,
+  const result = await ensureDevotionInDb(admin, {
+    date,
     title: body.title,
-    verse_reference: body.verse_ref || "",
-    verse_ref: body.verse_ref || "", // alias possible
+    verse_ref: body.verse_ref,
     verse_text: body.verse_text,
-    meditation_p1: body.content || "",
-    reflection_question: body.application || null,
-    application: body.application || null, // alias possible
-    prayer: body.prayer || "",
-    declaration: body.declaration || "",
-    content: body.content || "",
-    author: body.author || "Rév. Elvis NGUIFFO",
-  };
+    content: body.content,
+    application: body.application,
+    prayer: body.prayer,
+    declaration: body.declaration,
+    author: body.author,
+  });
 
-  const attempts: string[] = [];
-  let lastErr = "";
-
-  for (let i = 0; i < 14; i++) {
-    const ins = await admin.from("devotions").insert(payload).select("id").single();
-    if (!ins.error && ins.data?.id) {
-      return NextResponse.json({ id: ins.data.id, created: true });
-    }
-    lastErr = ins.error?.message ?? "unknown";
-    attempts.push(lastErr);
-
-    // a) Colonne inexistante → on l'enlève du payload et on réessaie
-    //    Message PostgREST : "Could not find the 'content' column of 'devotions' ..."
-    const colMatch = lastErr.match(/Could not find the '([^']+)' column/i)
-      ?? lastErr.match(/column "([^"]+)" of relation/i)
-      ?? lastErr.match(/'([a-z_]+)' column/i);
-    if (colMatch && colMatch[1] && colMatch[1] in payload) {
-      delete payload[colMatch[1]];
-      continue;
-    }
-
-    // a-bis) Colonne GENERATED ALWAYS (ex: `date`) → on l'enlève
-    //    Message : 'cannot insert a non-DEFAULT value into column "date"'
-    //    ou 'column "date" can only be updated to DEFAULT'
-    const genMatch = lastErr.match(/column "([^"]+)" can only be updated to DEFAULT/i)
-      ?? lastErr.match(/non-DEFAULT value into column "([^"]+)"/i)
-      ?? lastErr.match(/generated column "([^"]+)"/i);
-    if (genMatch && genMatch[1] && genMatch[1] in payload) {
-      delete payload[genMatch[1]];
-      continue;
-    }
-
-    // b) Contrainte NOT NULL sur une colonne qu'on n'envoie pas → on tente
-    //    de la remplir avec une valeur par défaut
-    const nullMatch = lastErr.match(/null value in column "([^"]+)"/i);
-    if (nullMatch && nullMatch[1] && !(nullMatch[1] in payload)) {
-      payload[nullMatch[1]] = body.content || body.title || "—";
-      continue;
-    }
-
-    // c) Course : un insert simultané a déjà créé la ligne → relis
-    if (/duplicate key|unique/i.test(lastErr)) {
-      const { data: raced } = await admin
-        .from("devotions").select("id").eq("devotion_date", date).maybeSingle();
-      if (raced?.id) return NextResponse.json({ id: raced.id, created: false });
-      const { data: raced2 } = await admin
-        .from("devotions").select("id").eq("date", date).maybeSingle();
-      if (raced2?.id) return NextResponse.json({ id: raced2.id, created: false });
-    }
-
-    // d) Erreur non gérée → on arrête la boucle
-    break;
+  if (result.id) {
+    return NextResponse.json({ id: result.id, created: result.created });
   }
 
-  console.error("[devotion/ensure] échec après tentatives:", attempts);
+  console.error("[devotion/ensure] échec:", result.attempts);
   return NextResponse.json(
     {
-      error: "Impossible d'enregistrer la méditation : " + lastErr,
-      attempts, // détail de chaque tentative pour diagnostic
+      error: "Impossible d'enregistrer la méditation : " + (result.error ?? "inconnu"),
+      attempts: result.attempts,
     },
     { status: 500 },
   );

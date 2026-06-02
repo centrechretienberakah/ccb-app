@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import DevotionClient from "./DevotionClient";
-import { getDailyDevotion } from "./devotions-data";
+import { getDailyDevotion, getParisDateString } from "./devotions-data";
 
 // Admin client (service_role) pour auto-insert si absent. Utilisé en lecture
 // seule pour bootstrap la méditation du jour.
@@ -70,7 +70,8 @@ export default async function DevotionPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const today = new Date().toISOString().split("T")[0];
+  // Date du jour en fuseau Europe/Paris → la méditation bascule à 00:00 Paris
+  const today = getParisDateString();
 
   // Today's devotion : tente DB sur `date` puis `devotion_date`
   let todayDevotion: UnifiedDevotion | null = null;
