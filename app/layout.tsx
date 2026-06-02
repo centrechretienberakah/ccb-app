@@ -4,6 +4,8 @@ import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 import RegisterSW from "@/components/pwa/RegisterSW";
 import BuildCheck from "@/components/pwa/BuildCheck";
+import { CallProvider } from "@/lib/meet/CallContext";
+import PersistentCallHost from "@/components/meet/PersistentCallHost";
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
@@ -80,7 +82,13 @@ export default function RootLayout({
       </head>
       <body className="min-h-full bg-background text-foreground antialiased">
         <BuildCheck />
-        <AppShell>{children}</AppShell>
+        <CallProvider>
+          <AppShell>{children}</AppShell>
+          {/* Reste mounté sur TOUTES les pages pendant un appel actif :
+              full screen quand on est sur /meeting, mini-player ailleurs.
+              Pas de déconnexion en navigant. */}
+          <PersistentCallHost />
+        </CallProvider>
         <RegisterSW />
       </body>
     </html>
