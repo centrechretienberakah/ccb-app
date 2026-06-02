@@ -17,10 +17,12 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   ParticipantTile,
-  ControlBar,
   TrackLoop,
+  TrackToggle,
+  DisconnectButton,
   useTracks,
   useRoomContext,
+  useLocalParticipant,
 } from "@livekit/components-react";
 import { Track, ConnectionState } from "livekit-client";
 import { useCall } from "@/lib/meet/CallContext";
@@ -159,23 +161,88 @@ function FullStage({ isAudio }: { isAudio: boolean }) {
         </TrackLoop>
       </div>
 
-      {/* Control bar */}
-      <div style={{ flexShrink: 0 }}>
-        <ControlBar
-          variation="minimal"
-          controls={{
-            camera: !isAudio,
-            screenShare: !isAudio,
-            microphone: true,
-            chat: false,
-            leave: true,
-          }}
-        />
-      </div>
+      {/* Control bar custom — boutons explicites, visibles sur tous les
+          écrans (safe-area iOS / Android prise en compte) */}
+      <CustomControlBar isAudio={isAudio} onLeave={handleLeave} />
+    </div>
+  );
+}
 
-      {/* Note : handleLeave est appelé via onDisconnected qd l'user
-          clique sur le bouton "Leave" rouge du ControlBar */}
-      <span style={{ display: "none" }} aria-hidden onClick={handleLeave} />
+// ─── Control bar custom : mic / camera / leave avec safe-area mobile
+function CustomControlBar({ isAudio, onLeave }: { isAudio: boolean; onLeave: () => void }) {
+  const { isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
+  return (
+    <div style={{
+      flexShrink: 0,
+      background: "rgba(15,10,31,0.96)",
+      borderTop: "1px solid rgba(255,255,255,0.08)",
+      padding: "12px 16px",
+      paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 14,
+      zIndex: 1,
+    }}>
+      {/* Micro toggle */}
+      <TrackToggle
+        source={Track.Source.Microphone}
+        showIcon
+        style={{
+          width: 56, height: 56, borderRadius: 999,
+          background: isMicrophoneEnabled ? "rgba(255,255,255,0.10)" : "#DC2626",
+          color: "#fff", border: "none", cursor: "pointer",
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        {isMicrophoneEnabled ? "🎤" : "🔇"}
+      </TrackToggle>
+
+      {/* Camera toggle — seulement en vidéo */}
+      {!isAudio && (
+        <TrackToggle
+          source={Track.Source.Camera}
+          showIcon
+          style={{
+            width: 56, height: 56, borderRadius: 999,
+            background: isCameraEnabled ? "rgba(255,255,255,0.10)" : "rgba(220,38,38,0.85)",
+            color: "#fff", border: "none", cursor: "pointer",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          {isCameraEnabled ? "📹" : "📷"}
+        </TrackToggle>
+      )}
+
+      {/* Partage d'écran — seulement en vidéo */}
+      {!isAudio && (
+        <TrackToggle
+          source={Track.Source.ScreenShare}
+          showIcon
+          style={{
+            width: 56, height: 56, borderRadius: 999,
+            background: "rgba(255,255,255,0.10)",
+            color: "#fff", border: "none", cursor: "pointer",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          🖥️
+        </TrackToggle>
+      )}
+
+      {/* Raccrocher — toujours visible, rouge */}
+      <DisconnectButton
+        onClick={onLeave}
+        style={{
+          width: 64, height: 56, borderRadius: 999,
+          background: "#DC2626", color: "#fff", border: "none",
+          cursor: "pointer", fontWeight: 700, fontSize: 18,
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 14px rgba(220,38,38,0.5)",
+        }}
+      >
+        📞
+      </DisconnectButton>
     </div>
   );
 }
