@@ -2,16 +2,21 @@
 
 import Link from "next/link";
 import { IconCalendar, IconZap } from "@/components/icons";
+import DevotionHomeCard from "./DevotionHomeCard";
+import type { UnifiedDevotion } from "@/lib/devotion/fetch";
 
 interface Props {
   displayName: string;
   avatarUrl: string | null;
   email?: string | null;
   role?: string;
+  devotion: UnifiedDevotion;
+  devotionRead: boolean;
+  userId: string | null;
 }
 
 const QUICK_ACTIONS = [
-  { emoji: "☀️", label: "Méditons ensemble", sub: "Méditation du jour", href: "/devotion", gradient: "linear-gradient(145deg, #92400e 0%, #d97706 55%, #fbbf24 100%)", glow: "rgba(251,191,36,0.35)" },
+  { emoji: "📚", label: "Méditations Archives", sub: "Toutes les méditations", href: "/devotion", gradient: "linear-gradient(145deg, #92400e 0%, #d97706 55%, #fbbf24 100%)", glow: "rgba(251,191,36,0.35)" },
   { emoji: "📖", label: "Ma Bible", sub: "Lire & Plan de lecture", href: "/bible", gradient: "linear-gradient(145deg, #1e3a5f 0%, #1e40af 55%, #3b82f6 100%)", glow: "rgba(59,130,246,0.35)" },
   { emoji: "🙏", label: "Prions ensemble", sub: "Intercession & demandes", href: "/prayer", gradient: "linear-gradient(145deg, #4c0519 0%, #9f1239 55%, #fb7185 100%)", glow: "rgba(251,113,133,0.35)" },
   { emoji: "👥", label: "Communaute", sub: "Echanges & partages", href: "/community", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #4ade80 100%)", glow: "rgba(74,222,128,0.35)" },
@@ -34,7 +39,7 @@ const UPCOMING = [
   { icon: "🎓", title: "Bootcamp CCB 2026", time: "26 – 28 Juin 2026 · Douala & Online", tag: "Bootcamp", href: "https://bootcamp.centrechretienberakah.com" },
 ];
 
-export default function DashboardClient({ displayName, avatarUrl }: Props) {
+export default function DashboardClient({ displayName, avatarUrl, devotion, devotionRead, userId }: Props) {
   const initials = displayName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   const greeting = (() => {
     const h = new Date().getHours();
@@ -72,6 +77,9 @@ export default function DashboardClient({ displayName, avatarUrl }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Méditons ensemble — carte premium (juste sous le message de bienvenue) */}
+      <DevotionHomeCard devotion={devotion} userId={userId} initialRead={devotionRead} />
 
       {/* Quick actions */}
       <div className="dashboard-section">

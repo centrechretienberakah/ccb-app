@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
+import { getTodayDevotion } from "@/lib/devotion/fetch";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Accueil" };
@@ -12,6 +13,23 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/auth/login");
+
+  // Méditation du jour (date Europe/Paris) — affichée en tête de l'accueil
+  const todayDevotion = await getTodayDevotion(supabase);
+
+  // L'utilisateur a-t-il déjà marqué la méditation du jour comme lue ?
+  let devotionRead = false;
+  if (todayDevotion.id) {
+    try {
+      const { data: prog } = await supabase
+        .from("devotion_progress")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("devotion_id", todayDevotion.id)
+        .maybeSingle();
+      devotionRead = !!prog;
+    } catch { /* table absente → non lu */ }
+  }
 
   interface ProfileMin { full_name?: string | null; avatar_url?: string | null; role?: string | null }
   interface UserProfileMin { display_name?: string | null; avatar_url?: string | null; bio?: string | null }
@@ -47,6 +65,9 @@ export default async function DashboardPage() {
       avatarUrl={avatarUrl}
       email={user.email ?? null}
       role={role}
+      devotion={todayDevotion}
+      devotionRead={devotionRead}
+      userId={user.id}
     />
   );
 }
