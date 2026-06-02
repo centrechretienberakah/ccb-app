@@ -491,13 +491,26 @@ function Testimonials() {
 
 /* ─────────────────────── LE VISIONNAIRE ─────────────────────── */
 function Visionnaire() {
+  // Affiche la vraie photo si /rev-elvis.jpg existe, sinon fallback élégant "RE"
+  const [imgOk, setImgOk] = useState(true);
   return (
     <section className="ccb-section">
       <div className="ccb-container ccb-split">
         <Reveal className="ccb-split-visual">
           <div className="ccb-vision-photo">
             <div className="ccb-vision-ring" />
-            <div className="ccb-vision-av">RE</div>
+            {imgOk ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src="/rev-elvis.jpg"
+                alt="Rév. Elvis NGUIFFO — Visionnaire du Centre Chrétien Berakah"
+                className="ccb-vision-img"
+                onError={() => setImgOk(false)}
+                loading="lazy"
+              />
+            ) : (
+              <div className="ccb-vision-av">RE</div>
+            )}
             <span className="ccb-vision-badge">
               <Image src="/logo-officiel.png" alt="" width={34} height={34} />
             </span>
@@ -917,6 +930,8 @@ function LandingStyles() {
         animation:ccb-spin 14s linear infinite;}
       .ccb-vision-av{width:198px;height:198px;border-radius:50%;background:linear-gradient(145deg,var(--v-dark),var(--v));
         display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:800;font-size:64px;color:var(--gold);}
+      .ccb-vision-img{width:198px;height:198px;border-radius:50%;object-fit:cover;object-position:center top;
+        box-shadow:0 10px 30px rgba(90,44,160,0.22);}
       .ccb-vision-badge{position:absolute;bottom:14px;right:14px;width:50px;height:50px;border-radius:50%;background:var(--surface);
         display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.2);}
 
@@ -972,12 +987,94 @@ function LandingStyles() {
         display:flex;align-items:center;justify-content:center;color:var(--text-soft);text-decoration:none;font-weight:700;transition:all .2s;}
       .ccb-footer-social a:hover{background:var(--v);color:#fff;transform:translateY(-2px);}
 
+      /* =========================================================
+         OPTIMISATION RESPONSIVE — mobile · tablette · desktop · TV
+         ========================================================= */
+
+      /* Scroll fluide + ancrage propre sous la nav fixe */
+      html{scroll-behavior:smooth;}
+      .ccb-land section{scroll-margin-top:72px;}
+
+      /* ---- TABLETTE (768 – 1024px) ---- */
+      @media(min-width:768px) and (max-width:1024px){
+        .ccb-container{padding:0 30px;}
+        .ccb-eco-grid{grid-template-columns:repeat(2,1fr);gap:16px;}
+        .ccb-stats-grid{grid-template-columns:repeat(4,1fr);}
+        .ccb-counters{grid-template-columns:repeat(4,1fr);}
+        .ccb-mock{max-width:340px;}
+      }
+
+      /* ---- MOBILE GÉNÉRAL (≤ 768px) ---- */
+      @media(max-width:768px){
+        .ccb-section{padding:clamp(46px,11vw,72px) 0;}
+        .ccb-hero{min-height:auto;padding:96px 0 56px;}
+        .ccb-hero-inner{gap:15px;}
+        .ccb-hero-logo{width:112px;height:112px;}
+        .ccb-h2{font-size:clamp(1.45rem,6.4vw,2rem);}
+        .ccb-lead{font-size:1rem;}
+        .ccb-split{gap:30px;}
+        /* mockups toujours centrés et pas trop larges */
+        .ccb-mock{max-width:100%;}
+        .ccb-split-visual{width:100%;}
+        /* JDTV : cartes un peu plus petites pour voir le "peek" suivant */
+        .ccb-jdtv-card{flex:0 0 165px;height:104px;}
+        /* Témoignages : padding réduit */
+        .ccb-testi-card{padding:26px 20px;}
+        /* Événement vedette : empile proprement */
+        .ccb-next-event{flex-direction:column;align-items:flex-start;}
+        .ccb-next-event .ccb-btn{width:100%;}
+        /* Footer bottom empilé */
+        .ccb-footer-bottom{flex-direction:column;align-items:flex-start;gap:12px;}
+      }
+
+      /* ---- PETIT MOBILE (≤ 430px) ---- */
+      @media(max-width:430px){
+        .ccb-container{padding:0 16px;}
+        .ccb-section{padding:42px 0;}
+        .ccb-h2{font-size:1.42rem;line-height:1.22;}
+        .ccb-lead{font-size:0.96rem;}
+        .ccb-hero-title{font-size:clamp(2.1rem,12vw,3rem);}
+        .ccb-hero-tagline{font-size:1.02rem;}
+        .ccb-hero-sub{font-size:0.92rem;}
+        .ccb-pill{font-size:9.5px;letter-spacing:0.2em;padding:7px 14px;}
+        /* compteurs + stats en 2 colonnes serrées */
+        .ccb-counters{grid-template-columns:repeat(2,1fr);gap:10px;}
+        .ccb-counter{padding:14px 8px;}
+        .ccb-stats-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+        .ccb-stat-card{padding:18px 10px;}
+        .ccb-eco-card{padding:22px 18px;}
+        /* boutons pleine largeur, cibles tactiles confortables */
+        .ccb-btn{padding:14px 22px;}
+        .ccb-btn-lg{padding:16px 24px;width:100%;}
+        /* visionnaire un peu plus petit */
+        .ccb-vision-photo{width:200px;height:200px;}
+        .ccb-vision-av,.ccb-vision-img{width:172px;height:172px;}
+        .ccb-vision-av{font-size:54px;}
+        /* don en 2 colonnes */
+        .ccb-don-grid{grid-template-columns:repeat(2,1fr);}
+        /* countdown bootcamp compact */
+        .ccb-countdown{gap:8px;}
+        .ccb-cd-cell{min-width:60px;padding:12px 6px;}
+        /* nav : resserre */
+        .ccb-nav-actions{gap:7px;}
+        .ccb-btn-sm{padding:9px 14px;font-size:0.8rem;}
+      }
+
+      /* ---- GRAND DESKTOP / TV (≥ 1440px) ---- */
+      @media(min-width:1440px){
+        .ccb-container{max-width:1280px;}
+        .ccb-h2{font-size:2.8rem;}
+        .ccb-hero-inner{max-width:860px;}
+        .ccb-eco-grid{gap:22px;}
+      }
+
       /* keyframes */
       @keyframes ccb-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
       @keyframes ccb-glow{0%,100%{opacity:.5;transform:scale(1);}50%{opacity:.8;transform:scale(1.08);}}
       @keyframes ccb-spin{to{transform:rotate(360deg);}}
       @keyframes ccb-scroll{0%{opacity:0;transform:translate(-50%,0);}50%{opacity:1;}100%{opacity:0;transform:translate(-50%,8px);}}
       @media(prefers-reduced-motion:reduce){
+        html{scroll-behavior:auto;}
         .ccb-land *{animation:none !important;}
       }
     `}</style>
