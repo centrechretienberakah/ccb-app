@@ -92,66 +92,75 @@ export async function POST(req: NextRequest) {
     }
   } catch { /* noop */ }
 
-  // 2) Insert. On tente plusieurs formes de payload pour absorber les
-  //    variations de schéma entre environnements.
-  const basePayload: Record<string, unknown> = {
+  // 2) Insert ADAPTATIF : on part d'un payload complet et on retire
+  //    dynamiquement toute colonne que PostgREST signale comme inexistante
+  //    (erreur PGRST204 "Could not find the 'X' column"). Ça absorbe
+  //    n'importe quelle variation de schéma entre environnements.
+  const payload: Record<string, unknown> = {
     devotion_date: date,
+    date: date, // certains schémas utilisent `date` au lieu de devotion_date
     title: body.title,
     verse_reference: body.verse_ref || "",
+    verse_ref: body.verse_ref || "", // alias possible
     verse_text: body.verse_text,
     meditation_p1: body.content || "",
     reflection_question: body.application || null,
+    application: body.application || null, // alias possible
     prayer: body.prayer || "",
     declaration: body.declaration || "",
     content: body.content || "",
+    author: body.author || "Rév. Elvis NGUIFFO",
   };
 
-  // Tentative 1 : avec author
-  let ins = await admin
-    .from("devotions")
-    .insert({ ...basePayload, author: body.author || "Rév. Elvis NGUIFFO" })
-    .select("id")
-    .single();
+  const attempts: string[] = [];
+  let lastErr = "";
 
-  // Tentative 2 : sans author (colonne absente)
-  if (ins.error && /author/i.test(ins.error.message)) {
-    ins = await admin.from("devotions").insert(basePayload).select("id").single();
-  }
-
-  // Tentative 3 : si une colonne pose problème (ex: reflection_question
-  // ou content absente), payload minimal
-  if (ins.error) {
-    const minimalPayload: Record<string, unknown> = {
-      devotion_date: date,
-      title: body.title,
-      verse_reference: body.verse_ref || "",
-      verse_text: body.verse_text,
-      meditation_p1: body.content || "",
-      prayer: body.prayer || "",
-      declaration: body.declaration || "",
-    };
-    ins = await admin.from("devotions").insert(minimalPayload).select("id").single();
-  }
-
-  if (ins.error) {
-    // Dernière tentative : la course (un autre insert simultané a créé la
-    // ligne entre notre SELECT et notre INSERT) → relis par date.
-    if (/duplicate key|unique/i.test(ins.error.message)) {
-      const { data: raced } = await admin
-        .from("devotions")
-        .select("id")
-        .eq("devotion_date", date)
-        .maybeSingle();
-      if (raced?.id) {
-        return NextResponse.json({ id: raced.id, created: false });
-      }
+  for (let i = 0; i < 12; i++) {
+    const ins = await admin.from("devotions").insert(payload).select("id").single();
+    if (!ins.error && ins.data?.id) {
+      return NextResponse.json({ id: ins.data.id, created: true });
     }
-    console.error("[devotion/ensure] insert error:", ins.error);
-    return NextResponse.json(
-      { error: "Impossible d'enregistrer la méditation : " + ins.error.message },
-      { status: 500 },
-    );
+    lastErr = ins.error?.message ?? "unknown";
+    attempts.push(lastErr);
+
+    // a) Colonne inexistante → on l'enlève du payload et on réessaie
+    //    Message PostgREST : "Could not find the 'content' column of 'devotions' ..."
+    const colMatch = lastErr.match(/Could not find the '([^']+)' column/i)
+      ?? lastErr.match(/column "([^"]+)" of relation/i)
+      ?? lastErr.match(/'([a-z_]+)' column/i);
+    if (colMatch && colMatch[1] && colMatch[1] in payload) {
+      delete payload[colMatch[1]];
+      continue;
+    }
+
+    // b) Contrainte NOT NULL sur une colonne qu'on n'envoie pas → on tente
+    //    de la remplir avec une valeur par défaut
+    const nullMatch = lastErr.match(/null value in column "([^"]+)"/i);
+    if (nullMatch && nullMatch[1] && !(nullMatch[1] in payload)) {
+      payload[nullMatch[1]] = body.content || body.title || "—";
+      continue;
+    }
+
+    // c) Course : un insert simultané a déjà créé la ligne → relis
+    if (/duplicate key|unique/i.test(lastErr)) {
+      const { data: raced } = await admin
+        .from("devotions").select("id").eq("devotion_date", date).maybeSingle();
+      if (raced?.id) return NextResponse.json({ id: raced.id, created: false });
+      const { data: raced2 } = await admin
+        .from("devotions").select("id").eq("date", date).maybeSingle();
+      if (raced2?.id) return NextResponse.json({ id: raced2.id, created: false });
+    }
+
+    // d) Erreur non gérée → on arrête la boucle
+    break;
   }
 
-  return NextResponse.json({ id: ins.data.id, created: true });
+  console.error("[devotion/ensure] échec après tentatives:", attempts);
+  return NextResponse.json(
+    {
+      error: "Impossible d'enregistrer la méditation : " + lastErr,
+      attempts, // détail de chaque tentative pour diagnostic
+    },
+    { status: 500 },
+  );
 }

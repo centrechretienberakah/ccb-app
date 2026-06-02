@@ -117,6 +117,8 @@ export default function DevotionClient({
 
   const [likeError, setLikeError] = useState<string | null>(null);
   const [ensuring, setEnsuring] = useState(false);
+  // Dernier message d'erreur retourné par l'API ensure (pour diagnostic)
+  const ensureErrRef = useRef<string | null>(null);
 
   // Garantit que la méditation active a un ID réel en base. Si elle vient
   // du fallback statique (id null), on l'enregistre via /api/devotion/ensure
@@ -124,6 +126,7 @@ export default function DevotionClient({
   async function ensureDevotionId(): Promise<string | null> {
     if (active.id) return active.id;
     setEnsuring(true);
+    ensureErrRef.current = null;
     try {
       const res = await fetch("/api/devotion/ensure", {
         method: "POST",
@@ -140,11 +143,18 @@ export default function DevotionClient({
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.id) return null;
+      if (typeof window !== "undefined") {
+        console.log("[CCB devotion] /api/devotion/ensure →", res.status, data);
+      }
+      if (!res.ok || !data.id) {
+        ensureErrRef.current = (data && data.error) ? String(data.error) : `HTTP ${res.status}`;
+        return null;
+      }
       // Met à jour le state local avec le vrai UUID
       setActive((prev) => ({ ...prev, id: data.id as string }));
       return data.id as string;
-    } catch {
+    } catch (e) {
+      ensureErrRef.current = (e as Error)?.message || "réseau";
       return null;
     } finally {
       setEnsuring(false);
@@ -160,8 +170,8 @@ export default function DevotionClient({
     if (!devotionId) {
       devotionId = await ensureDevotionId();
       if (!devotionId) {
-        setLikeError("Impossible d'enregistrer la méditation pour le moment. Réessaie dans un instant.");
-        setTimeout(() => setLikeError(null), 4000);
+        setLikeError("Enregistrement impossible : " + (ensureErrRef.current || "réessaie dans un instant"));
+        setTimeout(() => setLikeError(null), 8000);
         return;
       }
     }
