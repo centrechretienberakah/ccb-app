@@ -92,7 +92,7 @@ export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }
 
   return (
     <div style={{
-      position: "sticky", top: "var(--ccb-topbar-h, 62px)", zIndex: 30,
+      position: "sticky", top: 0, zIndex: 20,
       background: T.card, borderBottom: `1px solid ${T.border}`,
       boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
     }}>
