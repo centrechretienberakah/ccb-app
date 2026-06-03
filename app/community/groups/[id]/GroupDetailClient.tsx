@@ -47,7 +47,7 @@ interface Message {
   reactions?: Record<string, { count: number; mine: boolean }>;
 }
 
-const REACTION_EMOJIS = ["👍", "❤️", "🙏", "🎉", "😂", "🔥"] as const;
+const REACTION_EMOJIS = ["❤️", "🙏", "🔥", "🙌", "👍", "🎉", "😂", "😢"] as const;
 
 interface Props {
   group: Group;
@@ -59,13 +59,10 @@ interface Props {
   myRole: "owner" | "admin" | "member" | null;
 }
 
-function timeAgo(iso: string): string {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return "à l'instant";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}j`;
-  return new Date(iso).toLocaleDateString("fr-FR");
+// Heure d'horloge (style WhatsApp) — ex : 21:34
+function fmtClock(iso: string): string {
+  try { return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); }
+  catch { return ""; }
 }
 
 function Avatar({ profile, size = 32 }: { profile?: Profile | null; size?: number }) {
@@ -109,6 +106,7 @@ export default function GroupDetailClient({
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
+  const [activeMsgId, setActiveMsgId] = useState<string | null>(null); // bulle "sélectionnée" (mobile) → révèle les actions
   const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map()); // user_id → display_name
   const [memberReadAt, setMemberReadAt] = useState<Map<string, string>>(new Map()); // user_id → last_read_at ISO
   const [isDragging, setIsDragging] = useState(false);
@@ -1115,40 +1113,52 @@ export default function GroupDetailClient({
                   {search ? "Aucun message ne correspond à la recherche." : "💬 Aucun message. Sois le premier à écrire !"}
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {filteredMessages.map((m) => {
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <style>{`
+                    .ccb-msg-actions { display: none; }
+                    .ccb-msg:hover .ccb-msg-actions, .ccb-msg-actions.on { display: flex; }
+                  `}</style>
+                  {filteredMessages.map((m, i) => {
                     const isMine = m.user_id === currentUserId;
                     const replyParent = m.reply_to_id ? messages.find((mm) => mm.id === m.reply_to_id) : null;
+                    const prev = i > 0 ? filteredMessages[i - 1] : null;
+                    const grouped = !!prev && prev.user_id === m.user_id
+                      && (new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60 * 1000)
+                      && !m.reply_to_id && !m.is_pinned;
+                    const actionsOn = activeMsgId === m.id;
                     return (
-                      <div key={m.id} id={`msg-${m.id}`} style={{
+                      <div key={m.id} id={`msg-${m.id}`} className="ccb-msg" style={{
                         display: "flex", gap: 8,
                         flexDirection: isMine ? "row-reverse" : "row",
-                        borderRadius: 8, padding: 2,
+                        marginTop: grouped ? 1 : 9,
                       }}>
-                        <Avatar profile={m.user_profiles} size={32} />
+                        {grouped
+                          ? <div style={{ width: 32, flexShrink: 0 }} />
+                          : <Avatar profile={m.user_profiles} size={32} />}
                         <div style={{
-                          maxWidth: "75%",
+                          maxWidth: "78%",
                           display: "flex", flexDirection: "column",
                           alignItems: isMine ? "flex-end" : "flex-start",
                           position: "relative",
                         }}>
-                          <div style={{
-                            fontSize: 11, fontWeight: 700, color: T.textMuted,
-                            marginBottom: 3, padding: "0 4px",
-                            display: "flex", gap: 6, alignItems: "center",
-                            flexDirection: isMine ? "row-reverse" : "row",
-                          }}>
-                            <span>{isMine ? "Moi" : (m.user_profiles?.display_name || "Membre")}</span>
-                            <span style={{ fontWeight: 400, opacity: 0.7 }}>· {timeAgo(m.created_at)}</span>
-                            {m.is_pinned && (
-                              <span style={{
-                                color: T.gold, fontWeight: 700,
-                                background: "rgba(212,175,55,0.12)",
-                                padding: "1px 6px", borderRadius: 4,
-                                fontSize: 9, letterSpacing: 0.4,
-                              }}>📌 ÉPINGLÉ</span>
-                            )}
-                          </div>
+                          {!grouped && (
+                            <div style={{
+                              fontSize: 11, fontWeight: 700, color: isMine ? T.violet : T.textSoft,
+                              marginBottom: 2, padding: "0 4px",
+                              display: "flex", gap: 6, alignItems: "center",
+                              flexDirection: isMine ? "row-reverse" : "row",
+                            }}>
+                              <span>{isMine ? "Moi" : (m.user_profiles?.display_name || "Membre")}</span>
+                              {m.is_pinned && (
+                                <span style={{
+                                  color: T.gold, fontWeight: 700,
+                                  background: "rgba(212,175,55,0.12)",
+                                  padding: "1px 6px", borderRadius: 4,
+                                  fontSize: 9, letterSpacing: 0.4,
+                                }}>📌 ÉPINGLÉ</span>
+                              )}
+                            </div>
+                          )}
 
                           {/* Reply preview */}
                           {replyParent && (
@@ -1171,7 +1181,7 @@ export default function GroupDetailClient({
                               </div>
                             </div>
                           )}
-                          <div style={{
+                          <div onClick={() => setActiveMsgId(actionsOn ? null : m.id)} style={{
                             background: isMine
                               ? `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`
                               : T.card,
@@ -1180,9 +1190,10 @@ export default function GroupDetailClient({
                             borderRadius: isMine
                               ? "14px 14px 4px 14px"
                               : "14px 14px 14px 4px",
-                            padding: m.attachment_url ? "6px 6px 8px" : "8px 12px",
-                            fontSize: 14, lineHeight: 1.5,
-                            whiteSpace: "pre-wrap", wordBreak: "break-word",
+                            padding: m.attachment_url ? "6px 6px 6px" : "7px 11px 5px",
+                            fontSize: 14, lineHeight: 1.45,
+                            whiteSpace: "pre-wrap", wordBreak: "break-word", cursor: "pointer",
+                            boxShadow: "0 1px 1px rgba(0,0,0,0.04)",
                           }}>
                             {/* Attachment render */}
                             {m.attachment_url && (
@@ -1193,6 +1204,14 @@ export default function GroupDetailClient({
                                 <ContentWithMentions content={m.content} members={memberLookup} />
                               </div>
                             )}
+                            {/* Heure + (modifié) dans la bulle — style WhatsApp */}
+                            <div style={{
+                              fontSize: 9.5, lineHeight: 1, textAlign: "right", marginTop: 3,
+                              opacity: 0.7, color: isMine ? "rgba(255,255,255,0.9)" : T.textMuted,
+                              padding: m.attachment_url ? "0 8px" : 0,
+                            }}>
+                              {m.edited_at ? "modifié · " : ""}{fmtClock(m.created_at)}
+                            </div>
                           </div>
                           {/* Réactions sous le message */}
                           {m.reactions && Object.keys(m.reactions).length > 0 && (
@@ -1242,21 +1261,21 @@ export default function GroupDetailClient({
                             );
                           })()}
 
-                          {/* Actions message (réagir, répondre, supprimer) */}
-                          <div style={{
-                            display: "flex", gap: 6, marginTop: 4,
+                          {/* Actions message — révélées au survol (desktop) / appui sur la bulle (mobile) */}
+                          <div className={"ccb-msg-actions" + (actionsOn ? " on" : "")} style={{
+                            gap: 6, marginTop: 3,
                             justifyContent: isMine ? "flex-end" : "flex-start",
                             fontSize: 10, color: T.textMuted, position: "relative",
                           }}>
                             <button onClick={() => setEmojiPickerFor(emojiPickerFor === m.id ? null : m.id)} style={{
                               background: "none", border: "none", cursor: "pointer",
-                              color: T.textMuted, fontSize: 12, padding: "0 4px",
+                              color: T.textMuted, fontSize: 13, padding: "0 4px",
                             }}>
                               😊
                             </button>
                             <button onClick={() => setReplyTo(m)} title="Répondre" style={{
                               background: "none", border: "none", cursor: "pointer",
-                              color: T.textMuted, fontSize: 11, padding: "0 4px",
+                              color: T.textMuted, fontSize: 12, padding: "0 4px",
                             }}>
                               ↩
                             </button>
@@ -1284,9 +1303,9 @@ export default function GroupDetailClient({
                                 bottom: 22,
                                 [isMine ? "right" : "left"]: 0,
                                 background: T.card, border: `1px solid ${T.border}`,
-                                borderRadius: 999, padding: "5px 8px",
+                                borderRadius: 16, padding: "6px 8px",
                                 boxShadow: T.shadowMd, zIndex: 10,
-                                display: "flex", gap: 3,
+                                display: "flex", gap: 3, flexWrap: "wrap", maxWidth: 220,
                               }}>
                                 {REACTION_EMOJIS.map((emoji) => (
                                   <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} style={{
