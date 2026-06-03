@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useOnlineUsers } from "@/lib/presence";
 import { GROUPS_THEME as T, GROUPS_FONTS as F, getGroupCategoryDef, notifyGroupsStaff } from "@/lib/groups/theme";
 import { notifyGroupMention, notifyGroupMeeting, notifyNewMember } from "@/lib/groups/notify";
 import { ringCall } from "@/lib/meet/calls";
@@ -126,6 +127,8 @@ export default function GroupDetailClient({
   const presenceChannelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
   const catDef = getGroupCategoryDef(group.category);
+  const online = useOnlineUsers();
+  const onlineCount = members.filter((m) => online.has(m.user_id)).length;
   const memberLookup: MemberLookup[] = members.map((m) => ({
     user_id: m.user_id, display_name: m.display_name, avatar_url: m.avatar_url,
   }));
@@ -845,12 +848,14 @@ export default function GroupDetailClient({
             }}>
               <span>{members.length} membre{members.length > 1 ? "s" : ""}</span>
               <span style={{ opacity: 0.5 }}>·</span>
-              <span>{group.type === "public" ? "🌍 Public" : "🔒 Privé"}</span>
-              {typingUsers.size > 0 && (
-                <>
-                  <span style={{ opacity: 0.5 }}>·</span>
-                  <span style={{ fontStyle: "italic", color: T.gold }}>écrit…</span>
-                </>
+              {typingUsers.size > 0 ? (
+                <span style={{ fontStyle: "italic", color: T.gold }}>
+                  {typingUsers.size === 1 ? `${[...typingUsers.values()][0]} écrit…` : "plusieurs écrivent…"}
+                </span>
+              ) : onlineCount > 0 ? (
+                <span style={{ color: "#86F5A8", fontWeight: 600 }}>🟢 {onlineCount} en ligne</span>
+              ) : (
+                <span>{group.type === "public" ? "🌍 Public" : "🔒 Privé"}</span>
               )}
             </div>
           </button>
@@ -872,6 +877,14 @@ export default function GroupDetailClient({
               </button>
             </>
           )}
+
+          {/* Recherche directe */}
+          <button onClick={() => setShowSearch(true)} title="Rechercher" aria-label="Rechercher"
+            style={{ ...topbarIconBtn(), fontSize: 16 }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.22)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}>
+            🔍
+          </button>
 
           {/* Menu 3 points */}
           <div ref={menuRef} style={{ position: "relative" }}>
