@@ -101,6 +101,7 @@ export default function GroupDetailClient({
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showVerse, setShowVerse] = useState(false); // mini-prompt partage de verset
+  const [showMedia, setShowMedia] = useState(false); // onglet Médias (galerie)
   const [uploading, setUploading] = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<{
     url: string; type: "image" | "pdf" | "audio" | "video" | "other"; name: string; size: number;
@@ -937,6 +938,7 @@ export default function GroupDetailClient({
                   <MenuItem icon="＋" label="Rejoindre le groupe" onClick={() => { setMenuOpen(false); joinGroup(); }} />
                 )}
                 <MenuItem icon="🔍" label="Rechercher" onClick={() => { setMenuOpen(false); setShowSearch(true); }} />
+                <MenuItem icon="📷" label="Médias" onClick={() => { setMenuOpen(false); setShowMedia(true); }} />
                 <MenuItem icon="📎" label="Fichiers partagés" href={`/community/groups/${group.id}/files`} onClick={() => setMenuOpen(false)} />
                 <MenuItem icon="👥" label={`Voir les membres (${members.length})`} onClick={() => { setMenuOpen(false); setShowMembers(true); }} />
                 <MenuItem icon="🗓️" label="Réunions programmées" href={`/community/groups/${group.id}/meeting/scheduled`} onClick={() => setMenuOpen(false)} />
@@ -1547,6 +1549,9 @@ export default function GroupDetailClient({
         {/* Prompt partage de verset */}
         {showVerse && <VersePromptModal onShare={insertVerse} onClose={() => setShowVerse(false)} />}
 
+        {/* Onglet Médias (galerie des pièces jointes) */}
+        {showMedia && <MediaModal messages={messages} onClose={() => setShowMedia(false)} onImageClick={(u) => { setShowMedia(false); setLightbox(u); }} />}
+
         {/* Lightbox image */}
         {lightbox && (
           <div onClick={() => setLightbox(null)} style={{
@@ -1775,6 +1780,74 @@ function VersePromptModal({ onShare, onClose }: { onShare: (ref: string, text: s
           background: T.violet, color: "#fff", border: "none", borderRadius: 12, padding: "11px",
           fontWeight: 800, fontSize: 14, cursor: ref.trim() ? "pointer" : "default", opacity: ref.trim() ? 1 : 0.5,
         }}>Insérer dans le message</button>
+      </div>
+    </div>
+  );
+}
+
+function MediaModal({ messages, onClose, onImageClick }: { messages: Message[]; onClose: () => void; onImageClick: (url: string) => void }) {
+  const [tab, setTab] = useState<"image" | "video" | "audio" | "doc">("image");
+  const withAtt = messages.filter((m) => m.attachment_url);
+  const photos = withAtt.filter((m) => m.attachment_type === "image");
+  const videos = withAtt.filter((m) => m.attachment_type === "video");
+  const audios = withAtt.filter((m) => m.attachment_type === "audio");
+  const docs = withAtt.filter((m) => m.attachment_type === "pdf" || m.attachment_type === "other" || !m.attachment_type);
+  const tabs = [
+    { key: "image" as const, label: "Photos", list: photos },
+    { key: "video" as const, label: "Vidéos", list: videos },
+    { key: "audio" as const, label: "Audios", list: audios },
+    { key: "doc" as const, label: "Documents", list: docs },
+  ];
+  const cur = tabs.find((t) => t.key === tab)!;
+  return (
+    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{
+      position: "fixed", inset: 0, zIndex: 2100, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+    }}>
+      <div style={{ width: "100%", maxWidth: 680, maxHeight: "85vh", background: T.card, borderRadius: "20px 20px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${T.border}` }}>
+          <span style={{ fontFamily: F.title, fontWeight: 800, fontSize: 15, color: T.violet }}>📷 Médias du groupe</span>
+          <button onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: T.textMuted }}>✕</button>
+        </div>
+        <div style={{ display: "flex", gap: 6, padding: "10px 12px", overflowX: "auto", borderBottom: `1px solid ${T.borderSoft}` }}>
+          {tabs.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              flexShrink: 0, padding: "6px 12px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: tab === t.key ? 700 : 500,
+              background: tab === t.key ? T.violet : T.bg, color: tab === t.key ? "#fff" : T.textMuted, border: `1px solid ${tab === t.key ? T.violet : T.border}`,
+            }}>{t.label} · {t.list.length}</button>
+          ))}
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+          {cur.list.length === 0 ? (
+            <div style={{ textAlign: "center", color: T.textMuted, fontSize: 13, padding: "40px 0" }}>Aucun élément dans cette catégorie.</div>
+          ) : tab === "image" ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+              {cur.list.map((m) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={m.id} src={m.attachment_url!} alt="" onClick={() => onImageClick(m.attachment_url!)} style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: 8, cursor: "pointer" }} />
+              ))}
+            </div>
+          ) : tab === "video" ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+              {cur.list.map((m) => (
+                <video key={m.id} src={m.attachment_url!} controls style={{ width: "100%", borderRadius: 8, background: "#000" }} />
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {cur.list.map((m) => (
+                <div key={m.id} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px" }}>
+                  <div style={{ fontSize: 12.5, color: T.text, marginBottom: tab === "audio" ? 6 : 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {tab === "audio" ? "🎵" : "📄"} {m.attachment_name || "Fichier"}
+                  </div>
+                  {tab === "audio"
+                    ? <audio src={m.attachment_url!} controls style={{ width: "100%" }} />
+                    : <a href={m.attachment_url!} target="_blank" rel="noopener noreferrer" style={{ color: T.violet, fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}>Ouvrir ↗</a>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
