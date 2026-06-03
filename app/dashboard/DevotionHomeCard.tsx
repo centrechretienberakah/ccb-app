@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { UnifiedDevotion } from "@/lib/devotion/fetch";
@@ -280,14 +279,6 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
           </button>
         </div>
 
-        {/* Lien vers le module complet */}
-        <Link href="/devotion" style={{
-          display: "block", textAlign: "center", marginTop: 14,
-          fontSize: 12.5, fontWeight: 700, color: "var(--violet)",
-          textDecoration: "none",
-        }}>
-          Commenter, aimer & voir les archives →
-        </Link>
       </div>
     </div>
   );
