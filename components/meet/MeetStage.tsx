@@ -25,7 +25,7 @@ import {
   useChat,
   useDataChannel,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { Track, LocalVideoTrack } from "livekit-client";
 import type { Room } from "livekit-client";
 import type { TrackReferenceOrPlaceholder } from "@livekit/components-core";
 import { useCall } from "@/lib/meet/CallContext";
@@ -602,17 +602,74 @@ function SettingsPanel({ room, isAudio, onClose }: { room: Room; isAudio: boolea
       setSel((s) => ({ ...s, [kind === "audioinput" ? "mic" : kind === "videoinput" ? "cam" : "spk"]: deviceId }));
     } catch { /* noop */ }
   }
+
+  // ── Arrière-plans / flou (chargé dynamiquement, isolé) ──
+  const [bg, setBg] = useState("none");
+  const [bgBusy, setBgBusy] = useState(false);
+  const [bgMsg, setBgMsg] = useState("");
+  async function applyBg(kind: string) {
+    if (bgBusy) return;
+    setBgBusy(true); setBgMsg("");
+    try {
+      const cam = room.localParticipant.getTrackPublication(Track.Source.Camera)?.track;
+      if (!(cam instanceof LocalVideoTrack)) { setBgMsg("Active d'abord ta caméra."); setBgBusy(false); return; }
+      if (kind === "none") {
+        await cam.stopProcessor();
+      } else {
+        const mod = await import("@livekit/track-processors");
+        const proc = kind === "blur"
+          ? mod.BackgroundBlur(12)
+          : mod.VirtualBackground(window.location.origin + kind);
+        await cam.setProcessor(proc);
+      }
+      setBg(kind);
+    } catch {
+      setBgMsg("Effet indisponible sur cet appareil/navigateur.");
+    }
+    setBgBusy(false);
+  }
+
   return (
     <SidePanel title="⚙️ Paramètres" onClose={onClose}>
       <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 16 }}>
+        {!isAudio && (
+          <div>
+            <div style={{ fontSize: 12, color: GOLD, fontWeight: 700, marginBottom: 8 }}>🌄 Arrière-plan</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              {BACKGROUNDS.map((b) => {
+                const active = bg === b.key;
+                return (
+                  <button key={b.key} onClick={() => applyBg(b.key)} disabled={bgBusy} style={{
+                    position: "relative", aspectRatio: "16 / 10", borderRadius: 10, overflow: "hidden", cursor: bgBusy ? "wait" : "pointer",
+                    border: `2px solid ${active ? GOLD : "rgba(255,255,255,0.14)"}`, padding: 0,
+                    background: b.img ? `center/cover no-repeat url(${b.img})` : "rgba(255,255,255,0.07)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {!b.img && <span style={{ fontSize: 20 }}>{b.emoji}</span>}
+                    <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.55)", color: "#fff", fontSize: 9.5, fontWeight: 700, padding: "2px 0", textAlign: "center" }}>{b.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {bgMsg && <div style={{ fontSize: 11.5, color: "#FCA5A5", marginTop: 6 }}>{bgMsg}</div>}
+          </div>
+        )}
         <DeviceSelect label="🎙️ Microphone" devices={mics} value={sel.mic} onChange={(id) => change("audioinput", id)} />
         {!isAudio && <DeviceSelect label="📹 Caméra" devices={cams} value={sel.cam} onChange={(id) => change("videoinput", id)} />}
         {spks.length > 0 && <DeviceSelect label="🔊 Haut-parleur" devices={spks} value={sel.spk} onChange={(id) => change("audiooutput", id)} />}
-        <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>Le choix du haut-parleur n'est pas pris en charge par tous les navigateurs (Safari notamment).</div>
+        <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>Le flou/arrière-plan nécessite un appareil compatible. Le choix du haut-parleur n&apos;est pas pris en charge par tous les navigateurs.</div>
       </div>
     </SidePanel>
   );
 }
+const BACKGROUNDS: { key: string; label: string; emoji?: string; img?: string }[] = [
+  { key: "none", label: "Aucun", emoji: "🚫" },
+  { key: "blur", label: "Flou", emoji: "🌫️" },
+  { key: "/meet-bg/ccb.jpg", label: "CCB", img: "/meet-bg/ccb.jpg" },
+  { key: "/meet-bg/croix.jpg", label: "Croix", img: "/meet-bg/croix.jpg" },
+  { key: "/meet-bg/ciel.jpg", label: "Ciel", img: "/meet-bg/ciel.jpg" },
+  { key: "/meet-bg/vitrail.jpg", label: "Vitrail", img: "/meet-bg/vitrail.jpg" },
+];
 function DeviceSelect({ label, devices, value, onChange }: { label: string; devices: MediaDeviceInfo[]; value?: string; onChange: (id: string) => void }) {
   return (
     <div>
