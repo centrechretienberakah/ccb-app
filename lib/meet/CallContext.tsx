@@ -20,6 +20,9 @@ export interface CallState {
   active: boolean;
   groupId: string | null;
   groupName: string | null;
+  // Appel privé (DM / mini-groupe) : conversationId non-null → room ccb-dm-<id>
+  conversationId: string | null;
+  backUrl: string | null;        // où retourner en raccrochant
   mode: "audio" | "video" | null;
   token: string | null;
   serverUrl: string | null;
@@ -33,10 +36,12 @@ export interface CallState {
 interface CallContextValue {
   state: CallState;
   startCall: (opts: {
-    groupId: string;
+    groupId?: string;
     groupName: string;
     mode: "audio" | "video";
     displayName?: string;
+    conversationId?: string;     // si fourni → appel privé
+    backUrl?: string;
   }) => Promise<void>;
   endCall: () => void;
   setAudio: (enabled: boolean) => void;
@@ -47,6 +52,8 @@ const initial: CallState = {
   active: false,
   groupId: null,
   groupName: null,
+  conversationId: null,
+  backUrl: null,
   mode: null,
   token: null,
   serverUrl: null,
@@ -63,19 +70,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<CallState>(initial);
 
   const startCall = useCallback(async (opts: {
-    groupId: string;
+    groupId?: string;
     groupName: string;
     mode: "audio" | "video";
     displayName?: string;
+    conversationId?: string;
+    backUrl?: string;
   }) => {
+    const isDm = !!opts.conversationId;
     // Si déjà actif dans la même room, ne re-fetch pas
-    if (state.active && state.groupId === opts.groupId && state.mode === opts.mode) {
+    if (state.active && state.mode === opts.mode &&
+        ((isDm && state.conversationId === opts.conversationId) ||
+         (!isDm && state.groupId === opts.groupId))) {
       return;
     }
     setState((s) => ({
       ...s,
-      groupId: opts.groupId,
+      groupId: opts.groupId ?? null,
       groupName: opts.groupName,
+      conversationId: opts.conversationId ?? null,
+      backUrl: opts.backUrl ?? null,
       mode: opts.mode,
       displayName: opts.displayName ?? s.displayName,
       status: "fetching",
@@ -83,10 +97,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
       videoEnabled: opts.mode === "video",
     }));
     try {
-      const res = await fetch("/api/livekit/token", {
+      const endpoint = isDm ? "/api/livekit/dm-token" : "/api/livekit/token";
+      const reqBody = isDm
+        ? { conversationId: opts.conversationId, mode: opts.mode }
+        : { groupId: opts.groupId, mode: opts.mode };
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ groupId: opts.groupId, mode: opts.mode }),
+        body: JSON.stringify(reqBody),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -108,7 +126,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       setState((s) => ({ ...s, status: "error", error: (e as Error).message }));
     }
-  }, [state.active, state.groupId, state.mode]);
+  }, [state.active, state.groupId, state.conversationId, state.mode]);
 
   const endCall = useCallback(() => {
     setState(initial);

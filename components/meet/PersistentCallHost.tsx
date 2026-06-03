@@ -35,7 +35,9 @@ export default function PersistentCallHost() {
 
   if (!state.active || !state.token || !state.serverUrl) return null;
 
-  const isOnMeetingPage = !!pathname?.match(/^\/community\/groups\/[^/]+\/meeting$/);
+  const isOnMeetingPage =
+    !!pathname?.match(/^\/community\/groups\/[^/]+\/meeting$/) ||
+    !!pathname?.match(/^\/community\/messages\/[^/]+\/call$/);
   const isAudio = state.mode === "audio";
 
   return (
@@ -62,7 +64,11 @@ export default function PersistentCallHost() {
       data-lk-theme="ccb"
     >
       <RoomAudioRenderer />
-      <SessionTracker groupId={state.groupId!} mode={isAudio ? "audio" : "video"} />
+      {/* Tracking DB des sessions — uniquement pour les appels de groupe.
+          Les appels privés (DM) ne passent pas par meet_sessions. */}
+      {state.groupId && (
+        <SessionTracker groupId={state.groupId} mode={isAudio ? "audio" : "video"} />
+      )}
       {isOnMeetingPage ? <FullStage isAudio={isAudio} /> : <MiniPlayer />}
       <CallBrandingStyles isAudio={isAudio} />
     </LiveKitRoom>
@@ -119,7 +125,7 @@ function SessionTracker({ groupId, mode }: { groupId: string; mode: "audio" | "v
 
 // ─── Vue full screen (sur /meeting) ───────────────────────────────────
 function FullStage({ isAudio }: { isAudio: boolean }) {
-  const { endCall } = useCall();
+  const { endCall, state } = useCall();
   const router = useRouter();
   const tracks = useTracks(
     [
@@ -131,7 +137,8 @@ function FullStage({ isAudio }: { isAudio: boolean }) {
 
   function handleLeave() {
     endCall(); // triggers onDisconnected via LiveKit
-    router.push("/community/groups");
+    // Retour : conversation (DM) ou liste des groupes
+    router.push(state.backUrl ?? "/community/groups");
   }
 
   // Click sur "x" pour minimiser (sans quitter)
@@ -275,7 +282,9 @@ function MiniPlayer() {
   const isConnected = connState === ConnectionState.Connected;
 
   function handleExpand() {
-    if (groupId) {
+    if (state.conversationId) {
+      router.push(`/community/messages/${state.conversationId}/call${isAudio ? "?mode=audio" : ""}`);
+    } else if (groupId) {
       router.push(`/community/groups/${groupId}/meeting${isAudio ? "?mode=audio" : ""}`);
     }
   }

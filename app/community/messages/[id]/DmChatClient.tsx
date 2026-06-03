@@ -114,9 +114,9 @@ export default function DmChatClient({ conversationId, currentUserId, other, ini
             <div style={{ fontSize: 10.5, opacity: 0.75 }}>Conversation privée</div>
           </div>
         </Link>
-        {/* Appels (Phase 3) — visibles mais désactivés pour l'instant */}
-        <span title="Appel audio (bientôt)" style={callBtn}>📞</span>
-        <span title="Appel vidéo (bientôt)" style={callBtn}>📹</span>
+        {/* Appels privés (réutilise CCB Meet / LiveKit) */}
+        <Link href={`/community/messages/${conversationId}/call?mode=audio`} title="Appel audio" style={callBtn}>📞</Link>
+        <Link href={`/community/messages/${conversationId}/call`} title="Appel vidéo" style={callBtn}>📹</Link>
       </div>
 
       {/* Messages */}
@@ -182,7 +182,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, ini
 }
 
 const callBtn: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.12)",
+  width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.16)",
   display: "flex", alignItems: "center", justifyContent: "center",
-  fontSize: 16, flexShrink: 0, opacity: 0.55, cursor: "default",
+  fontSize: 16, flexShrink: 0, cursor: "pointer", color: "#fff", textDecoration: "none",
 };

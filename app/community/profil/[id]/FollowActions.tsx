@@ -39,6 +39,20 @@ export default function FollowActions({ targetUserId, isMe }: Props) {
     setOpening(false);
   }
 
+  async function openCall(mode: "audio" | "video") {
+    if (opening) return;
+    setOpening(true);
+    try {
+      const sb = createClient();
+      const { data, error } = await sb.rpc("get_or_create_dm", { p_other: targetUserId });
+      if (!error && typeof data === "string") {
+        router.push(`/community/messages/${data}/call${mode === "audio" ? "?mode=audio" : ""}`);
+        return;
+      }
+    } catch { /* noop */ }
+    setOpening(false);
+  }
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -114,9 +128,30 @@ export default function FollowActions({ targetUserId, isMe }: Props) {
           </button>
         </div>
       )}
+
+      {/* Boutons d'appel privé (audio / vidéo via CCB Meet) */}
+      {!isMe && (
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <button onClick={() => openCall("audio")} disabled={opening} style={callBtnStyle}>
+            📞 Audio
+          </button>
+          <button onClick={() => openCall("video")} disabled={opening} style={callBtnStyle}>
+            📹 Vidéo
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
+const callBtnStyle: React.CSSProperties = {
+  flex: 1,
+  background: "rgba(255,255,255,0.10)", color: "#fff",
+  border: "1px solid rgba(255,255,255,0.25)",
+  borderRadius: 999, padding: "9px 14px",
+  fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: F.body,
+  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+};
 
 const countLink: React.CSSProperties = {
   display: "flex", flexDirection: "column", alignItems: "center",
