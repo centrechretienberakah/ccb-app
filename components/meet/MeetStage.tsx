@@ -849,31 +849,69 @@ function ControlBar({
   onNotes: () => void; onStats: () => void;
   canRecord: boolean; recording: boolean; onRecord: () => void; onLeave: () => void;
 }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const run = (fn: () => void) => () => { setMoreOpen(false); fn(); };
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 6, display: "flex", justifyContent: "center", padding: "12px 10px", paddingBottom: "max(14px, env(safe-area-inset-bottom, 14px))", background: "linear-gradient(0deg, rgba(0,0,0,0.72), transparent)" }}>
-      <div className="ccb-meet-controls" style={{ display: "flex", alignItems: "center", gap: 9, background: "rgba(30,30,30,0.92)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 999, padding: "9px 12px", backdropFilter: "blur(14px)", boxShadow: "0 10px 30px rgba(0,0,0,0.4)", maxWidth: "100%", overflowX: "auto" }}>
-        <style>{`.ccb-meet-controls::-webkit-scrollbar{display:none;}`}</style>
-        <TrackToggle source={Track.Source.Microphone} showIcon style={ctrlBtn(false)}><span style={{ fontSize: 19 }}>🎙️</span></TrackToggle>
-        {!isAudio && <TrackToggle source={Track.Source.Camera} showIcon style={ctrlBtn(false)}><span style={{ fontSize: 19 }}>📹</span></TrackToggle>}
-        {!isAudio && <TrackToggle source={Track.Source.ScreenShare} showIcon style={ctrlBtn(false)}><span style={{ fontSize: 19 }}>🖥️</span></TrackToggle>}
-        <FeatureBtn emoji="✋" active={handRaised} onClick={onHand} />
-        <FeatureBtn emoji="💬" active={panel === "chat"} badge={unreadChat} onClick={onChat} />
-        <FeatureBtn emoji="👥" active={panel === "people"} onClick={onPeople} />
-        <FeatureBtn emoji="📖" onClick={onVerse} />
-        <FeatureBtn emoji="🙏" active={prayerActive} onClick={onPrayer} />
-        <FeatureBtn emoji="📝" active={panel === "notes"} onClick={onNotes} />
-        <FeatureBtn emoji="📊" active={panel === "stats"} onClick={onStats} />
-        <FeatureBtn emoji="⚙️" active={panel === "settings"} onClick={onSettings} />
-        {canRecord && (
-          <button onClick={onRecord} title={recording ? "Arrêter l'enregistrement" : "Enregistrer"} style={{ ...ctrlBtn(false), background: recording ? "#DC2626" : "rgba(255,255,255,0.10)" }}>
-            <span style={{ fontSize: 18 }}>{recording ? "⏹️" : "🔴"}</span>
-          </button>
-        )}
-        <DisconnectButton onClick={onLeave} style={{ ...ctrlBtn(true), width: 60 }}><span style={{ fontSize: 19 }}>📞</span></DisconnectButton>
+    <>
+      {/* Backdrop pour fermer le menu au clic extérieur */}
+      {moreOpen && <div onClick={() => setMoreOpen(false)} style={{ position: "absolute", inset: 0, zIndex: 6 }} />}
+
+      {/* Menu ⋮ — toutes les fonctions secondaires */}
+      {moreOpen && (
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(84px + env(safe-area-inset-bottom, 0px))", zIndex: 8, display: "flex", justifyContent: "center", padding: "0 12px", pointerEvents: "none" }}>
+          <div style={{ pointerEvents: "auto", width: "min(380px, 100%)", background: "rgba(28,28,28,0.98)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 18, padding: 12, boxShadow: "0 14px 44px rgba(0,0,0,0.55)", backdropFilter: "blur(16px)", animation: "ccb-more-in .18s ease both" }}>
+            <style>{`@keyframes ccb-more-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}`}</style>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+              {!isAudio && (
+                <TrackToggle source={Track.Source.ScreenShare} showIcon onClick={() => setMoreOpen(false)} style={menuTileStyle(false)}>
+                  <span style={{ fontSize: 21 }}>🖥️</span><span style={menuTileLabel}>Écran</span>
+                </TrackToggle>
+              )}
+              <MenuTile emoji="✋" label="Main levée" active={handRaised} onClick={run(onHand)} />
+              <MenuTile emoji="💬" label="Chat" badge={unreadChat} active={panel === "chat"} onClick={run(onChat)} />
+              <MenuTile emoji="👥" label="Membres" active={panel === "people"} onClick={run(onPeople)} />
+              <MenuTile emoji="📖" label="Verset" onClick={run(onVerse)} />
+              <MenuTile emoji="🙏" label="Prière" active={prayerActive} onClick={run(onPrayer)} />
+              <MenuTile emoji="📝" label="Notes" active={panel === "notes"} onClick={run(onNotes)} />
+              <MenuTile emoji="📊" label="Stats" active={panel === "stats"} onClick={run(onStats)} />
+              <MenuTile emoji="⚙️" label="Réglages" active={panel === "settings"} onClick={run(onSettings)} />
+              {canRecord && <MenuTile emoji={recording ? "⏹️" : "🔴"} label={recording ? "Stop" : "Enregistrer"} active={recording} onClick={run(onRecord)} />}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Barre principale : micro · caméra · ⋮ · raccrocher */}
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 7, display: "flex", justifyContent: "center", padding: "12px 10px", paddingBottom: "max(14px, env(safe-area-inset-bottom, 14px))", background: "linear-gradient(0deg, rgba(0,0,0,0.72), transparent)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(30,30,30,0.92)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 999, padding: "9px 14px", backdropFilter: "blur(14px)", boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }}>
+          <TrackToggle source={Track.Source.Microphone} showIcon style={ctrlBtn(false)}><span style={{ fontSize: 19 }}>🎙️</span></TrackToggle>
+          {!isAudio && <TrackToggle source={Track.Source.Camera} showIcon style={ctrlBtn(false)}><span style={{ fontSize: 19 }}>📹</span></TrackToggle>}
+          <FeatureBtn emoji="⋮" active={moreOpen} badge={moreOpen ? 0 : unreadChat} onClick={() => setMoreOpen((v) => !v)} />
+          <DisconnectButton onClick={onLeave} style={{ ...ctrlBtn(true), width: 60 }}><span style={{ fontSize: 19 }}>📞</span></DisconnectButton>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
+function MenuTile({ emoji, label, active, badge, onClick }: { emoji: string; label: string; active?: boolean; badge?: number; onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={menuTileStyle(active)}>
+      <span style={{ fontSize: 21, position: "relative", lineHeight: 1 }}>
+        {emoji}
+        {!!badge && badge > 0 && <span style={{ position: "absolute", top: -5, right: -11, background: "#DC2626", color: "#fff", fontSize: 9, fontWeight: 800, borderRadius: 999, minWidth: 15, height: 15, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{badge > 9 ? "9+" : badge}</span>}
+      </span>
+      <span style={menuTileLabel}>{label}</span>
+    </button>
+  );
+}
+function menuTileStyle(active?: boolean): React.CSSProperties {
+  return {
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5,
+    background: active ? VIOLET : "rgba(255,255,255,0.06)", border: `1px solid ${active ? VIOLET : "rgba(255,255,255,0.1)"}`,
+    borderRadius: 14, padding: "11px 4px", color: "#fff", cursor: "pointer", minHeight: 64,
+  };
+}
+const menuTileLabel: React.CSSProperties = { fontSize: 10.5, fontWeight: 600, color: "rgba(255,255,255,0.85)", textAlign: "center", lineHeight: 1.1 };
 function FeatureBtn({ emoji, active, badge, onClick }: { emoji: string; active?: boolean; badge?: number; onClick: () => void }) {
   return (
     <button onClick={onClick} style={{ ...ctrlBtn(false), position: "relative", background: active ? VIOLET : "rgba(255,255,255,0.10)" }}>
