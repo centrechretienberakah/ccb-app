@@ -10,6 +10,7 @@ interface Props {
   conversationId: string;
   currentUserId: string;
   other: DmOther;
+  myDisplayName: string;
   initialMessages: DmMessageRow[];
 }
 
@@ -30,7 +31,7 @@ function detectType(file: File): string {
   return "other";
 }
 
-export default function DmChatClient({ conversationId, currentUserId, other, initialMessages }: Props) {
+export default function DmChatClient({ conversationId, currentUserId, other, myDisplayName, initialMessages }: Props) {
   const [messages, setMessages] = useState<DmMessageRow[]>(initialMessages);
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [text, setText] = useState("");
@@ -153,6 +154,17 @@ export default function DmChatClient({ conversationId, currentUserId, other, ini
       setMessages((prev) => prev.some((x) => x.id === row.id) ? prev : [...prev, row]);
       setText(""); setReplyTo(null); setPending(null);
       void sb.from("conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
+      // Notif push à l'interlocuteur (best-effort)
+      void fetch("/api/notifications/send", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `💬 ${myDisplayName}`,
+          body: (t || (pending ? "📎 Pièce jointe" : "")).slice(0, 140),
+          url: `/community/messages/${conversationId}`,
+          audience: "conversation_members",
+          conversationId,
+        }),
+      }).catch(() => {});
     }
     setSending(false);
   }

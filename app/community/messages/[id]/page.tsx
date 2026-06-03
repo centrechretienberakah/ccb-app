@@ -55,6 +55,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     display_name: otherId ? profMap[otherId]?.display_name ?? null : (c.title ?? null),
     avatar_url: otherId ? profMap[otherId]?.avatar_url ?? null : null,
   };
+  const myDisplayName = profMap[user.id]?.display_name ?? "Un membre";
 
   // Messages initiaux
   const { data: msgs } = await supabase
@@ -76,6 +77,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
       conversationId={id}
       currentUserId={user.id}
       other={other}
+      myDisplayName={myDisplayName}
       initialMessages={(msgs ?? []) as DmMessageRow[]}
     />
   );

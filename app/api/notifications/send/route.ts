@@ -65,14 +65,14 @@ interface PushSubscriptionRow {
 //                      Body : { ..., groupId: <uuid>, excludeMuted?: boolean = true }
 export async function POST(req: NextRequest) {
   const reqBody = await req.json();
-  const { title, body, url, audience, userIds, groupId, excludeMuted } = reqBody;
+  const { title, body, url, audience, userIds, groupId, excludeMuted, conversationId } = reqBody;
   if (!title || !body) return NextResponse.json({ error: "title et body requis" }, { status: 400 });
 
-  // Audience "admins" et "group_members" : tout user authentifié
-  // Sinon ("all" / "user_ids" / défaut) : modérateur+ requis
-  const auth = (audience === "admins" || audience === "group_members")
-    ? await assertAuthenticated()
-    : await assertModerator();
+  // Audiences accessibles à tout user authentifié (vérif serveur ensuite) :
+  // "admins", "group_members", "conversation_members".
+  // Sinon ("all" / "user_ids" / défaut) : modérateur+ requis.
+  const selfServe = audience === "admins" || audience === "group_members" || audience === "conversation_members";
+  const auth = selfServe ? await assertAuthenticated() : await assertModerator();
   if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: auth.status });
 
   if (!configureWebPush()) {
@@ -168,6 +168,26 @@ export async function POST(req: NextRequest) {
       });
     }
     query = query.in("user_id", targets);
+  } else if (audience === "conversation_members") {
+    // Notifie les autres membres d'une conversation privée (DM / mini-groupe).
+    if (!conversationId || typeof conversationId !== "string") {
+      return NextResponse.json({ error: "conversationId requis pour audience=conversation_members" }, { status: 400 });
+    }
+    // Vérifie que l'appelant est bien membre de la conversation
+    const { data: myMem } = await admin
+      .from("conversation_members").select("user_id")
+      .eq("conversation_id", conversationId).eq("user_id", auth.userId).maybeSingle();
+    if (!myMem) {
+      return NextResponse.json({ error: "Tu n'es pas membre de cette conversation" }, { status: 403 });
+    }
+    const { data: others } = await admin
+      .from("conversation_members").select("user_id")
+      .eq("conversation_id", conversationId).neq("user_id", auth.userId);
+    const targetIds = ((others ?? []) as Array<{ user_id: string }>).map((m) => m.user_id);
+    if (targetIds.length === 0) {
+      return NextResponse.json({ sent: 0, failed: 0, message: "Aucun autre membre." });
+    }
+    query = query.in("user_id", targetIds);
   }
 
   const { data: subs, error: dbErr } = await query;
