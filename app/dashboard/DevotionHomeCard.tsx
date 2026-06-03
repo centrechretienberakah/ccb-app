@@ -48,8 +48,10 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
   const [read, setRead] = useState(initialRead);
   const [marking, setMarking] = useState(false);
   const [shared, setShared] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const paragraphs = devotion.content.split("\n\n").filter((p) => p.trim().length > 0);
+  const hasMore = paragraphs.length > 1 || !!devotion.application || !!devotion.prayer || !!devotion.declaration;
 
   function buildShareText(includeUrl: boolean) {
     const lines: string[] = [
@@ -185,61 +187,75 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
           </div>
         </div>
 
-        {/* Méditation */}
-        <div style={{ marginBottom: devotion.application || devotion.prayer || devotion.declaration ? 16 : 8 }}>
+        {/* Méditation — aperçu (1er paragraphe) puis le reste si déplié */}
+        <div style={{ marginBottom: 14 }}>
           <SectionLabel>✦ Méditation</SectionLabel>
-          {paragraphs.map((p, i) => (
+          {(expanded ? paragraphs : paragraphs.slice(0, 1)).map((p, i) => (
             <p key={i} style={{
-              fontSize: 14.5, color: "var(--text-secondary)", lineHeight: 1.7,
-              margin: i === 0 ? "0 0 10px" : "0 0 10px",
+              fontSize: 14.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: "0 0 10px",
             }}>
               {p}
             </p>
           ))}
         </div>
 
-        {/* Question de réflexion */}
-        {devotion.application && (
-          <div style={{
-            background: "rgba(212,175,55,0.08)",
-            border: "1px solid rgba(212,175,55,0.3)",
-            borderRadius: 12, padding: "12px 14px", marginBottom: 14,
-          }}>
-            <SectionLabel>💡 Question de réflexion</SectionLabel>
-            <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
-              {devotion.application}
-            </p>
-          </div>
+        {expanded && (
+          <>
+            {/* Question de réflexion */}
+            {devotion.application && (
+              <div style={{
+                background: "rgba(212,175,55,0.08)",
+                border: "1px solid rgba(212,175,55,0.3)",
+                borderRadius: 12, padding: "12px 14px", marginBottom: 14,
+              }}>
+                <SectionLabel>💡 Question de réflexion</SectionLabel>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                  {devotion.application}
+                </p>
+              </div>
+            )}
+
+            {/* Prière */}
+            {devotion.prayer && (
+              <div style={{ marginBottom: 14 }}>
+                <SectionLabel>🙏 Prière du jour</SectionLabel>
+                <p style={{
+                  fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.65,
+                  margin: 0, fontStyle: "italic",
+                }}>
+                  {devotion.prayer}
+                </p>
+              </div>
+            )}
+
+            {/* Déclaration prophétique */}
+            {devotion.declaration && (
+              <div style={{
+                background: "linear-gradient(135deg, rgba(90,44,160,0.10), rgba(212,175,55,0.10))",
+                borderRadius: 12, padding: "12px 14px", marginBottom: 14,
+                textAlign: "center",
+              }}>
+                <SectionLabel center>✦ Déclaration prophétique</SectionLabel>
+                <p style={{
+                  fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.55,
+                  margin: 0, fontWeight: 600,
+                }}>
+                  {devotion.declaration}
+                </p>
+              </div>
+            )}
+          </>
         )}
 
-        {/* Prière */}
-        {devotion.prayer && (
-          <div style={{ marginBottom: 14 }}>
-            <SectionLabel>🙏 Prière du jour</SectionLabel>
-            <p style={{
-              fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.65,
-              margin: 0, fontStyle: "italic",
-            }}>
-              {devotion.prayer}
-            </p>
-          </div>
-        )}
-
-        {/* Déclaration prophétique */}
-        {devotion.declaration && (
-          <div style={{
-            background: "linear-gradient(135deg, rgba(90,44,160,0.10), rgba(212,175,55,0.10))",
-            borderRadius: 12, padding: "12px 14px", marginBottom: 18,
-            textAlign: "center",
+        {/* Bouton lire la méditation complète / réduire */}
+        {hasMore && (
+          <button onClick={() => setExpanded((v) => !v)} style={{
+            width: "100%", background: "transparent", border: "1px dashed var(--border)",
+            borderRadius: 12, padding: "9px", marginBottom: 14,
+            color: "var(--violet)", fontWeight: 700, fontSize: 12.5, cursor: "pointer",
           }}>
-            <SectionLabel center>✦ Déclaration prophétique</SectionLabel>
-            <p style={{
-              fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.55,
-              margin: 0, fontWeight: 600,
-            }}>
-              {devotion.declaration}
-            </p>
-          </div>
+            {expanded ? "▲ Réduire" : "▼ Lire la méditation complète"}
+          </button>
         )}
 
         {/* Actions */}
