@@ -32,6 +32,11 @@ export default function MessagesListClient({ conversations }: { conversations: C
           <h1 style={{ fontFamily: F.title, fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: "0.04em" }}>
             💬 Messages
           </h1>
+          <Link href="/community/messages/new" title="Nouveau groupe" style={{
+            marginLeft: "auto", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.3)",
+            borderRadius: 999, padding: "7px 14px", color: "#fff", fontSize: 12.5, fontWeight: 700,
+            textDecoration: "none", display: "flex", alignItems: "center", gap: 6,
+          }}>👥 Nouveau groupe</Link>
         </div>
       </div>
 

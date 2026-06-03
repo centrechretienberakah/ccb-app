@@ -33,6 +33,17 @@ export default function DmCallClient({ conversationId, title, mode, myName }: Pr
       displayName: myName,
       backUrl,
     });
+    // Notifie les autres membres de l'appel entrant (best-effort)
+    void fetch("/api/notifications/send", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: mode === "audio" ? "📞 Appel entrant" : "📹 Appel vidéo entrant",
+        body: `${myName} vous appelle`,
+        url: `/community/messages/${conversationId}/call${mode === "audio" ? "?mode=audio" : ""}`,
+        audience: "conversation_members",
+        conversationId,
+      }),
+    }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, mode]);
 
