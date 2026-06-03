@@ -16,7 +16,6 @@ interface Props {
 }
 
 const QUICK_ACTIONS = [
-  { emoji: "📚", label: "Méditations Archives", sub: "Toutes les méditations", href: "/devotion", gradient: "linear-gradient(145deg, #92400e 0%, #d97706 55%, #fbbf24 100%)", glow: "rgba(251,191,36,0.35)" },
   { emoji: "📖", label: "Ma Bible", sub: "Lire & Plan de lecture", href: "/bible", gradient: "linear-gradient(145deg, #1e3a5f 0%, #1e40af 55%, #3b82f6 100%)", glow: "rgba(59,130,246,0.35)" },
   { emoji: "👥", label: "Communaute", sub: "Echanges & partages", href: "/community", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #4ade80 100%)", glow: "rgba(74,222,128,0.35)" },
   { emoji: "📺", label: "Jesus Daily TV", sub: "Predications & live", href: "/jesus-daily", gradient: "linear-gradient(145deg, #3d1a72 0%, #5a2ca0 55%, #a78bfa 100%)", glow: "rgba(167,139,250,0.35)" },
