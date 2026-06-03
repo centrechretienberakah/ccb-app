@@ -206,7 +206,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
   }
 
   return (
-    <div style={{ background: T.bg, height: "100dvh", display: "flex", flexDirection: "column", color: T.text, fontFamily: F.body }}>
+    <div style={{ background: T.bg, height: "calc(100dvh - var(--ccb-topbar-h, 62px) - var(--ccb-bottomnav-h, 0px))", display: "flex", flexDirection: "column", color: T.text, fontFamily: F.body }}>
       {/* Header */}
       <div style={{
         background: `linear-gradient(180deg, ${T.violet} 0%, ${T.violetDark} 100%)`,

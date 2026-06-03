@@ -18,7 +18,7 @@ export default function MessagingTabs() {
   const isDiscussions = pathname.startsWith("/community/messages");
 
   return (
-    <div style={{ background: T.card, position: "sticky", top: 0, zIndex: 20, boxShadow: "0 1px 0 rgba(0,0,0,0.04)" }}>
+    <div style={{ background: T.card, position: "sticky", top: "var(--ccb-topbar-h, 62px)", zIndex: 30, boxShadow: "0 1px 0 rgba(0,0,0,0.04)" }}>
       {/* Header */}
       <div style={{
         background: `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,

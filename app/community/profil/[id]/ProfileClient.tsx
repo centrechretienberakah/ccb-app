@@ -237,7 +237,7 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
         )}
 
         {/* ─── Section 5 : Onglets Skool (sticky) ─── */}
-        <div className="ccb-pf-tabs" style={{ display: "flex", gap: 4, overflowX: "auto", position: "sticky", top: 0, zIndex: 10, background: T.bg, padding: "6px 0", marginBottom: 10, borderBottom: `1px solid ${T.border}` }}>
+        <div className="ccb-pf-tabs" style={{ display: "flex", gap: 4, overflowX: "auto", position: "sticky", top: "var(--ccb-topbar-h, 62px)", zIndex: 30, background: T.bg, padding: "6px 0", marginBottom: 10, borderBottom: `1px solid ${T.border}` }}>
           {tabs.map((t) => {
             const active = tab === t.key;
             const isAdmin = t.key === "admin";

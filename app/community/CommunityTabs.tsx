@@ -28,11 +28,12 @@ interface Props {
 }
 
 // "Groupes" + chat privé sont unifiés sous "Messagerie" (/community/messages).
+// `short` = libellé compact affiché sur très petit écran.
 const TABS = [
-  { key: "feed",       label: "Fil d'actualité", emoji: "📰", href: "/community" },
-  { key: "prayer",     label: "Prions Ensemble", emoji: "🙏", href: "/community/prions-ensemble" },
-  { key: "messagerie", label: "Messagerie",      emoji: "💬", href: "/community/messages" },
-  { key: "members",    label: "Membres",         emoji: "👥", href: "/community/membres" },
+  { key: "feed",       label: "Fil d'actualité", short: "Fil",      emoji: "📰", href: "/community" },
+  { key: "prayer",     label: "Prions Ensemble", short: "Prière",   emoji: "🙏", href: "/community/prions-ensemble" },
+  { key: "messagerie", label: "Messagerie",      short: "Messages", emoji: "💬", href: "/community/messages" },
+  { key: "members",    label: "Membres",         short: "Membres",  emoji: "👥", href: "/community/membres" },
 ] as const;
 
 export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }: Props) {
@@ -91,11 +92,20 @@ export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }
 
   return (
     <div style={{
-      position: "sticky", top: 0, zIndex: 20,
+      position: "sticky", top: "var(--ccb-topbar-h, 62px)", zIndex: 30,
       background: T.card, borderBottom: `1px solid ${T.border}`,
       boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
     }}>
-      <style>{`.ccb-comm-tabs::-webkit-scrollbar{display:none;}`}</style>
+      <style>{`
+        .ccb-comm-tabs::-webkit-scrollbar{display:none;}
+        .ccb-ctab{ padding: 13px 16px; font-size: 14px; }
+        .ccb-ctab-short{ display:none; }
+        @media (max-width: 560px){
+          .ccb-ctab{ padding: 11px 9px; font-size: 12.5px; gap: 4px; }
+          .ccb-ctab-full{ display:none; }
+          .ccb-ctab-short{ display:inline; }
+        }
+      `}</style>
       <div className="ccb-comm-tabs" style={{
         maxWidth: 1080, margin: "0 auto",
         display: "flex", alignItems: "center",
@@ -105,10 +115,11 @@ export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }
         {TABS.map((t) => {
           const active = isActive(t.href);
           const showCount = t.key === "members" && counts.members !== undefined;
+          const suffix = showCount ? ` (${counts.members})` : "";
           return (
-            <Link key={t.key} href={t.href} style={{
-              padding: "13px 16px", textDecoration: "none",
-              fontFamily: F.body, fontSize: 14,
+            <Link key={t.key} href={t.href} className="ccb-ctab" style={{
+              textDecoration: "none",
+              fontFamily: F.body,
               fontWeight: active ? 700 : 500,
               color: active ? T.violet : T.textMuted,
               borderBottom: `2px solid ${active ? T.violet : "transparent"}`,
@@ -116,7 +127,8 @@ export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }
               transition: "color .15s, border-color .15s",
             }}>
               <span style={{ fontSize: 15 }}>{t.emoji}</span>
-              <span>{t.label}{showCount ? ` (${counts.members})` : ""}</span>
+              <span className="ccb-ctab-full">{t.label}{suffix}</span>
+              <span className="ccb-ctab-short">{t.short}{suffix}</span>
             </Link>
           );
         })}

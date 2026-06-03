@@ -155,10 +155,9 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
         @media (min-width: 1100px){ .ccb-mb-grid { grid-template-columns: 1fr 1fr 1fr; } }
       `}</style>
 
-      {/* Header compact */}
+      {/* Header compact (non-sticky : la nav persistante est CommunityTabs au-dessus) */}
       <div style={{
         background: T.card, borderBottom: `1px solid ${T.border}`,
-        position: "sticky", top: 0, zIndex: 15,
       }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "10px 14px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>

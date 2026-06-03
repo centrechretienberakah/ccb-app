@@ -8,6 +8,14 @@
 
 /* ── Mode CLAIR (défaut — beige) ── */
 :root {
+  /* Hauteur de la TopBar — sert d'offset aux barres sticky des modules
+     (Communauté, Messagerie, Profil) pour qu'elles se collent JUSTE en
+     dessous de la TopBar au lieu de passer dessous. 62px desktop/tablette. */
+  --ccb-topbar-h: 62px;
+  /* Hauteur de la BottomNav (mobile uniquement) — sert à dimensionner les
+     vues plein écran (chat) pour que le composer reste au-dessus. 0 hors mobile. */
+  --ccb-bottomnav-h: 0px;
+
   /* Brand */
   --violet:       #5a2ca0;
   --violet-dark:  #3d1a72;
@@ -894,6 +902,11 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   .topbar {
     padding-top: env(safe-area-inset-top, 0px);
     height: calc(56px + env(safe-area-inset-top, 0px));
+  }
+  /* TopBar mobile plus basse → offset sticky aligné (avec safe-area) */
+  :root {
+    --ccb-topbar-h: calc(56px + env(safe-area-inset-top, 0px));
+    --ccb-bottomnav-h: calc(60px + env(safe-area-inset-bottom, 0px));
   }
 }
 
