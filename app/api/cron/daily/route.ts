@@ -1,0 +1,69 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { getParisDateString, getParisDayIndex, STATIC_DEVOTIONS } from "@/app/devotion/devotions-data";
+import { STATIC_PRAYERS } from "@/app/community/prions-ensemble/daily-prayers-data";
+import { ensureDevotionInDb } from "@/lib/devotion/ensure";
+import { ensureDailyPrayerInDb } from "@/lib/prayer/dailyEnsure";
+
+export const runtime = "nodejs";
+
+/**
+ * GET /api/cron/daily
+ *
+ * Cron quotidien combiné (déclenché par Vercel à 00:00 Paris, cf vercel.json).
+ * Pré-enregistre EN UNE SEULE EXÉCUTION :
+ *   - la méditation du jour (table devotions)
+ *   - la prière du jour (table daily_prayers)
+ * pour que likes / intercessions fonctionnent dès minuit.
+ *
+ * Combiné en un seul endpoint pour rester dans les limites de cron
+ * (2 jobs max sur Vercel Hobby). Idempotent.
+ */
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return null;
+  return createSupabaseAdmin(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
+  if (secret) {
+    const auth = req.headers.get("authorization");
+    if (auth !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
+  const admin = getAdminClient();
+  if (!admin) {
+    return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY non configurée" }, { status: 503 });
+  }
+
+  const date = getParisDateString();
+  const dayIndex = getParisDayIndex();
+
+  // 1) Méditation du jour
+  const dev = STATIC_DEVOTIONS[dayIndex];
+  const devotion = await ensureDevotionInDb(admin, {
+    date, title: dev.title, verse_ref: dev.verse_ref, verse_text: dev.verse_text,
+    content: dev.content, application: dev.application, prayer: dev.prayer,
+    declaration: dev.declaration, author: dev.author,
+  });
+
+  // 2) Prière du jour
+  const pr = STATIC_PRAYERS[dayIndex];
+  const prayer = await ensureDailyPrayerInDb(admin, {
+    date, title: pr.title, verse_ref: pr.verse_ref, verse_text: pr.verse_text,
+    content: pr.content, author: pr.author,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    date,
+    devotion: devotion.id ? { id: devotion.id, created: devotion.created } : { error: devotion.error },
+    prayer: prayer.id ? { id: prayer.id, created: prayer.created } : { error: prayer.error },
+  });
+}

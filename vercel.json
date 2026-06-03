@@ -1,6 +1,6 @@
 {
   "crons": [
-    { "path": "/api/devotion/cron", "schedule": "0 22 * * *" },
-    { "path": "/api/devotion/cron", "schedule": "0 23 * * *" }
+    { "path": "/api/cron/daily", "schedule": "0 22 * * *" },
+    { "path": "/api/cron/daily", "schedule": "0 23 * * *" }
   ]
 }
