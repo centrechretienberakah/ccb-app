@@ -12,7 +12,8 @@ import {
 // Ordre aligné sur l'accès rapide du Dashboard
 const ALL_ITEMS = [
   { href: "/dashboard",     label: "Accueil",           emoji: "🏠" },
-  { href: "/devotion",      label: "Méditons ensemble", emoji: "☀️" },
+  // "Méditons ensemble" est affiché directement sur l'accueil (carte du jour)
+  // — retiré du menu principal pour éviter le doublon.
   { href: "/bible",         label: "Ma Bible",          emoji: "📖" },
   // "Prions ensemble" est désormais un onglet du module Communauté
   // (/community/prions-ensemble) — retiré du menu principal.
