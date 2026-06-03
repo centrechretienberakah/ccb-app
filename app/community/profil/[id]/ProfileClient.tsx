@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import FollowActions from "./FollowActions";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F, getPostKindDef } from "@/lib/community/theme";
 import {
   getRank, progressToNextRank, computeBadges, type MemberStats,
@@ -184,6 +185,10 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
               📅 Membre depuis le <strong style={{ color: "#fff" }}>{joinedOn}</strong>
             </div>
           )}
+
+          {/* Abonnés / Abonnements + bouton Suivre */}
+          <FollowActions targetUserId={profile.user_id} isMe={isMe} />
+          <div style={{ height: 14 }} />
 
           {/* Rang + progression */}
           <div style={{
