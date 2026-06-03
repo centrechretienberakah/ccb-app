@@ -21,12 +21,15 @@ import {
   useTracks,
   useParticipants,
   useLocalParticipant,
+  useRoomContext,
   useChat,
   useDataChannel,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import type { Room } from "livekit-client";
 import type { TrackReferenceOrPlaceholder } from "@livekit/components-core";
 import { useCall } from "@/lib/meet/CallContext";
+import { createClient } from "@/lib/supabase/client";
 
 const VIOLET = "#5A2CA0";
 const GOLD = "#D4AF37";
@@ -59,14 +62,16 @@ function initialsOf(name: string | undefined): string {
   return (name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-type Panel = "none" | "chat" | "people";
+type Panel = "none" | "chat" | "people" | "settings";
 interface Verse { ref: string; text: string; by: string }
 interface Prayer { topic: string; endsAt: number; by: string }
+interface Rec { active: boolean; by: string }
 interface Signal {
-  t: "verse" | "verse-clear" | "prayer-start" | "prayer-stop" | "hand";
+  t: "verse" | "verse-clear" | "prayer-start" | "prayer-stop" | "hand" | "rec";
   ref?: string; text?: string; by?: string;
   topic?: string; endsAt?: number;
   id?: string; name?: string; raised?: boolean;
+  active?: boolean;
 }
 
 export default function MeetStage({ isAudio }: { isAudio: boolean }) {
@@ -94,6 +99,12 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   const [showVersePrompt, setShowVersePrompt] = useState(false);
   const [showPrayerPrompt, setShowPrayerPrompt] = useState(false);
 
+  const room = useRoomContext();
+  const [canModerate, setCanModerate] = useState(false);
+  const [recording, setRecording] = useState<Rec | null>(null);
+  const recEgressRef = useRef<string | null>(null);
+  const [toast, setToast] = useState("");
+
   const myId = localParticipant.identity;
   const myName = localParticipant.name || state.displayName || "Moi";
 
@@ -119,6 +130,7 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
           return n;
         });
       }
+      else if (d.t === "rec") setRecording(d.active ? { active: true, by: d.by || "" } : null);
     } catch { /* noop */ }
   });
   function broadcast(obj: Signal) {
@@ -130,6 +142,20 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
     onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const sb = createClient();
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user || cancelled) return;
+        const { data } = await sb.from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+        const role = (data as { role?: string } | null)?.role;
+        if (!cancelled) setCanModerate(!!role && ["owner", "admin", "leader", "moderator"].includes(role));
+      } catch { /* noop */ }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   function handleLeave() {
@@ -161,6 +187,51 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   }
   function stopPrayer() { setPrayer(null); broadcast({ t: "prayer-stop" }); }
 
+  function flash(m: string) { setToast(m); setTimeout(() => setToast(""), 3200); }
+
+  async function moderate(targetIdentity: string, action: "mute-mic" | "mute-cam" | "remove") {
+    if (action === "remove" && !confirm("Retirer ce participant de la réunion ?")) return;
+    try {
+      const res = await fetch("/api/livekit/moderate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomName: room.name, targetIdentity, action }),
+      });
+      const j = await res.json().catch(() => ({}));
+      flash(res.ok ? "✅ Action effectuée" : "Erreur : " + (j.error || res.status));
+    } catch { flash("Erreur réseau"); }
+  }
+
+  async function toggleRecording() {
+    if (recording && recEgressRef.current) {
+      try {
+        await fetch("/api/livekit/record", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "stop", egressId: recEgressRef.current }),
+        });
+      } catch { /* noop */ }
+      recEgressRef.current = null;
+      setRecording(null);
+      broadcast({ t: "rec", active: false });
+      return;
+    }
+    if (recording) { flash("Enregistrement géré par " + (recording.by || "un autre admin")); return; }
+    try {
+      const res = await fetch("/api/livekit/record", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "start", roomName: room.name }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j.egressId) {
+        recEgressRef.current = j.egressId;
+        setRecording({ active: true, by: myName });
+        broadcast({ t: "rec", active: true, by: myName });
+        flash("🔴 Enregistrement démarré");
+      } else {
+        flash(j.error || "Enregistrement indisponible");
+      }
+    } catch { flash("Erreur réseau"); }
+  }
+
   const count = participants.length;
   const callName = state.groupName || "CCB Meet";
   const handsCount = Object.keys(hands).length;
@@ -191,11 +262,17 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         <div style={{ width: 38 }} />
       </div>
 
-      {/* ── Bannières verset / prière ── */}
+      {/* ── Bannières verset / prière / enregistrement ── */}
       <div style={{ position: "absolute", top: "calc(58px + env(safe-area-inset-top, 0px))", left: 0, right: 0, zIndex: 4, display: "flex", flexDirection: "column", gap: 8, padding: "0 12px", pointerEvents: "none" }}>
+        {recording && <RecBanner by={recording.by} />}
         {verse && <VerseBanner verse={verse} canClear={verse.by === myName} onClear={clearVerse} />}
         {prayer && <PrayerBanner prayer={prayer} canStop={prayer.by === myName} onStop={stopPrayer} onEnd={() => setPrayer(null)} />}
       </div>
+
+      {/* ── Toast ── */}
+      {toast && (
+        <div style={{ position: "absolute", bottom: "calc(92px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "rgba(0,0,0,0.86)", color: "#fff", padding: "9px 16px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, maxWidth: "92%", textAlign: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.4)" }}>{toast}</div>
+      )}
 
       {/* ── Zone principale ── */}
       <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
@@ -213,7 +290,10 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         <ChatPanel messages={chatMessages} onSend={(t) => sendChat(t)} onClose={() => setPanel("none")} myId={myId} />
       )}
       {panel === "people" && (
-        <PeoplePanel participants={participants} hands={hands} myId={myId} isAudio={isAudio} onClose={() => setPanel("none")} />
+        <PeoplePanel participants={participants} hands={hands} myId={myId} isAudio={isAudio} canModerate={canModerate} onModerate={moderate} onClose={() => setPanel("none")} />
+      )}
+      {panel === "settings" && (
+        <SettingsPanel room={room} isAudio={isAudio} onClose={() => setPanel("none")} />
       )}
 
       {/* ── Prompts ── */}
@@ -233,6 +313,10 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         onVerse={() => setShowVersePrompt(true)}
         onPrayer={() => (prayer ? stopPrayer() : setShowPrayerPrompt(true))}
         prayerActive={!!prayer}
+        onSettings={() => setPanel((p) => (p === "settings" ? "none" : "settings"))}
+        canRecord={canModerate}
+        recording={!!recording}
+        onRecord={toggleRecording}
         onLeave={handleLeave}
       />
     </div>
@@ -383,8 +467,11 @@ function ChatPanel({ messages, onSend, onClose }: { messages: ChatMsg[]; onSend:
   );
 }
 
-/* ─────────────── Panneau Participants ─────────────── */
-function PeoplePanel({ participants, hands, myId, isAudio, onClose }: { participants: ReturnType<typeof useParticipants>; hands: Record<string, string>; myId: string; isAudio: boolean; onClose: () => void }) {
+/* ─────────────── Panneau Participants (+ modération) ─────────────── */
+function PeoplePanel({ participants, hands, myId, isAudio, canModerate, onModerate, onClose }: {
+  participants: ReturnType<typeof useParticipants>; hands: Record<string, string>; myId: string;
+  isAudio: boolean; canModerate: boolean; onModerate: (id: string, a: "mute-mic" | "mute-cam" | "remove") => void; onClose: () => void;
+}) {
   const sorted = useMemo(() => {
     return [...participants].sort((a, b) => {
       const ah = hands[a.identity] ? 1 : 0, bh = hands[b.identity] ? 1 : 0;
@@ -397,27 +484,101 @@ function PeoplePanel({ participants, hands, myId, isAudio, onClose }: { particip
         {sorted.map((p) => {
           const raised = !!hands[p.identity];
           const me = p.identity === myId;
+          const showMod = canModerate && !me;
           return (
-            <div key={p.identity} style={{ display: "flex", alignItems: "center", gap: 11, padding: "9px 10px", borderRadius: 10, background: raised ? "rgba(212,175,55,0.10)" : "transparent" }}>
-              <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${VIOLET}, #3E1C70)`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff" }}>
-                {initialsOf(p.name || p.identity)}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {p.name || "Participant"}{me ? " (vous)" : ""}
+            <div key={p.identity} style={{ padding: "9px 10px", borderRadius: 10, background: raised ? "rgba(212,175,55,0.10)" : "transparent" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${VIOLET}, #3E1C70)`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff" }}>
+                  {initialsOf(p.name || p.identity)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {p.name || "Participant"}{me ? " (vous)" : ""}
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, fontSize: 15 }}>
+                  {raised && <span title="Main levée">✋</span>}
+                  {p.isSpeaking && <span title="Parle" style={{ width: 8, height: 8, borderRadius: "50%", background: "#1FA855" }} />}
+                  <span title={p.isMicrophoneEnabled ? "Micro actif" : "Micro coupé"} style={{ opacity: p.isMicrophoneEnabled ? 1 : 0.4 }}>{p.isMicrophoneEnabled ? "🎙️" : "🔇"}</span>
+                  {!isAudio && <span title={p.isCameraEnabled ? "Caméra active" : "Caméra coupée"} style={{ opacity: p.isCameraEnabled ? 1 : 0.4 }}>{p.isCameraEnabled ? "📹" : "📷"}</span>}
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, fontSize: 15 }}>
-                {raised && <span title="Main levée">✋</span>}
-                {p.isSpeaking && <span title="Parle" style={{ width: 8, height: 8, borderRadius: "50%", background: "#1FA855" }} />}
-                <span title={p.isMicrophoneEnabled ? "Micro actif" : "Micro coupé"} style={{ opacity: p.isMicrophoneEnabled ? 1 : 0.4 }}>{p.isMicrophoneEnabled ? "🎙️" : "🔇"}</span>
-                {!isAudio && <span title={p.isCameraEnabled ? "Caméra active" : "Caméra coupée"} style={{ opacity: p.isCameraEnabled ? 1 : 0.4 }}>{p.isCameraEnabled ? "📹" : "📷"}</span>}
-              </div>
+              {showMod && (
+                <div style={{ display: "flex", gap: 6, marginTop: 7, paddingLeft: 49 }}>
+                  <ModBtn label="🔇 Couper micro" onClick={() => onModerate(p.identity, "mute-mic")} />
+                  {!isAudio && <ModBtn label="📷 Couper caméra" onClick={() => onModerate(p.identity, "mute-cam")} />}
+                  <ModBtn danger label="🚫 Retirer" onClick={() => onModerate(p.identity, "remove")} />
+                </div>
+              )}
             </div>
           );
         })}
       </div>
     </SidePanel>
+  );
+}
+function ModBtn({ label, danger, onClick }: { label: string; danger?: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{ background: danger ? "rgba(220,38,38,0.18)" : "rgba(255,255,255,0.08)", border: `1px solid ${danger ? "rgba(220,38,38,0.5)" : "rgba(255,255,255,0.14)"}`, color: danger ? "#FCA5A5" : "rgba(255,255,255,0.85)", borderRadius: 8, padding: "5px 9px", fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>{label}</button>
+  );
+}
+
+/* ─────────────── Bannière enregistrement ─────────────── */
+function RecBanner({ by }: { by: string }) {
+  return (
+    <div style={{ pointerEvents: "auto", maxWidth: 560, margin: "0 auto", width: "100%", background: "rgba(220,38,38,0.92)", borderRadius: 12, padding: "8px 13px", display: "flex", alignItems: "center", gap: 9, boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#fff", animation: "ccb-rec-blink 1.1s ease-in-out infinite" }} />
+      <style>{`@keyframes ccb-rec-blink{0%,100%{opacity:1;}50%{opacity:.25;}}`}</style>
+      <span style={{ fontWeight: 800, fontSize: 12.5, color: "#fff", letterSpacing: "0.06em" }}>REC · Enregistrement en cours{by ? ` · ${by}` : ""}</span>
+    </div>
+  );
+}
+
+/* ─────────────── Panneau Paramètres (périphériques) ─────────────── */
+function SettingsPanel({ room, isAudio, onClose }: { room: Room; isAudio: boolean; onClose: () => void }) {
+  const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
+  const [cams, setCams] = useState<MediaDeviceInfo[]>([]);
+  const [spks, setSpks] = useState<MediaDeviceInfo[]>([]);
+  const [sel, setSel] = useState<{ mic?: string; cam?: string; spk?: string }>({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        if (cancelled) return;
+        setMics(devices.filter((d) => d.kind === "audioinput"));
+        setCams(devices.filter((d) => d.kind === "videoinput"));
+        setSpks(devices.filter((d) => d.kind === "audiooutput"));
+      } catch { /* noop */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  async function change(kind: MediaDeviceKind, deviceId: string) {
+    try {
+      await room.switchActiveDevice(kind, deviceId);
+      setSel((s) => ({ ...s, [kind === "audioinput" ? "mic" : kind === "videoinput" ? "cam" : "spk"]: deviceId }));
+    } catch { /* noop */ }
+  }
+  return (
+    <SidePanel title="⚙️ Paramètres" onClose={onClose}>
+      <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 16 }}>
+        <DeviceSelect label="🎙️ Microphone" devices={mics} value={sel.mic} onChange={(id) => change("audioinput", id)} />
+        {!isAudio && <DeviceSelect label="📹 Caméra" devices={cams} value={sel.cam} onChange={(id) => change("videoinput", id)} />}
+        {spks.length > 0 && <DeviceSelect label="🔊 Haut-parleur" devices={spks} value={sel.spk} onChange={(id) => change("audiooutput", id)} />}
+        <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>Le choix du haut-parleur n'est pas pris en charge par tous les navigateurs (Safari notamment).</div>
+      </div>
+    </SidePanel>
+  );
+}
+function DeviceSelect({ label, devices, value, onChange }: { label: string; devices: MediaDeviceInfo[]; value?: string; onChange: (id: string) => void }) {
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: GOLD, fontWeight: 700, marginBottom: 6 }}>{label}</div>
+      <select value={value || ""} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10, padding: "10px 12px", color: "#fff", fontSize: 13, outline: "none" }}>
+        {devices.length === 0 && <option value="">Aucun périphérique détecté</option>}
+        {devices.map((d, i) => <option key={d.deviceId || i} value={d.deviceId} style={{ color: "#000" }}>{d.label || `Périphérique ${i + 1}`}</option>)}
+      </select>
+    </div>
   );
 }
 
@@ -479,10 +640,12 @@ function PromptShell({ title, onClose, children }: { title: string; onClose: () 
 /* ─────────────── Barre de contrôle ─────────────── */
 function ControlBar({
   isAudio, handRaised, unreadChat, panel, prayerActive,
-  onHand, onChat, onPeople, onVerse, onPrayer, onLeave,
+  onHand, onChat, onPeople, onVerse, onPrayer, onSettings,
+  canRecord, recording, onRecord, onLeave,
 }: {
   isAudio: boolean; handRaised: boolean; unreadChat: number; peopleCount: number; panel: Panel; prayerActive: boolean;
-  onHand: () => void; onChat: () => void; onPeople: () => void; onVerse: () => void; onPrayer: () => void; onLeave: () => void;
+  onHand: () => void; onChat: () => void; onPeople: () => void; onVerse: () => void; onPrayer: () => void; onSettings: () => void;
+  canRecord: boolean; recording: boolean; onRecord: () => void; onLeave: () => void;
 }) {
   return (
     <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 6, display: "flex", justifyContent: "center", padding: "12px 10px", paddingBottom: "max(14px, env(safe-area-inset-bottom, 14px))", background: "linear-gradient(0deg, rgba(0,0,0,0.72), transparent)" }}>
@@ -496,6 +659,12 @@ function ControlBar({
         <FeatureBtn emoji="👥" active={panel === "people"} onClick={onPeople} />
         <FeatureBtn emoji="📖" onClick={onVerse} />
         <FeatureBtn emoji="🙏" active={prayerActive} onClick={onPrayer} />
+        <FeatureBtn emoji="⚙️" active={panel === "settings"} onClick={onSettings} />
+        {canRecord && (
+          <button onClick={onRecord} title={recording ? "Arrêter l'enregistrement" : "Enregistrer"} style={{ ...ctrlBtn(false), background: recording ? "#DC2626" : "rgba(255,255,255,0.10)" }}>
+            <span style={{ fontSize: 18 }}>{recording ? "⏹️" : "🔴"}</span>
+          </button>
+        )}
         <DisconnectButton onClick={onLeave} style={{ ...ctrlBtn(true), width: 60 }}><span style={{ fontSize: 19 }}>📞</span></DisconnectButton>
       </div>
     </div>
