@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import GroupsListClient from "./GroupsListClient";
+import CommunityTabs from "../CommunityTabs";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Groupes — Communauté CCB" };
@@ -128,5 +129,10 @@ export default async function GroupsPage() {
     console.error("Groups fetch error:", e);
   }
 
-  return <GroupsListClient initialGroups={groups} currentUserId={user.id} userRole={userRole} />;
+  return (
+    <>
+      <CommunityTabs />
+      <GroupsListClient initialGroups={groups} currentUserId={user.id} userRole={userRole} />
+    </>
+  );
 }

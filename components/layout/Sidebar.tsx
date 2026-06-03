@@ -14,7 +14,8 @@ const ALL_ITEMS = [
   { href: "/dashboard",     label: "Accueil",           emoji: "🏠" },
   { href: "/devotion",      label: "Méditons ensemble", emoji: "☀️" },
   { href: "/bible",         label: "Ma Bible",          emoji: "📖" },
-  { href: "/prayer",        label: "Prions ensemble",   emoji: "🙏" },
+  // "Prions ensemble" est désormais un onglet du module Communauté
+  // (/community/prions-ensemble) — retiré du menu principal.
   { href: "/community",     label: "Communauté",        emoji: "👥" },
   { href: "/jesus-daily",   label: "Jesus Daily TV",    emoji: "📺" },
   { href: "/institut",      label: "Institut Berakah",  emoji: "🎓" },

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import FeedClient, { Post, Category } from "./FeedClient";
 import CommunitySidebar from "./CommunitySidebar";
+import CommunityTabs from "./CommunityTabs";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
 
 interface Member {
@@ -81,71 +81,12 @@ export default function CommunityClient({
         </div>
       </div>
 
-      {/* Sub-nav : feed actif + lien Membres + notifs + modération */}
-      <div style={{ background: T.card, borderBottom: `1px solid ${T.border}` }}>
-        <div style={{
-          maxWidth: 680, margin: "0 auto",
-          display: "flex", alignItems: "center", overflowX: "auto",
-          gap: 0,
-        }}>
-          <div style={{
-            padding: "12px 20px", fontFamily: F.body,
-            borderBottom: `2px solid ${T.violet}`,
-            color: T.violet, fontWeight: 700, fontSize: 14,
-            whiteSpace: "nowrap",
-          }}>
-            📰 Fil d&apos;actualité
-          </div>
-          <Link href="/community/groups" style={{
-            padding: "12px 20px", textDecoration: "none",
-            fontFamily: F.body, fontSize: 14, fontWeight: 500,
-            color: T.textMuted, whiteSpace: "nowrap",
-            borderBottom: "2px solid transparent",
-          }}>
-            🧑‍🤝‍🧑 Groupes
-          </Link>
-          <Link href="/community/membres" style={{
-            padding: "12px 20px", textDecoration: "none",
-            fontFamily: F.body, fontSize: 14, fontWeight: 500,
-            color: T.textMuted, whiteSpace: "nowrap",
-            borderBottom: "2px solid transparent",
-          }}>
-            👥 Membres ({members.length})
-          </Link>
-          <Link href="/community/notifications" title="Mes notifications" style={{
-            marginLeft: "auto", padding: "8px 12px",
-            position: "relative", flexShrink: 0,
-            textDecoration: "none", color: T.textSoft,
-            display: "flex", alignItems: "center",
-            fontSize: 17,
-          }}>
-            🔔
-            {unreadNotifCount > 0 && (
-              <span style={{
-                position: "absolute", top: 4, right: 0,
-                background: "#C24B7A", color: "#fff",
-                fontSize: 9, fontWeight: 700,
-                borderRadius: 999, padding: "1px 5px",
-                minWidth: 14, textAlign: "center",
-                border: `1.5px solid ${T.card}`,
-              }}>
-                {unreadNotifCount > 99 ? "99+" : unreadNotifCount}
-              </span>
-            )}
-          </Link>
-          {isAdmin && (
-            <Link href="/community/admin" style={{
-              padding: "6px 14px", fontSize: 11,
-              background: T.violetSoft, color: T.violet, fontWeight: 700,
-              borderRadius: 999, textDecoration: "none", flexShrink: 0,
-              border: `1px solid ${T.violet}`,
-              alignSelf: "center", marginRight: 12,
-            }}>
-              🛡️ Modération
-            </Link>
-          )}
-        </div>
-      </div>
+      {/* Barre d'onglets interne du module Communauté (composant partagé) */}
+      <CommunityTabs
+        memberCount={members.length}
+        unreadNotifCount={unreadNotifCount}
+        isAdmin={isAdmin}
+      />
 
       {/* Layout responsive : feed central + sidebar à droite desktop */}
       <style>{`

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import MembersClient from "./MembersClient";
+import CommunityTabs from "../CommunityTabs";
 import { computeXp, type MemberStats } from "@/lib/community/gamification";
 
 export const dynamic = "force-dynamic";
@@ -67,7 +68,12 @@ export default async function MembresPage() {
 
   const userIds = profileRows.map((p) => p.user_id);
   if (userIds.length === 0) {
-    return <MembersClient members={[]} currentUserId={user.id} isAdmin={isAdmin} />;
+    return (
+      <>
+        <CommunityTabs />
+        <MembersClient members={[]} currentUserId={user.id} isAdmin={isAdmin} />
+      </>
+    );
   }
 
   // Jalons spirituels
@@ -150,5 +156,10 @@ export default async function MembresPage() {
 
   members.sort((a, b) => b.xp - a.xp);
 
-  return <MembersClient members={members} currentUserId={user.id} isAdmin={isAdmin} />;
+  return (
+    <>
+      <CommunityTabs />
+      <MembersClient members={members} currentUserId={user.id} isAdmin={isAdmin} />
+    </>
+  );
 }
