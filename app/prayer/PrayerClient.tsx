@@ -860,7 +860,7 @@ export default function PrayerClient({
             fontFamily: F.title, fontWeight: 700, margin: "0 0 4px",
             letterSpacing: "0.05em",
           }}>
-            🙏 PRIONS ENSEMBLE
+            🙏 MUR DE PRIÈRE
           </h1>
           <p className="ccb-prayer-tagline" style={{
             margin: 0, opacity: 0.9, fontStyle: "italic",
