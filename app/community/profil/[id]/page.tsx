@@ -65,6 +65,14 @@ export default async function ProfilPage({ params }: { params: Promise<{ id: str
   if (!profile) return notFound();
   const p = profile;
 
+  // Rôle du membre (pour badge rôle / premium)
+  let memberRole: string | null = null;
+  try {
+    const { data: roleRow } = await supabase
+      .from("user_roles").select("role").eq("user_id", id).maybeSingle();
+    memberRole = (roleRow as { role: string } | null)?.role ?? null;
+  } catch { /* noop */ }
+
   // Stats
   const [
     { count: postCount },
@@ -119,6 +127,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ id: str
       milestones={milestoneList}
       recentPosts={(myPosts ?? []) as RecentPost[]}
       isMe={p.user_id === user.id}
+      role={memberRole}
     />
   );
 }
