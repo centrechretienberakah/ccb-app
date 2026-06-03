@@ -20,6 +20,10 @@ export interface MemberLite {
   milestones: string[];
   stats: MemberStats;
   xp: number;
+  role: string | null;        // owner/admin/leader/moderator/premium_member/member
+  followers: number;
+  following: number;
+  isFollowing: boolean;       // l'utilisateur courant suit-il ce membre
 }
 
 export default async function MembresPage() {
@@ -75,6 +79,30 @@ export default async function MembresPage() {
       </>
     );
   }
+
+  // ── Rôles par membre (admin/leader/premium…) ──
+  const roleMap: Record<string, string> = {};
+  try {
+    const { data: roles } = await supabase
+      .from("user_roles").select("user_id, role").in("user_id", userIds);
+    for (const r of (roles ?? []) as Array<{ user_id: string; role: string }>) {
+      roleMap[r.user_id] = r.role;
+    }
+  } catch { /* noop */ }
+
+  // ── Abonnements : compteurs par membre + qui je suis ──
+  const followersCount: Record<string, number> = {};
+  const followingCount: Record<string, number> = {};
+  const myFollowing = new Set<string>();
+  try {
+    const { data: follows } = await supabase
+      .from("follows").select("follower_id, following_id").limit(20000);
+    for (const f of (follows ?? []) as Array<{ follower_id: string; following_id: string }>) {
+      followersCount[f.following_id] = (followersCount[f.following_id] || 0) + 1;
+      followingCount[f.follower_id] = (followingCount[f.follower_id] || 0) + 1;
+      if (f.follower_id === user.id) myFollowing.add(f.following_id);
+    }
+  } catch { /* table v52 pas migrée → 0 partout */ }
 
   // Jalons spirituels
   const { data: milestonesData } = await supabase
@@ -151,6 +179,10 @@ export default async function MembresPage() {
       milestones: milestonesByUser[p.user_id] || [],
       stats,
       xp: computeXp(stats),
+      role: roleMap[p.user_id] ?? null,
+      followers: followersCount[p.user_id] ?? 0,
+      following: followingCount[p.user_id] ?? 0,
+      isFollowing: myFollowing.has(p.user_id),
     };
   });
 
