@@ -16,7 +16,7 @@ interface Props {
 
 interface Reaction { message_id: string; user_id: string; emoji: string; }
 
-const REACTION_EMOJIS = ["❤️", "🙏", "👍", "😂", "😮", "🔥"];
+const REACTION_EMOJIS = ["❤️", "🙏", "🔥", "🙌", "👍", "🎉", "😂", "😢"];
 
 function fmtTime(iso: string): string {
   try { return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); }
@@ -319,7 +319,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
                     <div onClick={(e) => e.stopPropagation()} style={{
                       position: "absolute", top: -8, [mine ? "right" : "left"]: 0, zIndex: 11,
                       transform: "translateY(-100%)", background: T.card, border: `1px solid ${T.border}`,
-                      borderRadius: 999, boxShadow: T.shadowMd, padding: "4px 8px", display: "flex", gap: 4,
+                      borderRadius: 16, boxShadow: T.shadowMd, padding: "5px 8px", display: "flex", gap: 4, flexWrap: "wrap", maxWidth: 230,
                     } as React.CSSProperties}>
                       {REACTION_EMOJIS.map((e) => (
                         <button key={e} onClick={() => toggleReaction(m.id, e)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", padding: 2 }}>{e}</button>
