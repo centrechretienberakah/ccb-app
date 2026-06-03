@@ -1,0 +1,91 @@
+"use client";
+
+import { createClient } from "@/lib/supabase/client";
+
+export type CallType = "audio" | "video";
+export type CallStatus = "ringing" | "accepted" | "declined" | "missed" | "ended";
+
+export interface CallRow {
+  id: string;
+  caller_id: string;
+  receiver_id: string | null;
+  conversation_id: string | null;
+  group_id: string | null;
+  room_id: string;
+  call_type: CallType;
+  status: CallStatus;
+  caller_name: string | null;
+  caller_avatar: string | null;
+  group_name: string | null;
+  created_at: string;
+  answered_at: string | null;
+  ended_at: string | null;
+}
+
+/**
+ * Crée un appel "ringing" (signalisation Realtime). Le destinataire reçoit
+ * l'INSERT via son abonnement Realtime sur `calls` (RLS l'y autorise).
+ * Retourne la ligne créée (avec id) ou null si la table v57 n'est pas migrée.
+ */
+export async function ringCall(opts: {
+  conversationId?: string | null;
+  groupId?: string | null;
+  type: CallType;
+}): Promise<CallRow | null> {
+  try {
+    const sb = createClient();
+    const { data, error } = await sb.rpc("call_ring", {
+      p_conversation_id: opts.conversationId ?? null,
+      p_group_id: opts.groupId ?? null,
+      p_type: opts.type,
+    });
+    if (error || !data) return null;
+    return data as CallRow;
+  } catch {
+    return null;
+  }
+}
+
+/** Met à jour le statut d'un appel (accepté / refusé / manqué / terminé). */
+export async function setCallStatus(callId: string, status: CallStatus): Promise<void> {
+  try {
+    const sb = createClient();
+    await sb.rpc("call_update_status", { p_call_id: callId, p_status: status });
+  } catch {
+    /* noop */
+  }
+}
+
+/** Envoie une notification push d'appel (best-effort, pour membres hors-ligne). */
+export async function pushCallNotification(opts: {
+  type: CallType;
+  callerName: string;
+  conversationId?: string | null;
+  groupId?: string | null;
+  groupName?: string | null;
+}): Promise<void> {
+  try {
+    const isGroup = !!opts.groupId;
+    const title = isGroup
+      ? (opts.type === "audio" ? "📞 Appel de groupe" : "📹 Appel vidéo de groupe")
+      : (opts.type === "audio" ? "📞 Appel entrant" : "📹 Appel vidéo entrant");
+    const body = isGroup
+      ? `${opts.callerName} démarre un appel dans ${opts.groupName || "le groupe"}`
+      : `${opts.callerName} vous appelle`;
+    const url = isGroup
+      ? `/community/groups/${opts.groupId}/meeting${opts.type === "audio" ? "?mode=audio&join=1" : "?join=1"}`
+      : `/community/messages/${opts.conversationId}/call?mode=${opts.type}&join=1`;
+    await fetch("/api/notifications/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title, body, url,
+        audience: isGroup ? "group_members" : "conversation_members",
+        groupId: opts.groupId ?? undefined,
+        conversationId: opts.conversationId ?? undefined,
+      }),
+    });
+  } catch {
+    /* noop */
+  }
+}

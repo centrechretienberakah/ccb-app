@@ -6,6 +6,7 @@ import RegisterSW from "@/components/pwa/RegisterSW";
 import BuildCheck from "@/components/pwa/BuildCheck";
 import { CallProvider } from "@/lib/meet/CallContext";
 import PersistentCallHost from "@/components/meet/PersistentCallHost";
+import IncomingCallHost from "@/components/meet/IncomingCallHost";
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
@@ -88,6 +89,9 @@ export default function RootLayout({
               full screen quand on est sur /meeting, mini-player ailleurs.
               Pas de déconnexion en navigant. */}
           <PersistentCallHost />
+          {/* Écran d'appel entrant temps réel (sonnerie + accepter/refuser).
+              Écoute la table `calls` via Supabase Realtime, sur toutes les pages. */}
+          <IncomingCallHost />
         </CallProvider>
         <RegisterSW />
       </body>

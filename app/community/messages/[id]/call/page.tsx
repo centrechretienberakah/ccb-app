@@ -9,11 +9,14 @@ export default async function DmCallPage({
   params, searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ mode?: string }>;
+  searchParams: Promise<{ mode?: string; join?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
   const mode: "audio" | "video" = sp?.mode === "audio" ? "audio" : "video";
+  // join=1 → on REJOINT un appel (accepteur / clic sur la notif) : pas de
+  // nouvelle sonnerie. Sinon on est l'APPELANT : on fait sonner le destinataire.
+  const join = sp?.join === "1";
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -49,6 +52,7 @@ export default async function DmCallPage({
       title={title}
       mode={mode}
       myName={myName}
+      join={join}
     />
   );
 }

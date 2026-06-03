@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GROUPS_THEME as T, GROUPS_FONTS as F, getGroupCategoryDef, notifyGroupsStaff } from "@/lib/groups/theme";
 import { notifyGroupMention, notifyGroupMeeting, notifyNewMember } from "@/lib/groups/notify";
+import { ringCall } from "@/lib/meet/calls";
 import { getMentionedUserIds, renderSegments, type MemberLookup } from "@/lib/community/mentions";
 import MentionTextarea from "@/components/community/MentionTextarea";
 
@@ -513,6 +514,10 @@ export default function GroupDetailClient({
           : `🎥 ${author} a démarré une réunion vidéo — Rejoignez en cliquant sur 🎥 dans le bandeau du groupe`,
       });
     } catch { /* RLS / réseau : on continue quand même */ }
+
+    // 1b) Sonnerie temps réel : tous les membres connectés reçoivent l'écran
+    //     « Appel de groupe — Rejoindre / Ignorer » via IncomingCallHost.
+    void ringCall({ groupId: group.id, type: mode });
 
     // 2) Notif push aux autres membres non mutés (best-effort)
     void notifyGroupMeeting({
