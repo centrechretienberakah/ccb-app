@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { getParisDateString, getParisDayIndex } from "@/app/devotion/devotions-data";
-import { STATIC_PRAYERS } from "@/app/community/prions-ensemble/daily-prayers-data";
+import { STATIC_PRAYERS, buildPrayerContent } from "@/app/community/prions-ensemble/daily-prayers-data";
 import { ensureDailyPrayerInDb } from "@/lib/prayer/dailyEnsure";
 
 export const runtime = "nodejs";
@@ -45,15 +45,15 @@ export async function GET(req: NextRequest) {
 
   const result = await ensureDailyPrayerInDb(admin, {
     date,
-    title: p.title,
+    title: p.theme,
     verse_ref: p.verse_ref,
     verse_text: p.verse_text,
-    content: p.content,
+    content: buildPrayerContent(p),
     author: p.author,
   });
 
   if (result.id) {
-    return NextResponse.json({ ok: true, date, id: result.id, created: result.created, title: p.title });
+    return NextResponse.json({ ok: true, date, id: result.id, created: result.created, title: p.theme });
   }
 
   console.error("[daily-prayer/cron] échec:", result.attempts);

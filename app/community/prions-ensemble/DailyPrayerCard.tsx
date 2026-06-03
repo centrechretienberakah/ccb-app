@@ -29,7 +29,7 @@ async function ensurePrayerId(p: UnifiedDailyPrayer): Promise<string | null> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        date: p.date, title: p.title, verse_ref: p.verse_ref,
+        date: p.date, title: p.theme, verse_ref: p.verse_ref,
         verse_text: p.verse_text, content: p.content, author: p.author,
       }),
     });
@@ -44,36 +44,20 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
   const [count, setCount] = useState(initialCount);
   const [busy, setBusy] = useState(false);
   const [shared, setShared] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [prayerId, setPrayerId] = useState<string | null>(prayer.id);
-
-  const paragraphs = prayer.content.split("\n\n").filter((p) => p.trim().length > 0);
-
-  function buildShareText() {
-    const lines = [
-      `🙏 PRIÈRE DU JOUR — ${fmtDate(prayer.date).toUpperCase()}`,
-      ``,
-      `« ${prayer.title.toUpperCase()} »`,
-    ];
-    if (prayer.verse_ref) {
-      lines.push("", `📖 ${prayer.verse_ref}`);
-      if (prayer.verse_text) lines.push(`« ${prayer.verse_text} »`);
-    }
-    lines.push("", prayer.content, "", `— ${prayer.author}`,
-      "", "📱 Centre Chrétien Berakah :", PUBLIC_URL);
-    return lines.join("\n");
-  }
 
   async function handleShare() {
     let didShare = false;
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({ title: `PRIÈRE DU JOUR — ${prayer.title}`, text: buildShareText(), url: PUBLIC_URL });
+        await navigator.share({ title: `PRIONS ENSEMBLE — ${prayer.theme}`, text: prayer.content, url: PUBLIC_URL });
         didShare = true;
       }
     } catch { /* annulé */ }
     if (!didShare) {
       try {
-        await navigator.clipboard.writeText(buildShareText());
+        await navigator.clipboard.writeText(prayer.content + "\n\n📱 " + PUBLIC_URL);
         setShared(true);
         setTimeout(() => setShared(false), 2200);
       } catch { /* noop */ }
@@ -84,27 +68,22 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
     if (busy) return;
     if (!userId) { window.location.href = "/auth/login?redirect=/community/prions-ensemble"; return; }
     setBusy(true);
-
     let id = prayerId;
     if (!id) {
       id = await ensurePrayerId(prayer);
       if (!id) { setBusy(false); return; }
       setPrayerId(id);
     }
-
     const sb = createClient();
     if (prayed) {
-      // Annule
       setPrayed(false); setCount((c) => Math.max(0, c - 1));
       try {
-        await sb.from("daily_prayer_intercessions").delete()
-          .eq("daily_prayer_id", id).eq("user_id", userId);
+        await sb.from("daily_prayer_intercessions").delete().eq("daily_prayer_id", id).eq("user_id", userId);
       } catch { setPrayed(true); setCount((c) => c + 1); }
     } else {
       setPrayed(true); setCount((c) => c + 1);
       try {
-        await sb.from("daily_prayer_intercessions")
-          .insert({ daily_prayer_id: id, user_id: userId });
+        await sb.from("daily_prayer_intercessions").insert({ daily_prayer_id: id, user_id: userId });
       } catch { setPrayed(false); setCount((c) => Math.max(0, c - 1)); }
     }
     setBusy(false);
@@ -127,19 +106,19 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
         }} />
 
         {/* En-tête */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
           <div style={{
             width: 44, height: 44, borderRadius: 12, flexShrink: 0,
             background: "linear-gradient(145deg, #4c0519, #9f1239 55%, #fb7185)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 23, boxShadow: "0 4px 12px rgba(159,18,57,0.3)",
-          }}>🙏</div>
+          }}>🔥</div>
           <div style={{ minWidth: 0 }}>
             <div style={{
-              fontFamily: F.title, fontSize: 16, fontWeight: 800,
-              color: T.violet, letterSpacing: "0.03em", lineHeight: 1.1,
+              fontFamily: F.title, fontSize: 15.5, fontWeight: 800,
+              color: T.violet, letterSpacing: "0.02em", lineHeight: 1.15,
             }}>
-              PRIÈRE DU JOUR
+              PRIONS ENSEMBLE
             </div>
             <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, textTransform: "capitalize" }}>
               {fmtDate(prayer.date)}
@@ -148,62 +127,103 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
         </div>
 
         {/* Thème */}
-        <h2 style={{
-          fontFamily: F.title, fontSize: 21, fontWeight: 800,
-          color: T.text, margin: "0 0 12px", lineHeight: 1.25,
+        <div style={{
+          display: "inline-block",
+          background: "rgba(212,175,55,0.14)", border: `1px solid ${T.gold}`,
+          color: T.goldDark, fontWeight: 800, fontSize: 11,
+          letterSpacing: "0.1em", textTransform: "uppercase",
+          padding: "5px 12px", borderRadius: 999, marginBottom: 12,
         }}>
-          {prayer.title}
-        </h2>
+          {prayer.dayLabel} · {prayer.theme}
+        </div>
+
+        {/* Introduction */}
+        <p style={{ fontSize: 14.5, color: T.text, lineHeight: 1.65, margin: "0 0 14px", fontWeight: 500 }}>
+          {prayer.intro}
+        </p>
 
         {/* Verset */}
-        {prayer.verse_ref && (
-          <div style={{
-            background: "rgba(90,44,160,0.06)",
-            borderLeft: `3px solid ${T.violet}`,
-            borderRadius: "0 12px 12px 0",
-            padding: "11px 13px", marginBottom: 14,
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: T.violet, marginBottom: 4 }}>
-              📖 {prayer.verse_ref}
-            </div>
-            {prayer.verse_text && (
-              <div style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.55, fontStyle: "italic" }}>
-                « {prayer.verse_text} »
-              </div>
-            )}
+        <div style={{
+          background: "rgba(90,44,160,0.06)", borderLeft: `3px solid ${T.violet}`,
+          borderRadius: "0 12px 12px 0", padding: "11px 13px", marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.violet, marginBottom: 4 }}>
+            📖 {prayer.verse_ref}
           </div>
+          <div style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.55, fontStyle: "italic" }}>
+            « {prayer.verse_text} »
+          </div>
+        </div>
+
+        {/* Contenu déroulable */}
+        {expanded && (
+          <>
+            {/* Exhortation */}
+            <Section label="✦ Exhortation">
+              {prayer.exhortation.map((e, i) => (
+                <p key={i} style={pStyle}>{e}</p>
+              ))}
+            </Section>
+
+            {/* Points de prière */}
+            <Section label="🙏 Points de prière">
+              <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 7 }}>
+                {prayer.prayerPoints.map((pt, i) => (
+                  <li key={i} style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.55 }}>{pt}</li>
+                ))}
+              </ul>
+            </Section>
+
+            {/* Prière guidée */}
+            <Section label="🕊️ Prière guidée">
+              <p style={{ ...pStyle, fontStyle: "italic" }}>{prayer.guidedPrayer}</p>
+            </Section>
+
+            {/* Déclarations prophétiques */}
+            <Section label="⚡ Déclarations prophétiques">
+              <div style={{ display: "grid", gap: 8 }}>
+                {prayer.declarations.map((d, i) => (
+                  <div key={i} style={{
+                    background: "linear-gradient(135deg, rgba(90,44,160,0.08), rgba(212,175,55,0.08))",
+                    borderRadius: 10, padding: "9px 12px",
+                    fontSize: 13.5, color: T.text, fontWeight: 600, lineHeight: 1.5,
+                  }}>
+                    {d}
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            {/* Clôture */}
+            <div style={{
+              textAlign: "center", marginTop: 16, marginBottom: 4,
+              fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.violet,
+            }}>
+              Que le Seigneur vous bénisse abondamment.
+            </div>
+            <div style={{ textAlign: "center", fontSize: 12, color: T.textMuted, fontStyle: "italic", marginBottom: 14 }}>
+              {prayer.author}
+            </div>
+          </>
         )}
 
-        {/* Texte de la prière */}
-        <div style={{ marginBottom: 16 }}>
-          {paragraphs.map((p, i) => (
-            <p key={i} style={{
-              fontSize: 14.5, color: T.textSoft, lineHeight: 1.7, margin: "0 0 10px",
-            }}>
-              {p}
-            </p>
-          ))}
-        </div>
-
-        {/* Signature */}
-        <div style={{
-          fontSize: 12.5, color: T.textMuted, fontStyle: "italic",
-          textAlign: "right", marginBottom: 14,
+        {/* Bouton déplier/replier */}
+        <button onClick={() => setExpanded((v) => !v)} style={{
+          width: "100%", background: "transparent", border: `1px dashed ${T.border}`,
+          borderRadius: 12, padding: "9px", marginBottom: 12,
+          color: T.violet, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: F.body,
         }}>
-          — {prayer.author}
-        </div>
+          {expanded ? "▲ Réduire la prière" : "▼ Lire la prière complète (exhortation, points, déclarations…)"}
+        </button>
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button onClick={togglePrayed} disabled={busy} style={{
             flex: "1 1 150px",
-            background: prayed
-              ? "rgba(159,18,57,0.12)"
-              : "linear-gradient(135deg, #9f1239, #4c0519)",
+            background: prayed ? "rgba(159,18,57,0.12)" : "linear-gradient(135deg, #9f1239, #4c0519)",
             color: prayed ? "#9f1239" : "#fff",
             border: prayed ? "1px solid rgba(159,18,57,0.4)" : "none",
-            borderRadius: 999, padding: "11px 16px",
-            fontWeight: 700, fontSize: 13.5,
+            borderRadius: 999, padding: "11px 16px", fontWeight: 700, fontSize: 13.5,
             cursor: busy ? "wait" : "pointer",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
             opacity: busy ? 0.7 : 1, fontFamily: F.body,
@@ -212,17 +232,32 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
           </button>
           <button onClick={handleShare} style={{
             flex: "1 1 120px",
-            background: T.card, color: T.text,
-            border: `1px solid ${T.border}`,
-            borderRadius: 999, padding: "11px 16px",
-            fontWeight: 700, fontSize: 13.5, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-            fontFamily: F.body,
+            background: T.card, color: T.text, border: `1px solid ${T.border}`,
+            borderRadius: 999, padding: "11px 16px", fontWeight: 700, fontSize: 13.5, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: F.body,
           }}>
             {shared ? "✓ Copié !" : "↗ Partager"}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+const pStyle: React.CSSProperties = {
+  fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: "0 0 10px",
+};
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{
+        fontSize: 11.5, fontWeight: 800, color: T.violet,
+        letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8,
+      }}>
+        {label}
+      </div>
+      {children}
     </div>
   );
 }

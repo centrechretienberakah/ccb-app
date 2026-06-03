@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { getParisDateString, getParisDayIndex, STATIC_DEVOTIONS } from "@/app/devotion/devotions-data";
-import { STATIC_PRAYERS } from "@/app/community/prions-ensemble/daily-prayers-data";
+import { STATIC_PRAYERS, buildPrayerContent } from "@/app/community/prions-ensemble/daily-prayers-data";
 import { ensureDevotionInDb } from "@/lib/devotion/ensure";
 import { ensureDailyPrayerInDb } from "@/lib/prayer/dailyEnsure";
 
@@ -56,8 +56,8 @@ export async function GET(req: NextRequest) {
   // 2) Prière du jour
   const pr = STATIC_PRAYERS[dayIndex];
   const prayer = await ensureDailyPrayerInDb(admin, {
-    date, title: pr.title, verse_ref: pr.verse_ref, verse_text: pr.verse_text,
-    content: pr.content, author: pr.author,
+    date, title: pr.theme, verse_ref: pr.verse_ref, verse_text: pr.verse_text,
+    content: buildPrayerContent(pr), author: pr.author,
   });
 
   return NextResponse.json({
