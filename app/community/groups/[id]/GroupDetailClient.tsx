@@ -100,6 +100,7 @@ export default function GroupDetailClient({
   const [showMembers, setShowMembers] = useState(false);
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showVerse, setShowVerse] = useState(false); // mini-prompt partage de verset
   const [uploading, setUploading] = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<{
     url: string; type: "image" | "pdf" | "audio" | "video" | "other"; name: string; size: number;
@@ -428,6 +429,25 @@ export default function GroupDetailClient({
   }, [messages.length]);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
+
+  // 📖 Insère un verset formaté dans la zone de saisie (l'utilisateur l'envoie ensuite)
+  function insertVerse(ref: string, verseText: string) {
+    const block = `📖 ${ref}` + (verseText.trim() ? `\n« ${verseText.trim()} »` : "");
+    setText((t) => (t ? t + "\n\n" : "") + block);
+    setShowVerse(false);
+  }
+
+  // 🙏 Publie le message courant comme sujet de prière (mur Prions Ensemble) + le marque pour le groupe
+  async function postPrayer() {
+    const t = text.trim();
+    if (!t) { flash("Écris d'abord ton sujet de prière 🙏"); return; }
+    try {
+      const sb = createClient();
+      await sb.from("prayer_requests").insert({ user_id: currentUserId, title: t.slice(0, 80), content: t });
+      flash("🙏 Ajouté au mur de prière (Prions Ensemble)");
+    } catch { flash("Erreur lors de l'ajout à Prions Ensemble"); }
+    setText((p) => p.startsWith("🙏") ? p : "🙏 Sujet de prière :\n" + p);
+  }
 
   // Messages filtrés par recherche
   const filteredMessages = useMemo(() => {
@@ -1451,6 +1471,14 @@ export default function GroupDetailClient({
                     }}>
                     {uploading ? "⏳" : "📎"}
                   </button>
+                  <button onClick={() => setShowVerse(true)} title="Partager un verset biblique" style={{
+                    background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 14,
+                    padding: "10px 11px", cursor: "pointer", fontSize: 18, flexShrink: 0,
+                  }}>📖</button>
+                  <button onClick={postPrayer} title="Transformer en sujet de prière (groupe + Prions Ensemble)" style={{
+                    background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 14,
+                    padding: "10px 11px", cursor: "pointer", fontSize: 18, flexShrink: 0,
+                  }}>🙏</button>
                   <div style={{ flex: 1 }}>
                     <MentionTextarea
                       value={text} onChange={handleTextChange}
@@ -1515,6 +1543,9 @@ export default function GroupDetailClient({
             <MembersList members={members} currentUserId={currentUserId} />
           </div>
         </div>
+
+        {/* Prompt partage de verset */}
+        {showVerse && <VersePromptModal onShare={insertVerse} onClose={() => setShowVerse(false)} />}
 
         {/* Lightbox image */}
         {lightbox && (
@@ -1718,6 +1749,34 @@ function VideoIcon() {
       <polygon points="23 7 16 12 23 17 23 7"/>
       <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
     </svg>
+  );
+}
+
+const verseInput: React.CSSProperties = {
+  width: "100%", boxSizing: "border-box", background: T.bg, border: `1px solid ${T.border}`,
+  borderRadius: 10, padding: "10px 12px", color: T.text, fontSize: 14, outline: "none", fontFamily: "inherit",
+};
+function VersePromptModal({ onShare, onClose }: { onShare: (ref: string, text: string) => void; onClose: () => void }) {
+  const [ref, setRef] = useState("");
+  const [vtext, setVtext] = useState("");
+  return (
+    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{
+      position: "fixed", inset: 0, zIndex: 2100, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 18,
+    }}>
+      <div style={{ width: "100%", maxWidth: 420, background: T.card, border: `1px solid ${T.border}`, borderRadius: 18, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: F.title, fontWeight: 800, fontSize: 15, color: T.violet }}>📖 Partager un verset</span>
+          <button onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: T.textMuted }}>✕</button>
+        </div>
+        <input autoFocus value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Référence — ex : Jean 3:16" style={verseInput} />
+        <textarea value={vtext} onChange={(e) => setVtext(e.target.value)} rows={3} placeholder="Texte du verset (optionnel)" style={{ ...verseInput, resize: "none" }} />
+        <button disabled={!ref.trim()} onClick={() => onShare(ref.trim(), vtext)} style={{
+          background: T.violet, color: "#fff", border: "none", borderRadius: 12, padding: "11px",
+          fontWeight: 800, fontSize: 14, cursor: ref.trim() ? "pointer" : "default", opacity: ref.trim() ? 1 : 0.5,
+        }}>Insérer dans le message</button>
+      </div>
+    </div>
   );
 }
 function DotsIcon() {
