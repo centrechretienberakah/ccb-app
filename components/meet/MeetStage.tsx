@@ -62,7 +62,9 @@ function initialsOf(name: string | undefined): string {
   return (name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-type Panel = "none" | "chat" | "people" | "settings";
+type Panel = "none" | "chat" | "people" | "settings" | "notes" | "stats";
+interface TalkEntry { name: string; secs: number }
+interface MeetStats { start: number; peak: number; shares: number; talk: Record<string, TalkEntry> }
 interface Verse { ref: string; text: string; by: string }
 interface Prayer { topic: string; endsAt: number; by: string }
 interface Rec { active: boolean; by: string }
@@ -105,6 +107,16 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   const recEgressRef = useRef<string | null>(null);
   const [toast, setToast] = useState("");
 
+  // Notes (persistées dans un ref pour survivre à l'ouverture/fermeture du panneau)
+  const notesRef = useRef("");
+  // Stats (mises à jour par interval dans des refs → ne re-render PAS la grille)
+  const statsRef = useRef<MeetStats>({ start: Date.now(), peak: 1, shares: 0, talk: {} });
+  const participantsRef = useRef(participants);
+  participantsRef.current = participants;
+  const screenActiveRef = useRef(false);
+  const hasScreenRef = useRef(false);
+  hasScreenRef.current = !!screenShare;
+
   const myId = localParticipant.identity;
   const myName = localParticipant.name || state.displayName || "Moi";
 
@@ -137,6 +149,11 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
     try { sendSignal(new TextEncoder().encode(JSON.stringify(obj)), { reliable: true }); } catch { /* noop */ }
   }
 
+  // Persistance des notes partagées (ref, sans re-render de la grille)
+  useDataChannel("ccb-notes", (msg) => {
+    try { notesRef.current = new TextDecoder().decode(msg.payload); } catch { /* noop */ }
+  });
+
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
     onResize();
@@ -156,6 +173,24 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
       } catch { /* noop */ }
     })();
     return () => { cancelled = true; };
+  }, []);
+  // Statistiques : échantillonne chaque seconde dans des refs (aucun re-render)
+  useEffect(() => {
+    const t = setInterval(() => {
+      const ps = participantsRef.current;
+      const st = statsRef.current;
+      if (ps.length > st.peak) st.peak = ps.length;
+      for (const p of ps) {
+        if (p.isSpeaking) {
+          const cur = st.talk[p.identity] ?? { name: p.name || "Participant", secs: 0 };
+          cur.secs += 1; cur.name = p.name || cur.name;
+          st.talk[p.identity] = cur;
+        }
+      }
+      if (screenActiveRef.current === false && hasScreenRef.current) st.shares += 1;
+      screenActiveRef.current = hasScreenRef.current;
+    }, 1000);
+    return () => clearInterval(t);
   }, []);
 
   function handleLeave() {
@@ -295,6 +330,12 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
       {panel === "settings" && (
         <SettingsPanel room={room} isAudio={isAudio} onClose={() => setPanel("none")} />
       )}
+      {panel === "notes" && (
+        <NotesPanel notesRef={notesRef} onClose={() => setPanel("none")} />
+      )}
+      {panel === "stats" && (
+        <StatsPanel statsRef={statsRef} onClose={() => setPanel("none")} />
+      )}
 
       {/* ── Prompts ── */}
       {showVersePrompt && <VersePrompt onShare={(r, t) => { shareVerse(r, t); setShowVersePrompt(false); }} onClose={() => setShowVersePrompt(false)} />}
@@ -314,6 +355,8 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         onPrayer={() => (prayer ? stopPrayer() : setShowPrayerPrompt(true))}
         prayerActive={!!prayer}
         onSettings={() => setPanel((p) => (p === "settings" ? "none" : "settings"))}
+        onNotes={() => setPanel((p) => (p === "notes" ? "none" : "notes"))}
+        onStats={() => setPanel((p) => (p === "stats" ? "none" : "stats"))}
         canRecord={canModerate}
         recording={!!recording}
         onRecord={toggleRecording}
@@ -637,14 +680,116 @@ function PromptShell({ title, onClose, children }: { title: string; onClose: () 
   );
 }
 
+/* ─────────────── Panneau Notes (collaboratives + export) ─────────────── */
+function NotesPanel({ notesRef, onClose }: { notesRef: React.MutableRefObject<string>; onClose: () => void }) {
+  const [text, setText] = useState(notesRef.current);
+  const focusedRef = useRef(false);
+  const debRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { send } = useDataChannel("ccb-notes", (msg) => {
+    if (focusedRef.current) return;
+    try { const v = new TextDecoder().decode(msg.payload); setText(v); notesRef.current = v; } catch { /* noop */ }
+  });
+  function onChange(v: string) {
+    setText(v); notesRef.current = v;
+    if (debRef.current) clearTimeout(debRef.current);
+    debRef.current = setTimeout(() => { try { send(new TextEncoder().encode(v), { reliable: true }); } catch { /* noop */ } }, 250);
+  }
+  function exportWord() {
+    const html = `<html><head><meta charset="utf-8"></head><body style="font-family:Arial"><h2 style="color:#5A2CA0">Notes de réunion — CCB Meet</h2><div style="color:#666;font-size:12px">${new Date().toLocaleString("fr-FR")}</div><hr/><pre style="font-family:Arial;white-space:pre-wrap;font-size:13px">${escapeHtml(text)}</pre></body></html>`;
+    downloadBlob(new Blob([html], { type: "application/msword" }), `ccb-notes-${Date.now()}.doc`);
+  }
+  function exportPdf() {
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`<html><head><meta charset="utf-8"><title>Notes CCB Meet</title></head><body style="font-family:Arial;padding:24px"><h2 style="color:#5A2CA0">Notes de réunion — CCB Meet</h2><div style="color:#666;font-size:12px">${new Date().toLocaleString("fr-FR")}</div><hr/><pre style="font-family:Arial;white-space:pre-wrap;font-size:13px;line-height:1.5">${escapeHtml(text)}</pre></body></html>`);
+    w.document.close(); w.focus();
+    setTimeout(() => { try { w.print(); } catch { /* noop */ } }, 350);
+  }
+  return (
+    <SidePanel title="📝 Notes de réunion" onClose={onClose}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 12, gap: 10, minHeight: 0 }}>
+        <textarea value={text}
+          onFocus={() => { focusedRef.current = true; }}
+          onBlur={() => { focusedRef.current = false; }}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Notes partagées — tout le monde peut écrire…"
+          style={{ flex: 1, minHeight: 0, resize: "none", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: 12, color: "#fff", fontSize: 13.5, lineHeight: 1.5, outline: "none", fontFamily: "inherit" }} />
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={exportPdf} style={exportBtn}>📄 Exporter PDF</button>
+          <button onClick={exportWord} style={exportBtn}>📝 Exporter Word</button>
+        </div>
+      </div>
+    </SidePanel>
+  );
+}
+
+/* ─────────────── Panneau Statistiques ─────────────── */
+function StatsPanel({ statsRef, onClose }: { statsRef: React.MutableRefObject<MeetStats>; onClose: () => void }) {
+  const [, setTick] = useState(0);
+  useEffect(() => { const t = setInterval(() => setTick((x) => x + 1), 1000); return () => clearInterval(t); }, []);
+  const s = statsRef.current;
+  const duration = Math.max(0, Math.round((Date.now() - s.start) / 1000));
+  const talkers = Object.values(s.talk).sort((a, b) => b.secs - a.secs).slice(0, 12);
+  const maxSecs = talkers[0]?.secs || 1;
+  return (
+    <SidePanel title="📊 Statistiques" onClose={onClose}>
+      <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <StatBox label="Durée" value={fmtDuration(duration)} />
+          <StatBox label="Pic participants" value={String(s.peak)} />
+          <StatBox label="Partages d'écran" value={String(s.shares)} />
+          <StatBox label="Intervenants" value={String(Object.keys(s.talk).length)} />
+        </div>
+        <div>
+          <div style={{ fontSize: 12, color: GOLD, fontWeight: 700, marginBottom: 8 }}>🎙️ Temps de parole</div>
+          {talkers.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.4)" }}>Aucune prise de parole détectée pour l&apos;instant.</div>
+          ) : talkers.map((t, i) => (
+            <div key={i} style={{ marginBottom: 9 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3 }}>
+                <span style={{ color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+                <span style={{ color: "rgba(255,255,255,0.6)", fontVariantNumeric: "tabular-nums" }}>{fmtDuration(t.secs)}</span>
+              </div>
+              <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.round((t.secs / maxSecs) * 100)}%`, background: `linear-gradient(90deg, ${VIOLET}, ${GOLD})`, borderRadius: 999 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </SidePanel>
+  );
+}
+function StatBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "11px 12px" }}>
+      <div style={{ fontSize: 18, fontWeight: 800, color: "#fff" }}>{value}</div>
+      <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.5)", fontWeight: 600, marginTop: 2 }}>{label}</div>
+    </div>
+  );
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 /* ─────────────── Barre de contrôle ─────────────── */
 function ControlBar({
   isAudio, handRaised, unreadChat, panel, prayerActive,
-  onHand, onChat, onPeople, onVerse, onPrayer, onSettings,
+  onHand, onChat, onPeople, onVerse, onPrayer, onSettings, onNotes, onStats,
   canRecord, recording, onRecord, onLeave,
 }: {
   isAudio: boolean; handRaised: boolean; unreadChat: number; peopleCount: number; panel: Panel; prayerActive: boolean;
   onHand: () => void; onChat: () => void; onPeople: () => void; onVerse: () => void; onPrayer: () => void; onSettings: () => void;
+  onNotes: () => void; onStats: () => void;
   canRecord: boolean; recording: boolean; onRecord: () => void; onLeave: () => void;
 }) {
   return (
@@ -659,6 +804,8 @@ function ControlBar({
         <FeatureBtn emoji="👥" active={panel === "people"} onClick={onPeople} />
         <FeatureBtn emoji="📖" onClick={onVerse} />
         <FeatureBtn emoji="🙏" active={prayerActive} onClick={onPrayer} />
+        <FeatureBtn emoji="📝" active={panel === "notes"} onClick={onNotes} />
+        <FeatureBtn emoji="📊" active={panel === "stats"} onClick={onStats} />
         <FeatureBtn emoji="⚙️" active={panel === "settings"} onClick={onSettings} />
         {canRecord && (
           <button onClick={onRecord} title={recording ? "Arrêter l'enregistrement" : "Enregistrer"} style={{ ...ctrlBtn(false), background: recording ? "#DC2626" : "rgba(255,255,255,0.10)" }}>
@@ -703,4 +850,8 @@ const promptInput: React.CSSProperties = {
 const promptBtn: React.CSSProperties = {
   width: "100%", background: VIOLET, color: "#fff", border: "none", borderRadius: 12,
   padding: "12px", fontWeight: 800, fontSize: 14, cursor: "pointer", marginTop: 2,
+};
+const exportBtn: React.CSSProperties = {
+  flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)",
+  color: "#fff", borderRadius: 10, padding: "9px", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
 };
