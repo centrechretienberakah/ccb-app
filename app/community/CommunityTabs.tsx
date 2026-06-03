@@ -116,9 +116,18 @@ export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }
           );
         })}
 
+        {/* Messagerie privée */}
+        <Link href="/community/messages" title="Messages privés" style={{
+          marginLeft: "auto", padding: "8px 10px", flexShrink: 0,
+          textDecoration: "none", color: T.textSoft,
+          display: "flex", alignItems: "center", fontSize: 17,
+        }}>
+          💬
+        </Link>
+
         {/* Cloche notifications */}
         <Link href="/community/notifications" title="Mes notifications" style={{
-          marginLeft: "auto", padding: "8px 12px",
+          padding: "8px 12px",
           position: "relative", flexShrink: 0,
           textDecoration: "none", color: T.textSoft,
           display: "flex", alignItems: "center", fontSize: 17,
