@@ -20,6 +20,20 @@ interface Props {
 interface AuthInfo { email: string | null; phone: string | null; created_at: string | null; last_sign_in_at: string | null; confirmed: boolean; provider: string | null; }
 interface Note { id: string; content: string; created_at: string; author_id: string | null; }
 interface Audit { id: string; action: string; details: Record<string, unknown>; created_at: string; actor_id: string | null; }
+interface CourseProg { id: string; title: string; completed: number; total: number; pct: number; }
+interface Overview {
+  donations: { totalXaf: number; count: number; pending: number; byMode: Record<string, number>; last: { amount_native: number; currency: string; payment_mode: string | null; status: string; created_at: string } | null };
+  formations: { courses: CourseProg[]; lessonsCompleted: number; certificates: number };
+  bible: { chaptersRead: number; readingDays: number; plansTotal: number; plansActive: number };
+  prayers: { posted: number; answered: number };
+  session: { ip: string | null; user_agent: string | null; device: string | null; browser: string | null; created_at: string } | null;
+}
+
+const MODE_LABEL: Record<string, string> = {
+  paypal: "PayPal", notchpay: "Notch Pay", "mtn-momo": "MTN MoMo", "orange-money": "Orange Money",
+  stripe: "Stripe", manual: "Manuel", "iban-be": "Virement", autre: "Autre",
+};
+function xaf(n: number): string { return new Intl.NumberFormat("fr-FR").format(Math.round(n)) + " FCFA"; }
 
 const ROLE_OPTIONS = [
   { v: "member", l: "🌱 Membre" },
@@ -48,18 +62,25 @@ function fmt(iso: string | null): string {
   catch { return "—"; }
 }
 
-// Score d'engagement (0-100) basé sur l'activité disponible
-function engagementScore(stats: MemberStats, xp: number, lastSeenAt: string | null): { score: number; label: string } {
+// Score d'engagement (0-100) basé sur présence, lectures, participation,
+// prières et formations (le détail formations/bible s'ajoute après chargement).
+function engagementScore(stats: MemberStats, xp: number, lastSeenAt: string | null, ov?: Overview | null): { score: number; label: string } {
   let s = 0;
-  s += Math.min(30, stats.posts * 3);
-  s += Math.min(20, stats.comments * 2);
-  s += Math.min(15, stats.prayersPosted * 3);
-  s += Math.min(15, stats.testimonies * 5);
-  s += Math.min(10, Math.floor(xp / 100));
-  // récence
+  s += Math.min(24, stats.posts * 3);
+  s += Math.min(16, stats.comments * 2);
+  s += Math.min(12, stats.prayersPosted * 3);
+  s += Math.min(12, stats.testimonies * 5);
+  s += Math.min(8, Math.floor(xp / 100));
+  // récence (présence)
   if (lastSeenAt) {
     const days = (Date.now() - new Date(lastSeenAt).getTime()) / 86400000;
-    if (days < 2) s += 10; else if (days < 7) s += 6; else if (days < 30) s += 3;
+    if (days < 2) s += 8; else if (days < 7) s += 5; else if (days < 30) s += 2;
+  }
+  // lectures + formations + générosité (si chargé)
+  if (ov) {
+    s += Math.min(10, ov.bible.readingDays);
+    s += Math.min(8, ov.formations.lessonsCompleted * 2);
+    s += Math.min(2, ov.donations.count * 2);
   }
   const score = Math.max(0, Math.min(100, Math.round(s)));
   const label = score >= 80 ? "Excellent disciple" : score >= 55 ? "Bon engagement" : score >= 30 ? "Engagement modéré" : "Faible engagement";
@@ -72,18 +93,20 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
   const [meta, setMeta] = useState<{ status: string; follow_level: string } | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [audit, setAudit] = useState<Audit[]>([]);
+  const [overview, setOverview] = useState<Overview | null>(null);
   const [curRole, setCurRole] = useState(role ?? "member");
   const [noteText, setNoteText] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const eng = engagementScore(stats, xp, lastSeenAt);
+  const eng = engagementScore(stats, xp, lastSeenAt, overview);
   const inactiveDays = lastSeenAt ? Math.floor((Date.now() - new Date(lastSeenAt).getTime()) / 86400000) : null;
 
   const alerts: string[] = [];
   if (inactiveDays !== null && inactiveDays >= 30) alerts.push(`Inactif depuis ${inactiveDays} jours`);
   if (eng.score < 30) alerts.push("Faible engagement");
   if (stats.posts === 0 && stats.comments === 0) alerts.push("Aucune contribution");
+  if (overview && overview.bible.plansTotal === 0) alerts.push("Aucun plan biblique");
   if (meta?.follow_level === "priority") alerts.push("Suivi pastoral prioritaire");
 
   async function loadAll() {
@@ -101,6 +124,10 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
     try {
       const res = await fetch(`/api/admin/member/${userId}/auth`);
       if (res.ok) setAuthInfo(await res.json());
+    } catch { /* noop */ }
+    try {
+      const res = await fetch(`/api/admin/member/${userId}/overview`);
+      if (res.ok) setOverview(await res.json());
     } catch { /* noop */ }
   }
   useEffect(() => { void loadAll(); }, [userId]);
@@ -146,6 +173,17 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
         return;
       }
     } catch { /* noop */ }
+    setBusy(false);
+  }
+  async function resetPassword() {
+    if (busy) return;
+    if (!confirm("Envoyer un email de réinitialisation du mot de passe à ce membre ?")) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/member/${userId}/reset-password`, { method: "POST" });
+      const j = await res.json().catch(() => ({}));
+      flash(res.ok ? "✅ Email de réinitialisation envoyé" : "Erreur : " + (j.error || res.status));
+    } catch { flash("Erreur réseau"); }
     setBusy(false);
   }
   async function deleteAccount() {
@@ -201,6 +239,20 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
         <Row k="Dernière connexion" v={fmt(authInfo?.last_sign_in_at)} />
         <Row k="Méthode" v={authInfo?.provider || "email"} />
         <Row k="Compte confirmé" v={authInfo ? (authInfo.confirmed ? "✅ Oui" : "❌ Non") : "—"} />
+
+        {/* Identité technique (session récente) */}
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${T.border}` }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Session récente</div>
+          <Row k="Adresse IP" v={overview?.session?.ip || "—"} />
+          <Row k="Appareil" v={overview?.session?.device || "—"} />
+          <Row k="Navigateur" v={overview?.session?.browser || "—"} />
+          <Row k="Vue le" v={fmt(overview?.session?.created_at ?? null)} />
+        </div>
+
+        <button onClick={resetPassword} disabled={busy}
+          style={{ marginTop: 10, width: "100%", background: T.bg, color: T.violet, border: `1px solid ${T.violet}`, borderRadius: 10, padding: "9px", fontWeight: 700, fontSize: 12.5, cursor: busy ? "wait" : "pointer" }}>
+          🔑 Réinitialiser le mot de passe
+        </button>
       </Card>
 
       {/* Score d'engagement */}
@@ -222,16 +274,75 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
       </Card>
 
       {/* Statistiques spirituelles */}
-      <Card title="📈 Statistiques">
+      <Card title="📈 Statistiques spirituelles">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <Mini k="Rang" v={rankLabel} />
-          <Mini k="XP total" v={String(xp)} />
-          <Mini k="Publications" v={String(stats.posts)} />
-          <Mini k="Commentaires" v={String(stats.comments)} />
-          <Mini k="Prières publiées" v={String(stats.prayersPosted)} />
-          <Mini k="Témoignages" v={String(stats.testimonies)} />
-          <Mini k="Likes reçus" v={String(stats.likesReceived)} />
+          <Mini k="🌱 Rang" v={rankLabel} />
+          <Mini k="⭐ XP total" v={String(xp)} />
+          <Mini k="📝 Publications" v={String(stats.posts)} />
+          <Mini k="💬 Commentaires" v={String(stats.comments)} />
+          <Mini k="🙏 Prières publiées" v={String(overview?.prayers.posted ?? stats.prayersPosted)} />
+          <Mini k="🙏 Prières exaucées" v={overview ? String(overview.prayers.answered) : "—"} />
+          <Mini k="✨ Témoignages" v={String(stats.testimonies)} />
+          <Mini k="❤️ Likes reçus" v={String(stats.likesReceived)} />
+          <Mini k="📖 Chapitres lus" v={overview ? String(overview.bible.chaptersRead) : "—"} />
+          <Mini k="📅 Jours de lecture" v={overview ? String(overview.bible.readingDays) : "—"} />
+          <Mini k="📚 Plans bibliques" v={overview ? `${overview.bible.plansActive}/${overview.bible.plansTotal}` : "—"} />
+          <Mini k="🎓 Formations suivies" v={overview ? String(overview.formations.courses.length) : "—"} />
+          <Mini k="🎓 Leçons terminées" v={overview ? String(overview.formations.lessonsCompleted) : "—"} />
+          <Mini k="🏆 Certificats" v={overview ? String(overview.formations.certificates) : "—"} />
         </div>
+      </Card>
+
+      {/* Formations (Institut) */}
+      <Card title="🎓 Formations">
+        {!overview ? (
+          <div style={{ fontSize: 12.5, color: T.textMuted, fontStyle: "italic" }}>Chargement…</div>
+        ) : overview.formations.courses.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: T.textMuted, fontStyle: "italic" }}>Aucune formation suivie.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {overview.formations.courses.map((c) => (
+              <div key={c.id}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, marginBottom: 4 }}>
+                  <span style={{ color: T.textSoft, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {c.completed >= c.total && c.total > 0 ? "🏆 " : ""}{c.title}
+                  </span>
+                  <span style={{ color: T.violet, fontWeight: 700, flexShrink: 0 }}>{c.completed}/{c.total} · {c.pct}%</span>
+                </div>
+                <div style={{ height: 6, background: T.surface2, borderRadius: 999, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${c.pct}%`, background: `linear-gradient(90deg, ${T.violet}, ${T.gold})`, borderRadius: 999 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Dons */}
+      <Card title="💝 Dons">
+        {!overview ? (
+          <div style={{ fontSize: 12.5, color: T.textMuted, fontStyle: "italic" }}>Chargement…</div>
+        ) : overview.donations.count === 0 && overview.donations.pending === 0 ? (
+          <div style={{ fontSize: 12.5, color: T.textMuted, fontStyle: "italic" }}>Aucun don enregistré.</div>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+              <Mini k="Total donné" v={xaf(overview.donations.totalXaf)} />
+              <Mini k="Dons confirmés" v={String(overview.donations.count)} />
+            </div>
+            {overview.donations.last && (
+              <Row k="Dernier don" v={`${new Intl.NumberFormat("fr-FR").format(overview.donations.last.amount_native)} ${overview.donations.last.currency} · ${fmt(overview.donations.last.created_at)}`} />
+            )}
+            {Object.keys(overview.donations.byMode).length > 0 && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${T.border}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Modes de paiement</div>
+                {Object.entries(overview.donations.byMode).map(([m, amt]) => (
+                  <Row key={m} k={MODE_LABEL[m] || m} v={xaf(amt)} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </Card>
 
       {/* Rôle + statut + suivi */}

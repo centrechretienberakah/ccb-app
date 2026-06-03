@@ -6,6 +6,7 @@ import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
 import TopBar from "./TopBar";
 import PushNotificationsBanner from "@/components/PushNotificationsBanner";
+import SessionBeacon from "@/components/system/SessionBeacon";
 import { useHeartbeat } from "@/lib/presence";
 
 function shouldShowShell(pathname: string): boolean {
@@ -67,6 +68,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Bannière push notifications (auto-cachée si abonné/refusé/dismissed) */}
       <PushNotificationsBanner />
+
+      {/* Enregistre la session (IP/appareil) du membre — vue Admin profil */}
+      <SessionBeacon />
     </div>
   );
 }
