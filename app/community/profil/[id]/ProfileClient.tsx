@@ -8,6 +8,7 @@ import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F, getPostKindDef } from "@/li
 import { getRank, progressToNextRank, computeBadges, type MemberStats } from "@/lib/community/gamification";
 import { getFollowStats, toggleFollow } from "@/lib/social/follows";
 import { useOnlineUsers } from "@/lib/presence";
+import AdminMemberPanel from "./AdminMemberPanel";
 
 interface Profile {
   user_id: string;
@@ -30,6 +31,7 @@ interface Props {
   recentPosts: RecentPost[];
   isMe: boolean;
   role: string | null;
+  viewerIsAdmin?: boolean;
 }
 
 const MILESTONE_DEF: Record<string, { label: string; icon: string }> = {
@@ -65,19 +67,21 @@ function timeAgo(dateStr: string): string {
   return `il y a ${Math.floor(diff / 86400)} j`;
 }
 
-const TABS = [
+type TabKey = "publications" | "prieres" | "groupes" | "activite" | "realisations" | "admin";
+const BASE_TABS: { key: TabKey; label: string; emoji: string }[] = [
   { key: "publications", label: "Publications", emoji: "📝" },
   { key: "prieres",      label: "Prières",      emoji: "🙏" },
   { key: "groupes",      label: "Groupes",      emoji: "👥" },
   { key: "activite",     label: "Activité",     emoji: "📚" },
   { key: "realisations", label: "Réalisations", emoji: "🏆" },
-] as const;
-type TabKey = typeof TABS[number]["key"];
+];
+const ADMIN_TAB = { key: "admin" as TabKey, label: "Administration", emoji: "👑" };
 
-export default function ProfileClient({ profile, stats, xp, milestones, recentPosts, isMe, role }: Props) {
+export default function ProfileClient({ profile, stats, xp, milestones, recentPosts, isMe, role, viewerIsAdmin = false }: Props) {
   const router = useRouter();
   const online = useOnlineUsers();
   const rank = getRank(xp);
+  const tabs = viewerIsAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS;
   const progress = progressToNextRank(xp);
   const badges = computeBadges(stats);
   const initials = (profile.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -234,14 +238,16 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
 
         {/* ─── Section 5 : Onglets Skool (sticky) ─── */}
         <div className="ccb-pf-tabs" style={{ display: "flex", gap: 4, overflowX: "auto", position: "sticky", top: 0, zIndex: 10, background: T.bg, padding: "6px 0", marginBottom: 10, borderBottom: `1px solid ${T.border}` }}>
-          {TABS.map((t) => {
+          {tabs.map((t) => {
             const active = tab === t.key;
+            const isAdmin = t.key === "admin";
             return (
               <button key={t.key} onClick={() => setTab(t.key)} style={{
                 flexShrink: 0, padding: "8px 13px", borderRadius: 999, fontFamily: F.body,
                 fontSize: 12.5, fontWeight: active ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap",
-                background: active ? T.violet : "transparent", color: active ? "#fff" : T.textMuted,
-                border: `1px solid ${active ? T.violet : T.border}`,
+                background: active ? (isAdmin ? T.gold : T.violet) : "transparent",
+                color: active ? (isAdmin ? T.black : "#fff") : (isAdmin ? T.goldDark : T.textMuted),
+                border: `1px solid ${active ? (isAdmin ? T.gold : T.violet) : (isAdmin ? T.gold : T.border)}`,
               }}>{t.emoji} {t.label}</button>
             );
           })}
@@ -254,6 +260,18 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
           {tab === "groupes" && <GroupesTab userId={profile.user_id} />}
           {tab === "activite" && <ActiviteTab posts={recentPosts} stats={stats} />}
           {tab === "realisations" && <RealisationsTab badges={badges} milestones={milestones} rank={rank} />}
+          {tab === "admin" && viewerIsAdmin && (
+            <AdminMemberPanel
+              userId={profile.user_id}
+              displayName={profile.display_name}
+              role={role}
+              stats={stats}
+              xp={xp}
+              rankLabel={`${rank.emoji} ${rank.label}`}
+              lastSeenAt={profile.last_seen_at}
+              createdAt={profile.created_at}
+            />
+          )}
         </div>
       </div>
     </div>

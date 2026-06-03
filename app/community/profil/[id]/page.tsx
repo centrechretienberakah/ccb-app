@@ -73,6 +73,15 @@ export default async function ProfilPage({ params }: { params: Promise<{ id: str
     memberRole = (roleRow as { role: string } | null)?.role ?? null;
   } catch { /* noop */ }
 
+  // Le VISITEUR est-il admin/owner ? (pour l'onglet Administration)
+  let viewerIsAdmin = false;
+  try {
+    const { data: vr } = await supabase
+      .from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+    const r = (vr as { role: string } | null)?.role;
+    viewerIsAdmin = r === "owner" || r === "admin";
+  } catch { /* noop */ }
+
   // Stats
   const [
     { count: postCount },
@@ -128,6 +137,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ id: str
       recentPosts={(myPosts ?? []) as RecentPost[]}
       isMe={p.user_id === user.id}
       role={memberRole}
+      viewerIsAdmin={viewerIsAdmin}
     />
   );
 }
