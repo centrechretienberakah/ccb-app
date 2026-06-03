@@ -42,6 +42,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [reactPickerFor, setReactPickerFor] = useState<string | null>(null);
   const [pending, setPending] = useState<{ url: string; type: string; name: string } | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -233,6 +234,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
         </Link>
         <Link href={`/community/messages/${conversationId}/call?mode=audio`} title="Appel audio" style={hdrBtn}>📞</Link>
         <Link href={`/community/messages/${conversationId}/call`} title="Appel vidéo" style={hdrBtn}>📹</Link>
+        <button onClick={() => setShowAdd(true)} title="Ajouter des personnes" style={{ ...hdrBtn, border: "none" }}>👤﹢</button>
       </div>
 
       {/* Messages */}
@@ -370,6 +372,118 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
             borderRadius: 14, padding: "10px 16px", cursor: sending || (!text.trim() && !pending) ? "not-allowed" : "pointer",
             fontWeight: 700, fontSize: 16, opacity: (!text.trim() && !pending) ? 0.5 : 1, flexShrink: 0,
           }}>{editing ? "✓" : "➤"}</button>
+        </div>
+      </div>
+
+      {/* Modale : ajouter des personnes à la conversation */}
+      {showAdd && (
+        <AddMembersModal conversationId={conversationId} onClose={() => setShowAdd(false)} />
+      )}
+    </div>
+  );
+}
+
+function AddMembersModal({ conversationId, onClose }: { conversationId: string; onClose: () => void }) {
+  const [candidates, setCandidates] = useState<Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>>([]);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const sb = createClient();
+        // Membres déjà dans la conversation (à exclure)
+        const { data: existing } = await sb.from("conversation_members")
+          .select("user_id").eq("conversation_id", conversationId);
+        const exclude = new Set(((existing ?? []) as Array<{ user_id: string }>).map((m) => m.user_id));
+        // Candidats : membres publics non déjà présents
+        const { data: profs } = await sb.from("user_profiles")
+          .select("user_id, display_name, avatar_url").eq("is_public", true)
+          .order("display_name", { ascending: true }).limit(500);
+        const list = ((profs ?? []) as Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>)
+          .filter((p) => !exclude.has(p.user_id));
+        setCandidates(list);
+      } catch { /* noop */ }
+      setLoading(false);
+    })();
+  }, [conversationId]);
+
+  function toggle(id: string) {
+    setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
+  async function add() {
+    if (adding || selected.size === 0) return;
+    setAdding(true);
+    try {
+      const sb = createClient();
+      for (const uid of selected) {
+        await sb.rpc("add_conversation_member", { p_conv: conversationId, p_user: uid });
+      }
+    } catch { /* noop */ }
+    onClose();
+    if (typeof window !== "undefined") window.location.reload();
+  }
+
+  const filtered = candidates.filter((c) =>
+    !search.trim() || (c.display_name || "").toLowerCase().includes(search.trim().toLowerCase()));
+
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.5)",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+    }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        background: T.card, width: "100%", maxWidth: 560, maxHeight: "80vh",
+        borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column", overflow: "hidden",
+      }}>
+        <div style={{ padding: "14px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+          <h3 style={{ fontFamily: F.title, fontSize: 16, fontWeight: 700, color: T.text, margin: 0, flex: 1 }}>
+            👤﹢ Ajouter des personnes
+          </h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: T.textMuted }}>✕</button>
+        </div>
+        <div style={{ padding: "10px 16px" }}>
+          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="🔍 Rechercher un membre…"
+            style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 999, color: T.text, fontSize: 13, fontFamily: F.body, outline: "none" }} />
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px" }}>
+          {loading ? (
+            <div style={{ padding: 30, textAlign: "center", color: T.textMuted, fontSize: 13 }}>Chargement…</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: T.textMuted, fontSize: 13 }}>Aucun membre à ajouter.</div>
+          ) : filtered.map((c) => {
+            const checked = selected.has(c.user_id);
+            const initials = (c.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+            return (
+              <button key={c.user_id} onClick={() => toggle(c.user_id)} style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                background: checked ? T.violetSoft : "transparent", border: "none", borderRadius: 10,
+                cursor: "pointer", textAlign: "left", fontFamily: F.body,
+              }}>
+                {c.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.avatar_url} alt={c.display_name || ""} style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13 }}>{initials}</div>
+                )}
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: T.text }}>{c.display_name || "Membre"}</span>
+                <span style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${checked ? T.violet : T.border}`, background: checked ? T.violet : "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 13 }}>{checked ? "✓" : ""}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ padding: "12px 16px", borderTop: `1px solid ${T.border}` }}>
+          <button onClick={add} disabled={adding || selected.size === 0} style={{
+            width: "100%", background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, color: "#fff",
+            border: "none", borderRadius: 999, padding: "12px", fontWeight: 800, fontSize: 14,
+            cursor: adding || selected.size === 0 ? "not-allowed" : "pointer", opacity: selected.size === 0 ? 0.5 : 1, fontFamily: F.body,
+          }}>
+            {adding ? "Ajout…" : `Ajouter${selected.size > 0 ? ` (${selected.size})` : ""}`}
+          </button>
         </div>
       </div>
     </div>
