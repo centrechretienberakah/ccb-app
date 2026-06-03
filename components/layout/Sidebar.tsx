@@ -18,6 +18,7 @@ const ALL_ITEMS = [
   // "Prions ensemble" est désormais un onglet du module Communauté
   // (/community/prions-ensemble) — retiré du menu principal.
   { href: "/community",     label: "Communauté",        emoji: "👥" },
+  { href: "/community/messages", label: "Messagerie",   emoji: "💬" },
   { href: "/jesus-daily",   label: "Jesus Daily TV",    emoji: "📺" },
   { href: "/institut",      label: "Institut Berakah",  emoji: "🎓" },
   { href: "/events",        label: "Événements",        emoji: "📅" },
@@ -62,8 +63,20 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     });
   }, []);
 
-  const isActive = (href: string) =>
-    href === "/dashboard" ? pathname === href : pathname.startsWith(href);
+  const isActive = (href: string) => {
+    if (href === "/dashboard") return pathname === href;
+    // Messagerie englobe /community/messages ET /community/groups
+    if (href === "/community/messages") {
+      return pathname.startsWith("/community/messages") || pathname.startsWith("/community/groups");
+    }
+    // Communauté : tout /community SAUF la zone Messagerie
+    if (href === "/community") {
+      return pathname.startsWith("/community")
+        && !pathname.startsWith("/community/messages")
+        && !pathname.startsWith("/community/groups");
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
     <aside className="sidebar">

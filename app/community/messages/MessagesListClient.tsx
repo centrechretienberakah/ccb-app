@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import MessagingTabs from "./MessagingTabs";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
 import type { ConversationLite } from "./page";
 
@@ -17,23 +18,7 @@ function timeAgo(iso: string | null): string {
 export default function MessagesListClient({ conversations }: { conversations: ConversationLite[]; currentUserId: string }) {
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, paddingBottom: 80 }}>
-      {/* Header */}
-      <div style={{
-        background: `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
-        color: "#fff", padding: "20px 16px 18px", position: "relative", overflow: "hidden",
-        boxShadow: T.shadowGlow,
-      }}>
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${T.gold}, transparent)` }} />
-        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", alignItems: "center", gap: 10 }}>
-          <Link href="/community" style={{
-            background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.2)",
-            borderRadius: 8, padding: "6px 11px", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none",
-          }}>←</Link>
-          <h1 style={{ fontFamily: F.title, fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: "0.04em" }}>
-            💬 Messages
-          </h1>
-        </div>
-      </div>
+      <MessagingTabs />
 
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px" }}>
         {conversations.length === 0 ? (

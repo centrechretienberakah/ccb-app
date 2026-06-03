@@ -27,10 +27,11 @@ interface Props {
   isAdmin?: boolean;
 }
 
+// NB : "Groupes" a migré vers le module Messagerie (/community/messages).
+// La Communauté ne conserve que Fil d'actualité · Prions Ensemble · Membres.
 const TABS = [
   { key: "feed",    label: "Fil d'actualité", emoji: "📰", href: "/community" },
   { key: "prayer",  label: "Prions Ensemble", emoji: "🙏", href: "/community/prions-ensemble" },
-  { key: "groups",  label: "Groupes",         emoji: "🧑‍🤝‍🧑", href: "/community/groups" },
   { key: "members", label: "Membres",         emoji: "👥", href: "/community/membres" },
 ] as const;
 

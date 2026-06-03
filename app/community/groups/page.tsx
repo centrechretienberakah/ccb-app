@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import GroupsListClient from "./GroupsListClient";
-import CommunityTabs from "../CommunityTabs";
+import MessagingTabs from "../messages/MessagingTabs";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Groupes — Communauté CCB" };
@@ -131,7 +131,7 @@ export default async function GroupsPage() {
 
   return (
     <>
-      <CommunityTabs />
+      <MessagingTabs />
       <GroupsListClient initialGroups={groups} currentUserId={user.id} userRole={userRole} />
     </>
   );
