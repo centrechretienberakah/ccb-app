@@ -16,18 +16,13 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
-  ParticipantTile,
-  TrackLoop,
-  TrackToggle,
-  DisconnectButton,
-  useTracks,
   useRoomContext,
-  useLocalParticipant,
 } from "@livekit/components-react";
-import { Track, ConnectionState } from "livekit-client";
+import { ConnectionState } from "livekit-client";
 import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useRef } from "react";
+import MeetStage from "./MeetStage";
 
 export default function PersistentCallHost() {
   const { state, endCall } = useCall();
@@ -69,7 +64,7 @@ export default function PersistentCallHost() {
       {state.groupId && (
         <SessionTracker groupId={state.groupId} mode={isAudio ? "audio" : "video"} />
       )}
-      {isOnMeetingPage ? <FullStage isAudio={isAudio} /> : <MiniPlayer />}
+      {isOnMeetingPage ? <MeetStage isAudio={isAudio} /> : <MiniPlayer />}
       <CallBrandingStyles isAudio={isAudio} />
     </LiveKitRoom>
   );
@@ -121,153 +116,6 @@ function SessionTracker({ groupId, mode }: { groupId: string; mode: "audio" | "v
   }, [groupId, mode]);
 
   return null;
-}
-
-// ─── Vue full screen (sur /meeting) ───────────────────────────────────
-function FullStage({ isAudio }: { isAudio: boolean }) {
-  const { endCall, state } = useCall();
-  const router = useRouter();
-  const tracks = useTracks(
-    [
-      { source: Track.Source.Camera, withPlaceholder: true },
-      { source: Track.Source.ScreenShare, withPlaceholder: false },
-    ],
-    { onlySubscribed: false },
-  );
-
-  function handleLeave() {
-    endCall(); // triggers onDisconnected via LiveKit
-    // Retour : conversation (DM) ou liste des groupes
-    router.push(state.backUrl ?? "/community/groups");
-  }
-
-  // Click sur "x" pour minimiser (sans quitter)
-  function handleMinimize() {
-    router.back();
-  }
-
-  return (
-    <div style={{
-      position: "fixed", inset: 0,
-      background: "#0F0A1F",
-      display: "flex", flexDirection: "column",
-      zIndex: 200,
-    }}>
-      {/* Header simple */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 10,
-        padding: "12px 14px",
-        background: "rgba(0,0,0,0.4)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        color: "#fff",
-        backdropFilter: "blur(8px)",
-        flexShrink: 0,
-      }}>
-        <button onClick={handleMinimize} aria-label="Minimiser"
-          style={{
-            width: 36, height: 36, borderRadius: 999,
-            background: "rgba(255,255,255,0.10)", color: "#fff",
-            border: "none", cursor: "pointer", fontSize: 18,
-          }}>‹</button>
-        <div style={{ flex: 1, textAlign: "center", fontSize: 14, fontWeight: 700, letterSpacing: 0.4 }}>
-          {isAudio ? "📞 Appel vocal" : "🎥 Réunion vidéo"} · CCB
-        </div>
-        <div style={{ width: 36 }} />
-      </div>
-
-      {/* Grille participants */}
-      <div className="ccb-meet-grid" style={{
-        flex: 1, minHeight: 0, overflow: "auto", padding: 4,
-      }}>
-        <TrackLoop tracks={tracks}>
-          <ParticipantTile />
-        </TrackLoop>
-      </div>
-
-      {/* Control bar custom — boutons explicites, visibles sur tous les
-          écrans (safe-area iOS / Android prise en compte) */}
-      <CustomControlBar isAudio={isAudio} onLeave={handleLeave} />
-    </div>
-  );
-}
-
-// ─── Control bar custom : mic / camera / leave avec safe-area mobile
-function CustomControlBar({ isAudio, onLeave }: { isAudio: boolean; onLeave: () => void }) {
-  const { isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
-  return (
-    <div style={{
-      flexShrink: 0,
-      background: "rgba(15,10,31,0.96)",
-      borderTop: "1px solid rgba(255,255,255,0.08)",
-      padding: "12px 16px",
-      paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 14,
-      zIndex: 1,
-    }}>
-      {/* Micro toggle */}
-      <TrackToggle
-        source={Track.Source.Microphone}
-        showIcon
-        style={{
-          width: 56, height: 56, borderRadius: 999,
-          background: isMicrophoneEnabled ? "rgba(255,255,255,0.10)" : "#DC2626",
-          color: "#fff", border: "none", cursor: "pointer",
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-        }}
-      >
-        {isMicrophoneEnabled ? "🎤" : "🔇"}
-      </TrackToggle>
-
-      {/* Camera toggle — seulement en vidéo */}
-      {!isAudio && (
-        <TrackToggle
-          source={Track.Source.Camera}
-          showIcon
-          style={{
-            width: 56, height: 56, borderRadius: 999,
-            background: isCameraEnabled ? "rgba(255,255,255,0.10)" : "rgba(220,38,38,0.85)",
-            color: "#fff", border: "none", cursor: "pointer",
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          {isCameraEnabled ? "📹" : "📷"}
-        </TrackToggle>
-      )}
-
-      {/* Partage d'écran — seulement en vidéo */}
-      {!isAudio && (
-        <TrackToggle
-          source={Track.Source.ScreenShare}
-          showIcon
-          style={{
-            width: 56, height: 56, borderRadius: 999,
-            background: "rgba(255,255,255,0.10)",
-            color: "#fff", border: "none", cursor: "pointer",
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          🖥️
-        </TrackToggle>
-      )}
-
-      {/* Raccrocher — toujours visible, rouge */}
-      <DisconnectButton
-        onClick={onLeave}
-        style={{
-          width: 64, height: 56, borderRadius: 999,
-          background: "#DC2626", color: "#fff", border: "none",
-          cursor: "pointer", fontWeight: 700, fontSize: 18,
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 14px rgba(220,38,38,0.5)",
-        }}
-      >
-        📞
-      </DisconnectButton>
-    </div>
-  );
 }
 
 // ─── Mini-player flottant (sur toutes les autres pages) ───────────────
