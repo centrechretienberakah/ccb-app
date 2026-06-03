@@ -27,12 +27,12 @@ interface Props {
   isAdmin?: boolean;
 }
 
-// NB : "Groupes" a migré vers le module Messagerie (/community/messages).
-// La Communauté ne conserve que Fil d'actualité · Prions Ensemble · Membres.
+// "Groupes" + chat privé sont unifiés sous "Messagerie" (/community/messages).
 const TABS = [
-  { key: "feed",    label: "Fil d'actualité", emoji: "📰", href: "/community" },
-  { key: "prayer",  label: "Prions Ensemble", emoji: "🙏", href: "/community/prions-ensemble" },
-  { key: "members", label: "Membres",         emoji: "👥", href: "/community/membres" },
+  { key: "feed",       label: "Fil d'actualité", emoji: "📰", href: "/community" },
+  { key: "prayer",     label: "Prions Ensemble", emoji: "🙏", href: "/community/prions-ensemble" },
+  { key: "messagerie", label: "Messagerie",      emoji: "💬", href: "/community/messages" },
+  { key: "members",    label: "Membres",         emoji: "👥", href: "/community/membres" },
 ] as const;
 
 export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }: Props) {
@@ -82,6 +82,10 @@ export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }
 
   function isActive(href: string) {
     if (href === "/community") return pathname === "/community";
+    // Messagerie englobe les conversations privées ET les groupes
+    if (href === "/community/messages") {
+      return pathname.startsWith("/community/messages") || pathname.startsWith("/community/groups");
+    }
     return pathname.startsWith(href);
   }
 
@@ -117,18 +121,9 @@ export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }
           );
         })}
 
-        {/* Messagerie privée */}
-        <Link href="/community/messages" title="Messages privés" style={{
-          marginLeft: "auto", padding: "8px 10px", flexShrink: 0,
-          textDecoration: "none", color: T.textSoft,
-          display: "flex", alignItems: "center", fontSize: 17,
-        }}>
-          💬
-        </Link>
-
         {/* Cloche notifications */}
         <Link href="/community/notifications" title="Mes notifications" style={{
-          padding: "8px 12px",
+          marginLeft: "auto", padding: "8px 12px",
           position: "relative", flexShrink: 0,
           textDecoration: "none", color: T.textSoft,
           display: "flex", alignItems: "center", fontSize: 17,
