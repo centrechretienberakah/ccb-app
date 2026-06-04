@@ -7,7 +7,7 @@
 // v5 : ajout d'un cache dédié pour /api/bible (Network-First + fallback offline).
 // Les chapitres déjà lus restent accessibles hors-ligne.
 
-const CACHE_VERSION = "v6";
+const CACHE_VERSION = "v7";
 const CACHE_NAME = "ccb-" + CACHE_VERSION;
 const BIBLE_CACHE = "ccb-bible-" + CACHE_VERSION;
 

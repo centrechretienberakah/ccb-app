@@ -4,12 +4,13 @@
  * BuildCheck — Détecte un nouveau déploiement Vercel et force un rechargement.
  *
  * Comment ça marche :
- *  1. Next.js injecte un `buildId` unique dans window.__NEXT_DATA__ à chaque build.
- *  2. On stocke ce buildId dans localStorage.
+ *  1. Le `buildId` (SHA du commit Vercel) est passé en prop depuis le layout
+ *     serveur — fiable sur l'App Router (window.__NEXT_DATA__ n'existe plus ici).
+ *  2. On le stocke dans localStorage.
  *  3. Au prochain chargement, si le buildId a changé → nouveau déploiement détecté.
  *  4. On désinstalle tous les Service Workers, vide tous les caches, puis recharge.
  *
- * Résultat : TOUS les téléphones reçoivent la mise à jour au premier chargement
+ * Résultat : TOUS les appareils reçoivent la mise à jour au premier chargement
  * après un déploiement, quel que soit l'état du Service Worker.
  */
 
@@ -17,13 +18,12 @@ import { useEffect } from "react";
 
 const STORAGE_KEY = "ccb_build_id";
 
-export default function BuildCheck() {
+export default function BuildCheck({ buildId }: { buildId: string }) {
   useEffect(() => {
     try {
-      const currentBuildId: string | undefined =
-        (window as any).__NEXT_DATA__?.buildId;
+      const currentBuildId = buildId;
 
-      if (!currentBuildId) return;
+      if (!currentBuildId || currentBuildId === "dev") return;
 
       const storedBuildId = localStorage.getItem(STORAGE_KEY);
 
@@ -59,7 +59,7 @@ export default function BuildCheck() {
     } catch {
       // Silencieux — ne jamais bloquer l'app pour ça
     }
-  }, []);
+  }, [buildId]);
 
   return null;
 }

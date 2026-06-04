@@ -66,6 +66,15 @@ const themeScript = `(function(){try{var s=localStorage.getItem('ccb-theme');var
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Identifiant de déploiement (SHA du commit Vercel) — sert à BuildCheck pour
+  // forcer un rafraîchissement de TOUS les clients dès qu'un nouveau déploiement
+  // est en ligne (fiable sur l'App Router, contrairement à __NEXT_DATA__).
+  const buildId =
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.VERCEL_DEPLOYMENT_ID ||
+    process.env.NEXT_PUBLIC_BUILD_ID ||
+    "dev";
+
   return (
     <html
       lang="fr"
@@ -86,7 +95,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
       </head>
       <body className="min-h-full bg-background text-foreground antialiased">
-        <BuildCheck />
+        <BuildCheck buildId={buildId} />
         <CallProvider>
           <AppShell>{children}</AppShell>
           {/* Reste mounté sur TOUTES les pages pendant un appel actif :
