@@ -30,6 +30,7 @@ import type { Room } from "livekit-client";
 import type { TrackReferenceOrPlaceholder } from "@livekit/components-core";
 import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
+import { ringCall, pushCallNotification } from "@/lib/meet/calls";
 
 const VIOLET = "#5A2CA0";
 const GOLD = "#D4AF37";
@@ -100,6 +101,7 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   const [prayer, setPrayer] = useState<Prayer | null>(null);
   const [showVersePrompt, setShowVersePrompt] = useState(false);
   const [showPrayerPrompt, setShowPrayerPrompt] = useState(false);
+  const [showAddCall, setShowAddCall] = useState(false); // inviter qqn à l'appel en cours (DM)
 
   const room = useRoomContext();
   const [canModerate, setCanModerate] = useState(false);
@@ -340,6 +342,15 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
       {/* ── Prompts ── */}
       {showVersePrompt && <VersePrompt onShare={(r, t) => { shareVerse(r, t); setShowVersePrompt(false); }} onClose={() => setShowVersePrompt(false)} />}
       {showPrayerPrompt && <PrayerPrompt onStart={(topic, m) => { startPrayer(topic, m); setShowPrayerPrompt(false); }} onClose={() => setShowPrayerPrompt(false)} />}
+      {showAddCall && state.conversationId && (
+        <AddToCallModal
+          conversationId={state.conversationId}
+          type={isAudio ? "audio" : "video"}
+          callerName={myName}
+          onClose={() => setShowAddCall(false)}
+          onFlash={flash}
+        />
+      )}
 
       {/* ── Barre de contrôle ── */}
       <ControlBar
@@ -357,6 +368,7 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         onSettings={() => setPanel((p) => (p === "settings" ? "none" : "settings"))}
         onNotes={() => setPanel((p) => (p === "notes" ? "none" : "notes"))}
         onStats={() => setPanel((p) => (p === "stats" ? "none" : "stats"))}
+        onInvite={state.conversationId && !state.groupId ? () => setShowAddCall(true) : undefined}
         canRecord={canModerate}
         recording={!!recording}
         onRecord={toggleRecording}
@@ -841,12 +853,12 @@ function downloadBlob(blob: Blob, filename: string) {
 /* ─────────────── Barre de contrôle ─────────────── */
 function ControlBar({
   isAudio, handRaised, unreadChat, panel, prayerActive,
-  onHand, onChat, onPeople, onVerse, onPrayer, onSettings, onNotes, onStats,
+  onHand, onChat, onPeople, onVerse, onPrayer, onSettings, onNotes, onStats, onInvite,
   canRecord, recording, onRecord, onLeave,
 }: {
   isAudio: boolean; handRaised: boolean; unreadChat: number; peopleCount: number; panel: Panel; prayerActive: boolean;
   onHand: () => void; onChat: () => void; onPeople: () => void; onVerse: () => void; onPrayer: () => void; onSettings: () => void;
-  onNotes: () => void; onStats: () => void;
+  onNotes: () => void; onStats: () => void; onInvite?: () => void;
   canRecord: boolean; recording: boolean; onRecord: () => void; onLeave: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -870,6 +882,7 @@ function ControlBar({
               <MenuTile emoji="✋" label="Main levée" active={handRaised} onClick={run(onHand)} />
               <MenuTile emoji="💬" label="Chat" badge={unreadChat} active={panel === "chat"} onClick={run(onChat)} />
               <MenuTile emoji="👥" label="Membres" active={panel === "people"} onClick={run(onPeople)} />
+              {onInvite && <MenuTile emoji="➕" label="Inviter" onClick={run(onInvite)} />}
               <MenuTile emoji="📖" label="Verset" onClick={run(onVerse)} />
               <MenuTile emoji="🙏" label="Prière" active={prayerActive} onClick={run(onPrayer)} />
               <MenuTile emoji="📝" label="Notes" active={panel === "notes"} onClick={run(onNotes)} />
@@ -950,3 +963,89 @@ const exportBtn: React.CSSProperties = {
   flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)",
   color: "#fff", borderRadius: 10, padding: "9px", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
 };
+
+/* ─────────────── Inviter quelqu'un à l'appel en cours (DM) ─────────────── */
+function AddToCallModal({ conversationId, type, callerName, onClose, onFlash }: {
+  conversationId: string; type: "audio" | "video"; callerName: string;
+  onClose: () => void; onFlash: (m: string) => void;
+}) {
+  const [candidates, setCandidates] = useState<Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const sb = createClient();
+        const { data: existing } = await sb.from("conversation_members").select("user_id").eq("conversation_id", conversationId);
+        const exclude = new Set(((existing ?? []) as Array<{ user_id: string }>).map((m) => m.user_id));
+        const { data: profs } = await sb.from("user_profiles")
+          .select("user_id, display_name, avatar_url").eq("is_public", true)
+          .order("display_name", { ascending: true }).limit(500);
+        if (cancelled) return;
+        setCandidates(((profs ?? []) as Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>).filter((p) => !exclude.has(p.user_id)));
+      } catch { /* noop */ }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [conversationId]);
+
+  async function invite(uid: string, name: string) {
+    if (busyId) return;
+    setBusyId(uid);
+    try {
+      const sb = createClient();
+      await sb.rpc("add_conversation_member", { p_conv: conversationId, p_user: uid });
+      await ringCall({ conversationId, type });               // fait sonner le nouvel invité
+      void pushCallNotification({ type, callerName, conversationId }); // + push hors app
+      onFlash(`✅ ${name} invité(e) à l'appel`);
+      setCandidates((prev) => prev.filter((c) => c.user_id !== uid));
+    } catch { onFlash("Erreur lors de l'invitation"); }
+    setBusyId(null);
+  }
+
+  const filtered = candidates.filter((c) => !search.trim() || (c.display_name || "").toLowerCase().includes(search.trim().toLowerCase()));
+
+  return (
+    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{
+      position: "fixed", inset: 0, zIndex: 2100, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(3px)",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+    }}>
+      <div style={{ width: "100%", maxWidth: 560, maxHeight: "80vh", background: CARD, borderRadius: "20px 20px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+          <span style={{ fontWeight: 800, fontSize: 15, color: "#fff" }}>➕ Inviter à l&apos;appel</span>
+          <button onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "rgba(255,255,255,0.6)" }}>✕</button>
+        </div>
+        <div style={{ padding: "10px 14px" }}>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Rechercher un membre…" style={{ width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 999, padding: "9px 14px", color: "#fff", fontSize: 13, outline: "none" }} />
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 12px" }}>
+          {loading ? (
+            <div style={{ padding: 30, textAlign: "center", color: "rgba(255,255,255,0.5)", fontSize: 13 }}>Chargement…</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "rgba(255,255,255,0.5)", fontSize: 13 }}>Personne à inviter.</div>
+          ) : filtered.map((c) => {
+            const initials = (c.display_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+            return (
+              <button key={c.user_id} onClick={() => invite(c.user_id, c.display_name || "Le membre")} disabled={!!busyId} style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                background: "transparent", border: "none", borderRadius: 10, cursor: busyId ? "wait" : "pointer", textAlign: "left",
+              }}>
+                {c.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.avatar_url} alt="" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${VIOLET}, #3E1C70)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13 }}>{initials}</div>
+                )}
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "#fff" }}>{c.display_name || "Membre"}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: GOLD }}>{busyId === c.user_id ? "…" : "Inviter"}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
