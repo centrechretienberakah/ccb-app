@@ -62,7 +62,7 @@ export default async function GroupSettingsPage({ params }: { params: Promise<{ 
     .order("joined_at", { ascending: true });
   const memberRows = (gm ?? []) as Array<{ user_id: string; role: "owner" | "admin" | "member"; joined_at: string }>;
 
-  let profilesMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
+  const profilesMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
   if (memberRows.length > 0) {
     const { data: pf } = await supabase
       .from("user_profiles")

@@ -56,7 +56,7 @@ export async function fetchUnmutedMembers(
   if (allIds.length === 0) return [];
 
   // Mutes actifs (best-effort)
-  let mutedIds = new Set<string>();
+  const mutedIds = new Set<string>();
   try {
     const { data: ms } = await supabase
       .from("group_user_state")

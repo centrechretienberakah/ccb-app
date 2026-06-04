@@ -631,7 +631,7 @@ export default function GroupDetailClient({
         if (targets.length === 0) return;
 
         // Filtre mute
-        let mutedIds = new Set<string>();
+        const mutedIds = new Set<string>();
         try {
           const { data: ms } = await supabase
             .from("group_user_state")

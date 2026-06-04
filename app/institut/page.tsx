@@ -85,7 +85,7 @@ export default async function InstitutPage() {
     }
 
     // Favoris user
-    let favoriteIds = new Set<string>();
+    const favoriteIds = new Set<string>();
     try {
       const { data: favs } = await supabase
         .from("institut_user_favorites")

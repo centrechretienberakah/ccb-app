@@ -55,7 +55,7 @@ export default function SearchClient({
     const qNorm = norm(query.trim());
     const selectedCat = catSlug ? catsBySlug.get(catSlug) ?? null : null;
 
-    let arr = videos.filter((v) => {
+    const arr = videos.filter((v) => {
       if (selectedCat && v.category_id !== selectedCat.id) return false;
       if (premium === "free" && v.is_premium) return false;
       if (premium === "premium" && !v.is_premium) return false;

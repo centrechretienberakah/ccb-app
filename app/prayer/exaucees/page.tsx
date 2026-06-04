@@ -48,7 +48,7 @@ export default async function ExauceesPage() {
 
     // Profiles (non-anonymes)
     const authorIds = [...new Set(rows.filter((p) => !p.is_anonymous).map((p) => p.user_id))];
-    let profilesMap: Record<string, AnsweredPrayer["user_profiles"]> = {};
+    const profilesMap: Record<string, AnsweredPrayer["user_profiles"]> = {};
     if (authorIds.length > 0) {
       const { data: profiles } = await supabase
         .from("user_profiles")

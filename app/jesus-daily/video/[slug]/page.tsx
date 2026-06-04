@@ -131,7 +131,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
     const rows = (cData ?? []) as Array<Omit<CommentItem, "user_display_name" | "user_avatar_url">>;
     // Fetch profiles in bulk
     const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
-    let profMap = new Map<string, { display_name: string | null; avatar_url: string | null }>();
+    const profMap = new Map<string, { display_name: string | null; avatar_url: string | null }>();
     if (userIds.length > 0) {
       const { data: profs } = await supabase
         .from("user_profiles").select("user_id, display_name, avatar_url").in("user_id", userIds);
@@ -183,7 +183,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
         .limit(100);
       const rows = (lm ?? []) as Array<{ id: string; user_id: string; body: string; created_at: string }>;
       const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
-      let profMap = new Map<string, { display_name: string | null; avatar_url: string | null }>();
+      const profMap = new Map<string, { display_name: string | null; avatar_url: string | null }>();
       if (userIds.length > 0) {
         const { data: profs } = await supabase
           .from("user_profiles").select("user_id, display_name, avatar_url").in("user_id", userIds);

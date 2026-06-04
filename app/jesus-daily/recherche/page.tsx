@@ -37,7 +37,7 @@ export default async function SearchPage({
   const videos = (vidData ?? []) as JdtvVideo[];
 
   let watchlistIds: string[] = [];
-  let progressMap: Record<string, JdtvWatchProgress> = {};
+  const progressMap: Record<string, JdtvWatchProgress> = {};
   if (user) {
     try {
       const { data: wl } = await supabase

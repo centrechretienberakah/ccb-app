@@ -103,8 +103,8 @@ export default async function PrayerPage() {
     const typedComments = (allComments ?? []) as CommentRaw[];
 
     // Likes commentaires (v15) — try/catch si table inexistante
-    let commentLikesMap: Record<string, number> = {};
-    let myCommentLikes = new Set<string>();
+    const commentLikesMap: Record<string, number> = {};
+    const myCommentLikes = new Set<string>();
     try {
       const { data: lk } = await supabase
         .from("prayer_comment_likes")

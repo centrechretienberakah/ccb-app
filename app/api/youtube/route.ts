@@ -74,7 +74,7 @@ export async function GET() {
 
   // ─── 2) videos.list (batch) pour enrichir avec duration + stats ────
   const videoIds = items.map((it) => it.id.videoId!).filter(Boolean);
-  let detailsById = new Map<string, { durationSecs: number | null; viewCount: number | null; liveStatus: "live" | "upcoming" | "none" }>();
+  const detailsById = new Map<string, { durationSecs: number | null; viewCount: number | null; liveStatus: "live" | "upcoming" | "none" }>();
 
   if (videoIds.length > 0) {
     const videosUrl =

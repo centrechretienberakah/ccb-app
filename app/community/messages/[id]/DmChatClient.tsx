@@ -392,7 +392,7 @@ function Bar({ label, onClose }: { label: string; onClose: () => void }) {
 function DmAttachment({ url, type, name, mine }: { url: string; type: string | null; name: string | null; mine: boolean }) {
   if (type === "image") {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
+       
       <a href={url} target="_blank" rel="noopener noreferrer">
         <img src={url} alt={name || "image"} style={{ maxWidth: "100%", maxHeight: 280, borderRadius: 10, display: "block" }} />
       </a>

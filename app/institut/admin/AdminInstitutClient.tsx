@@ -123,7 +123,7 @@ export default function AdminInstitutClient({
     if (!editor) return;
     const supabase = createClient();
     let table = "";
-    let baseRow = editor.row ?? {};
+    const baseRow = editor.row ?? {};
     const isUpdate = !!baseRow.id;
 
     if (editor.kind === "category") table = "institut_categories";
