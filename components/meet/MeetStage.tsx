@@ -277,14 +277,42 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   const isDmOneToOne =
     !!state.conversationId && !state.groupId && !isAudio && !screenShare && cameraTracks.length === 2;
 
+  // ── Auto-masquage des contrôles (façon lecteur vidéo) ──
+  // En-tête + barre (micro/caméra/raccrocher) disparaissent après 4 s d'inactivité
+  // et réapparaissent dès qu'on touche/bouge sur l'écran. Restent affichés tant
+  // qu'un panneau ou un prompt est ouvert.
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const controlsLockedRef = useRef(false);
+  controlsLockedRef.current = panel !== "none" || showVersePrompt || showPrayerPrompt || showAddCall;
+  function pokeControls() {
+    setControlsVisible(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    if (!controlsLockedRef.current) {
+      hideTimerRef.current = setTimeout(() => setControlsVisible(false), 4000);
+    }
+  }
+  useEffect(() => {
+    pokeControls();
+    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
+  }, [panel, showVersePrompt, showPrayerPrompt, showAddCall]);
+
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#121212", display: "flex", flexDirection: "column", zIndex: 200, color: "#fff" }}>
-      {/* ── Header ── */}
+    <div
+      onPointerDown={pokeControls}
+      onPointerMove={pokeControls}
+      style={{ position: "fixed", inset: 0, background: "#121212", display: "flex", flexDirection: "column", zIndex: 200, color: "#fff" }}
+    >
+      {/* ── Header (auto-masqué) ── */}
       <div style={{
         display: "flex", alignItems: "center", gap: 10,
         padding: "max(10px, env(safe-area-inset-top, 10px)) 14px 10px",
         background: "linear-gradient(180deg, rgba(0,0,0,0.55), transparent)",
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 3,
+        opacity: controlsVisible ? 1 : 0,
+        pointerEvents: controlsVisible ? "auto" : "none",
+        transform: controlsVisible ? "none" : "translateY(-12px)",
+        transition: "opacity .28s ease, transform .28s ease",
       }}>
         <button onClick={handleMinimize} aria-label="Réduire" style={iconBtn}>‹</button>
         <div style={{ flex: 1, textAlign: "center", minWidth: 0 }}>
@@ -354,8 +382,9 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         />
       )}
 
-      {/* ── Barre de contrôle ── */}
+      {/* ── Barre de contrôle (auto-masquée) ── */}
       <ControlBar
+        visible={controlsVisible}
         isAudio={isAudio}
         handRaised={handRaised}
         unreadChat={unreadChat}
@@ -945,17 +974,19 @@ function downloadBlob(blob: Blob, filename: string) {
 
 /* ─────────────── Barre de contrôle ─────────────── */
 function ControlBar({
-  isAudio, handRaised, unreadChat, panel, prayerActive,
+  visible, isAudio, handRaised, unreadChat, panel, prayerActive,
   onHand, onChat, onPeople, onVerse, onPrayer, onSettings, onNotes, onStats, onInvite,
   canRecord, recording, onRecord, onLeave,
 }: {
-  isAudio: boolean; handRaised: boolean; unreadChat: number; peopleCount: number; panel: Panel; prayerActive: boolean;
+  visible: boolean; isAudio: boolean; handRaised: boolean; unreadChat: number; peopleCount: number; panel: Panel; prayerActive: boolean;
   onHand: () => void; onChat: () => void; onPeople: () => void; onVerse: () => void; onPrayer: () => void; onSettings: () => void;
   onNotes: () => void; onStats: () => void; onInvite?: () => void;
   canRecord: boolean; recording: boolean; onRecord: () => void; onLeave: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const run = (fn: () => void) => () => { setMoreOpen(false); fn(); };
+  // Ferme le menu ⋮ si les contrôles sont masqués
+  useEffect(() => { if (!visible) setMoreOpen(false); }, [visible]);
   return (
     <>
       {/* Backdrop pour fermer le menu au clic extérieur */}
@@ -987,8 +1018,8 @@ function ControlBar({
         </div>
       )}
 
-      {/* Barre principale : micro · caméra · ⋮ · raccrocher */}
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 9, display: "flex", justifyContent: "center", padding: "12px 10px", paddingBottom: "max(14px, env(safe-area-inset-bottom, 14px))", background: "linear-gradient(0deg, rgba(0,0,0,0.72), transparent)" }}>
+      {/* Barre principale : micro · caméra · ⋮ · raccrocher (auto-masquée) */}
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 9, display: "flex", justifyContent: "center", padding: "12px 10px", paddingBottom: "max(14px, env(safe-area-inset-bottom, 14px))", background: "linear-gradient(0deg, rgba(0,0,0,0.72), transparent)", opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none", transform: visible ? "none" : "translateY(16px)", transition: "opacity .28s ease, transform .28s ease" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(30,30,30,0.92)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 999, padding: "9px 14px", backdropFilter: "blur(14px)", boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }}>
           <TrackToggle source={Track.Source.Microphone} showIcon style={ctrlBtn(false)}><span style={{ fontSize: 19 }}>🎙️</span></TrackToggle>
           {!isAudio && <TrackToggle source={Track.Source.Camera} showIcon style={ctrlBtn(false)}><span style={{ fontSize: 19 }}>📹</span></TrackToggle>}
