@@ -12,7 +12,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/plan-biblique":  "Plan de Lecture",
   "/prayer":         "Prions ensemble",
   "/community":     "Communaute",
-  "/devotion":      "Méditons ensemble",
   "/jesus-daily":   "Jesus Daily TV",
   "/dons":          "Dons",
   "/premium":       "Premium",

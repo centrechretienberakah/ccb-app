@@ -196,7 +196,7 @@ function Stats() {
 
 /* ─────────────────────── ÉCOSYSTÈME (cards) ─────────────────────── */
 const ECO = [
-  { icon: "📖", title: "Méditons Ensemble", desc: "Recevez chaque jour une méditation inspirante basée sur la Parole de Dieu.", href: "/devotion", g: "linear-gradient(145deg,#92400e,#d97706 55%,#fbbf24)" },
+  { icon: "📖", title: "Méditons Ensemble", desc: "Recevez chaque jour une méditation inspirante basée sur la Parole de Dieu.", href: "/dashboard", g: "linear-gradient(145deg,#92400e,#d97706 55%,#fbbf24)" },
   { icon: "📚", title: "Ma Bible", desc: "Lisez la Bible dans plusieurs versions et suivez des plans de lecture personnalisés.", href: "/bible", g: "linear-gradient(145deg,#1e3a5f,#1e40af 55%,#3b82f6)" },
   { icon: "🙏", title: "Prions Ensemble", desc: "Partagez vos sujets de prière et intercédez avec la communauté.", href: "/prayer", g: "linear-gradient(145deg,#4c0519,#9f1239 55%,#fb7185)" },
   { icon: "👥", title: "Communauté", desc: "Échangez, apprenez et grandissez avec d'autres croyants.", href: "/community", g: "linear-gradient(145deg,#14532d,#16a34a 55%,#4ade80)" },
@@ -661,7 +661,7 @@ function Footer() {
         <div className="ccb-footer-cols">
           <div>
             <h4>Plateforme</h4>
-            <Link href="/devotion">Méditons Ensemble</Link>
+            <Link href="/dashboard">Méditons Ensemble</Link>
             <Link href="/bible">Ma Bible</Link>
             <Link href="/jesus-daily">Jesus Daily TV</Link>
             <Link href="/community">Communauté</Link>

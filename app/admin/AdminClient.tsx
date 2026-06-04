@@ -250,7 +250,7 @@ export default function AdminClient({
         body: JSON.stringify({
           title: `☀️ Méditons ensemble — ${form.title}`,
           body: `${form.verse_reference} · ${form.verse_text.slice(0, 80)}${form.verse_text.length > 80 ? "…" : ""}`,
-          url: "/devotion",
+          url: "/dashboard",
         }),
       });
       const notifBody = await notifRes.json();
