@@ -43,7 +43,6 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
   const router = useRouter();
   const [groups, setGroups] = useState<GroupLite[]>(initialGroups);
   const [filter, setFilter] = useState<Filter>("all");
-  const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [joinRequests, setJoinRequests] = useState<Map<string, "pending" | "rejected">>(new Map());
@@ -86,13 +85,6 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
     if (filter === "mine")     out = out.filter((g) => g.is_member);
     else if (filter === "public")  out = out.filter((g) => g.type === "public");
     else if (filter === "private") out = out.filter((g) => g.type === "private");
-    if (search.trim()) {
-      const q = search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-      out = out.filter((g) => {
-        const t = `${g.name} ${g.description ?? ""}`.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-        return t.includes(q);
-      });
-    }
     // Pour "mine" : tri par dernier message décroissant, puis non lus en haut
     if (filter === "mine") {
       return [...out].sort((a, b) => {
@@ -103,7 +95,7 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
       });
     }
     return out;
-  }, [groups, filter, search]);
+  }, [groups, filter]);
 
   async function createGroup() {
     if (!name.trim()) { setError("Le nom est requis."); return; }
@@ -241,49 +233,14 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
       )}
 
       <style>{`
-        .ccb-grp-hero { padding: 22px 14px 18px; }
-        .ccb-grp-title { font-size: clamp(1.3rem, 4.5vw, 1.7rem); }
-        .ccb-grp-tagline { font-size: clamp(10px, 2.8vw, 12px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        @media (min-width: 768px) {
-          .ccb-grp-hero { padding: 32px 24px 28px; }
-          .ccb-grp-title { font-size: 2rem; }
-          .ccb-grp-tagline { font-size: 14px; white-space: normal; }
-        }
         .ccb-grp-row { transition: background 120ms ease; }
         .ccb-grp-row:hover { background: ${T.surface2}; }
         .ccb-grp-row:active { background: ${T.violetSoft}; }
       `}</style>
 
-      {/* Hero */}
-      <div className="ccb-grp-hero" style={{
-        background: `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
-        color: "#fff", position: "relative", overflow: "hidden",
-        boxShadow: T.shadowGlow,
-      }}>
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: 3,
-          background: `linear-gradient(90deg, ${T.gold}, transparent)`,
-        }} />
-        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center" }}>
-          <h1 className="ccb-grp-title" style={{
-            fontFamily: F.title, fontWeight: 700, margin: "0 0 4px",
-            letterSpacing: "0.04em",
-          }}>
-            🧑‍🤝‍🧑 GROUPES
-          </h1>
-          <p className="ccb-grp-tagline" style={{
-            margin: 0, opacity: 0.9, fontStyle: "italic",
-            color: "#EDE7FA",
-          }}>
-            Cellules, ministères, intercession — collabore en équipe.
-          </p>
-        </div>
-      </div>
-
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 14px 48px" }}>
         {/* Top bar */}
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
-          <Link href="/community" style={backLink}>← Communauté</Link>
           <div style={{ flex: 1 }} />
           {canCreate && (
             <>
@@ -299,18 +256,6 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
             </>
           )}
         </div>
-
-        {/* Search */}
-        <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Rechercher un groupe…"
-          style={{
-            width: "100%", boxSizing: "border-box",
-            padding: "10px 14px", marginBottom: 10,
-            background: T.card, border: `1px solid ${T.border}`,
-            borderRadius: 999, color: T.text, fontSize: 13,
-            fontFamily: F.body, outline: "none",
-          }}
-        />
 
         {/* Filters — 4 chips alignés sur 1 ligne (équi-répartis) */}
         <style>{`
@@ -638,12 +583,6 @@ const btnGhost: React.CSSProperties = {
   borderRadius: 10, padding: "8px 16px",
   color: T.textMuted, cursor: "pointer", fontSize: 12,
   fontFamily: F.body,
-};
-const backLink: React.CSSProperties = {
-  background: T.card, border: `1px solid ${T.border}`,
-  borderRadius: 8, padding: "6px 12px",
-  color: T.violet, fontSize: 12, fontWeight: 700,
-  textDecoration: "none", fontFamily: F.body,
 };
 function chip(active: boolean): React.CSSProperties {
   return {
