@@ -12,12 +12,12 @@
  *           📖 partage de verset · 🙏 mode prière (tous synchronisés temps réel).
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ParticipantTile,
   TrackToggle,
   DisconnectButton,
+  VideoTrack,
   useTracks,
   useParticipants,
   useLocalParticipant,
@@ -25,9 +25,9 @@ import {
   useChat,
   useDataChannel,
 } from "@livekit/components-react";
-import { Track, LocalVideoTrack } from "livekit-client";
-import type { Room } from "livekit-client";
-import type { TrackReferenceOrPlaceholder } from "@livekit/components-core";
+import { Track, LocalVideoTrack, ParticipantEvent } from "livekit-client";
+import type { Room, Participant } from "livekit-client";
+import type { TrackReference, TrackReferenceOrPlaceholder } from "@livekit/components-core";
 import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
 import { ringCall, pushCallNotification } from "@/lib/meet/calls";
@@ -390,13 +390,104 @@ function CallTimer() {
   return <span style={{ fontVariantNumeric: "tabular-nums" }}>{fmtDuration(s)}</span>;
 }
 
+/* ─────────────── Tuile participant CCB (nom + photo de profil) ───────────────
+ * Remplace <ParticipantTile> de LiveKit qui n'affiche qu'une icône générique
+ * quand la caméra est coupée. Ici : vidéo si dispo, sinon AVATAR (depuis la
+ * métadonnée du token) + NOM, avec indicateur micro et halo « parle ».
+ * L'audio reste rendu globalement par <RoomAudioRenderer> (PersistentCallHost). */
+function metaAvatar(p?: Participant): string | null {
+  if (!p?.metadata) return null;
+  try {
+    const m = JSON.parse(p.metadata) as { avatar_url?: unknown };
+    return typeof m?.avatar_url === "string" && m.avatar_url ? m.avatar_url : null;
+  } catch { return null; }
+}
+
+// Re-render UNIQUEMENT cette tuile quand l'état du participant change
+// (mute micro/caméra, prise de parole) — sans re-render toute la grille.
+function useParticipantTick(p?: Participant) {
+  const [, force] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => {
+    if (!p) return;
+    const ev = () => force();
+    const events = [
+      ParticipantEvent.TrackMuted, ParticipantEvent.TrackUnmuted,
+      ParticipantEvent.IsSpeakingChanged,
+      ParticipantEvent.TrackPublished, ParticipantEvent.TrackUnpublished,
+      ParticipantEvent.TrackSubscribed, ParticipantEvent.TrackUnsubscribed,
+    ];
+    // Émetteur (eventemitter3) : signature unique pour éviter la résolution
+    // d'overload sur le type union ParticipantEvent.
+    const em = p as unknown as {
+      on(e: ParticipantEvent, cb: () => void): void;
+      off(e: ParticipantEvent, cb: () => void): void;
+    };
+    events.forEach((e) => em.on(e, ev));
+    return () => { events.forEach((e) => em.off(e, ev)); };
+  }, [p]);
+}
+
+function CcbTile({ trackRef }: { trackRef: TrackReferenceOrPlaceholder }) {
+  const p = trackRef.participant;
+  useParticipantTick(p);
+  const isScreen = trackRef.source === Track.Source.ScreenShare;
+  const pub = trackRef.publication;
+  const hasVideo = !!pub && !pub.isMuted;
+  const name = p?.name || p?.identity || "Membre";
+  const avatar = metaAvatar(p);
+  const speaking = !isScreen && (p?.isSpeaking ?? false);
+  const micPub = p?.getTrackPublication?.(Track.Source.Microphone);
+  const micMuted = micPub ? micPub.isMuted : true;
+
+  return (
+    <div className="lk-participant-tile" style={{
+      position: "relative", width: "100%", height: "100%",
+      background: isScreen ? "#000" : "linear-gradient(135deg, #2A1A4A, #160F2C)",
+      borderRadius: 12, overflow: "hidden",
+      outline: speaking ? `2px solid ${GOLD}` : "2px solid transparent",
+      outlineOffset: -2, transition: "outline-color .12s",
+    }}>
+      {hasVideo ? (
+        <VideoTrack trackRef={trackRef as TrackReference}
+          style={{ width: "100%", height: "100%", objectFit: isScreen ? "contain" : "cover" }} />
+      ) : (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {avatar ? (
+            <img src={avatar} alt={name}
+              style={{ width: "40%", maxWidth: 110, minWidth: 46, aspectRatio: "1 / 1", borderRadius: "50%", objectFit: "cover", border: `2px solid ${GOLD}66`, boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }} />
+          ) : (
+            <div style={{
+              width: "40%", maxWidth: 110, minWidth: 46, aspectRatio: "1 / 1", borderRadius: "50%",
+              background: `linear-gradient(135deg, ${VIOLET}, #3E1C70)`, display: "flex",
+              alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800,
+              fontSize: "clamp(15px, 5vw, 30px)", border: `2px solid ${GOLD}66`,
+            }}>{initialsOf(name)}</div>
+          )}
+        </div>
+      )}
+      <div style={{
+        position: "absolute", left: 0, right: 0, bottom: 0, padding: "12px 8px 5px",
+        display: "flex", alignItems: "center", gap: 5, pointerEvents: "none",
+        background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.55))",
+      }}>
+        <span style={{ flexShrink: 0, fontSize: 11 }}>{micMuted ? "🔇" : "🎙️"}</span>
+        <span style={{
+          flex: 1, minWidth: 0, fontSize: 11.5, color: "#fff", fontWeight: 600,
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          textShadow: "0 1px 2px rgba(0,0,0,0.9)",
+        }}>{name}{isScreen ? " — écran" : ""}</span>
+      </div>
+    </div>
+  );
+}
+
 /* ─────────────── Grille adaptative ─────────────── */
 function AdaptiveGrid({ tracks, count, isMobile }: { tracks: TrackReferenceOrPlaceholder[]; count: number; isMobile: boolean }) {
   const cols = gridCols(count, isMobile);
   return (
     <div className="ccb-meet-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, height: "100%", alignContent: "center" }}>
       {tracks.map((t, i) => (
-        <ParticipantTile key={(t.participant?.identity ?? "p") + i} trackRef={t} />
+        <CcbTile key={(t.participant?.identity ?? "p") + i} trackRef={t} />
       ))}
     </div>
   );
@@ -407,13 +498,13 @@ function Presentation({ screen, cams, isMobile }: { screen: TrackReferenceOrPlac
   return (
     <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", height: "100%", gap: 6, padding: 6 }}>
       <div style={{ flex: 1, minHeight: 0, minWidth: 0, borderRadius: 14, overflow: "hidden", background: "#000", position: "relative" }}>
-        <ParticipantTile trackRef={screen} />
+        <CcbTile trackRef={screen} />
         <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.6)", color: GOLD, fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999 }}>🖥️ Présentation</div>
       </div>
       <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", gap: 6, overflowX: isMobile ? "auto" : "visible", overflowY: isMobile ? "visible" : "auto", flexShrink: 0, width: isMobile ? "100%" : 168, maxHeight: isMobile ? 100 : "100%" }}>
         {cams.map((t, i) => (
           <div key={(t.participant?.identity ?? "c") + i} style={{ flexShrink: 0, width: isMobile ? 130 : "100%", aspectRatio: "1 / 1", borderRadius: 12, overflow: "hidden", background: CARD }}>
-            <ParticipantTile trackRef={t} />
+            <CcbTile trackRef={t} />
           </div>
         ))}
       </div>
@@ -442,11 +533,11 @@ function PipLayout({ cams, localIdentity }: { cams: TrackReferenceOrPlaceholder[
 
   return (
     <div style={{ height: "100%", width: "100%", position: "relative", background: "#000" }}>
-      {remote && <ParticipantTile trackRef={remote} />}
+      {remote && <CcbTile trackRef={remote} />}
       {local && (
         <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
           style={{ position: "absolute", left: pos.x, top: pos.y, width: 112, aspectRatio: "3 / 4", borderRadius: 14, overflow: "hidden", border: `2px solid ${GOLD}`, boxShadow: "0 8px 24px rgba(0,0,0,0.5)", cursor: "grab", touchAction: "none", zIndex: 4, background: CARD }}>
-          <ParticipantTile trackRef={local} />
+          <CcbTile trackRef={local} />
         </div>
       )}
     </div>

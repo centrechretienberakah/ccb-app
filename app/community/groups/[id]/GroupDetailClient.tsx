@@ -141,21 +141,41 @@ export default function GroupDetailClient({
     let cancelled = false;
 
     async function fetchActive() {
+      // 1) SOURCE DE VÉRITÉ : occupation réelle de la room LiveKit. Fiable et
+      //    indépendante de meet_sessions (qui souffrait de sessions zombies).
+      try {
+        const res = await fetch("/api/livekit/active", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ groupId: group.id }),
+        });
+        if (res.ok) {
+          const d = await res.json() as {
+            active?: boolean; count?: number; mode?: "audio" | "video"; startedAt?: string; reason?: string;
+          };
+          if (cancelled) return;
+          if (d.reason !== "not-configured") {
+            setActiveSession(d.active ? {
+              id: `ccb-group-${group.id}`,
+              mode: d.mode ?? "video",
+              started_at: d.startedAt ?? new Date().toISOString(),
+              active_count: d.count ?? 1,
+            } : null);
+            return; // LiveKit fait foi
+          }
+        }
+      } catch { /* réseau indisponible → on tente le fallback meet_sessions */ }
+
+      // 2) FALLBACK : ancienne table meet_sessions (si l'API LiveKit échoue).
       try {
         const supabase = createClient();
-        // Avant de lire l'état actif, on déclenche un cleanup côté serveur
-        // pour fermer les sessions zombies (0 participants actifs ou > 1h).
-        // Ne bloque pas si RPC indisponible (v49 pas encore migrée).
         try { await supabase.rpc("meet_session_close_stale"); } catch { /* noop */ }
-
         const { data } = await supabase
           .from("meet_sessions_with_stats")
           .select("id, mode, started_at, active_count, is_active")
           .eq("group_id", group.id)
           .eq("is_active", true)
-          .gt("active_count", 0) // filet de sécurité : pas de bandeau si 0 participants actifs
-          // Sécurité finale : ne JAMAIS afficher de bandeau pour une session
-          // démarrée il y a > 1 semaine (probable zombie restée trop longtemps)
+          .gt("active_count", 0)
           .gte("started_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
           .order("started_at", { ascending: false })
           .limit(1);
