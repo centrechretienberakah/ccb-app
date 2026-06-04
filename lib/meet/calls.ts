@@ -83,6 +83,13 @@ export async function pushCallNotification(opts: {
         audience: isGroup ? "group_members" : "conversation_members",
         groupId: opts.groupId ?? undefined,
         conversationId: opts.conversationId ?? undefined,
+        // Push « appel » : prioritaire → vibration, reste affiché, sonne même
+        // hors application.
+        type: "call",
+        tag: "ccb-call",
+        renotify: true,
+        requireInteraction: true,
+        vibrate: [500, 250, 500, 250, 500, 250, 800],
       }),
     });
   } catch {

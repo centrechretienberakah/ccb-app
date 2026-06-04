@@ -7,7 +7,7 @@
 // v5 : ajout d'un cache dédié pour /api/bible (Network-First + fallback offline).
 // Les chapitres déjà lus restent accessibles hors-ligne.
 
-const CACHE_VERSION = "v5";
+const CACHE_VERSION = "v6";
 const CACHE_NAME = "ccb-" + CACHE_VERSION;
 const BIBLE_CACHE = "ccb-bible-" + CACHE_VERSION;
 
@@ -130,20 +130,44 @@ self.addEventListener("message", (event) => {
 // ── NOTIFICATIONS PUSH ────────────────────────────────────────────────────────
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  const data = event.data.json();
-  event.waitUntil(
-    self.registration.showNotification(data.title || "CCB", {
-      body: data.body || "",
-      icon: "/icon-192x192.png",
-      badge: "/icon-72x72.png",
-      data: { url: data.url || "/dashboard" },
-    })
-  );
+  let data = {};
+  try { data = event.data.json(); } catch (e) { data = { title: "CCB", body: event.data.text() }; }
+  const url = data.url || "/dashboard";
+  // Détecte un appel : type explicite OU url d'appel/réunion (groupe inclus)
+  const isCall = data.type === "call" || /\/call(\?|$)|\/meeting(\?|$)|[?&]join=1/.test(url);
+
+  const options = {
+    body: data.body || "",
+    icon: "/icon-192x192.png",
+    badge: "/icon-72x72.png",
+    data: { url: url },
+    vibrate: data.vibrate || (isCall ? [500, 250, 500, 250, 500, 250, 800] : [200, 100, 200]),
+    tag: data.tag || (isCall ? "ccb-call" : undefined),
+    renotify: data.renotify === true || isCall,
+    requireInteraction: data.requireInteraction === true || isCall,
+  };
+  if (isCall) {
+    options.actions = [
+      { action: "accept", title: "✅ Accepter" },
+      { action: "decline", title: "❌ Refuser" },
+    ];
+  }
+  event.waitUntil(self.registration.showNotification(data.title || "CCB", options));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  if (event.action === "decline") return; // refuser → ferme simplement
+  const url = event.notification.data?.url || "/dashboard";
   event.waitUntil(
-    clients.openWindow(event.notification.data?.url || "/dashboard")
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ("focus" in c) {
+          if (c.navigate) { try { c.navigate(url); } catch (e) {} }
+          return c.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
   );
 });

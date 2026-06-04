@@ -65,7 +65,7 @@ interface PushSubscriptionRow {
 //                      Body : { ..., groupId: <uuid>, excludeMuted?: boolean = true }
 export async function POST(req: NextRequest) {
   const reqBody = await req.json();
-  const { title, body, url, audience, userIds, groupId, excludeMuted, conversationId } = reqBody;
+  const { title, body, url, audience, userIds, groupId, excludeMuted, conversationId, type, tag, vibrate, requireInteraction, renotify } = reqBody;
   if (!title || !body) return NextResponse.json({ error: "title et body requis" }, { status: 400 });
 
   // Audiences accessibles à tout user authentifié (vérif serveur ensuite) :
@@ -198,7 +198,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ sent: 0, failed: 0, message: "Aucune subscription active." });
   }
 
-  const payload = JSON.stringify({ title, body, url: url || "/dashboard" });
+  const payload = JSON.stringify({
+    title, body, url: url || "/dashboard",
+    ...(type ? { type } : {}),
+    ...(tag ? { tag } : {}),
+    ...(vibrate ? { vibrate } : {}),
+    ...(typeof requireInteraction === "boolean" ? { requireInteraction } : {}),
+    ...(typeof renotify === "boolean" ? { renotify } : {}),
+  });
 
   let sent = 0;
   let failed = 0;
