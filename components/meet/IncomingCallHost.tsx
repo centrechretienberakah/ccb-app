@@ -169,7 +169,7 @@ export default function IncomingCallHost() {
           </div>
         </div>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 26, fontWeight: 800, fontFamily: "var(--font-cinzel), serif", letterSpacing: "0.02em" }}>{callerName}</div>
+          <div style={{ fontSize: 26, fontWeight: 800, fontFamily: "var(--font-cinzel), system-ui, sans-serif", letterSpacing: "0.02em" }}>{callerName}</div>
           <div style={{ fontSize: 14, opacity: 0.78, marginTop: 6 }}>{subtitle}</div>
           <div style={{ fontSize: 12, opacity: 0.5, marginTop: 10 }}>CCB Meet · sonnerie…</div>
         </div>

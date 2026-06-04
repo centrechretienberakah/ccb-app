@@ -19,7 +19,7 @@ export const GROUPS_THEME = {
 } as const;
 
 export const GROUPS_FONTS = {
-  title: "var(--font-cinzel), Georgia, serif",
+  title: "var(--font-cinzel), 'Segoe UI', system-ui, sans-serif",
   body:  "var(--font-montserrat), system-ui, sans-serif",
 } as const;
 

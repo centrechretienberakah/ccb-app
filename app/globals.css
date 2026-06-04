@@ -65,9 +65,10 @@
   --radius-xl:   24px;
   --radius-full: 9999px;
 
-  /* Typo */
-  --font-title: var(--font-cinzel), "Georgia", serif;
-  --font-body:  var(--font-montserrat), "Arial", sans-serif;
+  /* Typo — design system 2026 : Poppins (titres) + Inter (corps), via les
+     slots --font-cinzel/--font-montserrat alimentés par next/font (cf. layout). */
+  --font-title: var(--font-cinzel), "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-body:  var(--font-montserrat), "Segoe UI", system-ui, -apple-system, sans-serif;
 
   /* Header */
   --header-gradient: linear-gradient(160deg, #4a2c0e 0%, #7c4a1e 55%, #a87030 100%);

@@ -35,7 +35,7 @@ export const JDTV_THEME = {
 } as const;
 
 export const JDTV_FONTS = {
-  title: "var(--font-cinzel), 'Cormorant Garamond', Georgia, serif",
+  title: "var(--font-cinzel), 'Segoe UI', system-ui, sans-serif",
   body:  "var(--font-montserrat), system-ui, -apple-system, 'Segoe UI', sans-serif",
 } as const;
 

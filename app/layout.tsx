@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cinzel, Montserrat } from "next/font/google";
+import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 import RegisterSW from "@/components/pwa/RegisterSW";
@@ -8,14 +8,18 @@ import { CallProvider } from "@/lib/meet/CallContext";
 import PersistentCallHost from "@/components/meet/PersistentCallHost";
 import IncomingCallHost from "@/components/meet/IncomingCallHost";
 
-const cinzel = Cinzel({
+// Design system 2026 : polices modernes (Poppins pour les titres, Inter pour
+// le corps) en remplacement de Cinzel/Montserrat. On conserve volontairement
+// les noms de variables CSS (--font-cinzel / --font-montserrat) pour ne PAS
+// avoir à modifier toutes les références existantes dans globals.css.
+const poppins = Poppins({
   variable: "--font-cinzel",
   subsets: ["latin"],
-  weight: ["400", "600", "700", "900"],
+  weight: ["500", "600", "700", "800"],
   display: "swap",
 });
 
-const montserrat = Montserrat({
+const inter = Inter({
   variable: "--font-montserrat",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -65,7 +69,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${cinzel.variable} ${montserrat.variable} h-full`}
+      className={`${poppins.variable} ${inter.variable} h-full`}
       suppressHydrationWarning
     >
       <head>

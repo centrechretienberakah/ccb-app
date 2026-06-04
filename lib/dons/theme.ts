@@ -30,7 +30,7 @@ export const DONS_THEME = {
 } as const;
 
 export const DONS_FONTS = {
-  title: "var(--font-cinzel), 'Cormorant Garamond', Georgia, serif",
+  title: "var(--font-cinzel), 'Segoe UI', system-ui, sans-serif",
   body:  "var(--font-montserrat), system-ui, -apple-system, 'Segoe UI', sans-serif",
 } as const;
 
