@@ -31,6 +31,13 @@ const QUICK_ACTIONS = [
   { emoji: "⛪", label: "À propos",         sub: "Notre histoire",              href: "/a-propos",     accent: "#B45309" },
 ];
 
+const JOURNEY = [
+  { emoji: "📖", title: "Lecture du jour",       action: "Ouvrir ma Bible",        href: "/bible",                     accent: "#2563EB" },
+  { emoji: "📅", title: "Plan biblique",         action: "Reprendre le plan",      href: "/plan-biblique",             accent: "#16A34A" },
+  { emoji: "🙏", title: "Temps de prière",       action: "Prier maintenant",       href: "/community/prions-ensemble", accent: "#7C3AED" },
+  { emoji: "🎓", title: "Dernier enseignement",  action: "Continuer la formation", href: "/institut",                  accent: "#B45309" },
+];
+
 const UPCOMING = [
   { icon: "⛪", title: "Culte du Dimanche", time: "Tous les dim. · 17h30 (Belgique)", tag: "Culte", href: "/events" },
   { icon: "🌙", title: "Nuit de Priere", time: "Prochain : 29 Mai · 23h30", tag: "Priere", href: "/prayer" },
@@ -58,6 +65,36 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
 
       {/* Méditons ensemble — carte premium (juste sous le message de bienvenue) */}
       <DevotionHomeCard devotion={devotion} userId={userId} initialRead={devotionRead} />
+
+      {/* Compagnon Biblique IA — carte premium mise en avant */}
+      <div className="dashboard-section" style={{ paddingTop: 4, paddingBottom: 0 }}>
+        <Link href="/compagnon" className="dashboard-ai-card">
+          <div className="dashboard-ai-glow" />
+          <div className="dashboard-ai-icon">✨</div>
+          <div className="dashboard-ai-text">
+            <div className="dashboard-ai-title">Compagnon Biblique IA</div>
+            <div className="dashboard-ai-sub">Explique un verset, compose une prière, médite avec toi</div>
+          </div>
+          <span className="dashboard-ai-cta">Discuter →</span>
+        </Link>
+      </div>
+
+      {/* Continuer mon parcours */}
+      <div className="dashboard-section">
+        <div className="dashboard-section-header">
+          <h3 className="dashboard-section-title">Continuer mon parcours</h3>
+          <span className="dashboard-section-sub">Reprends là où tu en étais</span>
+        </div>
+        <div className="dashboard-journey-row">
+          {JOURNEY.map(({ emoji, title, action, href, accent }) => (
+            <Link key={href} href={href} className="dashboard-journey-card">
+              <span className="dashboard-journey-icon" style={{ background: `${accent}1a`, color: accent }}>{emoji}</span>
+              <div className="dashboard-journey-title">{title}</div>
+              <div className="dashboard-journey-action">{action} →</div>
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {/* Accès rapide — cartes modernes */}
       <div className="dashboard-section">
