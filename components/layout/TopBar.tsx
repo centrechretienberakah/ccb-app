@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { IconSearch, IconBell, IconMoon, IconSun, IconMenu, IconUser } from "@/components/icons";
+import { IconSearch, IconBell, IconMoon, IconSun, IconMenu, IconUsers } from "@/components/icons";
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":     "Tableau de bord",
@@ -134,8 +134,8 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
           </button>
         )}
 
-        <Link href="/profile" className="topbar-avatar">
-          <IconUser size={18} />
+        <Link href="/community" className="topbar-avatar" aria-label="Communauté">
+          <IconUsers size={18} />
         </Link>
       </div>
     </header>
