@@ -790,7 +790,7 @@ function DeviceSelect({ label, devices, value, onChange }: { label: string; devi
 /* ─────────────── Coquille de panneau latéral ─────────────── */
 function SidePanel({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "min(380px, 100vw)", zIndex: 7, background: CARD, borderLeft: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", boxShadow: "-8px 0 30px rgba(0,0,0,0.4)", animation: "ccb-panel-in .25s ease both" }}>
+    <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "min(380px, 100vw)", zIndex: 7, background: CARD, borderLeft: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", boxShadow: "-8px 0 30px rgba(0,0,0,0.4)", animation: "ccb-panel-in .25s ease both", paddingBottom: "calc(86px + env(safe-area-inset-bottom, 0px))" }}>
       <style>{`@keyframes ccb-panel-in{from{transform:translateX(20px);opacity:0;}to{transform:none;opacity:1;}}`}</style>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "calc(12px + env(safe-area-inset-top,0px)) 14px 12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <span style={{ fontWeight: 800, fontSize: 14, color: "#fff" }}>{title}</span>
@@ -988,7 +988,7 @@ function ControlBar({
       )}
 
       {/* Barre principale : micro · caméra · ⋮ · raccrocher */}
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 7, display: "flex", justifyContent: "center", padding: "12px 10px", paddingBottom: "max(14px, env(safe-area-inset-bottom, 14px))", background: "linear-gradient(0deg, rgba(0,0,0,0.72), transparent)" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 9, display: "flex", justifyContent: "center", padding: "12px 10px", paddingBottom: "max(14px, env(safe-area-inset-bottom, 14px))", background: "linear-gradient(0deg, rgba(0,0,0,0.72), transparent)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(30,30,30,0.92)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 999, padding: "9px 14px", backdropFilter: "blur(14px)", boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }}>
           <TrackToggle source={Track.Source.Microphone} showIcon style={ctrlBtn(false)}><span style={{ fontSize: 19 }}>🎙️</span></TrackToggle>
           {!isAudio && <TrackToggle source={Track.Source.Camera} showIcon style={ctrlBtn(false)}><span style={{ fontSize: 19 }}>📹</span></TrackToggle>}
