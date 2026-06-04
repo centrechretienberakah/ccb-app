@@ -236,7 +236,7 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
         <Row k="Email" v={authInfo?.email || "—"} />
         <Row k="Téléphone" v={authInfo?.phone || "—"} />
         <Row k="Inscrit le" v={fmt(authInfo?.created_at || createdAt)} />
-        <Row k="Dernière connexion" v={fmt(authInfo?.last_sign_in_at)} />
+        <Row k="Dernière connexion" v={fmt(authInfo?.last_sign_in_at ?? null)} />
         <Row k="Méthode" v={authInfo?.provider || "email"} />
         <Row k="Compte confirmé" v={authInfo ? (authInfo.confirmed ? "✅ Oui" : "❌ Non") : "—"} />
 

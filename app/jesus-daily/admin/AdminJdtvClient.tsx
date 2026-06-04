@@ -922,7 +922,7 @@ function YouTubeImportModal({
                 </div>
                 {alreadyImported ? (
                   <span style={{
-                    padding: "6px 12px", background: T.green, color: "#fff",
+                    padding: "6px 12px", background: "#1FA855", color: "#fff",
                     borderRadius: 6, fontSize: 11, fontWeight: 700, letterSpacing: 0.4, whiteSpace: "nowrap",
                   }}>✓ Importée</span>
                 ) : (
