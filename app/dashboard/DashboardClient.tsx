@@ -37,8 +37,7 @@ const UPCOMING = [
   { icon: "🎓", title: "Bootcamp CCB 2026", time: "26 – 28 Juin 2026 · Douala & Online", tag: "Bootcamp", href: "https://bootcamp.centrechretienberakah.com" },
 ];
 
-export default function DashboardClient({ displayName, avatarUrl, devotion, devotionRead, userId }: Props) {
-  const initials = displayName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+export default function DashboardClient({ displayName, devotion, devotionRead, userId }: Props) {
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return "Bonjour";
@@ -49,29 +48,10 @@ export default function DashboardClient({ displayName, avatarUrl, devotion, devo
   return (
     <div className="dashboard-page">
 
-      {/* Hero */}
+      {/* Bande d'accueil violette (style Communauté) — message + nom, centré, une ligne */}
       <div className="dashboard-hero">
-        <div className="dashboard-hero-orb dashboard-hero-orb-1" />
-        <div className="dashboard-hero-orb dashboard-hero-orb-2" />
         <div className="dashboard-hero-inner">
-          <div className="dashboard-avatar-wrap">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName} className="dashboard-avatar-img" />
-            ) : (
-              <div className="dashboard-avatar-initials">{initials}</div>
-            )}
-            <span className="dashboard-avatar-badge">
-              { }
-              <img src="/logo-officiel.png" alt="" className="dashboard-badge-logo" />
-            </span>
-          </div>
-          <div className="dashboard-hero-text">
-            <p className="dashboard-greeting">{greeting},</p>
-            <h2 className="dashboard-name">{displayName}</h2>
-            <p className="dashboard-verse">
-              Que ta parole soit une lampe a mes pieds — Ps 119:105
-            </p>
-          </div>
+          <p className="dashboard-greeting-line">{greeting} {displayName}</p>
         </div>
       </div>
 
