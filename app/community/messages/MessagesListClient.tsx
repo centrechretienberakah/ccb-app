@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import MessagingTabs from "./MessagingTabs";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
@@ -17,10 +18,47 @@ function timeAgo(iso: string | null): string {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-export default function MessagesListClient({ conversations }: { conversations: ConversationLite[]; currentUserId: string }) {
+export default function MessagesListClient({ conversations, currentUserId }: { conversations: ConversationLite[]; currentUserId: string }) {
+  const router = useRouter();
   const [items, setItems] = useState<ConversationLite[]>(conversations);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"tous" | "nonlus" | "historique">("tous");
+  const [showNew, setShowNew] = useState(false);
+  const [members, setMembers] = useState<Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [search, setSearch] = useState("");
+  const [starting, setStarting] = useState(false);
+
+  async function openNew() {
+    setShowNew(true);
+    if (members.length > 0) return;
+    setLoadingMembers(true);
+    try {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("user_profiles")
+        .select("user_id, display_name, avatar_url")
+        .eq("is_public", true)
+        .order("display_name", { ascending: true })
+        .limit(500);
+      const list = ((data ?? []) as Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>)
+        .filter((m) => m.user_id !== currentUserId);
+      setMembers(list);
+    } catch { /* noop */ }
+    setLoadingMembers(false);
+  }
+
+  async function startConversation(userId: string) {
+    if (starting) return;
+    setStarting(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("get_or_create_dm", { p_other: userId });
+      if (!error && typeof data === "string") { router.push(`/community/messages/${data}`); return; }
+      alert("Impossible de démarrer la conversation" + (error ? " : " + error.message : ""));
+    } catch { alert("Erreur réseau."); }
+    setStarting(false);
+  }
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.preventDefault();
@@ -80,6 +118,17 @@ export default function MessagesListClient({ conversations }: { conversations: C
               </button>
             );
           })}
+          <button
+            onClick={openNew}
+            aria-label="Nouvelle conversation"
+            title="Nouvelle conversation"
+            style={{
+              flexShrink: 0, width: 42, padding: "8px 0", borderRadius: 999,
+              border: "none", background: T.violet, color: "#fff",
+              fontSize: 22, fontWeight: 700, lineHeight: 1, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >＋</button>
         </div>
       </div>
       <style>{`
@@ -176,6 +225,59 @@ export default function MessagesListClient({ conversations }: { conversations: C
           </div>
         )}
       </div>
+
+      {/* Nouvelle conversation — sélecteur de membre (feuille du bas) */}
+      {showNew && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setShowNew(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        >
+          <div style={{
+            width: "100%", maxWidth: 520, maxHeight: "82vh", background: T.card,
+            borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column",
+            boxShadow: "0 -8px 40px rgba(0,0,0,0.3)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${T.border}` }}>
+              <span style={{ fontWeight: 800, fontSize: 16, color: T.text, fontFamily: F.title }}>✏️ Nouvelle conversation</span>
+              <button onClick={() => setShowNew(false)} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 20, color: T.textMuted, cursor: "pointer" }}>✕</button>
+            </div>
+            <div style={{ padding: "10px 16px" }}>
+              <input
+                value={search} onChange={(e) => setSearch(e.target.value)}
+                placeholder="🔍 Rechercher un membre…"
+                style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", borderRadius: 999, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 14, outline: "none" }}
+              />
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 12px" }}>
+              {loadingMembers ? (
+                <div style={{ textAlign: "center", padding: 30, color: T.textMuted, fontSize: 13 }}>Chargement…</div>
+              ) : (() => {
+                const q = search.trim().toLowerCase();
+                const filtered = q ? members.filter((m) => (m.display_name || "").toLowerCase().includes(q)) : members;
+                if (filtered.length === 0) return <div style={{ textAlign: "center", padding: 30, color: T.textMuted, fontSize: 13 }}>Aucun membre trouvé.</div>;
+                return filtered.map((m) => {
+                  const nm = m.display_name || "Membre";
+                  const ini = nm.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                  return (
+                    <button key={m.user_id} onClick={() => startConversation(m.user_id)} disabled={starting} style={{
+                      display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left",
+                      padding: "10px 12px", borderRadius: 12, border: "none", background: "transparent",
+                      color: T.text, cursor: starting ? "wait" : "pointer", fontFamily: F.body,
+                    }}>
+                      {m.avatar_url ? (
+                        <img src={m.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 15 }}>{ini}</div>
+                      )}
+                      <span style={{ fontWeight: 600, fontSize: 14.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nm}</span>
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
