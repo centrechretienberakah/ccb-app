@@ -378,7 +378,7 @@ export default function BibleHubClient({
             tone="neutral"
           />
           <ActionTile
-            href="/devotion"
+            href="/dashboard"
             icon={<SunriseIcon size={22} color={T.goldDark} />}
             label="Verset du jour"
             sub="Méditation matinale"
