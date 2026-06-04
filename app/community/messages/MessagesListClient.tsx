@@ -20,6 +20,7 @@ function timeAgo(iso: string | null): string {
 export default function MessagesListClient({ conversations }: { conversations: ConversationLite[]; currentUserId: string }) {
   const [items, setItems] = useState<ConversationLite[]>(conversations);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"tous" | "nonlus" | "historique">("tous");
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.preventDefault();
@@ -40,9 +41,47 @@ export default function MessagesListClient({ conversations }: { conversations: C
     setBusyId(null);
   }
 
+  const unreadCount = items.filter((c) => c.unread).length;
+  const visible =
+    filter === "nonlus" ? items.filter((c) => c.unread)
+    : filter === "historique" ? items.filter((c) => !c.unread)
+    : items;
+
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, paddingBottom: 80 }}>
       <MessagingTabs />
+
+      {/* Sous-barre de filtres — toujours sur une seule ligne (mobile inclus) */}
+      <div style={{ background: T.card, borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 6, padding: "8px 12px" }}>
+          {([["tous", "Tous"], ["nonlus", "Non lus"], ["historique", "Historique"]] as const).map(([key, label]) => {
+            const active = filter === key;
+            return (
+              <button key={key} onClick={() => setFilter(key)} style={{
+                flex: 1, minWidth: 0, padding: "8px 6px", borderRadius: 999,
+                border: `1px solid ${active ? T.violet : T.border}`,
+                background: active ? T.violet : "transparent",
+                color: active ? "#fff" : T.textMuted,
+                fontWeight: active ? 800 : 600,
+                fontSize: "clamp(11.5px, 3.2vw, 13px)",
+                cursor: "pointer", fontFamily: F.body, whiteSpace: "nowrap",
+                overflow: "hidden", textOverflow: "ellipsis",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                transition: "background .15s, color .15s, border-color .15s",
+              }}>
+                {label}
+                {key === "nonlus" && unreadCount > 0 && (
+                  <span style={{
+                    background: active ? "rgba(255,255,255,0.25)" : "#C24B7A", color: "#fff",
+                    fontSize: 10, fontWeight: 800, borderRadius: 999, padding: "1px 6px",
+                    minWidth: 16, textAlign: "center",
+                  }}>{unreadCount}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <style>{`
         .ccb-conv-row .ccb-conv-del { color: ${T.textMuted}; opacity: .55; transition: opacity .15s, color .15s, background .15s; }
         .ccb-conv-row:hover .ccb-conv-del { opacity: 1; }
@@ -65,9 +104,17 @@ export default function MessagesListClient({ conversations }: { conversations: C
               }}>👥 Voir les membres</Link>
             </div>
           </div>
+        ) : visible.length === 0 ? (
+          <div style={{
+            textAlign: "center", padding: "40px 18px", color: T.textMuted, fontSize: 14,
+            background: T.card, border: `1px solid ${T.border}`, borderRadius: 14,
+          }}>
+            <div style={{ fontSize: 38, marginBottom: 8 }}>{filter === "nonlus" ? "✅" : "💬"}</div>
+            {filter === "nonlus" ? "Aucune discussion non lue." : "Aucune discussion ici."}
+          </div>
         ) : (
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
-            {items.map((c, i) => {
+            {visible.map((c, i) => {
               const name = c.type === "group" ? (c.title || "Groupe privé") : (c.otherName || "Membre");
               const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
               return (
