@@ -16,19 +16,19 @@ interface Props {
 }
 
 const QUICK_ACTIONS = [
-  { emoji: "📖", label: "Ma Bible", sub: "Lire & Plan de lecture", href: "/bible", gradient: "linear-gradient(145deg, #1e3a5f 0%, #1e40af 55%, #3b82f6 100%)", glow: "rgba(59,130,246,0.35)" },
-  { emoji: "👥", label: "Communaute", sub: "Echanges & partages", href: "/community", gradient: "linear-gradient(145deg, #14532d 0%, #16a34a 55%, #4ade80 100%)", glow: "rgba(74,222,128,0.35)" },
-  { emoji: "📺", label: "Jesus Daily TV", sub: "Predications & live", href: "/jesus-daily", gradient: "linear-gradient(145deg, #3d1a72 0%, #5a2ca0 55%, #a78bfa 100%)", glow: "rgba(167,139,250,0.35)" },
-  { emoji: "🎓", label: "Institut Berakah", sub: "Formations & cursus", href: "/institut", gradient: "linear-gradient(145deg, #3e1c70 0%, #7c3aed 55%, #d4af37 100%)", glow: "rgba(212,175,55,0.35)" },
-  { emoji: "📅", label: "Evenements", sub: "Calendrier CCB", href: "/events", gradient: "linear-gradient(145deg, #064e3b 0%, #059669 55%, #34d399 100%)", glow: "rgba(52,211,153,0.35)" },
-  { emoji: "💝", label: "Faire un don", sub: "Soutenir le ministere", href: "/dons", gradient: "linear-gradient(145deg, #7f1d1d 0%, #dc2626 55%, #f87171 100%)", glow: "rgba(248,113,113,0.35)" },
-  { emoji: "🖼️", label: "Galerie", sub: "Photos & souvenirs", href: "/galerie", gradient: "linear-gradient(145deg, #831843 0%, #db2777 55%, #f9a8d4 100%)", glow: "rgba(249,168,212,0.35)" },
-  { emoji: "📚", label: "Bibliotheque", sub: "Ressources digitales", href: "/bibliotheque", gradient: "linear-gradient(145deg, #164e63 0%, #0891b2 55%, #67e8f9 100%)", glow: "rgba(103,232,249,0.35)" },
-  { emoji: "🗓️", label: "Rendez-vous", sub: "Conseil pastoral", href: "/rendez-vous", gradient: "linear-gradient(145deg, #4c1d95 0%, #7c3aed 55%, #c4b5fd 100%)", glow: "rgba(196,181,253,0.35)" },
-  { emoji: "✨", label: "Temoignages", sub: "Gloire a Dieu", href: "/temoignages", gradient: "linear-gradient(145deg, #713f12 0%, #ca8a04 55%, #fde047 100%)", glow: "rgba(253,224,71,0.35)" },
-  { emoji: "📬", label: "Contact", sub: "Nous joindre", href: "/contact", gradient: "linear-gradient(145deg, #064e3b 0%, #059669 55%, #6ee7b7 100%)", glow: "rgba(110,231,183,0.35)" },
-  { emoji: "📡", label: "Nous suivre", sub: "Reseaux sociaux", href: "/nous-suivre", gradient: "linear-gradient(145deg, #0c4a6e 0%, #0ea5e9 55%, #7dd3fc 100%)", glow: "rgba(125,211,252,0.35)" },
-  { emoji: "⛪", label: "A propos", sub: "Notre histoire", href: "/a-propos", gradient: "linear-gradient(145deg, #431407 0%, #b45309 55%, #fcd34d 100%)", glow: "rgba(180,83,9,0.35)" },
+  { emoji: "📖", label: "Ma Bible",         sub: "Lire & étudier la Parole",    href: "/bible",        accent: "#2563EB" },
+  { emoji: "👥", label: "Communauté",       sub: "Échanges & partages",         href: "/community",    accent: "#16A34A" },
+  { emoji: "📺", label: "Jesus Daily TV",   sub: "Prédications & directs",      href: "/jesus-daily",  accent: "#7C3AED" },
+  { emoji: "🎓", label: "Institut Berakah", sub: "Formations & enseignements",  href: "/institut",     accent: "#6D28D9" },
+  { emoji: "📅", label: "Événements",       sub: "Agenda du ministère",         href: "/events",       accent: "#0EA5E9" },
+  { emoji: "💝", label: "Faire un don",     sub: "Soutenir la mission",         href: "/dons",         accent: "#DC2626" },
+  { emoji: "🖼️", label: "Galerie",          sub: "Photos & souvenirs",          href: "/galerie",      accent: "#DB2777" },
+  { emoji: "📚", label: "Bibliothèque",     sub: "Ressources numériques",       href: "/bibliotheque", accent: "#0891B2" },
+  { emoji: "🗓️", label: "Rendez-vous",      sub: "Conseil pastoral",            href: "/rendez-vous",  accent: "#9333EA" },
+  { emoji: "✨", label: "Témoignages",      sub: "Histoires transformées",      href: "/temoignages",  accent: "#CA8A04" },
+  { emoji: "📬", label: "Contact",          sub: "Nous joindre",                href: "/contact",      accent: "#059669" },
+  { emoji: "📡", label: "Nous suivre",      sub: "Réseaux sociaux",             href: "/nous-suivre",  accent: "#0284C7" },
+  { emoji: "⛪", label: "À propos",         sub: "Notre histoire",              href: "/a-propos",     accent: "#B45309" },
 ];
 
 const UPCOMING = [
@@ -41,39 +41,36 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return "Bonjour";
-    if (h < 18) return "Bon apres-midi";
+    if (h < 18) return "Bon après-midi";
     return "Bonsoir";
   })();
 
   return (
     <div className="dashboard-page">
 
-      {/* Bande d'accueil violette (style Communauté) — message + nom, centré, une ligne */}
+      {/* Bande d'accueil — accueil chaleureux (style Communauté) */}
       <div className="dashboard-hero">
         <div className="dashboard-hero-inner">
-          <p className="dashboard-greeting-line">{greeting} {displayName}</p>
+          <p className="dashboard-hero-greet">{greeting} {displayName} <span aria-hidden="true">👋</span></p>
+          <p className="dashboard-hero-bless">Que le Seigneur vous bénisse aujourd&apos;hui.</p>
         </div>
       </div>
 
       {/* Méditons ensemble — carte premium (juste sous le message de bienvenue) */}
       <DevotionHomeCard devotion={devotion} userId={userId} initialRead={devotionRead} />
 
-      {/* Quick actions */}
+      {/* Accès rapide — cartes modernes */}
       <div className="dashboard-section">
         <div className="dashboard-section-header">
-          <h3 className="dashboard-section-title">Acces rapide</h3>
-          <span className="dashboard-section-sub">Tout a portee de main</span>
+          <h3 className="dashboard-section-title">Accès rapide</h3>
+          <span className="dashboard-section-sub">Tout à portée de main</span>
         </div>
         <div className="dashboard-actions-grid">
-          {QUICK_ACTIONS.map(({ label, sub, href, gradient, glow, emoji }) => (
-            <Link key={href} href={href} className="dashboard-action-card" style={{ "--card-glow": glow } as React.CSSProperties}>
-              <div className="dashboard-action-bg" style={{ background: gradient }} />
-              <div className="dashboard-action-orb" style={{ background: glow }} />
-              <div className="dashboard-action-content">
-                <span className="dashboard-action-emoji">{emoji}</span>
-                <div className="dashboard-action-label">{label}</div>
-                <div className="dashboard-action-sub">{sub}</div>
-              </div>
+          {QUICK_ACTIONS.map(({ label, sub, href, accent, emoji }) => (
+            <Link key={href} href={href} className="dashboard-action-card">
+              <span className="dashboard-action-icon" style={{ background: `${accent}1a`, color: accent }}>{emoji}</span>
+              <div className="dashboard-action-label">{label}</div>
+              <div className="dashboard-action-sub">{sub}</div>
             </Link>
           ))}
         </div>
@@ -82,7 +79,7 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
       {/* Upcoming events */}
       <div className="dashboard-section" style={{ paddingBottom: 32 }}>
         <div className="dashboard-section-header">
-          <h3 className="dashboard-section-title">A venir</h3>
+          <h3 className="dashboard-section-title">À venir</h3>
           <Link href="/events" className="dashboard-see-all">Voir tout</Link>
         </div>
         <div className="dashboard-upcoming-list">
