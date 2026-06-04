@@ -17,7 +17,7 @@ function timeAgo(iso: string | null): string {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-export default function MessagesListClient({ conversations, currentUserId }: { conversations: ConversationLite[]; currentUserId: string }) {
+export default function MessagesListClient({ conversations }: { conversations: ConversationLite[]; currentUserId: string }) {
   const [items, setItems] = useState<ConversationLite[]>(conversations);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -25,16 +25,14 @@ export default function MessagesListClient({ conversations, currentUserId }: { c
     e.preventDefault();
     e.stopPropagation();
     if (busyId) return;
-    if (!confirm("Supprimer cette discussion ?\nElle réapparaîtra si vous recevez un nouveau message.")) return;
+    if (!confirm("Supprimer DÉFINITIVEMENT cette conversation ?\nLes messages seront effacés. Cette action est irréversible.")) return;
     setBusyId(id);
     const supabase = createClient();
-    const { error } = await supabase
-      .from("conversation_members")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("conversation_id", id)
-      .eq("user_id", currentUserId);
+    // Suppression définitive (RPC SECURITY DEFINER) : DM -> tout est effacé
+    // (messages, réactions, appels) ; mini-groupe -> on quitte simplement.
+    const { error } = await supabase.rpc("dm_delete_conversation", { p_conversation_id: id });
     if (error) {
-      alert("Suppression impossible : " + error.message + "\n(Migration v59 requise.)");
+      alert("Suppression impossible : " + error.message + "\n(Migration v60 requise.)");
       setBusyId(null);
       return;
     }
