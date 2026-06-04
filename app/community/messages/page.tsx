@@ -17,12 +17,25 @@ export interface ConversationLite {
   unread: boolean;
 }
 
+export interface CallLogItem {
+  id: string;
+  otherName: string;
+  otherAvatar: string | null;
+  isGroup: boolean;
+  outgoing: boolean;
+  type: "audio" | "video";
+  status: string;        // ringing | accepted | declined | missed | ended
+  createdAt: string;
+  targetHref: string;
+}
+
 export default async function MessagesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?redirect=/community/messages");
 
   let conversations: ConversationLite[] = [];
+  let callLog: CallLogItem[] = [];
   try {
     const { data: myMems } = await supabase
       .from("conversation_members")
@@ -90,5 +103,62 @@ export default async function MessagesPage() {
     }
   } catch { /* tables v52 pas migrées → liste vide */ }
 
-  return <MessagesListClient conversations={conversations} currentUserId={user.id} />;
+  // ── Journal des appels (table calls v57) — best-effort ──
+  try {
+    const { data: callRows } = await supabase
+      .from("calls")
+      .select("id, caller_id, receiver_id, conversation_id, group_id, call_type, status, caller_name, caller_avatar, group_name, created_at")
+      .order("created_at", { ascending: false })
+      .limit(60);
+    type CallRow = {
+      id: string; caller_id: string; receiver_id: string | null;
+      conversation_id: string | null; group_id: string | null;
+      call_type: "audio" | "video"; status: string;
+      caller_name: string | null; caller_avatar: string | null; group_name: string | null; created_at: string;
+    };
+    const rows = (callRows ?? []) as CallRow[];
+    // Profils des interlocuteurs pour les appels SORTANTS en DM (le receiver)
+    const needIds = new Set<string>();
+    for (const r of rows) {
+      if (!r.group_id) {
+        const otherId = r.caller_id === user.id ? r.receiver_id : r.caller_id;
+        if (otherId && otherId !== user.id) needIds.add(otherId);
+      }
+    }
+    const pMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
+    if (needIds.size > 0) {
+      const { data: profs } = await supabase
+        .from("user_profiles").select("user_id, display_name, avatar_url").in("user_id", [...needIds]);
+      for (const p of (profs ?? []) as Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>) {
+        pMap[p.user_id] = { display_name: p.display_name, avatar_url: p.avatar_url };
+      }
+    }
+    callLog = rows.map((r) => {
+      const outgoing = r.caller_id === user.id;
+      let otherName = "Membre";
+      let otherAvatar: string | null = null;
+      let targetHref = "/community/messages";
+      if (r.group_id) {
+        otherName = r.group_name || "Groupe";
+        targetHref = `/community/groups/${r.group_id}`;
+      } else {
+        const otherId = outgoing ? r.receiver_id : r.caller_id;
+        if (outgoing) {
+          const p = otherId ? pMap[otherId] : null;
+          otherName = p?.display_name ?? "Membre";
+          otherAvatar = p?.avatar_url ?? null;
+        } else {
+          otherName = r.caller_name ?? "Membre";
+          otherAvatar = r.caller_avatar ?? null;
+        }
+        if (r.conversation_id) targetHref = `/community/messages/${r.conversation_id}`;
+      }
+      return {
+        id: r.id, otherName, otherAvatar, isGroup: !!r.group_id, outgoing,
+        type: r.call_type, status: r.status, createdAt: r.created_at, targetHref,
+      };
+    });
+  } catch { /* table calls absente → journal vide */ }
+
+  return <MessagesListClient conversations={conversations} currentUserId={user.id} callLog={callLog} />;
 }

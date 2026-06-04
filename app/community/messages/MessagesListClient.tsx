@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import MessagingTabs from "./MessagingTabs";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
-import type { ConversationLite } from "./page";
+import type { ConversationLite, CallLogItem } from "./page";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "";
@@ -18,7 +18,7 @@ function timeAgo(iso: string | null): string {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-export default function MessagesListClient({ conversations, currentUserId }: { conversations: ConversationLite[]; currentUserId: string }) {
+export default function MessagesListClient({ conversations, currentUserId, callLog }: { conversations: ConversationLite[]; currentUserId: string; callLog: CallLogItem[] }) {
   const router = useRouter();
   const [items, setItems] = useState<ConversationLite[]>(conversations);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -80,10 +80,7 @@ export default function MessagesListClient({ conversations, currentUserId }: { c
   }
 
   const unreadCount = items.filter((c) => c.unread).length;
-  const visible =
-    filter === "nonlus" ? items.filter((c) => c.unread)
-    : filter === "historique" ? items.filter((c) => !c.unread)
-    : items;
+  const visible = filter === "nonlus" ? items.filter((c) => c.unread) : items;
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, paddingBottom: 80 }}>
@@ -138,7 +135,44 @@ export default function MessagesListClient({ conversations, currentUserId }: { c
       `}</style>
 
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px" }}>
-        {items.length === 0 ? (
+        {filter === "historique" ? (
+          callLog.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "44px 18px", color: T.textMuted, fontSize: 14, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14 }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>📞</div>
+              Aucun appel pour le moment.
+            </div>
+          ) : (
+            <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
+              {callLog.map((c, i) => {
+                const ini = c.otherName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                const bad = c.status === "missed" || c.status === "declined";
+                const dir = c.isGroup ? "Groupe" : (c.outgoing ? "Sortant" : "Entrant");
+                const statusTxt = c.status === "missed" ? "Manqué" : c.status === "declined" ? "Refusé" : dir;
+                return (
+                  <Link key={c.id} href={c.targetHref} style={{
+                    display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
+                    textDecoration: "none", color: T.text,
+                    borderTop: i === 0 ? "none" : `1px solid ${T.borderSoft}`,
+                  }}>
+                    {c.otherAvatar ? (
+                      <img src={c.otherAvatar} alt="" style={{ width: 46, height: 46, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 46, height: 46, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 15 }}>{c.isGroup ? "👥" : ini}</div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14.5, color: bad ? "#DC2626" : T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.otherName}</div>
+                      <div style={{ fontSize: 12.5, color: bad ? "#DC2626" : T.textMuted, marginTop: 2 }}>
+                        <span style={{ marginRight: 5 }}>{c.outgoing ? "↗" : "↘"}</span>
+                        {c.type === "audio" ? "📞" : "📹"} {statusTxt}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 11, color: T.textMuted, flexShrink: 0 }}>{timeAgo(c.createdAt)}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )
+        ) : items.length === 0 ? (
           <div style={{
             textAlign: "center", padding: "48px 18px", color: T.textMuted, fontSize: 14,
             background: T.card, border: `1px solid ${T.border}`, borderRadius: 14,
