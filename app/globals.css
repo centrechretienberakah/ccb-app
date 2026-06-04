@@ -27,23 +27,24 @@
   --gold-light:   #e8cc6a;
   --gold-pale:    #fdf8e8;
 
-  /* Fonds — clair & tiède (hybride moderne : plus lumineux, chaleur conservée) */
-  --background:    #f6f2ea;
-  --page-bg:       #f6f2ea;
-  --foreground:    #1e150a;
-  --surface:       #fffdf8;
-  --surface-2:     #efe9de;
-  --card-bg:       #fffdf8;
-  --border:        #e7e0d2;
-  --border-subtle: #f0ebe1;
-  --input-bg:      #fffefb;
-  --input-border:  #e4dccc;
-  --nav-bg:        rgba(246,242,234,0.92);
+  /* Fonds — ivoire clair + cartes BLANCHES (hybride moderne : net & chaleureux,
+     aligné sur les modules Communauté/Bible déjà en blanc/ivoire) */
+  --background:    #f6f3ee;
+  --page-bg:       #f6f3ee;
+  --foreground:    #17130c;
+  --surface:       #ffffff;
+  --surface-2:     #f1ece3;
+  --card-bg:       #ffffff;
+  --border:        #e6dfcf;
+  --border-subtle: #efe9dc;
+  --input-bg:      #ffffff;
+  --input-border:  #e3dbc9;
+  --nav-bg:        rgba(246,243,238,0.88);
 
   /* Texte */
-  --text-primary:   #1e150a;
-  --text-secondary: #5e4d35;
-  --text-muted:     #9a8060;
+  --text-primary:   #17130c;
+  --text-secondary: #5a5040;
+  --text-muted:     #978a74;
   --text-inverse:   #ffffff;
 
   /* Status */
