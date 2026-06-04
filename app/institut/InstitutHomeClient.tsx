@@ -45,11 +45,11 @@ export default function InstitutHomeClient({
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, paddingBottom: 60 }}>
       {/* Hero */}
       <style>{`
-        .institut-hero { padding: 32px 18px 28px; }
-        .institut-title { font-size: clamp(1.6rem, 5vw, 2.4rem); margin: 0 0 8px; }
-        .institut-tagline { font-size: clamp(11px, 3vw, 14px); }
+        .institut-hero { padding: 18px 14px 16px; }
+        .institut-title { font-size: clamp(1.15rem, 4.8vw, 1.6rem); margin: 0 0 4px; white-space: nowrap; }
+        .institut-tagline { font-size: clamp(10px, 2.8vw, 12.5px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         @media (min-width: 768px) {
-          .institut-hero { padding: 48px 28px 40px; }
+          .institut-hero { padding: 28px 24px 24px; }
         }
         .institut-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
         @media (min-width: 640px) { .institut-grid { grid-template-columns: 1fr 1fr; } }
@@ -80,18 +80,17 @@ export default function InstitutHomeClient({
               🛡️ Admin
             </Link>
           )}
-          <div style={{ fontSize: 44, marginBottom: 8 }}>🎓</div>
           <h1 className="institut-title" style={{
-            fontFamily: F.title, fontWeight: 700,
-            letterSpacing: "0.06em",
+            fontFamily: F.title, fontWeight: 700, letterSpacing: "0.04em",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
           }}>
-            INSTITUT BERAKAH
+            <span aria-hidden="true">🎓</span>
+            <span>INSTITUT BERAKAH</span>
           </h1>
           <p className="institut-tagline" style={{
-            margin: 0, opacity: 0.92, fontStyle: "italic",
-            color: T.lavender, lineHeight: 1.6,
+            margin: 0, opacity: 0.92, fontStyle: "italic", color: T.lavender,
           }}>
-            Former des disciples. Transformer des vies. Manifester la bénédiction.
+            Former des disciples · Transformer des vies
           </p>
         </div>
       </div>
