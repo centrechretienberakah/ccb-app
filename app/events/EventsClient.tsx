@@ -186,7 +186,7 @@ function EventCard({ event, userRsvp, goingCount, maybeCount, currentUserId, onR
             <button onClick={() => handleRsvp("maybe")} disabled={rsvpLoading}
               style={{
                 flex: 1, minWidth: 90,
-                background: userRsvp === "maybe" ? "rgba(90,44,160,0.15)" : "var(--surface)",
+                background: userRsvp === "maybe" ? "rgba(91, 33, 182,0.15)" : "var(--surface)",
                 border: `1px solid ${userRsvp === "maybe" ? "var(--violet-light)" : "var(--border)"}`,
                 borderRadius: "var(--radius-full)", padding: "9px 14px",
                 color: userRsvp === "maybe" ? "var(--violet-light)" : "var(--text-muted)",

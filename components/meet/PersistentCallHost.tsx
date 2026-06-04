@@ -149,11 +149,11 @@ function MiniPlayer() {
         right: 12, left: 12,
         maxWidth: 480,
         margin: "0 auto",
-        background: `linear-gradient(135deg, #5A2CA0, #3E1C70)`,
+        background: `linear-gradient(135deg, #5B21B6, #4C1D95)`,
         color: "#fff",
         borderRadius: 16,
         padding: "10px 14px",
-        boxShadow: "0 8px 24px rgba(90,44,160,0.45)",
+        boxShadow: "0 8px 24px rgba(91, 33, 182,0.45)",
         display: "flex", alignItems: "center", gap: 12,
         zIndex: 150,
         cursor: "pointer",
@@ -161,7 +161,7 @@ function MiniPlayer() {
       }}>
       <style>{`
         @keyframes ccb-pulse-mini {
-          0%, 100% { box-shadow: 0 8px 24px rgba(90,44,160,0.45); }
+          0%, 100% { box-shadow: 0 8px 24px rgba(91, 33, 182,0.45); }
           50%      { box-shadow: 0 8px 24px rgba(212,175,55,0.55); }
         }
         @media (min-width: 1024px) {
@@ -206,13 +206,13 @@ function CallBrandingStyles({ isAudio }: { isAudio: boolean }) {
         --lk-bg: #0F0A1F;
         --lk-bg2: #1A1230;
         --lk-fg: #FFFFFF;
-        --lk-accent-bg: #5A2CA0;
+        --lk-accent-bg: #5B21B6;
         --lk-accent-fg: #FFFFFF;
         --lk-accent2: #D4AF37;
         --lk-control-bg: rgba(255,255,255,0.08);
         --lk-control-fg: #FFFFFF;
-        --lk-control-hover-bg: rgba(90,44,160,0.55);
-        --lk-control-active-bg: #5A2CA0;
+        --lk-control-hover-bg: rgba(91, 33, 182,0.55);
+        --lk-control-active-bg: #5B21B6;
         --lk-danger-bg: #DC2626;
         --lk-danger-fg: #FFFFFF;
         --lk-border-color: rgba(255,255,255,0.10);
@@ -264,7 +264,7 @@ function CallBrandingStyles({ isAudio }: { isAudio: boolean }) {
           display: none !important;
         }
         [data-lk-theme="ccb"] .lk-participant-tile {
-          background: linear-gradient(135deg, #5A2CA0, #3E1C70) !important;
+          background: linear-gradient(135deg, #5B21B6, #4C1D95) !important;
         }
       ` : ""}
     `}</style>

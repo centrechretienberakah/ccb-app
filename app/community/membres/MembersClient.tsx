@@ -148,7 +148,7 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
       <style>{`
         @keyframes ccb-mb-in { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
         .ccb-mb-card { animation: ccb-mb-in .4s ease both; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
-        .ccb-mb-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(90,44,160,0.10); border-color: ${T.violet}55; }
+        .ccb-mb-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(91, 33, 182,0.10); border-color: ${T.violet}55; }
         .ccb-mb-stats::-webkit-scrollbar, .ccb-mb-chips::-webkit-scrollbar { display:none; }
         .ccb-mb-grid { display:grid; grid-template-columns: 1fr; gap: 8px; }
         @media (min-width: 700px){ .ccb-mb-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }

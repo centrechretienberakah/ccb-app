@@ -412,7 +412,7 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
           background: T.violet, color: "#fff", padding: "10px 22px",
           borderRadius: 999, fontSize: 13, fontWeight: 700,
-          zIndex: 9999, boxShadow: "0 8px 30px rgba(90,44,160,0.35)",
+          zIndex: 9999, boxShadow: "0 8px 30px rgba(91, 33, 182,0.35)",
           whiteSpace: "nowrap", fontFamily: F.body,
         }}>
           {toast}

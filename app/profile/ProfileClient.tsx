@@ -338,7 +338,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         {/* Groupe de cellule — ADMIN ONLY */}
         {isAdmin && editing && (
           <div style={{
-            background: "var(--card-bg)", border: "1px solid rgba(90,44,160,0.3)",
+            background: "var(--card-bg)", border: "1px solid rgba(91, 33, 182,0.3)",
             borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16,
           }}>
             <div style={{
@@ -384,7 +384,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         {/* Jalons spirituels */}
         <div style={{
           background: "var(--card-bg)",
-          border: `1px solid ${isAdmin ? "rgba(90,44,160,0.3)" : "var(--border)"}`,
+          border: `1px solid ${isAdmin ? "rgba(91, 33, 182,0.3)" : "var(--border)"}`,
           borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16,
           boxShadow: "var(--shadow-sm)",
         }}>

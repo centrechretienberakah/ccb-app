@@ -11,9 +11,9 @@ export const DONS_THEME = {
   textSoft:     "#3A3340",
   textMuted:    "#857C95",
 
-  violet:       "#5A2CA0",
-  violetDark:   "#3E1C70",
-  violetSoft:   "rgba(90,44,160,0.08)",
+  violet:       "#5B21B6",
+  violetDark:   "#4C1D95",
+  violetSoft:   "rgba(91, 33, 182,0.08)",
   lavender:     "#EDE7FA",
 
   gold:         "#D4AF37",
@@ -25,8 +25,8 @@ export const DONS_THEME = {
 
   green:        "#2E9B47",       // progression jauges
 
-  shadowSoft:   "0 2px 12px rgba(90,44,160,0.06)",
-  shadowMd:     "0 6px 24px rgba(90,44,160,0.10)",
+  shadowSoft:   "0 2px 12px rgba(91, 33, 182,0.06)",
+  shadowMd:     "0 6px 24px rgba(91, 33, 182,0.10)",
 } as const;
 
 export const DONS_FONTS = {
@@ -80,7 +80,7 @@ export interface DonationKindDef {
 
 export const DONATION_KINDS: DonationKindDef[] = [
   { id: "tithe",    label: "Dîme",                   emoji: "✝️",  description: "Mes 10 % pour le Seigneur", color: "#D4AF37" },
-  { id: "offering", label: "Offrande libre",         emoji: "🤲",  description: "Un don du cœur",            color: "#5A2CA0" },
+  { id: "offering", label: "Offrande libre",         emoji: "🤲",  description: "Un don du cœur",            color: "#5B21B6" },
   { id: "missions", label: "Missions",               emoji: "🌍",  description: "Évangélisation & terrain",  color: "#2E9B47" },
   { id: "project",  label: "Projet de l'église",     emoji: "🏗️",  description: "Construction & équipement",  color: "#0EA5E9" },
   { id: "social",   label: "Action sociale",         emoji: "❤️",  description: "Aider une famille",          color: "#E11D48" },

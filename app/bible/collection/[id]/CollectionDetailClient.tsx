@@ -99,7 +99,7 @@ export default function CollectionDetailClient({ collection, verses: initialVers
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
           background: T.violet, color: "#fff", padding: "10px 20px",
           borderRadius: 999, fontSize: 13, fontWeight: 700,
-          zIndex: 9999, boxShadow: "0 8px 30px rgba(90,44,160,0.35)",
+          zIndex: 9999, boxShadow: "0 8px 30px rgba(91, 33, 182,0.35)",
           fontFamily: F.body,
         }}>
           {toast}

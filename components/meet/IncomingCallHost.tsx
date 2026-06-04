@@ -157,7 +157,7 @@ export default function IncomingCallHost() {
         <div style={{ position: "relative", animation: "ccb-call-pulse 1.8s ease-in-out infinite" }}>
           <div style={{
             width: 132, height: 132, borderRadius: "50%",
-            background: incoming.caller_avatar && !isGroup ? "transparent" : "linear-gradient(135deg, #5A2CA0, #3E1C70)",
+            background: incoming.caller_avatar && !isGroup ? "transparent" : "linear-gradient(135deg, #5B21B6, #4C1D95)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 46, fontWeight: 800, color: "#fff",
             border: "3px solid rgba(212,175,55,0.8)", overflow: "hidden",

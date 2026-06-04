@@ -187,7 +187,7 @@ const primaryBtnStyle: React.CSSProperties = {
   border: "none", borderRadius: 12,
   padding: "12px 22px", fontWeight: 700, fontSize: 13.5,
   cursor: "pointer", fontFamily: F.body,
-  boxShadow: "0 4px 14px rgba(90,44,160,0.45)",
+  boxShadow: "0 4px 14px rgba(91, 33, 182,0.45)",
 };
 const ghostBtnStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.10)", color: "#fff",

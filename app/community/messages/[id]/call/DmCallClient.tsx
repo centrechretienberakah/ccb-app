@@ -159,7 +159,7 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           <div style={{
             width: 124, height: 124, borderRadius: "50%",
-            background: "linear-gradient(135deg, #5A2CA0, #3E1C70)",
+            background: "linear-gradient(135deg, #5B21B6, #4C1D95)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 42, fontWeight: 800, color: "#fff",
             border: "3px solid rgba(212,175,55,0.8)",

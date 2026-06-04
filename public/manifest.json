@@ -5,7 +5,7 @@
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0f0a1e",
-  "theme_color": "#5a2ca0",
+  "theme_color": "#5B21B6",
   "orientation": "portrait-primary",
   "lang": "fr",
   "categories": ["lifestyle", "religion"],

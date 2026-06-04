@@ -331,11 +331,11 @@ export default function RegisterPage() {
                     width: 72, height: 72, borderRadius: "50%",
                     background: avatarPreview
                       ? `url(${avatarPreview}) center/cover`
-                      : "linear-gradient(135deg, var(--violet), #3E1C70)",
+                      : "linear-gradient(135deg, var(--violet), #4C1D95)",
                     border: "2px solid var(--violet)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 24, color: "#fff",
-                    boxShadow: "0 4px 14px rgba(90,44,160,0.25)",
+                    boxShadow: "0 4px 14px rgba(91, 33, 182,0.25)",
                   }}>
                     {!avatarPreview && (
                       <span style={{ opacity: 0.8 }}>📷</span>

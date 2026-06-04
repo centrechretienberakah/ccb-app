@@ -15,7 +15,7 @@ export default function QrClient({ campaign, targetUrl }: Props) {
   const k = getKind(campaign.kind);
   const pct = campaignProgress(campaign);
   // QR via service public (pas de dépendance npm) — taille 600x600 noir CCB violet
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=10&data=${encodeURIComponent(targetUrl)}&color=${"3E1C70".replace("#","")}&bgcolor=FFFFFF`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=10&data=${encodeURIComponent(targetUrl)}&color=${"4C1D95".replace("#","")}&bgcolor=FFFFFF`;
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", fontFamily: F.body, color: T.text }}>

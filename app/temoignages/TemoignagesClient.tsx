@@ -85,7 +85,7 @@ export default function TemoignagesClient({ temoignages, featured, userId }: { t
                     <Image src={t.author_photo} alt={t.author_name || "Témoin"} width={40} height={40}
                       style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid rgba(212,175,55,0.3)" }} />
                   ) : (
-                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #5a2ca0, #7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #5B21B6, #7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
                       {t.author_initial || (t.author_name?.[0] ?? "?")}
                     </div>
                   )}

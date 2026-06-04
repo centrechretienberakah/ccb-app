@@ -76,7 +76,7 @@ export default function MessagesListClient({ conversations, currentUserId }: { c
                 <div key={c.id} className="ccb-conv-row" style={{
                   display: "flex", alignItems: "stretch",
                   borderTop: i === 0 ? "none" : `1px solid ${T.borderSoft}`,
-                  background: c.unread ? "rgba(90,44,160,0.04)" : "transparent",
+                  background: c.unread ? "rgba(91, 33, 182,0.04)" : "transparent",
                   opacity: busyId === c.id ? 0.5 : 1,
                 }}>
                   <Link href={`/community/messages/${c.id}`} style={{

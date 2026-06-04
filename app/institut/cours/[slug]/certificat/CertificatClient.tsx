@@ -82,7 +82,7 @@ export default function CertificatClient({ course, category, studentName, comple
           padding: "40px 32px",
           width: "100%", maxWidth: 1000,
           position: "relative",
-          boxShadow: "0 20px 60px rgba(90,44,160,0.18)",
+          boxShadow: "0 20px 60px rgba(91, 33, 182,0.18)",
           color: T.text,
         }}>
           {/* Filet intérieur or */}

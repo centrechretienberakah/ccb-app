@@ -39,14 +39,14 @@ export default function ThemeToggle() {
         width: 44,
         height: 44,
         borderRadius: "50%",
-        border: `1px solid ${dark ? "rgba(212,175,55,0.35)" : "rgba(90,44,160,0.2)"}`,
+        border: `1px solid ${dark ? "rgba(212,175,55,0.35)" : "rgba(91, 33, 182,0.2)"}`,
         background: dark
           ? "rgba(26, 22, 16, 0.92)"
           : "rgba(250, 246, 238, 0.92)",
         backdropFilter: "blur(12px)",
         boxShadow: dark
           ? "0 4px 16px rgba(0,0,0,0.4)"
-          : "0 4px 16px rgba(90,44,160,0.12)",
+          : "0 4px 16px rgba(91, 33, 182,0.12)",
         cursor: "pointer",
         display: "flex",
         alignItems: "center",

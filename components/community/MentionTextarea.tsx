@@ -160,7 +160,7 @@ export default function MentionTextarea({
                   width: "100%",
                   display: "flex", alignItems: "center", gap: 10,
                   padding: "8px 10px",
-                  background: active ? "rgba(90,44,160,0.1)" : "transparent",
+                  background: active ? "rgba(91, 33, 182,0.1)" : "transparent",
                   border: "none",
                   borderRadius: 8,
                   cursor: "pointer",
@@ -172,7 +172,7 @@ export default function MentionTextarea({
                 ) : (
                   <div style={{
                     width: 28, height: 28, borderRadius: "50%",
-                    background: "linear-gradient(135deg, #5A2CA0, #3E1C70)",
+                    background: "linear-gradient(135deg, #5B21B6, #4C1D95)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 11, fontWeight: 700, color: "#fff",
                   }}>{initials}</div>

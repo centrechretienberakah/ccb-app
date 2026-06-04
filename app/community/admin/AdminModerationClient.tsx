@@ -37,7 +37,7 @@ interface Props {
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   pending:   { label: "⏳ En attente",  color: "#D4AF37" },
-  reviewed:  { label: "👁️ Revu",       color: "#5A2CA0" },
+  reviewed:  { label: "👁️ Revu",       color: "#5B21B6" },
   dismissed: { label: "❌ Rejeté",      color: "#857C95" },
   actioned:  { label: "✅ Action prise", color: "#2E9B47" },
 };

@@ -78,7 +78,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="CCB" />
-        <meta name="theme-color" content="#5a2ca0" />
+        <meta name="theme-color" content="#5B21B6" />
         <meta name="msapplication-TileColor" content="#0f0a1e" />
         <meta name="msapplication-TileImage" content="/icon-144x144.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

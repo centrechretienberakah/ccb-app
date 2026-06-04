@@ -35,7 +35,7 @@ function d(
 // Note : 7 jours par plan thématique (assez pour engager sans épuiser)
 export const THEMED_PLANS: ThemedPlan[] = [
   {
-    id: "salut", title: "Le Salut", emoji: "✝️", color: "#5A2CA0", totalDays: 7,
+    id: "salut", title: "Le Salut", emoji: "✝️", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour comprendre et recevoir le salut offert en Christ.",
     days: [
       d(1, "Jean 3:16", "Jean", 3, 16,
@@ -77,7 +77,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "foi", title: "La Foi", emoji: "⭐", color: "#5A2CA0", totalDays: 7,
+    id: "foi", title: "La Foi", emoji: "⭐", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour fortifier ta confiance en Dieu, même quand tu ne vois rien.",
     days: [
       d(1, "Hébreux 11:1", "Hébreux", 11, 1,
@@ -119,7 +119,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "priere", title: "La Prière", emoji: "🕯️", color: "#5A2CA0", totalDays: 7,
+    id: "priere", title: "La Prière", emoji: "🕯️", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour développer une vie de prière intime et puissante.",
     days: [
       d(1, "Matthieu 6:6", "Matthieu", 6, 6,
@@ -161,7 +161,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "amour", title: "L'Amour", emoji: "❤️", color: "#5A2CA0", totalDays: 7,
+    id: "amour", title: "L'Amour", emoji: "❤️", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour recevoir et refléter l'amour de Dieu.",
     days: [
       d(1, "1 Jean 4:8", "1 Jean", 4, 8,
@@ -203,7 +203,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "pardon", title: "Le Pardon", emoji: "🕊️", color: "#5A2CA0", totalDays: 7,
+    id: "pardon", title: "Le Pardon", emoji: "🕊️", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour recevoir le pardon de Dieu et libérer ceux qui t'ont blessé.",
     days: [
       d(1, "1 Jean 1:9", "1 Jean", 1, 9,
@@ -245,7 +245,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "saint-esprit", title: "Le Saint-Esprit", emoji: "🕊️", color: "#5A2CA0", totalDays: 7,
+    id: "saint-esprit", title: "Le Saint-Esprit", emoji: "🕊️", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour grandir dans l'intimité avec le Saint-Esprit.",
     days: [
       d(1, "Jean 14:16", "Jean", 14, 16,
@@ -287,7 +287,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "jeune", title: "Le Jeûne", emoji: "🍃", color: "#5A2CA0", totalDays: 7,
+    id: "jeune", title: "Le Jeûne", emoji: "🍃", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour comprendre la puissance spirituelle du jeûne.",
     days: [
       d(1, "Matthieu 6:16", "Matthieu", 6, 16,
@@ -329,7 +329,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "discipline", title: "La Discipline", emoji: "🎯", color: "#5A2CA0", totalDays: 7,
+    id: "discipline", title: "La Discipline", emoji: "🎯", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour bâtir une vie chrétienne disciplinée et fructueuse.",
     days: [
       d(1, "1 Corinthiens 9:27", "1 Corinthiens", 9, 27,
@@ -371,7 +371,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "guerison", title: "La Guérison", emoji: "🩹", color: "#5A2CA0", totalDays: 7,
+    id: "guerison", title: "La Guérison", emoji: "🩹", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour t'approprier la guérison promise en Christ.",
     days: [
       d(1, "Ésaïe 53:5", "Ésaïe", 53, 5,
@@ -413,7 +413,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "sanctification", title: "La Sanctification", emoji: "✨", color: "#5A2CA0", totalDays: 7,
+    id: "sanctification", title: "La Sanctification", emoji: "✨", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour grandir dans la sainteté pratique au quotidien.",
     days: [
       d(1, "1 Thessaloniciens 4:3", "1 Thessaloniciens", 4, 3,
@@ -455,7 +455,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "leadership", title: "Le Leadership", emoji: "👑", color: "#5A2CA0", totalDays: 7,
+    id: "leadership", title: "Le Leadership", emoji: "👑", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour devenir un leader serviteur selon le cœur de Dieu.",
     days: [
       d(1, "Marc 10:43", "Marc", 10, 43,
@@ -497,7 +497,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "combat-spirituel", title: "Le Combat Spirituel", emoji: "⚔️", color: "#5A2CA0", totalDays: 7,
+    id: "combat-spirituel", title: "Le Combat Spirituel", emoji: "⚔️", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour t'équiper et gagner les batailles invisibles.",
     days: [
       d(1, "Éphésiens 6:12", "Éphésiens", 6, 12,
@@ -539,7 +539,7 @@ export const THEMED_PLANS: ThemedPlan[] = [
   },
 
   {
-    id: "grace", title: "La Grâce", emoji: "🌟", color: "#5A2CA0", totalDays: 7,
+    id: "grace", title: "La Grâce", emoji: "🌟", color: "#5B21B6", totalDays: 7,
     description: "7 jours pour t'immerger dans la grâce qui te rend libre.",
     days: [
       d(1, "Éphésiens 2:8", "Éphésiens", 2, 8,

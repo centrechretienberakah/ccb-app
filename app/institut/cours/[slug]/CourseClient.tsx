@@ -82,7 +82,7 @@ export default function CourseClient({ course, category, modules, totalLessons, 
       {/* Hero */}
       <div style={{
         background: course.thumbnail_url
-          ? `linear-gradient(135deg, rgba(90,44,160,0.85), rgba(62,28,112,0.85)), url(${course.thumbnail_url}) center/cover`
+          ? `linear-gradient(135deg, rgba(91, 33, 182,0.85), rgba(62,28,112,0.85)), url(${course.thumbnail_url}) center/cover`
           : `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
         color: "#fff", padding: "28px 18px 24px",
         position: "relative", overflow: "hidden",

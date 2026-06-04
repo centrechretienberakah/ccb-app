@@ -108,7 +108,7 @@ export default function HistoryClient({ group, sessions, participants, profiles,
         position: "sticky", top: 0, zIndex: 30,
         background: `linear-gradient(180deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
         color: "#fff",
-        boxShadow: "0 1px 0 rgba(0,0,0,0.18), 0 4px 18px rgba(90,44,160,0.18)",
+        boxShadow: "0 1px 0 rgba(0,0,0,0.18), 0 4px 18px rgba(91, 33, 182,0.18)",
       }}>
         <div style={{ maxWidth: 880, margin: "0 auto", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
           <Link href={`/community/groups/${group.id}`} aria-label="Retour"

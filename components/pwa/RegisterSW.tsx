@@ -75,7 +75,7 @@ export default function RegisterSW() {
       display: "flex",
       alignItems: "center",
       gap: 12,
-      boxShadow: "0 8px 32px rgba(90,44,160,0.4)",
+      boxShadow: "0 8px 32px rgba(91, 33, 182,0.4)",
       maxWidth: 500,
       margin: "0 auto",
     }}>

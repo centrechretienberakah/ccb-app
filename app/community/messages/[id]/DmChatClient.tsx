@@ -210,7 +210,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
       <div style={{
         background: `linear-gradient(180deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
         color: "#fff", padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
-        boxShadow: "0 2px 10px rgba(90,44,160,0.2)", flexShrink: 0,
+        boxShadow: "0 2px 10px rgba(91, 33, 182,0.2)", flexShrink: 0,
       }}>
         <Link href="/community/messages" aria-label="Retour" style={{
           width: 34, height: 34, borderRadius: 999, background: "rgba(0,0,0,0.22)",

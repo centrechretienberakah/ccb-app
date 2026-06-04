@@ -3,9 +3,9 @@
 
 export const COMMUNITY_THEME = {
   // Palette
-  violet:       "#5A2CA0",
-  violetDark:   "#3E1C70",
-  violetSoft:   "rgba(90,44,160,0.08)",
+  violet:       "#5B21B6",
+  violetDark:   "#4C1D95",
+  violetSoft:   "rgba(91, 33, 182,0.08)",
   gold:         "#D4AF37",
   goldDark:     "#A8862B",
   white:        "#FFFFFF",
@@ -24,9 +24,9 @@ export const COMMUNITY_THEME = {
   textMuted:    "#857C95",
 
   // Shadows
-  shadowSoft:   "0 2px 12px rgba(90,44,160,0.06)",
-  shadowMd:     "0 6px 24px rgba(90,44,160,0.10)",
-  shadowGlow:   "0 0 40px rgba(90,44,160,0.18)",
+  shadowSoft:   "0 2px 12px rgba(91, 33, 182,0.06)",
+  shadowMd:     "0 6px 24px rgba(91, 33, 182,0.10)",
+  shadowGlow:   "0 0 40px rgba(91, 33, 182,0.18)",
 } as const;
 
 export const COMMUNITY_FONTS = {
@@ -53,12 +53,12 @@ export type PostKind =
   | "encouragement";
 
 export const POST_KINDS: PostKindDef[] = [
-  { id: "discussion",    emoji: "💬", label: "Discussion",   description: "Échange libre",                       color: "#5A2CA0" },
+  { id: "discussion",    emoji: "💬", label: "Discussion",   description: "Échange libre",                       color: "#5B21B6" },
   { id: "testimony",     emoji: "✨", label: "Témoignage",   description: "Partage ce que Dieu a fait pour toi", color: "#D4AF37" },
-  { id: "prayer",        emoji: "🙏", label: "Prière",       description: "Demande de prière",                    color: "#5A2CA0" },
+  { id: "prayer",        emoji: "🙏", label: "Prière",       description: "Demande de prière",                    color: "#5B21B6" },
   { id: "announcement",  emoji: "📣", label: "Annonce",      description: "Information importante",               color: "#D4AF37" },
-  { id: "teaching",      emoji: "📖", label: "Enseignement", description: "Partage d'enseignement biblique",      color: "#5A2CA0" },
-  { id: "question",      emoji: "❓", label: "Question",     description: "Question / Q&R",                       color: "#5A2CA0" },
+  { id: "teaching",      emoji: "📖", label: "Enseignement", description: "Partage d'enseignement biblique",      color: "#5B21B6" },
+  { id: "question",      emoji: "❓", label: "Question",     description: "Question / Q&R",                       color: "#5B21B6" },
   { id: "encouragement", emoji: "💝", label: "Encouragement",description: "Mots d'encouragement",                 color: "#D4AF37" },
 ];
 

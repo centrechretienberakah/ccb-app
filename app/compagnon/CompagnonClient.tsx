@@ -60,7 +60,7 @@ export default function CompagnonClient({ firstName }: { firstName: string }) {
         display: "flex", alignItems: "center", gap: 13,
         background: "linear-gradient(135deg, var(--violet) 0%, var(--violet-dark) 100%)",
         color: "#fff", borderRadius: 20, padding: "14px 16px", marginBottom: 14,
-        boxShadow: "0 8px 24px rgba(90,44,160,0.25)",
+        boxShadow: "0 8px 24px rgba(91, 33, 182,0.25)",
       }}>
         <div style={{
           width: 46, height: 46, borderRadius: 14, flexShrink: 0,

@@ -8,14 +8,14 @@ export const GROUPS_THEME = {
   text:         "#111111",
   textSoft:     "#3A3340",
   textMuted:    "#857C95",
-  violet:       "#5A2CA0",
-  violetDark:   "#3E1C70",
-  violetSoft:   "rgba(90,44,160,0.08)",
+  violet:       "#5B21B6",
+  violetDark:   "#4C1D95",
+  violetSoft:   "rgba(91, 33, 182,0.08)",
   gold:         "#D4AF37",
   goldDark:     "#A8862B",
-  shadowSoft:   "0 2px 12px rgba(90,44,160,0.06)",
-  shadowMd:     "0 6px 24px rgba(90,44,160,0.10)",
-  shadowGlow:   "0 0 40px rgba(90,44,160,0.18)",
+  shadowSoft:   "0 2px 12px rgba(91, 33, 182,0.06)",
+  shadowMd:     "0 6px 24px rgba(91, 33, 182,0.10)",
+  shadowGlow:   "0 0 40px rgba(91, 33, 182,0.18)",
 } as const;
 
 export const GROUPS_FONTS = {

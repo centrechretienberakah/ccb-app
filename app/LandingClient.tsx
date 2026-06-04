@@ -200,8 +200,8 @@ const ECO = [
   { icon: "📚", title: "Ma Bible", desc: "Lisez la Bible dans plusieurs versions et suivez des plans de lecture personnalisés.", href: "/bible", g: "linear-gradient(145deg,#1e3a5f,#1e40af 55%,#3b82f6)" },
   { icon: "🙏", title: "Prions Ensemble", desc: "Partagez vos sujets de prière et intercédez avec la communauté.", href: "/prayer", g: "linear-gradient(145deg,#4c0519,#9f1239 55%,#fb7185)" },
   { icon: "👥", title: "Communauté", desc: "Échangez, apprenez et grandissez avec d'autres croyants.", href: "/community", g: "linear-gradient(145deg,#14532d,#16a34a 55%,#4ade80)" },
-  { icon: "🎓", title: "Institut Berakah", desc: "Des formations structurées pour développer votre connaissance biblique.", href: "/institut", g: "linear-gradient(145deg,#3e1c70,#7c3aed 55%,#d4af37)" },
-  { icon: "📺", title: "Jesus Daily TV", desc: "Prédications, enseignements, lives et contenus inspirants.", href: "/jesus-daily", g: "linear-gradient(145deg,#3d1a72,#5a2ca0 55%,#a78bfa)" },
+  { icon: "🎓", title: "Institut Berakah", desc: "Des formations structurées pour développer votre connaissance biblique.", href: "/institut", g: "linear-gradient(145deg,#4C1D95,#7c3aed 55%,#d4af37)" },
+  { icon: "📺", title: "Jesus Daily TV", desc: "Prédications, enseignements, lives et contenus inspirants.", href: "/jesus-daily", g: "linear-gradient(145deg,#4C1D95,#5B21B6 55%,#a78bfa)" },
   { icon: "💬", title: "Groupes", desc: "Travaillez, échangez et collaborez dans des groupes publics ou privés.", href: "/community/groups", g: "linear-gradient(145deg,#164e63,#0891b2 55%,#67e8f9)" },
 ];
 
@@ -281,7 +281,7 @@ function CommunitySection() {
         <Reveal delay={160} className="ccb-split-visual">
           <div className="ccb-mock ccb-mock-feed">
             <div className="ccb-feed-item">
-              <div className="ccb-feed-av" style={{ background: "linear-gradient(135deg,#5a2ca0,#3d1a72)" }}>M</div>
+              <div className="ccb-feed-av" style={{ background: "linear-gradient(135deg,#5B21B6,#4C1D95)" }}>M</div>
               <div>
                 <b>Marie K.</b>
                 <p>« Dieu est fidèle ! Gloire à Lui pour ce témoignage 🙌 »</p>
@@ -345,7 +345,7 @@ function MeetSection() {
 
         <Reveal delay={160} className="ccb-split-visual">
           <div className="ccb-mock ccb-mock-meet">
-            {["#5a2ca0", "#d97706", "#16a34a", "#0891b2", "#9f1239", "#7c3aed"].map((c, i) => (
+            {["#5B21B6", "#d97706", "#16a34a", "#0891b2", "#9f1239", "#7c3aed"].map((c, i) => (
               <div key={i} className="ccb-meet-tile" style={{ background: `linear-gradient(135deg,${c},#1a1525)` }}>
                 <span>{["P", "M", "J", "S", "A", "R"][i]}</span>
               </div>
@@ -367,7 +367,7 @@ const JDTV_ROWS = [
   { title: "Lives & Podcasts", items: ["Culte du dimanche", "Nuit de prière", "Jesus Daily", "Q&R pastorale"] },
 ];
 const JDTV_GRADS = [
-  "linear-gradient(135deg,#3d1a72,#5a2ca0)",
+  "linear-gradient(135deg,#4C1D95,#5B21B6)",
   "linear-gradient(135deg,#92400e,#d97706)",
   "linear-gradient(135deg,#164e63,#0891b2)",
   "linear-gradient(135deg,#4c0519,#9f1239)",
@@ -704,11 +704,11 @@ function LandingStyles() {
   return (
     <style>{`
       .ccb-land {
-        --v:#5A2CA0; --v-light:#7b4bc4; --v-dark:#3d1a72;
+        --v:#5B21B6; --v-light:#7C3AED; --v-dark:#4C1D95;
         --gold:#D4AF37; --gold-dark:#b8971e;
         --bg:#ffffff; --bg-soft:#F5F1E8; --surface:#ffffff;
         --text:#121212; --text-soft:#4a4a4a; --text-muted:#8a8a8a;
-        --border:rgba(18,18,18,0.08); --shadow:0 10px 40px rgba(90,44,160,0.10);
+        --border:rgba(18,18,18,0.08); --shadow:0 10px 40px rgba(91, 33, 182,0.10);
         background:var(--bg); color:var(--text);
         font-family:'Montserrat',var(--font-montserrat),system-ui,sans-serif;
         overflow-x:hidden;
@@ -728,8 +728,8 @@ function LandingStyles() {
       .ccb-lead-light{color:rgba(255,255,255,0.82);}
       .ccb-text{font-size:0.98rem;line-height:1.75;color:var(--text-soft);margin:0 0 14px;}
       .ccb-kicker{display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.22em;
-        text-transform:uppercase;color:var(--v);background:rgba(90,44,160,0.08);
-        padding:7px 14px;border-radius:999px;margin-bottom:16px;border:1px solid rgba(90,44,160,0.16);}
+        text-transform:uppercase;color:var(--v);background:rgba(91, 33, 182,0.08);
+        padding:7px 14px;border-radius:999px;margin-bottom:16px;border:1px solid rgba(91, 33, 182,0.16);}
       [data-theme="dark"] .ccb-kicker{background:rgba(123,75,196,0.16);color:#c4a7f5;border-color:rgba(123,75,196,0.3);}
       .ccb-kicker-light{color:var(--gold);background:rgba(212,175,55,0.12);border-color:rgba(212,175,55,0.3);}
       .ccb-grad{background:linear-gradient(120deg,var(--v),var(--v-light) 55%,var(--gold));
@@ -741,15 +741,15 @@ function LandingStyles() {
       .ccb-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
         background:var(--v);color:#fff;font-weight:700;font-size:0.9rem;letter-spacing:0.02em;
         padding:13px 26px;border-radius:999px;text-decoration:none;border:none;cursor:pointer;
-        box-shadow:0 8px 24px rgba(90,44,160,0.28);transition:transform .2s,box-shadow .2s,background .2s;}
-      .ccb-btn:hover{background:var(--v-light);transform:translateY(-2px);box-shadow:0 12px 32px rgba(90,44,160,0.36);}
+        box-shadow:0 8px 24px rgba(91, 33, 182,0.28);transition:transform .2s,box-shadow .2s,background .2s;}
+      .ccb-btn:hover{background:var(--v-light);transform:translateY(-2px);box-shadow:0 12px 32px rgba(91, 33, 182,0.36);}
       .ccb-btn-lg{padding:16px 34px;font-size:0.96rem;}
       .ccb-btn-sm{padding:9px 18px;font-size:0.82rem;}
       .ccb-btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#1a1206;box-shadow:0 8px 24px rgba(212,175,55,0.36);}
       .ccb-btn-gold:hover{background:linear-gradient(135deg,#e6c14e,var(--gold));}
       .ccb-btn-ghost{background:transparent;color:var(--v);border:1.5px solid var(--v);box-shadow:none;}
-      .ccb-btn-ghost:hover{background:rgba(90,44,160,0.07);}
-      [data-theme="dark"] .ccb-btn-ghost{color:#c4a7f5;border-color:#7b4bc4;}
+      .ccb-btn-ghost:hover{background:rgba(91, 33, 182,0.07);}
+      [data-theme="dark"] .ccb-btn-ghost{color:#c4a7f5;border-color:#7C3AED;}
       .ccb-btn-ghost-light{background:rgba(255,255,255,0.1);color:#fff;border:1.5px solid rgba(255,255,255,0.35);box-shadow:none;}
       .ccb-btn-ghost-light:hover{background:rgba(255,255,255,0.18);}
 
@@ -775,19 +775,19 @@ function LandingStyles() {
       .ccb-hero{position:relative;min-height:100dvh;display:flex;align-items:center;
         justify-content:center;text-align:center;padding:110px 0 70px;overflow:hidden;}
       .ccb-hero-bg{position:absolute;inset:0;z-index:0;
-        background:radial-gradient(ellipse at 50% 0%,rgba(90,44,160,0.14),transparent 60%),
+        background:radial-gradient(ellipse at 50% 0%,rgba(91, 33, 182,0.14),transparent 60%),
         linear-gradient(170deg,var(--bg) 0%,var(--bg-soft) 60%,var(--bg) 100%);}
       .ccb-orb{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;z-index:0;}
-      .ccb-orb-1{width:520px;height:520px;top:-120px;left:-100px;background:rgba(90,44,160,0.16);animation:ccb-glow 7s ease-in-out infinite;}
+      .ccb-orb-1{width:520px;height:520px;top:-120px;left:-100px;background:rgba(91, 33, 182,0.16);animation:ccb-glow 7s ease-in-out infinite;}
       .ccb-orb-2{width:440px;height:440px;bottom:-120px;right:-90px;background:rgba(212,175,55,0.14);animation:ccb-glow 9s ease-in-out infinite;}
       .ccb-grain{position:absolute;inset:0;z-index:0;opacity:.4;pointer-events:none;
-        background-image:radial-gradient(rgba(90,44,160,0.05) 1px,transparent 1px);background-size:22px 22px;}
+        background-image:radial-gradient(rgba(91, 33, 182,0.05) 1px,transparent 1px);background-size:22px 22px;}
       .ccb-hero-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:18px;max-width:780px;}
       .ccb-hero-logo{position:relative;display:inline-flex;align-items:center;justify-content:center;
         width:140px;height:140px;animation:ccb-float 5s ease-in-out infinite;}
       .ccb-hero-halo{position:absolute;inset:0;border-radius:50%;
-        background:radial-gradient(circle,rgba(90,44,160,0.16),transparent 68%);
-        box-shadow:inset 0 0 0 1px rgba(90,44,160,0.16);}
+        background:radial-gradient(circle,rgba(91, 33, 182,0.16),transparent 68%);
+        box-shadow:inset 0 0 0 1px rgba(91, 33, 182,0.16);}
       .ccb-pill{font-size:11px;font-weight:700;letter-spacing:0.28em;color:var(--v);
         background:color-mix(in srgb,var(--v) 8%,transparent);padding:8px 18px;border-radius:999px;
         border:1px solid color-mix(in srgb,var(--v) 22%,transparent);}
@@ -876,7 +876,7 @@ function LandingStyles() {
       .ccb-feed-item p{font-size:0.86rem;color:var(--text-soft);margin:3px 0;line-height:1.45;}
       .ccb-feed-meta{font-size:11px;color:var(--text-muted);}
       .ccb-feed-groups{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px;}
-      .ccb-feed-groups span{font-size:11px;font-weight:600;color:var(--v);background:rgba(90,44,160,0.08);padding:6px 11px;border-radius:999px;}
+      .ccb-feed-groups span{font-size:11px;font-weight:600;color:var(--v);background:rgba(91, 33, 182,0.08);padding:6px 11px;border-radius:999px;}
       [data-theme="dark"] .ccb-feed-groups span{color:#c4a7f5;background:rgba(123,75,196,0.16);}
 
       .ccb-mock-meet{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:400px;}
@@ -901,7 +901,7 @@ function LandingStyles() {
       .ccb-jdtv-card-title{font-size:0.92rem;font-weight:700;color:#fff;line-height:1.25;text-shadow:0 1px 6px rgba(0,0,0,0.6);}
 
       /* Bootcamp */
-      .ccb-bootcamp{background:linear-gradient(160deg,#2a1458,#5a2ca0 55%,#3d1a72);color:#fff;overflow:hidden;}
+      .ccb-bootcamp{background:linear-gradient(160deg,#2a1458,#5B21B6 55%,#4C1D95);color:#fff;overflow:hidden;}
       .ccb-orb-gold{width:560px;height:560px;top:-160px;right:-120px;background:rgba(212,175,55,0.22);}
       .ccb-countdown{display:flex;justify-content:center;gap:14px;margin:34px 0;}
       .ccb-cd-cell{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);border-radius:18px;
@@ -938,7 +938,7 @@ function LandingStyles() {
       .ccb-vision-av{width:198px;height:198px;border-radius:50%;background:linear-gradient(145deg,var(--v-dark),var(--v));
         display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:800;font-size:64px;color:var(--gold);}
       .ccb-vision-img{width:198px;height:198px;border-radius:50%;object-fit:cover;object-position:center top;
-        box-shadow:0 10px 30px rgba(90,44,160,0.22);}
+        box-shadow:0 10px 30px rgba(91, 33, 182,0.22);}
       .ccb-vision-badge{position:absolute;bottom:14px;right:14px;width:50px;height:50px;border-radius:50%;background:var(--surface);
         display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.2);}
 
@@ -956,7 +956,7 @@ function LandingStyles() {
       .ccb-event-info{flex:1;display:flex;flex-direction:column;min-width:0;}
       .ccb-event-info b{color:var(--text);font-size:0.98rem;}
       .ccb-event-info span{color:var(--text-muted);font-size:0.82rem;}
-      .ccb-event-tag{font-size:11px;font-weight:700;color:var(--v);background:rgba(90,44,160,0.08);padding:5px 12px;border-radius:999px;white-space:nowrap;}
+      .ccb-event-tag{font-size:11px;font-weight:700;color:var(--v);background:rgba(91, 33, 182,0.08);padding:5px 12px;border-radius:999px;white-space:nowrap;}
       [data-theme="dark"] .ccb-event-tag{color:#c4a7f5;background:rgba(123,75,196,0.16);}
 
       /* Don */

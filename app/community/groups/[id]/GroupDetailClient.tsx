@@ -835,7 +835,7 @@ export default function GroupDetailClient({
         position: "sticky", top: 0, zIndex: 30,
         background: `linear-gradient(180deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
         color: "#fff",
-        boxShadow: "0 1px 0 rgba(0,0,0,0.18), 0 4px 18px rgba(90,44,160,0.18)",
+        boxShadow: "0 1px 0 rgba(0,0,0,0.18), 0 4px 18px rgba(91, 33, 182,0.18)",
       }}>
         <div className="ccb-grp-detail" style={{
           display: "flex", alignItems: "center", gap: 10,
@@ -1142,7 +1142,7 @@ export default function GroupDetailClient({
               {isDragging && canChat && (
                 <div style={{
                   position: "absolute", inset: 8, zIndex: 50,
-                  background: "rgba(90,44,160,0.92)", color: "#fff",
+                  background: "rgba(91, 33, 182,0.92)", color: "#fff",
                   border: `3px dashed ${T.gold}`, borderRadius: 16,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   pointerEvents: "none",

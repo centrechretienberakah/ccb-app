@@ -32,7 +32,7 @@ import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
 import { ringCall, pushCallNotification } from "@/lib/meet/calls";
 
-const VIOLET = "#5A2CA0";
+const VIOLET = "#5B21B6";
 const GOLD = "#D4AF37";
 const CARD = "#1E1E1E";
 
@@ -458,7 +458,7 @@ function CcbTile({ trackRef }: { trackRef: TrackReferenceOrPlaceholder }) {
           ) : (
             <div style={{
               width: "40%", maxWidth: 110, minWidth: 46, aspectRatio: "1 / 1", borderRadius: "50%",
-              background: `linear-gradient(135deg, ${VIOLET}, #3E1C70)`, display: "flex",
+              background: `linear-gradient(135deg, ${VIOLET}, #4C1D95)`, display: "flex",
               alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800,
               fontSize: "clamp(15px, 5vw, 30px)", border: `2px solid ${GOLD}66`,
             }}>{initialsOf(name)}</div>
@@ -571,7 +571,7 @@ function PrayerBanner({ prayer, canStop, onStop, onEnd }: { prayer: Prayer; canS
     return () => clearInterval(t);
   }, [prayer.endsAt]);
   return (
-    <div style={{ pointerEvents: "auto", maxWidth: 560, margin: "0 auto", width: "100%", background: `linear-gradient(135deg, ${VIOLET}, #3E1C70)`, border: `1px solid ${GOLD}55`, borderRadius: 12, padding: "10px 13px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+    <div style={{ pointerEvents: "auto", maxWidth: 560, margin: "0 auto", width: "100%", background: `linear-gradient(135deg, ${VIOLET}, #4C1D95)`, border: `1px solid ${GOLD}55`, borderRadius: 12, padding: "10px 13px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, color: GOLD, fontWeight: 800, letterSpacing: "0.08em" }}>🙏 MODE PRIÈRE</div>
@@ -636,7 +636,7 @@ function PeoplePanel({ participants, hands, myId, isAudio, canModerate, onModera
           return (
             <div key={p.identity} style={{ padding: "9px 10px", borderRadius: 10, background: raised ? "rgba(212,175,55,0.10)" : "transparent" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${VIOLET}, #3E1C70)`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff" }}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${VIOLET}, #4C1D95)`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff" }}>
                   {initialsOf(p.name || p.identity)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -857,13 +857,13 @@ function NotesPanel({ notesRef, onClose }: { notesRef: React.MutableRefObject<st
     debRef.current = setTimeout(() => { try { send(new TextEncoder().encode(v), { reliable: true }); } catch { /* noop */ } }, 250);
   }
   function exportWord() {
-    const html = `<html><head><meta charset="utf-8"></head><body style="font-family:Arial"><h2 style="color:#5A2CA0">Notes de réunion — CCB Meet</h2><div style="color:#666;font-size:12px">${new Date().toLocaleString("fr-FR")}</div><hr/><pre style="font-family:Arial;white-space:pre-wrap;font-size:13px">${escapeHtml(text)}</pre></body></html>`;
+    const html = `<html><head><meta charset="utf-8"></head><body style="font-family:Arial"><h2 style="color:#5B21B6">Notes de réunion — CCB Meet</h2><div style="color:#666;font-size:12px">${new Date().toLocaleString("fr-FR")}</div><hr/><pre style="font-family:Arial;white-space:pre-wrap;font-size:13px">${escapeHtml(text)}</pre></body></html>`;
     downloadBlob(new Blob([html], { type: "application/msword" }), `ccb-notes-${Date.now()}.doc`);
   }
   function exportPdf() {
     const w = window.open("", "_blank");
     if (!w) return;
-    w.document.write(`<html><head><meta charset="utf-8"><title>Notes CCB Meet</title></head><body style="font-family:Arial;padding:24px"><h2 style="color:#5A2CA0">Notes de réunion — CCB Meet</h2><div style="color:#666;font-size:12px">${new Date().toLocaleString("fr-FR")}</div><hr/><pre style="font-family:Arial;white-space:pre-wrap;font-size:13px;line-height:1.5">${escapeHtml(text)}</pre></body></html>`);
+    w.document.write(`<html><head><meta charset="utf-8"><title>Notes CCB Meet</title></head><body style="font-family:Arial;padding:24px"><h2 style="color:#5B21B6">Notes de réunion — CCB Meet</h2><div style="color:#666;font-size:12px">${new Date().toLocaleString("fr-FR")}</div><hr/><pre style="font-family:Arial;white-space:pre-wrap;font-size:13px;line-height:1.5">${escapeHtml(text)}</pre></body></html>`);
     w.document.close(); w.focus();
     setTimeout(() => { try { w.print(); } catch { /* noop */ } }, 350);
   }
@@ -1129,7 +1129,7 @@ function AddToCallModal({ conversationId, type, callerName, onClose, onFlash }: 
                 {c.avatar_url ? (
                   <img src={c.avatar_url} alt="" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                 ) : (
-                  <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${VIOLET}, #3E1C70)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13 }}>{initials}</div>
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${VIOLET}, #4C1D95)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13 }}>{initials}</div>
                 )}
                 <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "#fff" }}>{c.display_name || "Membre"}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: GOLD }}>{busyId === c.user_id ? "…" : "Inviter"}</span>

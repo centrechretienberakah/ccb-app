@@ -189,7 +189,7 @@ export default function BibleHubClient({
           to   { opacity: 1; transform: translateY(0); }
         }
         .ccb-bib-card { transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease; }
-        .ccb-bib-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(90,44,160,0.10); }
+        .ccb-bib-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(91, 33, 182,0.10); }
         .ccb-bib-card:active { transform: translateY(0) scale(0.985); }
         .ccb-bib-tile:active { transform: scale(0.96); }
         .ccb-bib-hscroll { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
@@ -203,7 +203,7 @@ export default function BibleHubClient({
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
           background: T.violet, color: "#fff", padding: "10px 22px",
           borderRadius: 999, fontSize: 13, fontWeight: 700,
-          zIndex: 9999, boxShadow: "0 10px 30px rgba(90,44,160,0.35)",
+          zIndex: 9999, boxShadow: "0 10px 30px rgba(91, 33, 182,0.35)",
           fontFamily: F.body,
           animation: "ccb-bib-fade-up 220ms ease-out",
         }}>{toast}</div>
@@ -216,7 +216,7 @@ export default function BibleHubClient({
           background: `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
           borderRadius: 22, padding: "20px 22px 22px",
           color: "#fff", position: "relative", overflow: "hidden",
-          boxShadow: "0 14px 30px rgba(90,44,160,0.25)",
+          boxShadow: "0 14px 30px rgba(91, 33, 182,0.25)",
           marginBottom: 18,
         }}>
           {/* Décoratif subtil (sparkles) */}
@@ -316,7 +316,7 @@ export default function BibleHubClient({
               borderRadius: 18, padding: "20px 20px",
               color: "#fff",
               display: "flex", alignItems: "center", gap: 14,
-              boxShadow: "0 8px 22px rgba(90,44,160,0.30)",
+              boxShadow: "0 8px 22px rgba(91, 33, 182,0.30)",
               cursor: "pointer",
             }}>
               <div style={{
@@ -614,7 +614,7 @@ function ActionTile({ href, icon, label, sub, tone }: {
     : tone === "gold" ? "rgba(212,175,55,0.10)"
     : tone === "muted" ? "rgba(133,124,149,0.08)"
     : T.card;
-  const iconBg = tone === "violet" ? "rgba(90,44,160,0.12)"
+  const iconBg = tone === "violet" ? "rgba(91, 33, 182,0.12)"
     : tone === "gold" ? "rgba(212,175,55,0.18)"
     : tone === "muted" ? "rgba(133,124,149,0.12)"
     : T.violetSoft;

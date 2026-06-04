@@ -41,7 +41,7 @@ export default function CategoryClient({ category, subcategories, courses }: Pro
       {/* Hero spécifique catégorie */}
       <div style={{
         background: category.cover_url
-          ? `linear-gradient(135deg, rgba(90,44,160,0.85), rgba(62,28,112,0.85)), url(${category.cover_url}) center/cover`
+          ? `linear-gradient(135deg, rgba(91, 33, 182,0.85), rgba(62,28,112,0.85)), url(${category.cover_url}) center/cover`
           : `linear-gradient(135deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
         color: "#fff", padding: "28px 18px 24px",
         position: "relative", overflow: "hidden",

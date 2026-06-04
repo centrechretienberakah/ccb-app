@@ -11,9 +11,9 @@ export const BIBLE_THEME = {
   text:        "#1F1A33",
   textSoft:    "#4A4257",
   textMuted:   "#857C95",
-  violet:      "#5A2CA0",
-  violetDark:  "#3E1C70",
-  violetSoft:  "rgba(90,44,160,0.08)",
+  violet:      "#5B21B6",
+  violetDark:  "#4C1D95",
+  violetSoft:  "rgba(91, 33, 182,0.08)",
   gold:        "#D4AF37",
   goldDark:    "#A8862B",
 

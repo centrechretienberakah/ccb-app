@@ -128,7 +128,7 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
         border: "1px solid var(--gold)",
         borderRadius: 20,
         padding: "22px 20px 20px",
-        boxShadow: "0 6px 28px rgba(90,44,160,0.10), 0 2px 8px rgba(212,175,55,0.08)",
+        boxShadow: "0 6px 28px rgba(91, 33, 182,0.10), 0 2px 8px rgba(212,175,55,0.08)",
         overflow: "hidden",
       }}>
         {/* Filet doré décoratif en haut */}
@@ -168,7 +168,7 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
 
         {/* Verset */}
         <div style={{
-          background: "rgba(90,44,160,0.06)",
+          background: "rgba(91, 33, 182,0.06)",
           borderLeft: "3px solid var(--violet)",
           borderRadius: "0 12px 12px 0",
           padding: "12px 14px", marginBottom: 16,
@@ -231,7 +231,7 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
             {/* Déclaration prophétique */}
             {devotion.declaration && (
               <div style={{
-                background: "linear-gradient(135deg, rgba(90,44,160,0.10), rgba(212,175,55,0.10))",
+                background: "linear-gradient(135deg, rgba(91, 33, 182,0.10), rgba(212,175,55,0.10))",
                 borderRadius: 12, padding: "12px 14px", marginBottom: 14,
                 textAlign: "center",
               }}>

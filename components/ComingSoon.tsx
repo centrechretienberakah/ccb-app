@@ -108,7 +108,7 @@ export default function ComingSoon({
             fontSize: 15,
             cursor: "pointer",
             letterSpacing: "0.03em",
-            boxShadow: "0 4px 16px rgba(90,44,160,0.3)",
+            boxShadow: "0 4px 16px rgba(91, 33, 182,0.3)",
           }}>
             🔔 {notifyLabel}
           </button>

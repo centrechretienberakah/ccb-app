@@ -144,7 +144,7 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
 
         {/* Verset */}
         <div style={{
-          background: "rgba(90,44,160,0.06)", borderLeft: `3px solid ${T.violet}`,
+          background: "rgba(91, 33, 182,0.06)", borderLeft: `3px solid ${T.violet}`,
           borderRadius: "0 12px 12px 0", padding: "11px 13px", marginBottom: 16,
         }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.violet, marginBottom: 4 }}>
@@ -184,7 +184,7 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
               <div style={{ display: "grid", gap: 8 }}>
                 {prayer.declarations.map((d, i) => (
                   <div key={i} style={{
-                    background: "linear-gradient(135deg, rgba(90,44,160,0.08), rgba(212,175,55,0.08))",
+                    background: "linear-gradient(135deg, rgba(91, 33, 182,0.08), rgba(212,175,55,0.08))",
                     borderRadius: 10, padding: "9px 12px",
                     fontSize: 13.5, color: T.text, fontWeight: 600, lineHeight: 1.5,
                   }}>

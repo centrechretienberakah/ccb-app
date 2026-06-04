@@ -464,7 +464,7 @@ function ContentWithMentions({ content, members }: { content: string; members: M
         if (s.type === "mention" && s.userId) {
           return (
             <Link key={i} href={`/community/profil/${s.userId}`}
-              style={{ color: "#5A2CA0", fontWeight: 700, textDecoration: "none" }}>
+              style={{ color: "#5B21B6", fontWeight: 700, textDecoration: "none" }}>
               {s.content}
             </Link>
           );
@@ -911,13 +911,13 @@ function AdminCategoryManager({ categories, onCategoriesChange }: { categories: 
   }
 
   if (!open) return (
-    <button onClick={() => setOpen(true)} style={{ background: "rgba(90,44,160,0.1)", border: "1px solid rgba(90,44,160,0.3)", borderRadius: "var(--radius-md)", padding: "8px 14px", color: "var(--violet-light)", fontSize: 12, cursor: "pointer", marginBottom: 16 }}>
+    <button onClick={() => setOpen(true)} style={{ background: "rgba(91, 33, 182,0.1)", border: "1px solid rgba(91, 33, 182,0.3)", borderRadius: "var(--radius-md)", padding: "8px 14px", color: "var(--violet-light)", fontSize: 12, cursor: "pointer", marginBottom: 16 }}>
       🛡️ Gérer les catégories
     </button>
   );
 
   return (
-    <div style={{ background: "var(--card-bg)", border: "1px solid rgba(90,44,160,0.3)", borderRadius: "var(--radius-lg)", padding: 16, marginBottom: 16 }}>
+    <div style={{ background: "var(--card-bg)", border: "1px solid rgba(91, 33, 182,0.3)", borderRadius: "var(--radius-lg)", padding: 16, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "var(--violet-light)" }}>🛡️ Gestion des catégories</div>
         <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16 }}>✕</button>
@@ -1298,14 +1298,14 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
           onChange={(e) => setFilterKind(e.target.value as PostKind | "")}
           style={{
             background: "var(--card-bg)",
-            border: `1px solid ${filterKind ? "#5A2CA0" : "var(--border)"}`,
+            border: `1px solid ${filterKind ? "#5B21B6" : "var(--border)"}`,
             borderRadius: "var(--radius-full)",
             padding: "8px 28px 8px 12px",
-            color: filterKind ? "#5A2CA0" : "var(--text-muted)",
+            color: filterKind ? "#5B21B6" : "var(--text-muted)",
             fontSize: 12, fontWeight: filterKind ? 700 : 500,
             cursor: "pointer", whiteSpace: "nowrap",
             appearance: "none", WebkitAppearance: "none",
-            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(filterKind ? "#5A2CA0" : "#888")}' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>")`,
+            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(filterKind ? "#5B21B6" : "#888")}' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>")`,
             backgroundRepeat: "no-repeat",
             backgroundPosition: "right 10px center",
             fontFamily: "inherit", outline: "none",

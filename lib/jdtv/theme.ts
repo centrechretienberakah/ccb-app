@@ -16,7 +16,7 @@ export const JDTV_THEME = {
 
   // Branding CCB
   violet:       "#7C3AED",        // un peu plus lumineux pour dark mode
-  violetDark:   "#5A2CA0",
+  violetDark:   "#5B21B6",
   violetSoft:   "rgba(124,58,237,0.16)",
   gold:         "#D4AF37",
   goldSoft:     "rgba(212,175,55,0.18)",
