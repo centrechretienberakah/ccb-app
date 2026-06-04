@@ -33,6 +33,20 @@ export default async function MessagesPage() {
     const myLastRead: Record<string, string> = {};
     rows.forEach((m) => { myLastRead[m.conversation_id] = m.last_read_at; });
 
+    // Discussions masquées par l'utilisateur (« supprimer pour moi », v59).
+    // Best-effort : si la colonne deleted_at n'existe pas encore (v59 non migrée),
+    // delRows est null → aucun filtrage → la liste fonctionne comme avant.
+    const myDeleted: Record<string, string> = {};
+    try {
+      const { data: delRows } = await supabase
+        .from("conversation_members")
+        .select("conversation_id, deleted_at")
+        .eq("user_id", user.id);
+      for (const r of (delRows ?? []) as Array<{ conversation_id: string; deleted_at: string | null }>) {
+        if (r.deleted_at) myDeleted[r.conversation_id] = r.deleted_at;
+      }
+    } catch { /* colonne deleted_at absente → pas de filtrage */ }
+
     if (myConvIds.length > 0) {
       const { data: convs } = await supabase
         .from("conversations")
@@ -86,6 +100,13 @@ export default async function MessagesPage() {
           lastMessageAt: last?.created_at ?? c.last_message_at,
           unread,
         };
+      })
+      // Masque les discussions supprimées « pour moi », sauf si un nouveau
+      // message est arrivé depuis (la discussion réapparaît alors).
+      .filter((c) => {
+        const del = myDeleted[c.id];
+        if (!del) return true;
+        return !!c.lastMessageAt && new Date(c.lastMessageAt) > new Date(del);
       });
     }
   } catch { /* tables v52 pas migrées → liste vide */ }
