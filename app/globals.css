@@ -1328,6 +1328,15 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 .dashboard-journey-action { font-size: 11.5px; color: var(--violet); font-weight: 600; margin-top: auto; }
 [data-theme="dark"] .dashboard-journey-action { color: var(--violet-light); }
 
+/* Mode sombre : ombres claires (les ombres sombres sont invisibles sur fond sombre) */
+[data-theme="dark"] .dashboard-action-card,
+[data-theme="dark"] .dashboard-journey-card { box-shadow: none; }
+[data-theme="dark"] .dashboard-action-card:hover,
+[data-theme="dark"] .dashboard-journey-card:hover {
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+  border-color: var(--violet-light);
+}
+
 /* Upcoming */
 .dashboard-upcoming-list {
   display: flex;

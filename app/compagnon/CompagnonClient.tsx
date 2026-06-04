@@ -79,7 +79,7 @@ export default function CompagnonClient({ firstName }: { firstName: string }) {
 
       {notConfigured && (
         <div style={{
-          background: "var(--gold-pale, #fdf6e3)", color: "var(--text-secondary)",
+          background: "rgba(212,175,55,0.14)", color: "var(--text-secondary)",
           border: "1px solid var(--border)", borderRadius: 12,
           padding: "9px 12px", fontSize: 12, marginBottom: 12, textAlign: "center",
         }}>
