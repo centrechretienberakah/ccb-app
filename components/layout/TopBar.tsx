@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { IconSearch, IconBell, IconMoon, IconSun, IconMenu, IconUsers } from "@/components/icons";
 
 const PAGE_TITLES: Record<string, string> = {
-  "/dashboard":     "Tableau de bord",
+  "/dashboard":     "Accueil",
   "/bible":          "Bible",
   "/plan-biblique":  "Plan de Lecture",
   "/prayer":         "Prions ensemble",
