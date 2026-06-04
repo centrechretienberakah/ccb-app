@@ -197,7 +197,9 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
 
   function handleLeave() {
     endCall();
-    router.push(state.backUrl ?? "/community/groups");
+    // replace (et non push) : retire l'URL d'appel de l'historique pour que le
+    // bouton « retour » du téléphone/navigateur ne re-rejoigne PAS l'appel.
+    router.replace(state.backUrl ?? "/community/groups");
   }
   function handleMinimize() { router.back(); }
 

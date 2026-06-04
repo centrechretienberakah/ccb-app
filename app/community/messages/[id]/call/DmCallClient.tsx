@@ -72,7 +72,7 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
         void setCallStatus(call.id, "missed");
         stopRingtone();
         setPhase("missed");
-        setTimeout(() => router.push(backUrl), 2600);
+        setTimeout(() => router.replace(backUrl), 2600);
       }, 30_000);
 
       channel = sb.channel(`ccb-call-${call.id}`);
@@ -86,10 +86,10 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
             setPhase("joining"); doStartCall();
           } else if (c.status === "declined") {
             stopRingtone(); if (timeout) clearTimeout(timeout);
-            setPhase("declined"); setTimeout(() => router.push(backUrl), 2600);
+            setPhase("declined"); setTimeout(() => router.replace(backUrl), 2600);
           } else if (c.status === "missed" || c.status === "ended") {
             stopRingtone(); if (timeout) clearTimeout(timeout);
-            setPhase("missed"); setTimeout(() => router.push(backUrl), 2600);
+            setPhase("missed"); setTimeout(() => router.replace(backUrl), 2600);
           }
         });
       channel.subscribe();
@@ -108,7 +108,7 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
     const id = callIdRef.current;
     if (id) void setCallStatus(id, "ended");
     stopRingtone();
-    router.push(backUrl);
+    router.replace(backUrl);
   }
 
   // ── Erreurs LiveKit (surviennent au moment de rejoindre) ──
@@ -123,7 +123,7 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
           <div style={{ fontSize: 13, opacity: 0.85, maxWidth: 420, textAlign: "center" }}>
             Les appels nécessitent LiveKit Cloud (variables LIVEKIT_* dans Vercel).
           </div>
-          <Link href={backUrl} style={btn}>← Retour à la conversation</Link>
+          <Link href={backUrl} replace style={btn}>← Retour à la conversation</Link>
         </div>
       </Shell>
     );
@@ -141,7 +141,7 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => { startedRef.current = false; doStartCall(); }} style={btn}>Réessayer</button>
-            <button onClick={() => router.push(backUrl)} style={{ ...btn, background: "rgba(255,255,255,0.12)" }}>Retour</button>
+            <button onClick={() => router.replace(backUrl)} style={{ ...btn, background: "rgba(255,255,255,0.12)" }}>Retour</button>
           </div>
         </div>
       </Shell>
@@ -190,7 +190,7 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
           </div>
           <div style={{ fontSize: 13, opacity: 0.7, marginTop: 6 }}>{title}</div>
         </div>
-        <button onClick={() => router.push(backUrl)} style={{
+        <button onClick={() => router.replace(backUrl)} style={{
           background: "rgba(255,255,255,0.12)", color: "#fff", border: "none",
           borderRadius: 12, padding: "11px 22px", fontWeight: 700, fontSize: 13.5, cursor: "pointer", fontFamily: F.body,
         }}>← Retour à la conversation</button>
@@ -243,7 +243,7 @@ function Shell({ children, mode, backUrl }: { children: React.ReactNode; mode: "
         background: "rgba(0,0,0,0.4)", borderBottom: "1px solid rgba(255,255,255,0.05)",
         flexShrink: 0,
       }}>
-        <Link href={backUrl} aria-label="Retour" style={{
+        <Link href={backUrl} replace aria-label="Retour" style={{
           width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.10)",
           color: "#fff", textDecoration: "none", display: "inline-flex",
           alignItems: "center", justifyContent: "center", fontSize: 18,

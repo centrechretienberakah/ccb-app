@@ -45,13 +45,14 @@ export default function MeetingClient({ group, displayName, mode = "video" }: Pr
       groupName: group.name,
       mode,
       displayName,
+      backUrl: `/community/groups/${group.id}`,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group.id, mode]);
 
   // Setup manquant (LiveKit non configuré) — l'API renvoie status=503
   if (state.status === "error" && state.error?.includes("non configuré")) {
-    return <SetupScreen onBack={() => router.push(`/community/groups/${group.id}`)} />;
+    return <SetupScreen onBack={() => router.replace(`/community/groups/${group.id}`)} />;
   }
   if (state.status === "error") {
     return (
@@ -67,7 +68,7 @@ export default function MeetingClient({ group, displayName, mode = "video" }: Pr
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => void startCall({ groupId: group.id, groupName: group.name, mode, displayName })}
               style={primaryBtnStyle}>Réessayer</button>
-            <button onClick={() => router.push(`/community/groups/${group.id}`)}
+            <button onClick={() => router.replace(`/community/groups/${group.id}`)}
               style={ghostBtnStyle}>Retour au groupe</button>
           </div>
         </div>
@@ -120,7 +121,7 @@ function ScreenShell({ children, mode }: { children: React.ReactNode; mode: "aud
         borderBottom: "1px solid rgba(255,255,255,0.05)",
         flexShrink: 0, backdropFilter: "blur(8px)",
       }}>
-        <Link href="/community/groups" aria-label="Retour"
+        <Link href="/community/groups" replace aria-label="Retour"
           style={{
             width: 36, height: 36, borderRadius: 999,
             background: "rgba(255,255,255,0.10)", color: "#fff",
