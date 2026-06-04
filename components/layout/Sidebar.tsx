@@ -83,7 +83,7 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-mark">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src="/logo-officiel.png" alt="CCB" className="sidebar-logo-img" />
         </div>
         <div>

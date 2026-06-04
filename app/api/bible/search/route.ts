@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
   let index: IndexedVerse[];
   try {
     index = await buildIndex();
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Impossible de charger l'index biblique" }, { status: 500 });
   }
 

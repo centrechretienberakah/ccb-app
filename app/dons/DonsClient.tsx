@@ -636,7 +636,6 @@ function CampaignCard({ campaign, onSelect }: {
         background: campaign.cover_url ? "#000" : `linear-gradient(135deg, ${kindDef.color}, ${T.violetDark})`,
       }}>
         {campaign.cover_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={campaign.cover_url} alt={campaign.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (

@@ -33,6 +33,7 @@ export function useInView<T extends HTMLElement = HTMLDivElement>(
     );
     obs.observe(el);
     return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- observer monté une seule fois
   }, []);
 
   return [ref, inView];

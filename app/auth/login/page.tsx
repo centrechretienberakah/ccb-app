@@ -104,7 +104,7 @@ export default function LoginPage() {
         <div className="auth-panel-orb auth-panel-orb-2" />
         <div className="auth-panel-logo">
           <div className="auth-panel-logo-mark">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
           </div>
           <div>
@@ -137,7 +137,7 @@ export default function LoginPage() {
         <div className="auth-form-container">
           <div className="auth-form-header">
             <div className="auth-form-logo-mobile">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
             </div>
             <h1 className="auth-form-title">Bon retour !</h1>

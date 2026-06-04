@@ -48,7 +48,7 @@ export default function GalerieClient({ albums, photos }: { albums: Album[]; pho
           {displayed.map(p => (
             <div key={p.id} onClick={() => setLightbox(p)}
               style={{ cursor: "pointer", borderRadius: "var(--radius-lg)", overflow: "hidden", background: "var(--card-bg)", border: "1px solid var(--border)", aspectRatio: "1", position: "relative" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src={p.url} alt={p.caption || "Photo CCB"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.2s ease" }}
                 onMouseOver={e => (e.currentTarget.style.transform = "scale(1.05)")}
                 onMouseOut={e => (e.currentTarget.style.transform = "")} />
@@ -67,7 +67,7 @@ export default function GalerieClient({ albums, photos }: { albums: Album[]; pho
         <div onClick={() => setLightbox(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ maxWidth: 800, width: "100%", position: "relative" }}>
             <button onClick={() => setLightbox(null)} style={{ position: "absolute", top: -44, right: 0, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: "50%", width: 36, height: 36, fontSize: 18, cursor: "pointer" }}>✕</button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={lightbox.url} alt={lightbox.caption || ""} style={{ width: "100%", maxHeight: "80vh", objectFit: "contain", borderRadius: "var(--radius-xl)", display: "block" }} />
             {lightbox.caption && <p style={{ color: "#fff", textAlign: "center", margin: "12px 0 0", fontSize: 14 }}>{lightbox.caption}</p>}
           </div>

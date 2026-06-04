@@ -164,7 +164,6 @@ export default function IncomingCallHost() {
             animation: "ccb-call-ring 1.6s ease-out infinite",
           }}>
             {incoming.caller_avatar && !isGroup ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={incoming.caller_avatar} alt={callerName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (isGroup ? "👥" : initials)}
           </div>

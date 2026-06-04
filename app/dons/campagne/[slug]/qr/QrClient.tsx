@@ -101,7 +101,7 @@ export default function QrClient({ campaign, targetUrl }: Props) {
             border: `3px solid ${T.gold}`, borderRadius: 18,
             marginBottom: 16,
           }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={qrUrl} alt={`QR code vers ${campaign.title}`}
               width={280} height={280}
               style={{ display: "block" }} />

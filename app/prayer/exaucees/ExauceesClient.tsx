@@ -119,7 +119,6 @@ export default function ExauceesClient({ prayers }: { prayers: AnsweredPrayer[] 
                         fontSize: p.is_anonymous ? 16 : 14, fontWeight: 700,
                       }}>{p.is_anonymous ? "🤫" : initials}</div>
                     ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.user_profiles.avatar_url} alt={author}
                         style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                     )}

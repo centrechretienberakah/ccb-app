@@ -52,7 +52,6 @@ export default function FollowListView({
                   borderTop: i === 0 ? "none" : `1px solid ${T.borderSoft}`,
                 }}>
                   {m.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={m.avatar_url} alt={m.display_name || ""}
                       style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                   ) : (

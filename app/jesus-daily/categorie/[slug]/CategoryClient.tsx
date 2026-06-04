@@ -49,7 +49,7 @@ export default function CategoryClient({ category, videos, watchlistIds, progres
       }}>
         {category.cover_url ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={category.cover_url} alt=""
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(2px)" }} />
             <div style={{

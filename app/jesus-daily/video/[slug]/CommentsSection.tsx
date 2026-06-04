@@ -281,7 +281,6 @@ function CommentCard({
         fontWeight: 700, fontSize: 13, overflow: "hidden",
       }}>
         {comment.user_avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={comment.user_avatar_url} alt={name}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : initials || "?"}

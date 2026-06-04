@@ -88,7 +88,7 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
           );
         });
     });
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chargement initial au montage
   }, []);
 
   // ── Save dernière position ────────────────────────────────────────

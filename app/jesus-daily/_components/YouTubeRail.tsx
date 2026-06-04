@@ -132,7 +132,7 @@ export default function YouTubeRail() {
                   background: "#000", borderRadius: 12, overflow: "hidden",
                   boxShadow: T.shadowSoft,
                 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img src={thumb} alt={it.snippet.title}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                   {/* Badge YouTube */}

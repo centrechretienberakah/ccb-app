@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F, getPostKindDef } from "@/lib/community/theme";
 
@@ -53,7 +52,6 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function AdminModerationClient({ reports: initialReports, posts, comments, profiles }: Props) {
-  const router = useRouter();
   const [reports, setReports] = useState<Report[]>(initialReports);
   const [filter, setFilter] = useState<"all" | "pending" | "actioned" | "dismissed">("pending");
   const [toast, setToast] = useState<string | null>(null);

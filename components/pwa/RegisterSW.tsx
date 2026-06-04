@@ -79,7 +79,7 @@ export default function RegisterSW() {
       maxWidth: 500,
       margin: "0 auto",
     }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+      { }
       <img src="/icon-72x72.png" alt="CCB" style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 2 }}>

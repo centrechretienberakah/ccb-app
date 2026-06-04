@@ -58,7 +58,6 @@ export async function subscribeUserToPush(userId: string): Promise<{ ok: boolean
       try {
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           applicationServerKey: keyArray as any,
         });
       } catch (e) {
@@ -209,7 +208,6 @@ export function usePushNotifications(): PushHook {
         const keyArray = urlBase64ToUint8Array(vapidPublicKey);
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           applicationServerKey: keyArray as any,
         });
       }

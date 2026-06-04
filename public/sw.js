@@ -131,7 +131,7 @@ self.addEventListener("message", (event) => {
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   let data = {};
-  try { data = event.data.json(); } catch (e) { data = { title: "CCB", body: event.data.text() }; }
+  try { data = event.data.json(); } catch { data = { title: "CCB", body: event.data.text() }; }
   const url = data.url || "/dashboard";
   // Détecte un appel : type explicite OU url d'appel/réunion (groupe inclus)
   const isCall = data.type === "call" || /\/call(\?|$)|\/meeting(\?|$)|[?&]join=1/.test(url);
@@ -163,7 +163,7 @@ self.addEventListener("notificationclick", (event) => {
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const c of list) {
         if ("focus" in c) {
-          if (c.navigate) { try { c.navigate(url); } catch (e) {} }
+          if (c.navigate) { try { c.navigate(url); } catch {} }
           return c.focus();
         }
       }

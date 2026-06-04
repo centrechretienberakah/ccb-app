@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   JDTV_THEME as T,
-  JDTV_FONTS as F,
   type JdtvVideo,
   formatVideoDuration,
   getYoutubeThumbnail,
@@ -45,7 +44,6 @@ export default function UpNextCard({ nextVideo, onCancel, countdownSecs = 10 }: 
       }}>
       <div style={{ position: "relative", aspectRatio: "16/9", background: "#000" }}>
         {thumb ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{

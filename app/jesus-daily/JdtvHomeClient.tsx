@@ -214,7 +214,6 @@ function HeroLive({ video, isInWatchlist, onToggle }: { video: JdtvVideo; isInWa
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", pointerEvents: "none" }}
         />
       ) : heroImg ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img src={heroImg} alt={video.title}
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       ) : (
@@ -452,7 +451,6 @@ function VideoCard({
           boxShadow: hover ? T.shadowMd : T.shadowSoft,
         }}>
           {thumb ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={thumb} alt={video.title}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (

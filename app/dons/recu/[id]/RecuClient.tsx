@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   DONS_THEME as T, DONS_FONTS as F,
   type DonationRecord,
-  getKind, getCurrency,
+  getKind,
   PAYMENT_MODES,
   formatAmount,
 } from "@/lib/dons/theme";
@@ -20,7 +20,6 @@ function fmtDateFR(iso: string): string {
 
 export default function RecuClient({ record, donorName, campaignTitle }: Props) {
   const k = getKind(record.kind);
-  const cur = getCurrency(record.currency);
   const mode = record.payment_mode ? PAYMENT_MODES.find((m) => m.id === record.payment_mode) : null;
   const dateRef = record.paid_at ?? record.confirmed_at ?? record.created_at;
   const receiptNo = record.receipt_number ?? `CCB-${new Date(dateRef).getFullYear()}-${record.id.slice(0, 5).toUpperCase()}`;

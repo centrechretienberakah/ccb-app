@@ -470,7 +470,7 @@ function Testimonials() {
                   <div className="ccb-testi-quote">“</div>
                   <blockquote>{t.text}</blockquote>
                   <figcaption>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    { }
                     <img src={t.img} alt={t.name} />
                     <span><b>{t.name}</b><em>Membre CCB</em></span>
                   </figcaption>
@@ -501,7 +501,6 @@ function Visionnaire() {
           <div className="ccb-vision-photo">
             <div className="ccb-vision-ring" />
             {imgOk ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src="/rev-elvis-v2.jpg"
                 alt="Rév. Elvis NGUIFFO — Visionnaire du Centre Chrétien Berakah"

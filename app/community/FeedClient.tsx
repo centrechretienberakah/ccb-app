@@ -80,7 +80,6 @@ function Avatar({ profile, size = 40 }: { profile?: { display_name?: string | nu
   const name = profile?.display_name || "?";
   const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
   if (profile?.avatar_url) return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img src={profile.avatar_url} alt={name} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
   );
   return (
@@ -337,7 +336,7 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
           <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])} />
           {mediaUrl ? (
             <div style={{ position: "relative" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src={mediaUrl} alt="Aperçu média" style={{ width: "100%", borderRadius: "var(--radius-md)", maxHeight: 300, objectFit: "cover" }} />
               <button onClick={() => setMediaUrl("")} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: "50%", width: 28, height: 28, color: "#fff", cursor: "pointer", fontSize: 14 }}>✕</button>
             </div>
@@ -497,7 +496,6 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
   const [replyText, setReplyText] = useState("");
   const [localLike, setLocalLike] = useState(isLiked);
   const [localLikeCount, setLocalLikeCount] = useState(post.likeCount);
-  const [localBookmark, setLocalBookmark] = useState(isBookmarked);
   const [localVote, setLocalVote] = useState<number | undefined>(userVote);
   const [localVoteResults, setLocalVoteResults] = useState<number[]>(post.voteResults || []);
 
@@ -526,7 +524,6 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
   const isMyPost = post.user_id === currentUserId;
   const cat = post.post_categories;
   const author = post.user_profiles;
-  const kindDef = post.post_kind ? getPostKindDef(post.post_kind) : null;
   const ytId = post.post_type === "video" && post.media_url ? getYoutubeId(post.media_url) : null;
 
   function handleLike() {
@@ -552,11 +549,6 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
     if (!replyingTo || !replyText.trim()) return;
     onReply(replyingTo, replyText);
     setReplyText(""); setReplyingTo(null);
-  }
-
-  function handleBookmark() {
-    setLocalBookmark((b) => !b);
-    onBookmark();
   }
 
   const totalVotes = post.poll_options ? localVoteResults.length : 0;
@@ -659,7 +651,6 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
 
         {/* Médias */}
         {post.post_type === "image" && post.media_url && (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={post.media_url} alt={post.content?.slice(0, 60) || "Publication"} style={{ width: "100%", borderRadius: "var(--radius-md)", maxHeight: 400, objectFit: "cover", marginBottom: 12 }} />
         )}
 
@@ -778,6 +769,20 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
               .ccb-share-btn { font-size: 26px !important; padding: 12px 16px !important; }
             }
           `}</style>
+
+          <button onClick={onBookmark} title={isBookmarked ? "Retirer des favoris" : "Enregistrer"} style={{
+            background: "none", border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "10px 14px", borderRadius: 8,
+            color: isBookmarked ? "#D4AF37" : "var(--text-muted)", fontSize: 18, lineHeight: 1,
+            minWidth: 44, minHeight: 44,
+            filter: isBookmarked ? "none" : "grayscale(1) opacity(0.75)",
+          }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            🔖
+          </button>
 
           <div style={{ flex: 1 }} />
 

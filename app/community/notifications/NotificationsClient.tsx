@@ -160,7 +160,6 @@ export default function NotificationsClient({ notifications: initial, actors }: 
                 }}>
                   {/* Avatar acteur */}
                   {actor?.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={actor.avatar_url} alt=""
                       style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                   ) : (

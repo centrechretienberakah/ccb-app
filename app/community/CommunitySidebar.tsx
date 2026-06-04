@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
-import { computeXp, getRank, type MemberStats } from "@/lib/community/gamification";
+import { getRank } from "@/lib/community/gamification";
 import { useOnlineUsers } from "@/lib/presence";
 
 interface TopContributor {
@@ -53,7 +51,6 @@ export default function CommunitySidebar({ contributors, pinned, members }: Prop
                 <Link key={m.user_id} href={`/community/profil/${m.user_id}`} title={m.display_name || ""}
                   style={{ textDecoration: "none", position: "relative" }}>
                   {m.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={m.avatar_url} alt={m.display_name || ""}
                       style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: `2px solid ${T.card}` }} />
                   ) : (
@@ -101,7 +98,6 @@ export default function CommunitySidebar({ contributors, pinned, members }: Prop
                     color: i < 3 ? T.gold : T.textMuted,
                   }}>{i + 1}</div>
                   {c.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={c.avatar_url} alt={c.display_name || ""}
                       style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover" }} />
                   ) : (

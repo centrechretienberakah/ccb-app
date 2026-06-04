@@ -69,7 +69,6 @@ function fmtClock(iso: string): string {
 function Avatar({ profile, size = 32 }: { profile?: Profile | null; size?: number }) {
   if (profile?.avatar_url) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
       <img src={profile.avatar_url} alt={profile.display_name || ""}
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
     );
@@ -226,7 +225,7 @@ export default function GroupDetailClient({
       .subscribe();
 
     return () => { cancelled = true; supabase.removeChannel(ch); };
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- abonnement realtime stable (éviter ré-abonnement à chaque message)
   }, [group.id, isMember, group.type, messages.length, currentUserId]);
 
   // Presence typing
@@ -419,7 +418,7 @@ export default function GroupDetailClient({
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- abonnement realtime stable (éviter ré-abonnement à chaque changement de membres)
   }, [group.id, isMember, group.type]);
 
   // Auto-scroll en bas à chaque nouveau message
@@ -1560,7 +1559,7 @@ export default function GroupDetailClient({
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: 20, cursor: "zoom-out",
           }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={lightbox} alt=""
               style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8 }} />
             <button onClick={(e) => { e.stopPropagation(); setLightbox(null); }} style={{
@@ -1635,7 +1634,6 @@ function MembersList({ members, currentUserId }: { members: Member[]; currentUse
               textDecoration: "none", padding: "4px 0",
             }}>
               {m.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={m.avatar_url} alt={m.display_name || ""}
                   style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
               ) : (
@@ -1689,7 +1687,7 @@ function AttachmentRender({ msg, isMine, onImageClick }: {
       <div onClick={() => onImageClick(msg.attachment_url!)} style={{
         cursor: "pointer", borderRadius: 10, overflow: "hidden", maxWidth: 280,
       }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img src={msg.attachment_url} alt={fname}
           style={{ width: "100%", height: "auto", display: "block", maxHeight: 280, objectFit: "cover" }} />
       </div>
@@ -1823,7 +1821,6 @@ function MediaModal({ messages, onClose, onImageClick }: { messages: Message[]; 
           ) : tab === "image" ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
               {cur.list.map((m) => (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img key={m.id} src={m.attachment_url!} alt="" onClick={() => onImageClick(m.attachment_url!)} style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: 8, cursor: "pointer" }} />
               ))}
             </div>

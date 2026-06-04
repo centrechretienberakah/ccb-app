@@ -46,7 +46,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
     .from("institut_modules")
     .select("id, course_id, slug, title, description, order_index")
     .eq("id", lesson.module_id).maybeSingle();
-  const module = (moduleRow ?? null) as Module | null;
+  const lessonModule = (moduleRow ?? null) as Module | null;
 
   // Category
   const { data: catRow } = await supabase
@@ -103,7 +103,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
     <LessonClient
       lesson={lesson}
       course={course}
-      module={module}
+      module={lessonModule}
       category={category}
       prevLesson={prevLesson}
       nextLesson={nextLesson}

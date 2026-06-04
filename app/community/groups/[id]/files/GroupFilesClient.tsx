@@ -144,7 +144,7 @@ export default function GroupFilesClient({ group, files }: { group: Group; files
                     cursor: "zoom-in", aspectRatio: "1", overflow: "hidden",
                     background: T.surface2,
                   }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    { }
                     <img src={f.url} alt={f.name ?? ""} loading="lazy"
                       style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                   </div>
@@ -208,7 +208,7 @@ export default function GroupFilesClient({ group, files }: { group: Group; files
           display: "flex", alignItems: "center", justifyContent: "center",
           padding: 20, cursor: "zoom-out",
         }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={lightbox} alt=""
             style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8 }} />
           <button onClick={(e) => { e.stopPropagation(); setLightbox(null); }} style={{

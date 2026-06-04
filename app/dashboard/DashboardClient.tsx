@@ -56,13 +56,12 @@ export default function DashboardClient({ displayName, avatarUrl, devotion, devo
         <div className="dashboard-hero-inner">
           <div className="dashboard-avatar-wrap">
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt={displayName} className="dashboard-avatar-img" />
             ) : (
               <div className="dashboard-avatar-initials">{initials}</div>
             )}
             <span className="dashboard-avatar-badge">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src="/logo-officiel.png" alt="" className="dashboard-badge-logo" />
             </span>
           </div>

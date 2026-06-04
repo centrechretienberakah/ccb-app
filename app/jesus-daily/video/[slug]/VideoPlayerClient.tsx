@@ -460,7 +460,6 @@ function RecoCard({ video }: { video: JdtvVideo }) {
         background: "#000", borderRadius: 6, overflow: "hidden",
       }}>
         {thumb ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={thumb} alt={video.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (

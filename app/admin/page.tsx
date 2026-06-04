@@ -144,7 +144,6 @@ export default function AdminPage() {
       ): Promise<T[]> => {
         try {
           // Le query builder Supabase a une API fluide difficile à typer génériquement.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let q: any = sb.from(table).select(columns);
           if (opts?.order) q = q.order(opts.order, { ascending: opts.ascending ?? false });
           if (opts?.limit) q = q.limit(opts.limit);

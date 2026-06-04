@@ -465,7 +465,6 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
                     background: T.bg, border: `1px solid ${T.borderSoft}`, borderRadius: 10,
                   }}>
                     {u.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={u.avatar_url} alt={u.display_name || ""}
                         style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
                     ) : (
@@ -527,7 +526,6 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
                   borderRadius: 10,
                 }}>
                   {m.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={m.avatar_url} alt={m.display_name || ""}
                       style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                   ) : (

@@ -168,7 +168,6 @@ export default function MentionTextarea({
                   fontFamily: "inherit",
                 }}>
                 {m.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={m.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
                 ) : (
                   <div style={{

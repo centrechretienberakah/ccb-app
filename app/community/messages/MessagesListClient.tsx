@@ -49,7 +49,6 @@ export default function MessagesListClient({ conversations }: { conversations: C
                   background: c.unread ? "rgba(90,44,160,0.04)" : "transparent",
                 }}>
                   {c.otherAvatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={c.otherAvatar} alt={name} style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                   ) : (
                     <div style={{

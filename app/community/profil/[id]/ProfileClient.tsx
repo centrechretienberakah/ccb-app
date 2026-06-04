@@ -154,7 +154,6 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
           <div style={{ display: "flex", gap: 14 }}>
             <div style={{ position: "relative", flexShrink: 0 }}>
               {profile.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={profile.avatar_url} alt={profile.display_name || ""} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `2px solid ${T.gold}` }} />
               ) : (
                 <div style={{ width: 72, height: 72, borderRadius: "50%", background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, color: "#fff", border: `2px solid ${T.gold}` }}>{initials}</div>

@@ -69,7 +69,6 @@ export default function BibliothequeClient({ resources, isPremium }: { resources
                 {/* Thumbnail */}
                 <div style={{ height: 120, background: `linear-gradient(135deg, ${info.color}18, ${info.color}30)`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0 }}>
                   {r.thumbnail_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={r.thumbnail_url} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
                   ) : <span style={{ fontSize: 42 }}>{locked ? "🔒" : info.emoji}</span>}
                   <span style={{ position: "absolute", top: 8, right: 8, background: info.color, color: "#fff", borderRadius: "var(--radius-full)", padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>{info.label}</span>

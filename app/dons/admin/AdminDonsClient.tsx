@@ -488,7 +488,6 @@ function CampaignRow({ campaign, onEdit, onAdjust, onDelete }: {
         borderRadius: 8, overflow: "hidden",
       }}>
         {campaign.cover_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={campaign.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{
@@ -730,7 +729,7 @@ function CampaignForm({ initial, onClose, onSaved }: {
               border: `1px solid ${T.border}`, background: "#000",
               position: "relative",
             }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src={coverUrl} alt="aperçu" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               <button type="button" onClick={() => setCoverUrl("")} aria-label="Retirer la couverture"
                 style={{

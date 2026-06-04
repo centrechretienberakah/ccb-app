@@ -1034,7 +1034,6 @@ function AddToCallModal({ conversationId, type, callerName, onClose, onFlash }: 
                 background: "transparent", border: "none", borderRadius: 10, cursor: busyId ? "wait" : "pointer", textAlign: "left",
               }}>
                 {c.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={c.avatar_url} alt="" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                 ) : (
                   <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${VIOLET}, #3E1C70)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13 }}>{initials}</div>

@@ -323,7 +323,6 @@ function MemberCard({ m, isMe, isAdmin, isOnline, router, onAdminEdit }: {
         {/* Avatar + présence */}
         <div style={{ position: "relative", flexShrink: 0 }}>
           {m.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={m.avatar_url} alt={m.display_name || ""} style={{ width: 46, height: 46, borderRadius: "50%", objectFit: "cover" }} />
           ) : (
             <div style={{ width: 46, height: 46, borderRadius: "50%", background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff" }}>{initials}</div>

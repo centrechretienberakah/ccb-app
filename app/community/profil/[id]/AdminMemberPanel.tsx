@@ -130,6 +130,7 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
       if (res.ok) setOverview(await res.json());
     } catch { /* noop */ }
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- recharge au changement de membre uniquement
   useEffect(() => { void loadAll(); }, [userId]);
 
   function flash(t: string) { setMsg(t); setTimeout(() => setMsg(""), 2500); }
