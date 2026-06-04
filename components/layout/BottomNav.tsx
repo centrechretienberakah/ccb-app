@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconHome, IconBook, IconPlay, IconGraduationCap } from "@/components/icons";
+import { IconHome, IconBook, IconPlay, IconGraduationCap, IconMenu } from "@/components/icons";
 
 const PRIMARY_ITEMS = [
   { href: "/dashboard",   label: "Accueil",  Icon: IconHome },
@@ -11,7 +11,7 @@ const PRIMARY_ITEMS = [
   { href: "/institut",    label: "Institut", Icon: IconGraduationCap },
 ];
 
-export default function BottomNav() {
+export default function BottomNav({ onMore }: { onMore?: () => void }) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
@@ -30,6 +30,19 @@ export default function BottomNav() {
           </Link>
         );
       })}
+      {/* 5e onglet « Plus » : ouvre le menu latéral (tous les autres modules) */}
+      <button
+        type="button"
+        className="bottom-nav-item"
+        onClick={onMore}
+        aria-label="Plus de modules"
+        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+      >
+        <div className="bottom-nav-icon-wrap">
+          <IconMenu size={22} />
+        </div>
+        <span className="bottom-nav-label">Plus</span>
+      </button>
     </nav>
   );
 }

@@ -63,8 +63,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Bottom nav (mobile seulement via CSS) */}
-      <BottomNav />
+      {/* Bottom nav (mobile seulement via CSS) — « Plus » ouvre le menu latéral */}
+      <BottomNav onMore={() => setSidebarOpen(true)} />
 
       {/* Bannière push notifications (auto-cachée si abonné/refusé/dismissed) */}
       <PushNotificationsBanner />

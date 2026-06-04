@@ -380,25 +380,27 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: var(--radius-md);
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
   color: var(--text-secondary);
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
   position: relative;
   cursor: pointer;
 }
 .sidebar-link:hover {
   background: var(--surface-2);
   color: var(--text-primary);
+  transform: translateX(3px);
 }
 .sidebar-link.active {
   background: var(--violet-pale);
   color: var(--violet);
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--violet);
 }
 [data-theme="dark"] .sidebar-link.active {
   background: rgba(90, 44, 160, 0.2);
