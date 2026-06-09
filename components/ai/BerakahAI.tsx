@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import {
+  loadConversations, loadMessages, createConversation, saveMessage,
+  touchConversation, deleteConversation, type AiConversation,
+} from "@/lib/ai/memory";
 
 /**
  * 🤖 BERAKAH AI — bouton flottant + chat pastoral, disponible sur toute l'app.
@@ -29,11 +34,92 @@ export default function BerakahAI() {
   const recRef = useRef<any>(null);
   const router = useRouter();
 
+  // Mémoire (best-effort : si v64 non migrée, le chat marche sans persistance)
+  const sbRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const userIdRef = useRef<string | null>(null);
+  const convIdRef = useRef<string | null>(null);
+  const resumedRef = useRef(false);
+  const [history, setHistory] = useState<AiConversation[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading, open]);
 
   useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch { /* noop */ } }, []);
+
+  // Crée le client Supabase + identifie l'utilisateur — UNIQUEMENT côté client
+  // (jamais au prerender, où les variables d'env publiques sont absentes).
+  useEffect(() => {
+    const client = createClient();
+    sbRef.current = client;
+    (async () => {
+      try { const { data: { user } } = await client.auth.getUser(); userIdRef.current = user?.id ?? null; } catch { /* noop */ }
+    })();
+  }, []);
+
+  // À la première ouverture, reprend la conversation la plus récente.
+  useEffect(() => {
+    if (!open || resumedRef.current) return;
+    const sb = sbRef.current;
+    if (!sb) return;
+    resumedRef.current = true;
+    (async () => {
+      try {
+        const convs = await loadConversations(sb);
+        setHistory(convs);
+        if (convs.length && messages.length === 0) {
+          const msgs = await loadMessages(sb, convs[0].id);
+          if (msgs.length) { convIdRef.current = convs[0].id; setMessages(msgs); }
+        }
+      } catch { /* mémoire indisponible → chat sans persistance */ }
+    })();
+  }, [open, messages.length]);
+
+  async function persistUser(content: string) {
+    const sb = sbRef.current; const uid = userIdRef.current;
+    if (!sb || !uid) return;
+    try {
+      if (!convIdRef.current) convIdRef.current = await createConversation(sb, uid, content);
+      if (convIdRef.current) await saveMessage(sb, convIdRef.current, uid, "user", content);
+    } catch { /* noop */ }
+  }
+  async function persistAssistant(content: string) {
+    const sb = sbRef.current; const uid = userIdRef.current;
+    if (!sb || !uid || !convIdRef.current) return;
+    try {
+      await saveMessage(sb, convIdRef.current, uid, "assistant", content);
+      await touchConversation(sb, convIdRef.current);
+    } catch { /* noop */ }
+  }
+  async function openConversation(id: string) {
+    const sb = sbRef.current;
+    if (!sb) return;
+    try {
+      const msgs = await loadMessages(sb, id);
+      convIdRef.current = id;
+      setMessages(msgs);
+      setShowHistory(false);
+      try { window.speechSynthesis?.cancel(); } catch { /* noop */ }
+      setSpeakingIdx(null);
+    } catch { /* noop */ }
+  }
+  async function removeConversation(id: string) {
+    const sb = sbRef.current;
+    if (!sb) return;
+    try {
+      await deleteConversation(sb, id);
+      setHistory((h) => h.filter((c) => c.id !== id));
+      if (convIdRef.current === id) { convIdRef.current = null; setMessages([]); }
+    } catch { /* noop */ }
+  }
+  function startNew() {
+    setMessages([]);
+    convIdRef.current = null;
+    setShowHistory(false);
+    try { window.speechSynthesis?.cancel(); } catch { /* noop */ }
+    setSpeakingIdx(null);
+  }
 
   async function send(text: string) {
     const content = text.trim();
@@ -42,6 +128,7 @@ export default function BerakahAI() {
     setMessages(next);
     setInput("");
     setLoading(true);
+    void persistUser(content);
     try {
       const res = await fetch("/api/compagnon", {
         method: "POST",
@@ -49,7 +136,9 @@ export default function BerakahAI() {
         body: JSON.stringify({ messages: next.map((m) => ({ role: m.role, content: m.content })) }),
       });
       const data = await res.json().catch(() => ({ reply: "Erreur de connexion. 🙏" }));
-      setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "…", sensitive: !!data.sensitive, appointment: !!data.appointment }]);
+      const reply: string = data.reply ?? "…";
+      setMessages((m) => [...m, { role: "assistant", content: reply, sensitive: !!data.sensitive, appointment: !!data.appointment }]);
+      void persistAssistant(reply);
     } catch {
       setMessages((m) => [...m, { role: "assistant", content: "Erreur de connexion à BERAKAH AI. Réessaie. 🙏" }]);
     } finally {
@@ -122,8 +211,10 @@ export default function BerakahAI() {
                 Assistant pastoral · 24h/24
               </div>
             </div>
+            <button onClick={async () => { const sb = sbRef.current; if (sb && !showHistory) { try { setHistory(await loadConversations(sb)); } catch { /* noop */ } } setShowHistory((v) => !v); }} aria-label="Historique" title="Mes conversations"
+              style={{ background: showHistory ? "rgba(255,255,255,0.32)" : "rgba(255,255,255,0.16)", border: "none", color: "#fff", width: 32, height: 32, borderRadius: 9, cursor: "pointer", fontSize: 15 }}>🕘</button>
             {!empty && (
-              <button onClick={() => { setMessages([]); try { window.speechSynthesis?.cancel(); } catch { /* noop */ } setSpeakingIdx(null); }} aria-label="Nouvelle conversation" title="Nouvelle conversation"
+              <button onClick={startNew} aria-label="Nouvelle conversation" title="Nouvelle conversation"
                 style={{ background: "rgba(255,255,255,0.16)", border: "none", color: "#fff", width: 32, height: 32, borderRadius: 9, cursor: "pointer", fontSize: 15 }}>✚</button>
             )}
             <button onClick={() => setOpen(false)} aria-label="Fermer" style={{ background: "rgba(255,255,255,0.16)", border: "none", color: "#fff", width: 32, height: 32, borderRadius: 9, cursor: "pointer", fontSize: 16 }}>✕</button>
@@ -131,7 +222,23 @@ export default function BerakahAI() {
 
           {/* Messages */}
           <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "12px 12px 4px", background: "var(--page-bg)" }}>
-            {empty ? (
+            {showHistory ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)", margin: "2px 2px 6px" }}>Mes conversations</div>
+                {history.length === 0 && (
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", textAlign: "center", padding: "18px 6px" }}>Aucune conversation enregistrée pour l&apos;instant.</div>
+                )}
+                {history.map((c) => (
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "9px 11px" }}>
+                    <button onClick={() => openConversation(c.id)} style={{ flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", cursor: "pointer", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || "Conversation"}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{new Date(c.updated_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
+                    </button>
+                    <button onClick={() => removeConversation(c.id)} aria-label="Supprimer" title="Supprimer" style={{ flexShrink: 0, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 15 }}>🗑</button>
+                  </div>
+                ))}
+              </div>
+            ) : empty ? (
               <div style={{ textAlign: "center", padding: "8px 4px" }}>
                 <div style={{ fontSize: 32, marginBottom: 6 }}>🕊️</div>
                 <div style={{ fontSize: 14.5, color: "var(--text-primary)", fontWeight: 700, marginBottom: 3 }}>Que la grâce soit avec toi 👋</div>
