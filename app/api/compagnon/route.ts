@@ -17,23 +17,75 @@ export const runtime = "nodejs";
 
 interface ChatMessage { role: "user" | "assistant"; content: string }
 
-// ── Modèles GRATUITS OpenRouter (du plus capable au plus léger). Tous en `:free`.
-//    Surchageable via OPENROUTER_MODELS (liste CSV) ou OPENROUTER_MODEL (unique).
+// ── Modèles GRATUITS OpenRouter. Découverts dynamiquement via /models (pricing 0)
+//    avec repli sur une liste statique. Surchargeable via OPENROUTER_MODELS (CSV).
 const DEFAULT_FREE_MODELS = [
-  "deepseek/deepseek-chat-v3-0324:free",
   "meta-llama/llama-3.3-70b-instruct:free",
-  "google/gemma-3-27b-it:free",
+  "deepseek/deepseek-r1:free",
+  "deepseek/deepseek-chat-v3-0324:free",
+  "google/gemini-2.0-flash-exp:free",
   "qwen/qwen-2.5-72b-instruct:free",
   "meta-llama/llama-3.1-8b-instruct:free",
+  "google/gemma-2-9b-it:free",
   "mistralai/mistral-7b-instruct:free",
 ];
 
-function freeModels(): string[] {
+function envModels(): string[] | null {
   const csv = process.env.OPENROUTER_MODELS || process.env.OPENROUTER_MODEL;
-  const list = csv ? csv.split(",").map((s) => s.trim()).filter(Boolean) : DEFAULT_FREE_MODELS;
-  // Sécurité « jamais payant » : ne conserve que les identifiants gratuits.
-  const free = list.filter((m) => m.endsWith(":free"));
-  return free.length ? free : DEFAULT_FREE_MODELS;
+  if (!csv) return null;
+  const list = csv.split(",").map((s) => s.trim()).filter(Boolean);
+  return list.length ? list : null;
+}
+
+// Découverte des modèles gratuits réellement disponibles (cache 30 min).
+let _modelCache: { at: number; models: string[] } | null = null;
+async function discoverFreeModels(key: string): Promise<string[]> {
+  if (_modelCache && Date.now() - _modelCache.at < 30 * 60 * 1000) return _modelCache.models;
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/models", { headers: { Authorization: `Bearer ${key}` } });
+    if (!res.ok) return [];
+    const data = await res.json() as { data?: Array<{ id: string; pricing?: { prompt?: string; completion?: string } }> };
+    const free = (data.data ?? [])
+      .filter((m) => m.pricing && Number(m.pricing.prompt) === 0 && Number(m.pricing.completion) === 0)
+      .map((m) => m.id);
+    const rank = (id: string): number => {
+      const s = id.toLowerCase();
+      if (s.includes("llama-3.3")) return 0;
+      if (s.includes("deepseek")) return 1;
+      if (s.includes("qwen")) return 2;
+      if (s.includes("gemini-2")) return 3;
+      if (s.includes("gemma")) return 4;
+      if (s.includes("llama-3.1")) return 5;
+      if (s.includes("mistral")) return 6;
+      return 9;
+    };
+    free.sort((a, b) => rank(a) - rank(b));
+    const top = free.slice(0, 8);
+    if (top.length) _modelCache = { at: Date.now(), models: top };
+    return top;
+  } catch { return []; }
+}
+
+// Message d'aide selon l'erreur OpenRouter (diagnostic pour l'administrateur).
+function diagnose(err: { status: number; detail: string } | null): string {
+  if (!err) return "Désolé, l'assistant est momentanément indisponible. Réessaie dans un instant. 🙏";
+  const d = (err.detail || "").toLowerCase();
+  if (err.status === 401 || d.includes("invalid api key") || d.includes("no auth") || d.includes("user not found")) {
+    return "🔑 La clé d'API OpenRouter semble invalide. Administrateur : vérifie OPENROUTER_API_KEY dans Vercel, puis redéploie. 🙏";
+  }
+  if (d.includes("data policy") || d.includes("no endpoints") || d.includes("no allowed providers")) {
+    return "⚙️ Un réglage OpenRouter est requis pour les modèles gratuits. Administrateur : ouvre openrouter.ai/settings/privacy et autorise les modèles gratuits (data policy), puis réessaie. 🙏";
+  }
+  if (err.status === 402 || d.includes("insufficient") || d.includes("requires more credits") || d.includes("credit")) {
+    return "💳 Le quota gratuit est momentanément épuisé (ou un petit crédit est requis pour ce modèle). Réessaie un peu plus tard. 🙏";
+  }
+  if (err.status === 429 || d.includes("rate limit") || d.includes("rate-limit")) {
+    return "⏳ Beaucoup de demandes en ce moment (limite du tier gratuit OpenRouter). Réessaie dans une minute. 🙏";
+  }
+  if (err.status === 404) {
+    return "Aucun modèle gratuit n'est disponible pour l'instant. Réessaie bientôt. 🙏";
+  }
+  return "Désolé, l'assistant est momentanément indisponible. Réessaie dans un instant. 🙏";
 }
 
 const SYSTEM_PROMPT = `Tu es « BERAKAH AI », l'assistant pastoral du Centre Chrétien Berakah (CCB), une église chrétienne évangélique francophone dirigée par le Révérend Elvis Nguiffo.
@@ -122,8 +174,10 @@ async function buildCcbContext(sb: Awaited<ReturnType<typeof createServerClient>
   } catch { return ""; }
 }
 
-async function callOpenRouter(key: string, messages: Array<{ role: string; content: string }>): Promise<{ reply: string; model: string } | null> {
-  for (const model of freeModels()) {
+type ORResult = { reply: string; model: string } | { error: { status: number; detail: string } };
+async function callOpenRouter(key: string, models: string[], messages: Array<{ role: string; content: string }>): Promise<ORResult> {
+  let lastErr = { status: 0, detail: "Aucun modèle gratuit disponible." };
+  for (const model of models) {
     try {
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -135,13 +189,14 @@ async function callOpenRouter(key: string, messages: Array<{ role: string; conte
         },
         body: JSON.stringify({ model, messages, temperature: 0.6, max_tokens: 800 }),
       });
-      if (!res.ok) continue; // modèle indisponible / quota → essaie le suivant
+      if (!res.ok) { lastErr = { status: res.status, detail: (await res.text().catch(() => "")).slice(0, 400) }; continue; }
       const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
       const reply = data.choices?.[0]?.message?.content?.trim();
       if (reply) return { reply, model };
-    } catch { /* essaie le modèle suivant */ }
+      lastErr = { status: 200, detail: "Réponse vide du modèle." };
+    } catch (e) { lastErr = { status: 0, detail: (e as Error).message.slice(0, 200) }; }
   }
-  return null;
+  return { error: lastErr };
 }
 
 async function callOpenAI(key: string, messages: Array<{ role: string; content: string }>): Promise<{ reply: string; model: string } | null> {
@@ -198,15 +253,23 @@ export async function POST(req: NextRequest) {
   const payload = [{ role: "system", content: SYSTEM_PROMPT + ccb + context }, ...trimmed];
 
   let out: { reply: string; model: string } | null = null;
-  if (orKey) out = await callOpenRouter(orKey, payload);
+  let orErr: { status: number; detail: string } | null = null;
+  if (orKey) {
+    const discovered = envModels() ?? await discoverFreeModels(orKey);
+    const list = discovered.length ? discovered : DEFAULT_FREE_MODELS;
+    const r = await callOpenRouter(orKey, list, payload);
+    if ("reply" in r) out = r; else orErr = r.error;
+  }
   if (!out && oaKey) out = await callOpenAI(oaKey, payload);
 
   if (!out) {
+    if (orErr) console.error("BERAKAH AI — OpenRouter indisponible:", orErr.status, orErr.detail);
     return NextResponse.json({
       configured: true,
       sensitive: flags.sensitive,
       appointment: flags.appointment,
-      reply: "Désolé, l'assistant est momentanément indisponible. Réessaie dans un instant. 🙏",
+      reply: diagnose(orErr),
+      error: orErr ?? undefined,
     });
   }
 
