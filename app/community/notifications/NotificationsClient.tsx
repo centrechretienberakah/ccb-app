@@ -160,7 +160,7 @@ export default function NotificationsClient({ notifications: initial, actors }: 
                 }}>
                   {/* Avatar acteur */}
                   {actor?.avatar_url ? (
-                    <img src={actor.avatar_url} alt=""
+                    <img loading="lazy" decoding="async" src={actor.avatar_url} alt=""
                       style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                   ) : (
                     <div style={{

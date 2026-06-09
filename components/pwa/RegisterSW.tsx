@@ -80,7 +80,7 @@ export default function RegisterSW() {
       margin: "0 auto",
     }}>
       { }
-      <img src="/icon-72x72.png" alt="CCB" style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0 }} />
+      <img loading="lazy" decoding="async" src="/icon-72x72.png" alt="CCB" style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 2 }}>
           Installer l&apos;app CCB

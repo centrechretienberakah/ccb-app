@@ -221,7 +221,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
           display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff", flex: 1, minWidth: 0,
         }}>
           {other.avatar_url ? (
-            <img src={other.avatar_url} alt={name} style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+            <img loading="lazy" decoding="async" src={other.avatar_url} alt={name} style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
           ) : (
             <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14 }}>{initials}</div>
           )}
@@ -392,7 +392,7 @@ function DmAttachment({ url, type, name, mine }: { url: string; type: string | n
   if (type === "image") {
     return (
       <a href={url} target="_blank" rel="noopener noreferrer">
-        <img src={url} alt={name || "image"} style={{ maxWidth: "100%", maxHeight: 280, borderRadius: 10, display: "block" }} />
+        <img loading="lazy" decoding="async" src={url} alt={name || "image"} style={{ maxWidth: "100%", maxHeight: 280, borderRadius: 10, display: "block" }} />
       </a>
     );
   }

@@ -281,7 +281,7 @@ function CommentCard({
         fontWeight: 700, fontSize: 13, overflow: "hidden",
       }}>
         {comment.user_avatar_url ? (
-          <img src={comment.user_avatar_url} alt={name}
+          <img loading="lazy" decoding="async" src={comment.user_avatar_url} alt={name}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : initials || "?"}
       </div>

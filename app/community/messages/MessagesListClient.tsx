@@ -155,7 +155,7 @@ export default function MessagesListClient({ conversations, currentUserId, callL
                     borderTop: i === 0 ? "none" : `1px solid ${T.borderSoft}`,
                   }}>
                     {c.otherAvatar ? (
-                      <img src={c.otherAvatar} alt="" style={{ width: 46, height: 46, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                      <img loading="lazy" decoding="async" src={c.otherAvatar} alt="" style={{ width: 46, height: 46, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                     ) : (
                       <div style={{ width: 46, height: 46, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 15 }}>{c.isGroup ? "👥" : ini}</div>
                     )}
@@ -212,7 +212,7 @@ export default function MessagesListClient({ conversations, currentUserId, callL
                     padding: "13px 14px", textDecoration: "none", color: T.text,
                   }}>
                     {c.otherAvatar ? (
-                      <img src={c.otherAvatar} alt={name} style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                      <img loading="lazy" decoding="async" src={c.otherAvatar} alt={name} style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                     ) : (
                       <div style={{
                         width: 50, height: 50, borderRadius: "50%", flexShrink: 0,
@@ -299,7 +299,7 @@ export default function MessagesListClient({ conversations, currentUserId, callL
                       color: T.text, cursor: starting ? "wait" : "pointer", fontFamily: F.body,
                     }}>
                       {m.avatar_url ? (
-                        <img src={m.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                        <img loading="lazy" decoding="async" src={m.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                       ) : (
                         <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 15 }}>{ini}</div>
                       )}

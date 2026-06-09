@@ -209,7 +209,7 @@ export default function GroupFilesClient({ group, files }: { group: Group; files
           padding: 20, cursor: "zoom-out",
         }}>
           { }
-          <img src={lightbox} alt=""
+          <img loading="lazy" decoding="async" src={lightbox} alt=""
             style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8 }} />
           <button onClick={(e) => { e.stopPropagation(); setLightbox(null); }} style={{
             position: "absolute", top: 14, right: 14,

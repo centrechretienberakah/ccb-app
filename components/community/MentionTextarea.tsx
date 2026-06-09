@@ -168,7 +168,7 @@ export default function MentionTextarea({
                   fontFamily: "inherit",
                 }}>
                 {m.avatar_url ? (
-                  <img src={m.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
+                  <img loading="lazy" decoding="async" src={m.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
                 ) : (
                   <div style={{
                     width: 28, height: 28, borderRadius: "50%",

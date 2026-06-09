@@ -275,7 +275,7 @@ function VideoRow({ video, category, onEdit, onDelete, onNotify }: {
         background: "#000", borderRadius: 8, overflow: "hidden",
       }}>
         {thumb ? (
-          <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{
             position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
@@ -890,7 +890,7 @@ function YouTubeImportModal({
                   background: "#000", borderRadius: 6, overflow: "hidden",
                 }}>
                   { }
-                  <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   {isLive && (
                     <span style={{
                       position: "absolute", top: 3, left: 3,

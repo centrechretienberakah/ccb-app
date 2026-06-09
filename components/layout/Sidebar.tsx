@@ -85,7 +85,7 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
       <div className="sidebar-logo">
         <div className="sidebar-logo-mark">
           { }
-          <img src="/logo-officiel.png" alt="CCB" className="sidebar-logo-img" />
+          <img loading="lazy" decoding="async" src="/logo-officiel.png" alt="CCB" className="sidebar-logo-img" />
         </div>
         <div>
           <div className="sidebar-logo-title">CCB</div>

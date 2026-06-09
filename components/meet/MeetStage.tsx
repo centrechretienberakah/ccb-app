@@ -482,7 +482,7 @@ function CcbTile({ trackRef }: { trackRef: TrackReferenceOrPlaceholder }) {
       ) : (
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {avatar ? (
-            <img src={avatar} alt={name}
+            <img loading="lazy" decoding="async" src={avatar} alt={name}
               style={{ width: "40%", maxWidth: 110, minWidth: 46, aspectRatio: "1 / 1", borderRadius: "50%", objectFit: "cover", border: `2px solid ${GOLD}66`, boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }} />
           ) : (
             <div style={{
@@ -1158,7 +1158,7 @@ function AddToCallModal({ conversationId, type, callerName, onClose, onFlash }: 
                 background: "transparent", border: "none", borderRadius: 10, cursor: busyId ? "wait" : "pointer", textAlign: "left",
               }}>
                 {c.avatar_url ? (
-                  <img src={c.avatar_url} alt="" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  <img loading="lazy" decoding="async" src={c.avatar_url} alt="" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                 ) : (
                   <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg, ${VIOLET}, #4C1D95)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13 }}>{initials}</div>
                 )}

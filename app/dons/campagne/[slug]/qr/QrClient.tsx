@@ -102,7 +102,7 @@ export default function QrClient({ campaign, targetUrl }: Props) {
             marginBottom: 16,
           }}>
             { }
-            <img src={qrUrl} alt={`QR code vers ${campaign.title}`}
+            <img loading="lazy" decoding="async" src={qrUrl} alt={`QR code vers ${campaign.title}`}
               width={280} height={280}
               style={{ display: "block" }} />
           </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { userTimeZone, setUserTimeZoneLocal, COMMON_TIMEZONES } from "@/lib/time/tz";
+import { isDataSaverEnabled, setDataSaver } from "@/lib/net/dataSaver";
 
 // ─── Types ────────────────────────────────────────────────────
 interface Profile {
@@ -84,6 +85,8 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
 
   // ── Apparence ─────────────────────────────────────────────
   const [isDark, setIsDark] = useState(false);
+  const [dataSaver, setDataSaverOn] = useState(true);
+  useEffect(() => { setDataSaverOn(isDataSaverEnabled()); }, []);
   useEffect(() => {
     const saved = localStorage.getItem("ccb-theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -218,7 +221,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
             {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName || "Avatar"} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "3px solid var(--gold)" }} />
+              <img loading="lazy" decoding="async" src={avatarUrl} alt={displayName || "Avatar"} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "3px solid var(--gold)" }} />
             ) : (
               <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg, var(--gold-dark), var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, color: "#000", border: "3px solid var(--gold)" }}>
                 {initials}
@@ -291,6 +294,16 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
           style={{ marginTop: 16, width: "100%", background: "linear-gradient(135deg, var(--gold-dark), var(--gold))", border: "none", borderRadius: "var(--radius-full)", padding: "12px", color: "#000", fontWeight: 700, fontSize: 14, cursor: savingProfile ? "not-allowed" : "pointer" }}>
           {savingProfile ? "Enregistrement..." : "💾 Enregistrer les modifications"}
         </button>
+      </SectionCard>
+
+      {/* ── Section Données & réseau ── */}
+      <SectionCard title="Données & réseau" icon="📶">
+        <Toggle
+          value={dataSaver}
+          onChange={(v) => { setDataSaverOn(v); setDataSaver(v); }}
+          label="Mode Économie de données"
+          sublabel="Recommandé sur réseau mobile : pas d'autoplay vidéo, images allégées et chargées à la demande, moins de requêtes."
+        />
       </SectionCard>
 
       {/* ── Section Sécurité ── */}

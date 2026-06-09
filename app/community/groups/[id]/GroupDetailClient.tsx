@@ -69,7 +69,7 @@ function fmtClock(iso: string): string {
 function Avatar({ profile, size = 32 }: { profile?: Profile | null; size?: number }) {
   if (profile?.avatar_url) {
     return (
-      <img src={profile.avatar_url} alt={profile.display_name || ""}
+      <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.display_name || ""}
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
     );
   }
@@ -1580,7 +1580,7 @@ export default function GroupDetailClient({
             padding: 20, cursor: "zoom-out",
           }}>
             { }
-            <img src={lightbox} alt=""
+            <img loading="lazy" decoding="async" src={lightbox} alt=""
               style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8 }} />
             <button onClick={(e) => { e.stopPropagation(); setLightbox(null); }} style={{
               position: "absolute", top: 14, right: 14,
@@ -1654,7 +1654,7 @@ function MembersList({ members, currentUserId }: { members: Member[]; currentUse
               textDecoration: "none", padding: "4px 0",
             }}>
               {m.avatar_url ? (
-                <img src={m.avatar_url} alt={m.display_name || ""}
+                <img loading="lazy" decoding="async" src={m.avatar_url} alt={m.display_name || ""}
                   style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
               ) : (
                 <div style={{
@@ -1708,7 +1708,7 @@ function AttachmentRender({ msg, isMine, onImageClick }: {
         cursor: "pointer", borderRadius: 10, overflow: "hidden", maxWidth: 280,
       }}>
         { }
-        <img src={msg.attachment_url} alt={fname}
+        <img loading="lazy" decoding="async" src={msg.attachment_url} alt={fname}
           style={{ width: "100%", height: "auto", display: "block", maxHeight: 280, objectFit: "cover" }} />
       </div>
     );
@@ -1841,7 +1841,7 @@ function MediaModal({ messages, onClose, onImageClick }: { messages: Message[]; 
           ) : tab === "image" ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
               {cur.list.map((m) => (
-                <img key={m.id} src={m.attachment_url!} alt="" onClick={() => onImageClick(m.attachment_url!)} style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: 8, cursor: "pointer" }} />
+                <img loading="lazy" decoding="async" key={m.id} src={m.attachment_url!} alt="" onClick={() => onImageClick(m.attachment_url!)} style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: 8, cursor: "pointer" }} />
               ))}
             </div>
           ) : tab === "video" ? (

@@ -67,7 +67,7 @@ function Avatar({ profile, size = 36, anonymous = false }: { profile?: Profile |
   const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   if (profile?.avatar_url) {
     return (
-      <img src={profile.avatar_url} alt={name}
+      <img loading="lazy" decoding="async" src={profile.avatar_url} alt={name}
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
     );
   }

@@ -460,7 +460,7 @@ function RecoCard({ video }: { video: JdtvVideo }) {
         background: "#000", borderRadius: 6, overflow: "hidden",
       }}>
         {thumb ? (
-          <img src={thumb} alt={video.title}
+          <img loading="lazy" decoding="async" src={thumb} alt={video.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{

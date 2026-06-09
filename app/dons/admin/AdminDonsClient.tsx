@@ -488,7 +488,7 @@ function CampaignRow({ campaign, onEdit, onAdjust, onDelete }: {
         borderRadius: 8, overflow: "hidden",
       }}>
         {campaign.cover_url ? (
-          <img src={campaign.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img loading="lazy" decoding="async" src={campaign.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{
             position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
@@ -730,7 +730,7 @@ function CampaignForm({ initial, onClose, onSaved }: {
               position: "relative",
             }}>
               { }
-              <img src={coverUrl} alt="aperçu" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img loading="lazy" decoding="async" src={coverUrl} alt="aperçu" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               <button type="button" onClick={() => setCoverUrl("")} aria-label="Retirer la couverture"
                 style={{
                   position: "absolute", top: 4, right: 4,

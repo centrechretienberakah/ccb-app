@@ -44,7 +44,7 @@ export default function UpNextCard({ nextVideo, onCancel, countdownSecs = 10 }: 
       }}>
       <div style={{ position: "relative", aspectRatio: "16/9", background: "#000" }}>
         {thumb ? (
-          <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{
             position: "absolute", inset: 0,

@@ -50,7 +50,7 @@ export default function CategoryClient({ category, videos, watchlistIds, progres
         {category.cover_url ? (
           <>
             { }
-            <img src={category.cover_url} alt=""
+            <img loading="lazy" decoding="async" src={category.cover_url} alt=""
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(2px)" }} />
             <div style={{
               position: "absolute", inset: 0,

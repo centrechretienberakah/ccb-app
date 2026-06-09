@@ -51,7 +51,7 @@ export default function CommunitySidebar({ contributors, pinned, members }: Prop
                 <Link key={m.user_id} href={`/community/profil/${m.user_id}`} title={m.display_name || ""}
                   style={{ textDecoration: "none", position: "relative" }}>
                   {m.avatar_url ? (
-                    <img src={m.avatar_url} alt={m.display_name || ""}
+                    <img loading="lazy" decoding="async" src={m.avatar_url} alt={m.display_name || ""}
                       style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: `2px solid ${T.card}` }} />
                   ) : (
                     <div style={{
@@ -98,7 +98,7 @@ export default function CommunitySidebar({ contributors, pinned, members }: Prop
                     color: i < 3 ? T.gold : T.textMuted,
                   }}>{i + 1}</div>
                   {c.avatar_url ? (
-                    <img src={c.avatar_url} alt={c.display_name || ""}
+                    <img loading="lazy" decoding="async" src={c.avatar_url} alt={c.display_name || ""}
                       style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover" }} />
                   ) : (
                     <div style={{

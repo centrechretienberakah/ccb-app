@@ -471,7 +471,7 @@ function Testimonials() {
                   <blockquote>{t.text}</blockquote>
                   <figcaption>
                     { }
-                    <img src={t.img} alt={t.name} />
+                    <img loading="lazy" decoding="async" src={t.img} alt={t.name} />
                     <span><b>{t.name}</b><em>Membre CCB</em></span>
                   </figcaption>
                 </figure>
@@ -501,12 +501,11 @@ function Visionnaire() {
           <div className="ccb-vision-photo">
             <div className="ccb-vision-ring" />
             {imgOk ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src="/rev-elvis-v2.jpg"
                 alt="Rév. Elvis NGUIFFO — Visionnaire du Centre Chrétien Berakah"
                 className="ccb-vision-img"
                 onError={() => setImgOk(false)}
-                loading="lazy"
               />
             ) : (
               <div className="ccb-vision-av">RE</div>

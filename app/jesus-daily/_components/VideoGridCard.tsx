@@ -71,7 +71,7 @@ export default function VideoGridCard({
           boxShadow: hover ? T.shadowMd : T.shadowSoft,
         }}>
           {thumb ? (
-            <img src={thumb} alt={video.title}
+            <img loading="lazy" decoding="async" src={thumb} alt={video.title}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
             <div style={{

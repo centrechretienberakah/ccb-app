@@ -131,7 +131,7 @@ export default function LiveChat({ videoId, initialMessages, isAuth, currentUser
                 fontSize: 11, fontWeight: 700, overflow: "hidden",
               }}>
                 {m.user_avatar_url ? (
-                  <img src={m.user_avatar_url} alt={name}
+                  <img loading="lazy" decoding="async" src={m.user_avatar_url} alt={name}
                     style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : name[0]?.toUpperCase() ?? "?"}
               </div>

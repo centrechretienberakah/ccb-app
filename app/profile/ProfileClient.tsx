@@ -239,7 +239,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
           <div style={{ position: "relative", marginBottom: 16 }}>
             {avatarSrc ? (
-              <img src={avatarSrc} alt="avatar" style={{
+              <img loading="lazy" decoding="async" src={avatarSrc} alt="avatar" style={{
                 width: 100, height: 100, borderRadius: "50%",
                 objectFit: "cover", border: "3px solid var(--gold)",
               }} />

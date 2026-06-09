@@ -174,7 +174,7 @@ export default function RegisterPage() {
         <div className="auth-panel-logo">
           <div className="auth-panel-logo-mark">
             { }
-            <img src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
+            <img loading="lazy" decoding="async" src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
           </div>
           <div>
             <div className="auth-panel-logo-name">CCB</div>
@@ -217,7 +217,7 @@ export default function RegisterPage() {
           <div className="auth-form-header">
             <div className="auth-form-logo-mobile">
               { }
-              <img src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
+              <img loading="lazy" decoding="async" src="/logo-officiel.png" alt="CCB" className="auth-logo-img" />
             </div>
             {step < 3 ? (
               <>

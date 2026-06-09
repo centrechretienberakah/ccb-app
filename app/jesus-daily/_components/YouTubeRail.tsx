@@ -133,7 +133,7 @@ export default function YouTubeRail() {
                   boxShadow: T.shadowSoft,
                 }}>
                   { }
-                  <img src={thumb} alt={it.snippet.title}
+                  <img loading="lazy" decoding="async" src={thumb} alt={it.snippet.title}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                   {/* Badge YouTube */}
                   <span style={{
