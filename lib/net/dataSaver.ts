@@ -102,7 +102,7 @@ export function useNetworkInfo(): { effectiveType: string; slow: boolean; online
 
 export const PRELOAD_KEY = "ccb-preload-wifi";
 const PRELOAD_TS_KEY = "ccb-preload-ts";
-const PRELOAD_PAGES = ["/dashboard", "/community/prions-ensemble", "/plan-biblique", "/bible"];
+const PRELOAD_PAGES = ["/dashboard", "/community/prions-ensemble", "/plan-biblique", "/bible", "/institut"];
 
 export function isPreloadEnabled(): boolean {
   try {

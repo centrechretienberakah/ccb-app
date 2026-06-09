@@ -11,6 +11,7 @@ import TzBeacon from "@/components/system/TzBeacon";
 import OfflineBanner from "@/components/system/OfflineBanner";
 import PreloadOnWifi from "@/components/system/PreloadOnWifi";
 import DataUsageBeacon from "@/components/system/DataUsageBeacon";
+import OfflineWarm from "@/components/system/OfflineWarm";
 import { useHeartbeat } from "@/lib/presence";
 
 function shouldShowShell(pathname: string): boolean {
@@ -87,6 +88,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Remonte l'usage data (agrégat) pour le tableau de bord admin */}
       <DataUsageBeacon />
+
+      {/* Rend consultable hors-ligne chaque page de contenu visitée */}
+      <OfflineWarm />
     </div>
   );
 }

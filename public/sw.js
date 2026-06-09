@@ -7,7 +7,7 @@
 // v5 : ajout d'un cache dédié pour /api/bible (Network-First + fallback offline).
 // Les chapitres déjà lus restent accessibles hors-ligne.
 
-const CACHE_VERSION = "v8";
+const CACHE_VERSION = "v9";
 const CACHE_NAME = "ccb-" + CACHE_VERSION;
 const BIBLE_CACHE = "ccb-bible-" + CACHE_VERSION;
 const PAGE_CACHE = "ccb-pages-" + CACHE_VERSION;
@@ -20,14 +20,16 @@ const OFFLINE_PAGES = ["/dashboard", "/bible", "/plan-biblique", "/community/pri
 function networkFirstPage(request) {
   return fetch(request)
     .then((response) => {
-      if (response && response.ok && response.type === "basic") {
+      // Ne cache que des réponses HTML 200 same-origin NON redirigées
+      // (évite de cacher une redirection vers /auth quand la session manque).
+      if (response && response.ok && response.type === "basic" && !response.redirected) {
         const clone = response.clone();
         caches.open(PAGE_CACHE).then((cache) => cache.put(request, clone));
       }
       return response;
     })
     .catch(() =>
-      caches.match(request).then((cached) =>
+      caches.match(request, { ignoreVary: true }).then((cached) =>
         cached || new Response(
           "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>" +
           "<body style='font-family:sans-serif;text-align:center;padding:48px 24px;color:#444;background:#f6f3ee'>" +
@@ -71,18 +73,24 @@ self.addEventListener("fetch", (event) => {
   // Ignorer tout ce qui n'est pas GET
   if (method !== "GET") return;
 
-  // ❶ Pages HTML
-  if (event.request.destination === "document") {
-    // Contenu spirituel → network-first + repli cache (consultable hors-ligne).
-    // En ligne : toujours la version FRAÎCHE du réseau (déploiements visibles
-    // immédiatement). Hors-ligne : dernière version mise en cache.
-    const path = new URL(url).pathname;
-    if (OFFLINE_PAGES.some((p) => path === p || path.startsWith(p + "/"))) {
+  // ❶ Pages de CONTENU spirituel (offline-first) — network-first + repli cache.
+  //    Couvre les navigations document (chargement complet + repli plein écran
+  //    hors-ligne) ET les fetch() directs de la page (préchargement / réchauffe),
+  //    MAIS PAS les requêtes de données RSC de Next (qui restent réseau pour la
+  //    fraîcheur). En ligne : toujours frais. Hors-ligne : dernière version cache.
+  {
+    const reqUrl = new URL(url);
+    const path = reqUrl.pathname;
+    const isOfflinePage = OFFLINE_PAGES.some((p) => path === p || path.startsWith(p + "/"));
+    const isRSC = event.request.headers.get("RSC") === "1" || reqUrl.searchParams.has("_rsc");
+    if (isOfflinePage && !isRSC) {
       event.respondWith(networkFirstPage(event.request));
+      return;
     }
-    // Autres pages (admin, perso…) → réseau uniquement (comportement actuel).
-    return;
   }
+
+  // Autres pages (admin, perso…) en navigation document → réseau uniquement.
+  if (event.request.destination === "document") return;
 
   // ❷ APIs Supabase → réseau uniquement
   if (url.includes("supabase.co")) return;
