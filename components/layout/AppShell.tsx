@@ -12,6 +12,7 @@ import OfflineBanner from "@/components/system/OfflineBanner";
 import PreloadOnWifi from "@/components/system/PreloadOnWifi";
 import DataUsageBeacon from "@/components/system/DataUsageBeacon";
 import OfflineWarm from "@/components/system/OfflineWarm";
+import BerakahAI from "@/components/ai/BerakahAI";
 import { useHeartbeat } from "@/lib/presence";
 
 function shouldShowShell(pathname: string): boolean {
@@ -91,6 +92,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Rend consultable hors-ligne chaque page de contenu visitée */}
       <OfflineWarm />
+
+      {/* 🤖 BERAKAH AI — assistant pastoral flottant, sur toute l'app */}
+      <BerakahAI />
     </div>
   );
 }
