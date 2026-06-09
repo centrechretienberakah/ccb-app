@@ -8,6 +8,7 @@ import TopBar from "./TopBar";
 import PushNotificationsBanner from "@/components/PushNotificationsBanner";
 import SessionBeacon from "@/components/system/SessionBeacon";
 import TzBeacon from "@/components/system/TzBeacon";
+import OfflineBanner from "@/components/system/OfflineBanner";
 import { useHeartbeat } from "@/lib/presence";
 
 function shouldShowShell(pathname: string): boolean {
@@ -75,6 +76,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Synchronise le fuseau horaire (auto-détection + override manuel) */}
       <TzBeacon />
+
+      {/* Indicateur hors-ligne (offline-first) */}
+      <OfflineBanner />
     </div>
   );
 }

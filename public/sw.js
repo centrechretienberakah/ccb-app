@@ -7,9 +7,37 @@
 // v5 : ajout d'un cache dédié pour /api/bible (Network-First + fallback offline).
 // Les chapitres déjà lus restent accessibles hors-ligne.
 
-const CACHE_VERSION = "v7";
+const CACHE_VERSION = "v8";
 const CACHE_NAME = "ccb-" + CACHE_VERSION;
 const BIBLE_CACHE = "ccb-bible-" + CACHE_VERSION;
+const PAGE_CACHE = "ccb-pages-" + CACHE_VERSION;
+
+// Routes de CONTENU spirituel disponibles hors-ligne (network-first).
+const OFFLINE_PAGES = ["/dashboard", "/bible", "/plan-biblique", "/community/prions-ensemble", "/institut"];
+
+// Network-first : réseau d'abord (fraîcheur des déploiements préservée),
+// repli sur le cache si hors-ligne. Met à jour le cache à chaque succès.
+function networkFirstPage(request) {
+  return fetch(request)
+    .then((response) => {
+      if (response && response.ok && response.type === "basic") {
+        const clone = response.clone();
+        caches.open(PAGE_CACHE).then((cache) => cache.put(request, clone));
+      }
+      return response;
+    })
+    .catch(() =>
+      caches.match(request).then((cached) =>
+        cached || new Response(
+          "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>" +
+          "<body style='font-family:sans-serif;text-align:center;padding:48px 24px;color:#444;background:#f6f3ee'>" +
+          "<div style='font-size:46px'>📴</div><h2>Hors ligne</h2>" +
+          "<p>Cette page n'est pas encore disponible hors connexion.<br>Reconnecte-toi pour la charger une première fois.</p></body>",
+          { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 200 },
+        )
+      )
+    );
+}
 
 // ── INSTALLATION ─────────────────────────────────────────────────────────────
 self.addEventListener("install", () => {
@@ -24,7 +52,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys.map((k) => {
-            if (k !== CACHE_NAME && k !== BIBLE_CACHE) {
+            if (k !== CACHE_NAME && k !== BIBLE_CACHE && k !== PAGE_CACHE) {
               console.log("CCB SW: suppression cache obsolète →", k);
               return caches.delete(k);
             }
@@ -43,9 +71,18 @@ self.addEventListener("fetch", (event) => {
   // Ignorer tout ce qui n'est pas GET
   if (method !== "GET") return;
 
-  // ❶ Pages HTML → JAMAIS de cache. Toujours depuis le réseau.
-  //    Si hors-ligne, laisse le navigateur gérer (erreur réseau normale).
-  if (event.request.destination === "document") return;
+  // ❶ Pages HTML
+  if (event.request.destination === "document") {
+    // Contenu spirituel → network-first + repli cache (consultable hors-ligne).
+    // En ligne : toujours la version FRAÎCHE du réseau (déploiements visibles
+    // immédiatement). Hors-ligne : dernière version mise en cache.
+    const path = new URL(url).pathname;
+    if (OFFLINE_PAGES.some((p) => path === p || path.startsWith(p + "/"))) {
+      event.respondWith(networkFirstPage(event.request));
+    }
+    // Autres pages (admin, perso…) → réseau uniquement (comportement actuel).
+    return;
+  }
 
   // ❷ APIs Supabase → réseau uniquement
   if (url.includes("supabase.co")) return;
