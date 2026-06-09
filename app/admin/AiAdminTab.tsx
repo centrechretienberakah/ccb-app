@@ -24,6 +24,7 @@ export default function AiAdminTab() {
   const [msg, setMsg] = useState<string | null>(null);
   const [bySource, setBySource] = useState<Record<string, number> | null>(null);
   const [stats, setStats] = useState<AiStats | null>(null);
+  const [conns, setConns] = useState<Record<string, boolean> | null>(null);
 
   const loadCount = async () => {
     try {
@@ -39,7 +40,13 @@ export default function AiAdminTab() {
       if (res.ok) setStats(await res.json());
     } catch { /* noop */ }
   };
-  useEffect(() => { loadCount(); loadStats(); }, []);
+  const loadConns = async () => {
+    try {
+      const res = await fetch("/api/admin/ai-connections");
+      if (res.ok) setConns(await res.json());
+    } catch { /* noop */ }
+  };
+  useEffect(() => { loadCount(); loadStats(); loadConns(); }, []);
 
   const reindex = async () => {
     setLoading(true); setMsg(null); setBySource(null);
@@ -153,6 +160,35 @@ export default function AiAdminTab() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* ── Connexions externes (réseaux sociaux & web) ── */}
+      <div style={card}>
+        <h3 style={{ margin: "0 0 .8rem", fontSize: "1.05rem" }}>🌐 Connexions externes</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: ".5rem" }}>
+          {[
+            { key: "youtube", label: "YouTube — JESUS DAILY TV", env: "YOUTUBE_API_KEY + YOUTUBE_CHANNEL_ID" },
+            { key: "web", label: "Recherche web", env: "BRAVE_API_KEY (sinon repli DuckDuckGo limité)" },
+            { key: "facebook", label: "Facebook CCB", env: "FACEBOOK_PAGE_ID + FACEBOOK_PAGE_ACCESS_TOKEN" },
+            { key: "instagram", label: "Instagram (à venir)", env: "INSTAGRAM_ACCESS_TOKEN" },
+            { key: "tiktok", label: "TikTok (à venir)", env: "TIKTOK_ACCESS_TOKEN" },
+          ].map((c) => {
+            const on = !!conns?.[c.key];
+            return (
+              <div key={c.key} style={{ display: "flex", alignItems: "center", gap: ".6rem", padding: ".55rem .75rem", background: "var(--surface)", borderRadius: 10, border: "1px solid var(--border)" }}>
+                <span style={{ fontSize: ".95rem" }}>{on ? "✅" : "⚪"}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--text-primary)" }}>{c.label}</div>
+                  <div style={{ fontSize: ".7rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><code>{c.env}</code></div>
+                </div>
+                <span style={{ fontSize: ".72rem", fontWeight: 700, color: on ? "#16a34a" : "var(--text-muted)", flexShrink: 0 }}>{on ? "Connecté" : "Non configuré"}</span>
+              </div>
+            );
+          })}
+        </div>
+        <p style={{ fontSize: ".75rem", color: "var(--text-muted)", marginTop: ".8rem", lineHeight: 1.55 }}>
+          Définis ces variables d&apos;environnement dans Vercel pour activer. BERAKAH AI les utilise automatiquement quand un membre demande p. ex. « la dernière vidéo » ou « cherche sur internet ». Sans clé : il répond normalement, sans ces sources.
+        </p>
       </div>
 
       <div style={{ ...card, fontSize: ".82rem", color: "var(--text-muted)", lineHeight: 1.6 }}>

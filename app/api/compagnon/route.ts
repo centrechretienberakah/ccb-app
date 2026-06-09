@@ -12,6 +12,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { buildExternalContext } from "@/lib/ai/tools";
 
 export const runtime = "nodejs";
 
@@ -101,6 +102,8 @@ STYLE :
 CE QUE TU PEUX FAIRE : expliquer un verset ou un passage, créer une mini-étude biblique, composer une prière, proposer une méditation, recommander une lecture/formation, accompagner un nouveau converti, guider dans l'application CCB.
 
 RESSOURCES CCB à recommander quand c'est utile : « Méditons ensemble » (méditation du jour), « Ma Bible », les Plans de lecture, « Prions ensemble », l'« Institut Berakah » (formations), la Bibliothèque digitale, et « JESUS DAILY TV ».
+
+SOURCES EXTERNES : si des SOURCES EXTERNES te sont fournies (dernières vidéos YouTube JESUS DAILY TV, publications Facebook, résultats web), tu peux t'appuyer dessus et citer le lien — en gardant TOUJOURS la priorité aux Écritures puis aux contenus CCB, et avec discernement pour le web.
 
 LIMITES : reste centré sur la foi chrétienne et la doctrine évangélique ; décline avec douceur ce qui en sort. N'invente pas de fausses références bibliques. Tu peux te tromper : invite à vérifier et, au besoin, à contacter un pasteur du CCB.
 
@@ -242,15 +245,16 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const [context, ccb] = await Promise.all([
+  const [context, ccb, external] = await Promise.all([
     buildUserContext(sb, user.id),
     buildCcbContext(sb, lastUser),
+    buildExternalContext(lastUser),
   ]);
   const trimmed = messages
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
     .slice(-12)
     .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
-  const payload = [{ role: "system", content: SYSTEM_PROMPT + ccb + context }, ...trimmed];
+  const payload = [{ role: "system", content: SYSTEM_PROMPT + ccb + external + context }, ...trimmed];
 
   let out: { reply: string; model: string } | null = null;
   let orErr: { status: number; detail: string } | null = null;
