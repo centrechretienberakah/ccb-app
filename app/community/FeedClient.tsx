@@ -128,7 +128,7 @@ const clampStyle: React.CSSProperties = { display: "-webkit-box", WebkitLineClam
 function pillStyle(active: boolean): React.CSSProperties {
   return {
     flexShrink: 0, whiteSpace: "nowrap", cursor: "pointer", outline: "none",
-    borderRadius: 999, padding: "7px 14px", fontSize: 12.5, fontWeight: active ? 800 : 600,
+    borderRadius: 999, padding: "5px 12px", fontSize: 12, fontWeight: active ? 800 : 600,
     fontFamily: "inherit",
     border: `1px solid ${active ? "#5B21B6" : "var(--border)"}`,
     background: active ? "#5B21B6" : "var(--card-bg)",
@@ -288,10 +288,10 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
   if (!open) return (
     <>
       <style>{`
-        .ccb-composer-closed { padding: 7px 12px; gap: 9px; margin-bottom: 8px; }
+        .ccb-composer-closed { padding: 7px 12px; gap: 9px; margin-bottom: 6px; }
         .ccb-composer-closed .ccb-composer-text { font-size: 13px; }
         @media (min-width: 768px) {
-          .ccb-composer-closed { padding: 9px 14px; gap: 11px; margin-bottom: 10px; }
+          .ccb-composer-closed { padding: 9px 14px; gap: 11px; margin-bottom: 8px; }
           .ccb-composer-closed .ccb-composer-text { font-size: 14px; white-space: normal; }
         }
       `}</style>
@@ -1463,7 +1463,7 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       <PostCreator categories={categories} currentUserProfile={currentUserProfile} currentUserId={currentUserId} members={members} onPostCreated={handlePostCreated} />
 
       {/* Catégories — navigation segmentée (pills scrollables) */}
-      <div className="ccb-cat-nav" style={{ display: "flex", gap: 7, overflowX: "auto", marginBottom: 8, paddingBottom: 2 }}>
+      <div className="ccb-cat-nav" style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 6, paddingBottom: 2 }}>
         <button onClick={() => setFilterKind("")} className="ccb-pill" style={pillStyle(filterKind === "")}>✦ Tous</button>
         {POST_KINDS.map((k) => (
           <button key={k.id} onClick={() => setFilterKind(filterKind === k.id ? "" : k.id)} className="ccb-pill" style={pillStyle(filterKind === k.id)}>

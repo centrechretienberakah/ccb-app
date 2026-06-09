@@ -93,13 +93,13 @@ export default function CommunityClient({
         .ccb-community-grid {
           max-width: 680px;
           margin: 0 auto;
-          padding: 8px 16px 40px;
+          padding: 6px 16px 40px;
         }
         .ccb-community-sidebar { display: none; }
         @media (min-width: 768px) {
           .ccb-community-grid {
             max-width: 720px;
-            padding: 12px 20px 48px;
+            padding: 8px 20px 48px;
           }
         }
         @media (min-width: 1024px) {
