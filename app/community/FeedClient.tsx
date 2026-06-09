@@ -946,6 +946,64 @@ function AdminCategoryManager({ categories, onCategoriesChange }: { categories: 
   );
 }
 
+// ─── Skeleton de chargement (perçu plus rapide sur mobile) ───
+function FeedSkeleton() {
+  return (
+    <div>
+      {[0, 1, 2].map((i) => (
+        <div key={i} style={{ background: "var(--card-bg)", border: "1px solid var(--border-subtle)", borderRadius: 18, marginBottom: 14, overflow: "hidden" }}>
+          <div style={{ padding: "13px 15px" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+              <div className="ccb-shimmer" style={{ width: 42, height: 42, borderRadius: "50%" }} />
+              <div style={{ flex: 1 }}>
+                <div className="ccb-shimmer" style={{ width: "45%", height: 12, borderRadius: 6, marginBottom: 6 }} />
+                <div className="ccb-shimmer" style={{ width: "30%", height: 10, borderRadius: 6 }} />
+              </div>
+            </div>
+            <div className="ccb-shimmer" style={{ width: "100%", height: 118, borderRadius: 12, marginBottom: 12 }} />
+            <div className="ccb-shimmer" style={{ width: "70%", height: 14, borderRadius: 6, marginBottom: 8 }} />
+            <div className="ccb-shimmer" style={{ width: "100%", height: 11, borderRadius: 6, marginBottom: 6 }} />
+            <div className="ccb-shimmer" style={{ width: "85%", height: 11, borderRadius: 6 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Bandeau « Tendances » (découverte horizontale, mobile-friendly) ───
+function TrendingStrip({ posts, onOpen }: { posts: Post[]; onOpen: (id: string) => void }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8, padding: "0 2px" }}>
+        <span style={{ fontSize: 15 }}>🔥</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", letterSpacing: 0.2 }}>Tendances cette semaine</span>
+      </div>
+      <div className="ccb-trend-strip" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+        {posts.map((p) => {
+          const kd = getPostKindDef(p.post_kind);
+          const isGold = kd.color === "#D4AF37";
+          const eng = (p.likeCount || 0) + (p.amenCount || 0) + (p.fireCount || 0) + (p.comments?.length || 0);
+          return (
+            <button key={p.id} onClick={() => onOpen(p.id)} className="ccb-trend-card" style={{ flexShrink: 0, width: 172, textAlign: "left", background: "var(--card-bg)", border: "1px solid var(--border-subtle)", borderRadius: 14, overflow: "hidden", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+              <div style={{ height: 54, background: `linear-gradient(135deg, ${kd.color}, ${isGold ? "#A8862B" : "#4C1D95"})`, display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "0 10px" }}>
+                <span style={{ fontSize: 30, opacity: 0.9 }}>{kd.emoji}</span>
+              </div>
+              <div style={{ padding: "8px 10px 10px" }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 32 }}>{p.title || p.content.slice(0, 60)}</div>
+                <div style={{ fontSize: 10.5, color: "var(--text-muted)", marginTop: 5, display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{p.user_profiles?.display_name || "Membre"}</span>
+                  <span style={{ color: kd.color, fontWeight: 700, flexShrink: 0 }}>🔥 {eng}</span>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── FeedClient (export principal) ───────────────────────────
 export default function FeedClient({ posts: initialPosts, categories: initialCategories, currentUserId, currentUserProfile, isAdmin, userLikedPostIds, userBookmarkedPostIds, userVotes, members = [] }: {
   posts: Post[]; categories: Category[]; currentUserId: string; currentUserProfile: CurrentUserProfile | null;
@@ -967,6 +1025,9 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => new Set(userBookmarkedPostIds ?? []));
   const [amenIds, setAmenIds] = useState<Set<string>>(new Set());
   const [fireIds, setFireIds] = useState<Set<string>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(8);
+  const [loadedOnce, setLoadedOnce] = useState(initialPosts.length > 0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [myVotes, setMyVotes] = useState<Record<string, number>>(() => {
     const cache = getClientCache();
     return cache && Object.keys(cache.votes).length > 0 ? cache.votes : userVotes;
@@ -1079,9 +1140,11 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         setMyVotes(voted);
         setAmenIds(amenSet);
         setFireIds(fireSet);
+        setLoadedOnce(true);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error("[CCB Feed] loadPosts exception:", msg);
+        setLoadedOnce(true);
       }
     }
 
@@ -1156,6 +1219,41 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       const scoreB = (b.likeCount || 0) * 2 + (b.comments?.length || 0);
       return scoreB - scoreA;
     });
+  }
+
+  // Rendu progressif : remet le compteur à 8 quand filtre / recherche / tri change.
+  useEffect(() => { setVisibleCount(8); }, [filterKind, searchQuery, sortMode]);
+
+  // Infinite scroll : +8 posts quand le sentinel approche (perf mobile).
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || visibleCount >= filtered.length) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) setVisibleCount((c) => c + 8);
+    }, { rootMargin: "700px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visibleCount, filtered.length]);
+
+  // Tendances de la semaine (par engagement) — sur le feed par défaut.
+  const showTrending = !searchQuery.trim() && !filterKind && sortMode === "recent";
+  const weekAgoMs = Date.now() - 7 * 86400000;
+  const trending = showTrending
+    ? [...posts]
+        .filter((p) => new Date(p.created_at).getTime() > weekAgoMs)
+        .map((p) => ({ p, score: (p.likeCount || 0) + (p.amenCount || 0) + (p.fireCount || 0) + (p.comments?.length || 0) * 2 }))
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8)
+        .map((x) => x.p)
+    : [];
+
+  function goToPost(id: string) {
+    const idx = filtered.findIndex((p) => p.id === id);
+    if (idx >= 0 && idx >= visibleCount) setVisibleCount(idx + 3);
+    setTimeout(() => {
+      document.getElementById(`post-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 70);
   }
 
   function handlePostCreated(post: Post) {
@@ -1348,6 +1446,16 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
           .ccb-react { padding: 6px 7px; gap: 3px; font-size: 12.5px; }
           .ccb-icon-btn { padding: 6px 6px; }
         }
+        /* Skeleton shimmer */
+        .ccb-shimmer { background: linear-gradient(90deg, var(--surface,#f0ece3) 25%, var(--page-bg,#f8f5f1) 50%, var(--surface,#f0ece3) 75%); background-size: 200% 100%; animation: ccb-shimmer 1.4s ease-in-out infinite; }
+        @keyframes ccb-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+        @media (prefers-reduced-motion: reduce) { .ccb-shimmer { animation: none; } }
+        /* Bandeau Tendances : scroll horizontal discret + snap */
+        .ccb-trend-strip { scrollbar-width: none; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+        .ccb-trend-strip::-webkit-scrollbar { display: none; }
+        .ccb-trend-card { scroll-snap-align: start; transition: transform .12s ease, box-shadow .12s ease; }
+        .ccb-trend-card:hover { box-shadow: 0 6px 18px rgba(91,33,182,0.12); }
+        .ccb-trend-card:active { transform: scale(0.97); }
       `}</style>
 
       {/* Admin: gérer catégories */}
@@ -1406,40 +1514,57 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         </button>
       </div>
 
+      {/* Tendances (découverte) */}
+      {showTrending && trending.length >= 3 && <TrendingStrip posts={trending} onOpen={goToPost} />}
+
       {/* Liste des posts */}
       {filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
-          <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Aucun post pour l&apos;instant. Soyez le premier à partager !</div>
-        </div>
+        !loadedOnce ? (
+          <FeedSkeleton />
+        ) : (
+          <div style={{ textAlign: "center", padding: "60px 20px" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>{searchQuery || filterKind ? "🔍" : "📝"}</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 14 }}>{searchQuery || filterKind ? "Aucun résultat pour ce filtre." : "Aucun post pour l'instant. Soyez le premier à partager !"}</div>
+          </div>
+        )
       ) : (
-        filtered.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            currentUserId={currentUserId}
-            isAdmin={isAdmin}
-            isLiked={likedIds.has(post.id)}
-            isBookmarked={bookmarkedIds.has(post.id)}
-            hasAmen={amenIds.has(post.id)}
-            hasFire={fireIds.has(post.id)}
-            members={members}
-            userVote={myVotes[post.id]}
-            onLike={() => handleLike(post.id)}
-            onAmen={() => handleReaction(post.id, "amen")}
-            onFire={() => handleReaction(post.id, "fire")}
-            onComment={(text) => handleComment(post.id, text)}
-            onCommentLike={(commentId) => handleCommentLike(post.id, commentId)}
-            onReply={(parentId, text) => handleComment(post.id, text, parentId)}
-            onDelete={() => handleDelete(post.id)}
-            onPin={() => handlePin(post.id)}
-            onVote={(idx) => handleVote(post.id, idx)}
-            onBookmark={() => handleBookmark(post.id)}
-            onReport={() => handleReport(post.id)}
-            onShare={() => handleShare(post.id)}
-            onEdit={(t, c) => handleEditPost(post.id, t, c)}
-          />
-        ))
+        <>
+          {filtered.slice(0, visibleCount).map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+              isLiked={likedIds.has(post.id)}
+              isBookmarked={bookmarkedIds.has(post.id)}
+              hasAmen={amenIds.has(post.id)}
+              hasFire={fireIds.has(post.id)}
+              members={members}
+              userVote={myVotes[post.id]}
+              onLike={() => handleLike(post.id)}
+              onAmen={() => handleReaction(post.id, "amen")}
+              onFire={() => handleReaction(post.id, "fire")}
+              onComment={(text) => handleComment(post.id, text)}
+              onCommentLike={(commentId) => handleCommentLike(post.id, commentId)}
+              onReply={(parentId, text) => handleComment(post.id, text, parentId)}
+              onDelete={() => handleDelete(post.id)}
+              onPin={() => handlePin(post.id)}
+              onVote={(idx) => handleVote(post.id, idx)}
+              onBookmark={() => handleBookmark(post.id)}
+              onReport={() => handleReport(post.id)}
+              onShare={() => handleShare(post.id)}
+              onEdit={(t, c) => handleEditPost(post.id, t, c)}
+            />
+          ))}
+          {visibleCount < filtered.length && (
+            <>
+              <div ref={sentinelRef} style={{ height: 1 }} aria-hidden />
+              <div style={{ textAlign: "center", padding: "6px 0 18px" }}>
+                <span className="ccb-shimmer" style={{ display: "inline-block", width: 90, height: 8, borderRadius: 6 }} />
+              </div>
+            </>
+          )}
+        </>
       )}
     </div>
   );
