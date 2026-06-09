@@ -34,6 +34,8 @@ export interface Post {
   user_profiles?: { display_name?: string | null; avatar_url?: string | null; role?: string | null } | null;
   post_categories?: { name: string; icon: string; color: string };
   likeCount: number;
+  amenCount?: number;
+  fireCount?: number;
   comments: Comment[];
   voteResults: number[];
   bookmarked?: boolean;
@@ -511,11 +513,14 @@ function ContentWithMentions({ content, members }: { content: string; members: M
 }
 
 // ─── PostCard ─────────────────────────────────────────────────
-function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members, userVote, onLike, onComment, onCommentLike, onReply, onDelete, onPin, onVote, onBookmark, onReport, onShare, onEdit }: {
+function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, hasAmen, hasFire, members, userVote, onLike, onAmen, onFire, onComment, onCommentLike, onReply, onDelete, onPin, onVote, onBookmark, onReport, onShare, onEdit }: {
   post: Post; currentUserId: string; isAdmin: boolean; isLiked: boolean; isBookmarked: boolean;
+  hasAmen: boolean; hasFire: boolean;
   members: MemberLookup[];
   userVote?: number;
   onLike: () => void;
+  onAmen: () => void;
+  onFire: () => void;
   onComment: (text: string, parentId?: string) => void;
   onCommentLike: (commentId: string) => void;
   onReply: (parentId: string, text: string) => void;
@@ -766,24 +771,29 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
           </div>
         )}
 
-        {/* Barre d'engagement */}
-        <div style={{ display: "flex", alignItems: "center", gap: 2, paddingTop: 8, paddingBottom: 10, borderTop: "1px solid var(--border-subtle)" }}>
+        {/* Barre d'engagement — multi-réactions, compacte (mobile-first) */}
+        <div className="ccb-actionbar" style={{ display: "flex", alignItems: "center", gap: 1, paddingTop: 8, paddingBottom: 10, borderTop: "1px solid var(--border-subtle)" }}>
           <button onClick={handleLike} title="J'aime" className="ccb-react" style={{ color: localLike ? "#E0245E" : "var(--text-muted)", background: localLike ? "rgba(224,36,94,0.09)" : "transparent" }}>
             <span style={{ fontSize: 17 }}>{localLike ? "❤️" : "🤍"}</span>
-            <span style={{ fontWeight: localLike ? 800 : 600 }}>{localLikeCount > 0 ? localLikeCount : "J'aime"}</span>
+            {localLikeCount > 0 && <span style={{ fontWeight: localLike ? 800 : 600 }}>{localLikeCount}</span>}
+          </button>
+          <button onClick={onAmen} title="Amen" className="ccb-react" style={{ color: hasAmen ? "#5B21B6" : "var(--text-muted)", background: hasAmen ? "rgba(91,33,182,0.10)" : "transparent" }}>
+            <span style={{ fontSize: 17, filter: hasAmen ? "none" : "grayscale(0.5) opacity(0.85)" }}>🙏</span>
+            {(post.amenCount ?? 0) > 0 && <span style={{ fontWeight: hasAmen ? 800 : 600 }}>{post.amenCount}</span>}
+          </button>
+          <button onClick={onFire} title="Encouragé" className="ccb-react" style={{ color: hasFire ? "#E8590C" : "var(--text-muted)", background: hasFire ? "rgba(232,89,12,0.10)" : "transparent" }}>
+            <span style={{ fontSize: 17, filter: hasFire ? "none" : "grayscale(0.5) opacity(0.85)" }}>🔥</span>
+            {(post.fireCount ?? 0) > 0 && <span style={{ fontWeight: hasFire ? 800 : 600 }}>{post.fireCount}</span>}
           </button>
           <button onClick={() => setShowComments((v) => !v)} title="Commenter" className="ccb-react" style={{ color: showComments ? "#5B21B6" : "var(--text-muted)" }}>
             <span style={{ fontSize: 16 }}>💬</span>
-            <span style={{ fontWeight: 600 }}>{post.comments.length > 0 ? post.comments.length : "Commenter"}</span>
-          </button>
-          <button onClick={onShare} title="Partager" className="ccb-react" style={{ color: "var(--text-muted)" }}>
-            <span style={{ fontSize: 16 }}>🔁</span>
-            <span style={{ fontWeight: 600 }}>Partager</span>
+            {post.comments.length > 0 && <span style={{ fontWeight: 600 }}>{post.comments.length}</span>}
           </button>
 
           <div style={{ flex: 1 }} />
 
-          <button onClick={onBookmark} title={isBookmarked ? "Enregistré" : "Enregistrer"} className="ccb-icon-btn" style={{ color: isBookmarked ? "#D4AF37" : "var(--text-muted)", fontSize: 17, filter: isBookmarked ? "none" : "grayscale(1) opacity(0.7)" }}>🔖</button>
+          <button onClick={onShare} title="Partager" className="ccb-icon-btn"><span style={{ fontSize: 15 }}>🔁</span></button>
+          <button onClick={onBookmark} title={isBookmarked ? "Enregistré" : "Enregistrer"} className="ccb-icon-btn" style={{ color: isBookmarked ? "#D4AF37" : "var(--text-muted)", filter: isBookmarked ? "none" : "grayscale(1) opacity(0.7)" }}>🔖</button>
           {!isMyPost && (
             <button onClick={onReport} title="Signaler" className="ccb-icon-btn">⚠️</button>
           )}
@@ -955,6 +965,8 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     return cache && cache.likedIds.size > 0 ? cache.likedIds : new Set(userLikedPostIds);
   });
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => new Set(userBookmarkedPostIds ?? []));
+  const [amenIds, setAmenIds] = useState<Set<string>>(new Set());
+  const [fireIds, setFireIds] = useState<Set<string>>(new Set());
   const [myVotes, setMyVotes] = useState<Record<string, number>>(() => {
     const cache = getClientCache();
     return cache && Object.keys(cache.votes).length > 0 ? cache.votes : userVotes;
@@ -1033,10 +1045,25 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
           if (v.user_id === uid) voted[v.post_id] = v.option_index;
         }
 
+        // Multi-réactions (amen / fire) — best-effort (table post_reactions, v65)
+        const amenSet = new Set<string>(); const fireSet = new Set<string>();
+        const amenCountMap: Record<string, number> = {}; const fireCountMap: Record<string, number> = {};
+        try {
+          const { data: rx, error: rxErr } = await supabase.from("post_reactions").select("post_id, user_id, reaction");
+          if (!rxErr && rx) {
+            for (const r of (rx as { post_id: string; user_id: string; reaction: string }[])) {
+              if (r.reaction === "amen") { amenCountMap[r.post_id] = (amenCountMap[r.post_id] || 0) + 1; if (r.user_id === uid) amenSet.add(r.post_id); }
+              else if (r.reaction === "fire") { fireCountMap[r.post_id] = (fireCountMap[r.post_id] || 0) + 1; if (r.user_id === uid) fireSet.add(r.post_id); }
+            }
+          }
+        } catch { /* table absente → pas de multi-réactions */ }
+
         const freshPosts = (pd as unknown as Post[]).map((p) => ({
           ...p,
           user_profiles: profilesMap[p.user_id] || undefined,
           likeCount: lm[p.id] || 0,
+          amenCount: amenCountMap[p.id] || 0,
+          fireCount: fireCountMap[p.id] || 0,
           comments: cm2[p.id] || [], voteResults: vm[p.id] || [],
         }));
 
@@ -1050,6 +1077,8 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         });
         setLikedIds(liked);
         setMyVotes(voted);
+        setAmenIds(amenSet);
+        setFireIds(fireSet);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error("[CCB Feed] loadPosts exception:", msg);
@@ -1147,6 +1176,27 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     } else {
       await supabase.from("post_likes").insert({ post_id: postId, user_id: currentUserId });
       setLikedIds((s) => new Set([...s, postId]));
+    }
+  }
+
+  async function handleReaction(postId: string, reaction: "amen" | "fire") {
+    const supabase = createClient();
+    const set = reaction === "amen" ? amenIds : fireIds;
+    const setSet = reaction === "amen" ? setAmenIds : setFireIds;
+    const has = set.has(postId);
+    const delta = has ? -1 : 1;
+    // Optimiste : compteur + appartenance
+    setPosts((prev) => prev.map((p) => {
+      if (p.id !== postId) return p;
+      return reaction === "amen"
+        ? { ...p, amenCount: Math.max(0, (p.amenCount ?? 0) + delta) }
+        : { ...p, fireCount: Math.max(0, (p.fireCount ?? 0) + delta) };
+    }));
+    setSet((s) => { const n = new Set(s); if (has) n.delete(postId); else n.add(postId); return n; });
+    if (has) {
+      await supabase.from("post_reactions").delete().eq("post_id", postId).eq("user_id", currentUserId).eq("reaction", reaction);
+    } else {
+      await supabase.from("post_reactions").upsert({ post_id: postId, user_id: currentUserId, reaction }, { onConflict: "post_id,user_id,reaction" });
     }
   }
 
@@ -1291,6 +1341,13 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         .ccb-post { animation: ccb-post-in .32s ease both; }
         @keyframes ccb-post-in { from { opacity:0; transform: translateY(7px);} to { opacity:1; transform:none; } }
         @media (prefers-reduced-motion: reduce) { .ccb-post { animation: none; } }
+        /* Barre d'actions : ne casse jamais la mise en page (scroll horizontal discret en secours) */
+        .ccb-actionbar { overflow-x: auto; scrollbar-width: none; }
+        .ccb-actionbar::-webkit-scrollbar { display: none; }
+        @media (max-width: 420px) {
+          .ccb-react { padding: 6px 7px; gap: 3px; font-size: 12.5px; }
+          .ccb-icon-btn { padding: 6px 6px; }
+        }
       `}</style>
 
       {/* Admin: gérer catégories */}
@@ -1364,9 +1421,13 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
             isAdmin={isAdmin}
             isLiked={likedIds.has(post.id)}
             isBookmarked={bookmarkedIds.has(post.id)}
+            hasAmen={amenIds.has(post.id)}
+            hasFire={fireIds.has(post.id)}
             members={members}
             userVote={myVotes[post.id]}
             onLike={() => handleLike(post.id)}
+            onAmen={() => handleReaction(post.id, "amen")}
+            onFire={() => handleReaction(post.id, "fire")}
             onComment={(text) => handleComment(post.id, text)}
             onCommentLike={(commentId) => handleCommentLike(post.id, commentId)}
             onReply={(parentId, text) => handleComment(post.id, text, parentId)}
