@@ -66,19 +66,6 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
       {/* Méditons ensemble — carte premium (juste sous le message de bienvenue) */}
       <DevotionHomeCard devotion={devotion} userId={userId} initialRead={devotionRead} />
 
-      {/* Compagnon Biblique IA — carte premium mise en avant */}
-      <div className="dashboard-section" style={{ paddingTop: 4, paddingBottom: 0 }}>
-        <Link href="/compagnon" className="dashboard-ai-card">
-          <div className="dashboard-ai-glow" />
-          <div className="dashboard-ai-icon">✨</div>
-          <div className="dashboard-ai-text">
-            <div className="dashboard-ai-title">Compagnon Biblique IA</div>
-            <div className="dashboard-ai-sub">Explique un verset, compose une prière, médite avec toi</div>
-          </div>
-          <span className="dashboard-ai-cta">Discuter →</span>
-        </Link>
-      </div>
-
       {/* Continuer mon parcours */}
       <div className="dashboard-section">
         <div className="dashboard-section-header">

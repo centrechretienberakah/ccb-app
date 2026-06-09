@@ -115,16 +115,6 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
         </button>
 
         <Link
-          href="/compagnon"
-          className="topbar-icon-btn"
-          aria-label="Compagnon Biblique IA"
-          title="Compagnon Biblique IA"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          <span style={{ fontSize: 18 }} aria-hidden="true">✨</span>
-        </Link>
-
-        <Link
           href="/notifications"
           className="topbar-icon-btn topbar-notif-btn"
           aria-label="Notifications"

@@ -12,7 +12,7 @@ import {
 // Ordre aligné sur l'accès rapide du Dashboard
 const ALL_ITEMS = [
   { href: "/dashboard",     label: "Accueil",           emoji: "🏠" },
-  { href: "/compagnon",     label: "Compagnon IA",      emoji: "✨" },
+  // BERAKAH AI est accessible partout via le bouton flottant 🤖 (plus de page dédiée).
   // "Méditons ensemble" est affiché directement sur l'accueil (carte du jour)
   // — retiré du menu principal pour éviter le doublon.
   { href: "/bible",         label: "Ma Bible",          emoji: "📖" },
