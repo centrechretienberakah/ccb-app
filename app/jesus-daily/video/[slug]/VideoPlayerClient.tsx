@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useDataSaver } from "@/lib/net/dataSaver";
 import {
   JDTV_THEME as T,
   JDTV_FONTS as F,
@@ -60,6 +61,11 @@ export default function VideoPlayerClient({
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [startAt, setStartAt] = useState<number>(0); // sec, read from ?t=
   const [currentTime, setCurrentTime] = useState<number>(0);
+
+  // Mode Économie de données : ne charge pas le lecteur tant qu'on n'a pas appuyé.
+  const dataSaver = useDataSaver();
+  const [playStarted, setPlayStarted] = useState(false);
+  const poster = video.thumbnail_url || getYoutubeThumbnail(video.video_url);
 
   // Parse ?t= on mount
   useEffect(() => {
@@ -214,6 +220,21 @@ export default function VideoPlayerClient({
         }}>
           {isPremiumLocked ? (
             <PremiumLock />
+          ) : dataSaver && !playStarted ? (
+            <button
+              type="button"
+              onClick={() => setPlayStarted(true)}
+              aria-label="Charger et lire la vidéo"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", padding: 0, cursor: "pointer", background: "#000" }}
+            >
+              {poster && (
+                <img loading="lazy" decoding="async" src={poster} alt={video.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.65 }} />
+              )}
+              <span style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
+                <span style={{ width: 66, height: 66, borderRadius: "50%", background: "rgba(0,0,0,0.55)", border: "2px solid rgba(255,255,255,0.85)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 26, paddingLeft: 4 }}>▶</span>
+                <span style={{ background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12, fontWeight: 700, padding: "5px 13px", borderRadius: 999 }}>📉 Mode Éco — appuyez pour charger la vidéo</span>
+              </span>
+            </button>
           ) : embed?.provider === "youtube" ? (
             <iframe
               ref={iframeRef}
