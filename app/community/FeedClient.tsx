@@ -31,7 +31,7 @@ export interface Post {
   link_title?: string; link_description?: string;
   poll_options?: { text: string; correct?: boolean }[];
   is_pinned: boolean; created_at: string;
-  user_profiles?: { display_name?: string | null; avatar_url?: string | null } | null;
+  user_profiles?: { display_name?: string | null; avatar_url?: string | null; role?: string | null } | null;
   post_categories?: { name: string; icon: string; color: string };
   likeCount: number;
   comments: Comment[];
@@ -86,6 +86,41 @@ function Avatar({ profile, size = 40 }: { profile?: { display_name?: string | nu
     <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, var(--gold-dark), var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.38, fontWeight: 700, color: "#000", flexShrink: 0 }}>{initials}</div>
   );
 }
+
+// ─── Badge de rôle (Pasteur / Leader / Mentor / Modérateur) ───
+const ROLE_BADGES: Record<string, { label: string; bg: string; color: string; icon: string }> = {
+  owner:          { label: "Pasteur",     bg: "linear-gradient(135deg,#D4AF37,#A8862B)", color: "#1a0a00", icon: "👑" },
+  admin:          { label: "Responsable", bg: "linear-gradient(135deg,#5B21B6,#4C1D95)", color: "#fff",    icon: "⭐" },
+  leader:         { label: "Leader",      bg: "rgba(91,33,182,0.12)",                    color: "#5B21B6", icon: "🕊️" },
+  moderator:      { label: "Modérateur",  bg: "rgba(91,33,182,0.12)",                    color: "#5B21B6", icon: "🛡️" },
+  premium_member: { label: "Mentor",      bg: "rgba(212,175,55,0.16)",                   color: "#A8862B", icon: "✦" },
+};
+function RoleBadge({ role }: { role?: string | null }) {
+  const b = role ? ROLE_BADGES[role] : null;
+  if (!b) return null; // membre standard → pas de badge (réduit le bruit)
+  return (
+    <span style={{ background: b.bg, color: b.color, fontSize: 9.5, fontWeight: 800, padding: "2px 7px", borderRadius: 999, letterSpacing: 0.2, display: "inline-flex", alignItems: "center", gap: 3, lineHeight: 1.5, flexShrink: 0 }}>
+      <span style={{ fontSize: 10 }}>{b.icon}</span>{b.label}
+    </span>
+  );
+}
+
+// ─── Cover auto-générée (posts sans image/vidéo) — dégradé brandé CCB ───
+function AutoCover({ kind }: { kind: { emoji: string; label: string; color: string } }) {
+  const isGold = kind.color === "#D4AF37";
+  const dark = isGold ? "#A8862B" : "#4C1D95";
+  return (
+    <div style={{ position: "relative", height: 124, background: `linear-gradient(135deg, ${kind.color} 0%, ${dark} 100%)`, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 14 }}>
+      <span aria-hidden style={{ position: "absolute", right: -8, top: -22, fontSize: 116, opacity: 0.18, lineHeight: 1, transform: "rotate(-10deg)", filter: "saturate(0) brightness(3)" }}>{kind.emoji}</span>
+      <span style={{ position: "absolute", top: 12, left: 14, fontSize: 9.5, fontWeight: 800, letterSpacing: 1.4, color: "rgba(255,255,255,0.85)", textTransform: "uppercase" }}>✦ Centre Chrétien Berakah</span>
+      <span style={{ position: "relative", alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.2)", borderRadius: 999, padding: "5px 13px", color: "#fff", fontSize: 12.5, fontWeight: 700, backdropFilter: "blur(3px)" }}>
+        <span style={{ fontSize: 15 }}>{kind.emoji}</span> {kind.label}
+      </span>
+    </div>
+  );
+}
+
+const clampStyle: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" };
 
 // Shared input style constant
 const inputStyle: React.CSSProperties = {
@@ -504,6 +539,7 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
   const [editTitle, setEditTitle] = useState(post.title ?? "");
   const [editContent, setEditContent] = useState(post.content);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   async function handleSaveEdit() {
     if (!editContent.trim()) return;
@@ -525,6 +561,10 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
   const cat = post.post_categories;
   const author = post.user_profiles;
   const ytId = post.post_type === "video" && post.media_url ? getYoutubeId(post.media_url) : null;
+  const kindDef = getPostKindDef(post.post_kind);
+  const hasImageCover = post.post_type === "image" && !!post.media_url;
+  const hasVideoCover = post.post_type === "video" && !!(ytId || post.media_url);
+  const isLong = post.content.length > 200 || (post.content.match(/\n/g)?.length ?? 0) > 4;
 
   function handleLike() {
     setLocalLike(!localLike);
@@ -554,32 +594,33 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
   const totalVotes = post.poll_options ? localVoteResults.length : 0;
 
   return (
-    <div style={{ background: "var(--card-bg)", border: `1px solid ${post.is_pinned ? "rgba(212,175,55,0.3)" : "var(--border-subtle)"}`, borderRadius: "var(--radius-lg)", marginBottom: 12, overflow: "hidden" }}>
+    <div id={`post-${post.id}`} className="ccb-post" style={{ position: "relative", background: "var(--card-bg)", border: post.is_pinned ? "1.5px solid rgba(212,175,55,0.55)" : "1px solid var(--border-subtle)", borderRadius: 18, marginBottom: 14, overflow: "hidden", boxShadow: post.is_pinned ? "0 6px 22px rgba(212,175,55,0.18)" : "0 2px 10px rgba(91,33,182,0.05)" }}>
       {post.is_pinned && (
-        <div style={{ background: "rgba(212,175,55,0.08)", padding: "6px 16px", fontSize: 11, color: "var(--gold)", fontWeight: 600 }}>📌 Épinglé</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(90deg, rgba(212,175,55,0.18), rgba(212,175,55,0.03))", padding: "7px 16px", fontSize: 11, color: "#A8862B", fontWeight: 800, letterSpacing: 0.3, borderBottom: "1px solid rgba(212,175,55,0.22)" }}>📌 À la une</div>
       )}
-      <div style={{ padding: 16 }}>
-        {/* En-tête */}
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12 }}>
-          <Avatar profile={author} size={38} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>{author?.display_name || "Membre"}</div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{timeAgo(post.created_at)}</div>
+      <div style={{ padding: "13px 15px 0" }}>
+        {/* En-tête : auteur + rôle + catégorie + options */}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+          <Link href={`/community/profil/${post.user_id}`} style={{ flexShrink: 0, lineHeight: 0 }}><Avatar profile={author} size={42} /></Link>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <Link href={`/community/profil/${post.user_id}`} style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)", textDecoration: "none" }}>{author?.display_name || "Membre"}</Link>
+              <RoleBadge role={author?.role} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+              <span>{timeAgo(post.created_at)}</span>
+              {cat && <><span>·</span><span style={{ color: cat.color, fontWeight: 600 }}>{cat.icon} {cat.name}</span></>}
+            </div>
           </div>
-          {cat && (
-            <span style={{ background: `${cat.color}20`, border: `1px solid ${cat.color}50`, borderRadius: "var(--radius-full)", padding: "3px 10px", fontSize: 10, color: cat.color, fontWeight: 600, flexShrink: 0 }}>
-              {cat.icon} {cat.name}
-            </span>
-          )}
           {(isMyPost || isAdmin) && (
-            <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
               {isAdmin && (
-                <button onClick={onPin} title={post.is_pinned ? "Désépingler" : "Épingler"} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>📌</button>
+                <button onClick={onPin} title={post.is_pinned ? "Désépingler" : "Épingler"} className="ccb-icon-btn">📌</button>
               )}
               {isMyPost && !editing && (
-                <button onClick={() => setEditing(true)} title="Modifier" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>✏️</button>
+                <button onClick={() => setEditing(true)} title="Modifier" className="ccb-icon-btn">✏️</button>
               )}
-              <button onClick={onDelete} title="Supprimer" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>🗑️</button>
+              <button onClick={onDelete} title="Supprimer" className="ccb-icon-btn">🗑️</button>
             </div>
           )}
         </div>
@@ -632,38 +673,41 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
           </div>
         ) : (
           <>
-            {/* Titre de la publication (en gras) */}
+            {/* COVER : image / vidéo / auto-générée brandée CCB */}
+            {hasImageCover ? (
+              <img loading="lazy" decoding="async" src={post.media_url} alt={post.title || "Publication"} style={{ display: "block", width: "calc(100% + 30px)", margin: "0 -15px 12px", maxHeight: 440, objectFit: "cover" }} />
+            ) : hasVideoCover ? (
+              <div style={{ width: "calc(100% + 30px)", margin: "0 -15px 12px", aspectRatio: "16 / 9", background: "#000" }}>
+                {ytId ? (
+                  <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}`} style={{ border: "none", display: "block" }} allowFullScreen />
+                ) : post.media_url ? (
+                  <video src={post.media_url} controls style={{ width: "100%", height: "100%", display: "block" }} />
+                ) : null}
+              </div>
+            ) : (
+              <div style={{ margin: "0 -15px 12px" }}><AutoCover kind={kindDef} /></div>
+            )}
+
+            {/* TITRE dominant */}
             {post.title && (
-              <h3 style={{
-                fontSize: 17, fontWeight: 800, color: "var(--text-primary)",
-                margin: "0 0 8px", lineHeight: 1.35, fontFamily: "var(--font-title)",
-              }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 6px", lineHeight: 1.3, fontFamily: "var(--font-title)" }}>
                 {post.title}
               </h3>
             )}
 
-            {/* Contenu texte avec mentions cliquables */}
-            <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, margin: "0 0 12px", whiteSpace: "pre-wrap" }}>
+            {/* APERÇU tronqué + Lire la suite */}
+            <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 10px", whiteSpace: "pre-wrap", ...(expanded || !isLong ? {} : clampStyle) }}>
               <ContentWithMentions content={post.content} members={members} />
-            </p>
+            </div>
+            {isLong && (
+              <button onClick={() => setExpanded((v) => !v)} style={{ background: "none", border: "none", color: "#5B21B6", fontWeight: 700, fontSize: 13, cursor: "pointer", padding: "0 0 12px" }}>
+                {expanded ? "Voir moins ▲" : "Lire la suite ▾"}
+              </button>
+            )}
           </>
         )}
 
-        {/* Médias */}
-        {post.post_type === "image" && post.media_url && (
-          <img loading="lazy" decoding="async" src={post.media_url} alt={post.content?.slice(0, 60) || "Publication"} style={{ width: "100%", borderRadius: "var(--radius-md)", maxHeight: 400, objectFit: "cover", marginBottom: 12 }} />
-        )}
-
-        {post.post_type === "video" && (
-          <div style={{ marginBottom: 12, borderRadius: "var(--radius-md)", overflow: "hidden", aspectRatio: "16/9" }}>
-            {ytId ? (
-              <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}`} style={{ border: "none", display: "block" }} allowFullScreen />
-            ) : post.media_url ? (
-              <video src={post.media_url} controls style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
-            ) : null}
-          </div>
-        )}
-
+        {/* Médias complémentaires (image/vidéo sont désormais en cover) */}
         {post.post_type === "link" && post.link_url && (
           <a href={post.link_url} target="_blank" rel="noopener noreferrer" style={{ display: "block", background: "var(--page-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 14, marginBottom: 12, textDecoration: "none" }}>
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>🔗 {post.link_url}</div>
@@ -722,78 +766,26 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, members
           </div>
         )}
 
-        {/* Actions : icônes seules, sans libellés */}
-        <div style={{ display: "flex", gap: 4, paddingTop: 10, borderTop: "1px solid var(--border-subtle)", alignItems: "center" }}>
-          <button onClick={handleLike} title="J'aime" style={{
-            background: "none", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 12px", borderRadius: 8,
-            color: localLike ? "#1877F2" : "var(--text-muted)",
-            fontSize: 13, fontWeight: localLike ? 700 : 500,
-            transition: "background 0.15s",
-          }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-          >
-            <span style={{ fontSize: 18, filter: localLike ? "none" : "grayscale(100%) opacity(0.55)" }}>👍</span>
-            {localLikeCount > 0 && <span>{localLikeCount}</span>}
+        {/* Barre d'engagement */}
+        <div style={{ display: "flex", alignItems: "center", gap: 2, paddingTop: 8, paddingBottom: 10, borderTop: "1px solid var(--border-subtle)" }}>
+          <button onClick={handleLike} title="J'aime" className="ccb-react" style={{ color: localLike ? "#E0245E" : "var(--text-muted)", background: localLike ? "rgba(224,36,94,0.09)" : "transparent" }}>
+            <span style={{ fontSize: 17 }}>{localLike ? "❤️" : "🤍"}</span>
+            <span style={{ fontWeight: localLike ? 800 : 600 }}>{localLikeCount > 0 ? localLikeCount : "J'aime"}</span>
           </button>
-
-          <button onClick={() => setShowComments(!showComments)} title="Commenter" style={{
-            background: "none", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 12px", borderRadius: 8,
-            color: "var(--text-muted)", fontSize: 13, fontWeight: 500,
-          }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-          >
+          <button onClick={() => setShowComments((v) => !v)} title="Commenter" className="ccb-react" style={{ color: showComments ? "#5B21B6" : "var(--text-muted)" }}>
             <span style={{ fontSize: 16 }}>💬</span>
-            {post.comments.length > 0 && <span>{post.comments.length}</span>}
+            <span style={{ fontWeight: 600 }}>{post.comments.length > 0 ? post.comments.length : "Commenter"}</span>
           </button>
-
-          <button onClick={onShare} title="Partager" className="ccb-share-btn" style={{
-            background: "none", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "10px 14px", borderRadius: 8,
-            color: "var(--text-muted)", fontSize: 22, lineHeight: 1,
-            minWidth: 44, minHeight: 44,
-          }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-          >
-            <span style={{ transform: "scaleX(-1)", display: "inline-block" }}>↪</span>
-          </button>
-          <style>{`
-            @media (max-width: 640px) {
-              .ccb-share-btn { font-size: 26px !important; padding: 12px 16px !important; }
-            }
-          `}</style>
-
-          <button onClick={onBookmark} title={isBookmarked ? "Retirer des favoris" : "Enregistrer"} style={{
-            background: "none", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "10px 14px", borderRadius: 8,
-            color: isBookmarked ? "#D4AF37" : "var(--text-muted)", fontSize: 18, lineHeight: 1,
-            minWidth: 44, minHeight: 44,
-            filter: isBookmarked ? "none" : "grayscale(1) opacity(0.75)",
-          }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--page-bg)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-          >
-            🔖
+          <button onClick={onShare} title="Partager" className="ccb-react" style={{ color: "var(--text-muted)" }}>
+            <span style={{ fontSize: 16 }}>🔁</span>
+            <span style={{ fontWeight: 600 }}>Partager</span>
           </button>
 
           <div style={{ flex: 1 }} />
 
+          <button onClick={onBookmark} title={isBookmarked ? "Enregistré" : "Enregistrer"} className="ccb-icon-btn" style={{ color: isBookmarked ? "#D4AF37" : "var(--text-muted)", fontSize: 17, filter: isBookmarked ? "none" : "grayscale(1) opacity(0.7)" }}>🔖</button>
           {!isMyPost && (
-            <button onClick={onReport} title="Signaler" style={{
-              background: "none", border: "none", cursor: "pointer",
-              padding: "8px 10px", borderRadius: 8,
-              color: "var(--text-muted)", fontSize: 14,
-            }}>
-              ⚠️
-            </button>
+            <button onClick={onReport} title="Signaler" className="ccb-icon-btn">⚠️</button>
           )}
         </div>
       </div>
@@ -1007,16 +999,18 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         const commentUserIds = [...new Set(((cm || []) as CommentRaw[]).map((c) => c.user_id))];
         const allUserIds = [...new Set([...postUserIds, ...commentUserIds])];
         let rawProfiles: ProfileRaw[] = [];
+        const rolesMap: Record<string, string> = {};
         if (allUserIds.length > 0) {
-          const { data: rpd, error: profErr } = await supabase
-            .from("user_profiles")
-            .select("user_id, display_name, avatar_url")
-            .in("user_id", allUserIds);
+          const [{ data: rpd, error: profErr }, { data: rolesData }] = await Promise.all([
+            supabase.from("user_profiles").select("user_id, display_name, avatar_url").in("user_id", allUserIds),
+            supabase.from("user_roles").select("user_id, role").in("user_id", allUserIds),
+          ]);
           if (profErr) console.warn("[CCB Feed] profiles error:", profErr.message);
           rawProfiles = (rpd as ProfileRaw[] | null) || [];
+          for (const r of ((rolesData as { user_id: string; role: string }[] | null) || [])) rolesMap[r.user_id] = r.role;
         }
-        const profilesMap: Record<string, { display_name: string; avatar_url?: string }> = Object.fromEntries(
-          rawProfiles.map((p) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url ?? undefined }])
+        const profilesMap: Record<string, { display_name: string; avatar_url?: string; role?: string }> = Object.fromEntries(
+          rawProfiles.map((p) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url ?? undefined, role: rolesMap[p.user_id] }])
         );
 
         const lm: Record<string, number> = {};
@@ -1069,12 +1063,14 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
         if (!mounted) return;
         const newRow = payload.new as { id: string; user_id: string };
-        const [{ data, error }, { data: profileData }] = await Promise.all([
+        const [{ data, error }, { data: profileData }, { data: roleData }] = await Promise.all([
           supabase.from("posts").select(SEL).eq("id", newRow.id).single(),
           supabase.from("user_profiles").select("display_name, avatar_url").eq("user_id", newRow.user_id).single(),
+          supabase.from("user_roles").select("role").eq("user_id", newRow.user_id).maybeSingle(),
         ]);
         if (error || !data || !mounted) return;
-        const newPost = { ...(data as unknown as Post), user_profiles: (profileData as Post["user_profiles"]) || undefined, likeCount: 0, comments: [], voteResults: [] };
+        const prof = (profileData as Post["user_profiles"]) || undefined;
+        const newPost = { ...(data as unknown as Post), user_profiles: prof ? { ...prof, role: (roleData as { role?: string } | null)?.role ?? null } : undefined, likeCount: 0, comments: [], voteResults: [] };
         setPosts((prev) => {
           if (prev.some((p) => p.id === newPost.id)) return prev;
           const next = [newPost, ...prev];
@@ -1285,6 +1281,18 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
 
   return (
     <div>
+      <style>{`
+        .ccb-react { display:flex; align-items:center; gap:6px; background:transparent; border:none; cursor:pointer; padding:7px 12px; border-radius:11px; font-size:13px; transition: background .15s ease, transform .08s ease; -webkit-tap-highlight-color: transparent; }
+        .ccb-react:hover { background: var(--page-bg); }
+        .ccb-react:active { transform: scale(0.93); }
+        .ccb-icon-btn { background:none; border:none; cursor:pointer; padding:7px 9px; border-radius:10px; font-size:15px; line-height:1; color: var(--text-muted); transition: background .15s ease, transform .08s ease; -webkit-tap-highlight-color: transparent; }
+        .ccb-icon-btn:hover { background: var(--page-bg); }
+        .ccb-icon-btn:active { transform: scale(0.88); }
+        .ccb-post { animation: ccb-post-in .32s ease both; }
+        @keyframes ccb-post-in { from { opacity:0; transform: translateY(7px);} to { opacity:1; transform:none; } }
+        @media (prefers-reduced-motion: reduce) { .ccb-post { animation: none; } }
+      `}</style>
+
       {/* Admin: gérer catégories */}
       {isAdmin && <AdminCategoryManager categories={categories} onCategoriesChange={setCategories} />}
 
