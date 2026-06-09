@@ -9,6 +9,7 @@ import PushNotificationsBanner from "@/components/PushNotificationsBanner";
 import SessionBeacon from "@/components/system/SessionBeacon";
 import TzBeacon from "@/components/system/TzBeacon";
 import OfflineBanner from "@/components/system/OfflineBanner";
+import PreloadOnWifi from "@/components/system/PreloadOnWifi";
 import { useHeartbeat } from "@/lib/presence";
 
 function shouldShowShell(pathname: string): boolean {
@@ -79,6 +80,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Indicateur hors-ligne (offline-first) */}
       <OfflineBanner />
+
+      {/* Préchargement du contenu spirituel sur Wi-Fi (jamais sur données mobiles) */}
+      <PreloadOnWifi />
     </div>
   );
 }

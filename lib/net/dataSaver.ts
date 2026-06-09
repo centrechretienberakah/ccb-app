@@ -17,6 +17,7 @@ const CHANGE_EVENT = "ccb-data-saver-change";
 
 interface NetConnection {
   effectiveType?: string;   // "slow-2g" | "2g" | "3g" | "4g"
+  type?: string;            // "wifi" | "cellular" … (non standard, souvent absent)
   saveData?: boolean;
   addEventListener?: (t: string, cb: () => void) => void;
   removeEventListener?: (t: string, cb: () => void) => void;
@@ -95,4 +96,54 @@ export function useNetworkInfo(): { effectiveType: string; slow: boolean; online
     };
   }, []);
   return info;
+}
+
+/* ───────────── Préchargement Wi-Fi du contenu spirituel ───────────── */
+
+export const PRELOAD_KEY = "ccb-preload-wifi";
+const PRELOAD_TS_KEY = "ccb-preload-ts";
+const PRELOAD_PAGES = ["/dashboard", "/community/prions-ensemble", "/plan-biblique", "/bible"];
+
+export function isPreloadEnabled(): boolean {
+  try {
+    const v = localStorage.getItem(PRELOAD_KEY);
+    if (v === "1") return true;
+    if (v === "0") return false;
+  } catch { /* noop */ }
+  return true; // défaut ON (mais bridé par shouldPreload : jamais sur données mobiles)
+}
+
+export function setPreload(on: boolean): void {
+  try { localStorage.setItem(PRELOAD_KEY, on ? "1" : "0"); } catch { /* noop */ }
+}
+
+/**
+ * Condition de préchargement — PRUDENT pour ne JAMAIS consommer de données
+ * mobiles à l'insu de l'utilisateur :
+ *  - Wi-Fi confirmé (connection.type === "wifi") → OK ;
+ *  - cellulaire confirmé → NON ;
+ *  - type inconnu (cas fréquent sur mobile) → seulement si l'éco de données est
+ *    DÉSACTIVÉE (signal « j'ai du forfait/Wi-Fi ») ET bonne connexion.
+ */
+function shouldPreload(): boolean {
+  if (typeof navigator === "undefined" || !navigator.onLine) return false;
+  if (!isPreloadEnabled()) return false;
+  const c = conn();
+  if (c?.type === "wifi") return true;
+  if (c?.type && c.type !== "wifi") return false;
+  if (isDataSaverEnabled()) return false;
+  return effectiveNetworkType() === "4g";
+}
+
+/** Précharge en arrière-plan les pages de contenu (warm le cache offline). */
+export async function preloadSpiritualContent(): Promise<void> {
+  if (!shouldPreload()) return;
+  try {
+    const last = Number(localStorage.getItem(PRELOAD_TS_KEY) || "0");
+    if (Date.now() - last < 6 * 60 * 60 * 1000) return; // au plus 1×/6 h
+    localStorage.setItem(PRELOAD_TS_KEY, String(Date.now()));
+  } catch { /* noop */ }
+  for (const p of PRELOAD_PAGES) {
+    try { await fetch(p, { credentials: "same-origin" }); } catch { /* noop */ }
+  }
 }

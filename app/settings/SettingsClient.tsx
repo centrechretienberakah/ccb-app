@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { userTimeZone, setUserTimeZoneLocal, COMMON_TIMEZONES } from "@/lib/time/tz";
-import { isDataSaverEnabled, setDataSaver } from "@/lib/net/dataSaver";
+import { isDataSaverEnabled, setDataSaver, isPreloadEnabled, setPreload } from "@/lib/net/dataSaver";
 
 // ─── Types ────────────────────────────────────────────────────
 interface Profile {
@@ -86,7 +86,8 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
   // ── Apparence ─────────────────────────────────────────────
   const [isDark, setIsDark] = useState(false);
   const [dataSaver, setDataSaverOn] = useState(true);
-  useEffect(() => { setDataSaverOn(isDataSaverEnabled()); }, []);
+  const [preload, setPreloadOn] = useState(true);
+  useEffect(() => { setDataSaverOn(isDataSaverEnabled()); setPreloadOn(isPreloadEnabled()); }, []);
   useEffect(() => {
     const saved = localStorage.getItem("ccb-theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -303,6 +304,13 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
           onChange={(v) => { setDataSaverOn(v); setDataSaver(v); }}
           label="Mode Économie de données"
           sublabel="Recommandé sur réseau mobile : pas d'autoplay vidéo, images allégées et chargées à la demande, moins de requêtes."
+        />
+        <div style={{ height: 1, background: "var(--border)", margin: "12px 0" }} />
+        <Toggle
+          value={preload}
+          onChange={(v) => { setPreloadOn(v); setPreload(v); }}
+          label="Précharger sur Wi-Fi"
+          sublabel="Sur Wi-Fi (ou connexion non bridée), prépare à l'avance Méditons, Prières, Plan et Bible pour une lecture hors-ligne. N'utilise jamais vos données mobiles."
         />
       </SectionCard>
 
