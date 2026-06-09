@@ -124,6 +124,19 @@ function AutoCover({ kind }: { kind: { emoji: string; label: string; color: stri
 
 const clampStyle: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" };
 
+// Pill de la nav segmentée des catégories
+function pillStyle(active: boolean): React.CSSProperties {
+  return {
+    flexShrink: 0, whiteSpace: "nowrap", cursor: "pointer", outline: "none",
+    borderRadius: 999, padding: "7px 14px", fontSize: 12.5, fontWeight: active ? 800 : 600,
+    fontFamily: "inherit",
+    border: `1px solid ${active ? "#5B21B6" : "var(--border)"}`,
+    background: active ? "#5B21B6" : "var(--card-bg)",
+    color: active ? "#fff" : "var(--text-secondary)",
+    transition: "all .15s ease",
+  };
+}
+
 // Shared input style constant
 const inputStyle: React.CSSProperties = {
   background: "var(--input-bg, var(--page-bg))",
@@ -1203,11 +1216,17 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   let filtered = posts;
   if (filterKind) filtered = filtered.filter((p) => p.post_kind === filterKind);
   if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    const q = norm(searchQuery.replace(/^#/, "")); // recherche par #hashtag aussi
     filtered = filtered.filter((p) => {
-      const text = p.content.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-      const author = (p.user_profiles?.display_name || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-      return text.includes(q) || author.includes(q);
+      const hay = norm([
+        p.content,
+        p.title || "",
+        p.user_profiles?.display_name || "",
+        p.post_categories?.name || "",
+        getPostKindDef(p.post_kind).label,
+      ].join(" "));
+      return hay.includes(q);
     });
   }
   // Tri (les pinned restent toujours en premier dans le DB query)
@@ -1234,6 +1253,9 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     io.observe(el);
     return () => io.disconnect();
   }, [visibleCount, filtered.length]);
+
+  // Détection d'une référence biblique dans la recherche (ex. "Jean 3:16")
+  const isBibleRef = /^\s*(\d\s*)?[a-zà-ÿ]{3,}\.?\s+\d{1,3}([:.\s]\d{1,3})?\s*$/i.test(searchQuery.trim());
 
   // Tendances de la semaine (par engagement) — sur le feed par défaut.
   const showTrending = !searchQuery.trim() && !filterKind && sortMode === "recent";
@@ -1456,6 +1478,11 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
         .ccb-trend-card { scroll-snap-align: start; transition: transform .12s ease, box-shadow .12s ease; }
         .ccb-trend-card:hover { box-shadow: 0 6px 18px rgba(91,33,182,0.12); }
         .ccb-trend-card:active { transform: scale(0.97); }
+        /* Nav segmentée des catégories */
+        .ccb-cat-nav { scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+        .ccb-cat-nav::-webkit-scrollbar { display: none; }
+        .ccb-pill { scroll-snap-align: start; }
+        .ccb-pill:active { transform: scale(0.95); }
       `}</style>
 
       {/* Admin: gérer catégories */}
@@ -1464,54 +1491,53 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       {/* Créer un post */}
       <PostCreator categories={categories} currentUserProfile={currentUserProfile} currentUserId={currentUserId} members={members} onPostCreated={handlePostCreated} />
 
-      {/* Barre unique : Type dropdown + Recherche + Tri (3 sur 1 ligne) */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 12, alignItems: "stretch" }}>
-        <select
-          value={filterKind}
-          onChange={(e) => setFilterKind(e.target.value as PostKind | "")}
-          style={{
-            background: "var(--card-bg)",
-            border: `1px solid ${filterKind ? "#5B21B6" : "var(--border)"}`,
-            borderRadius: "var(--radius-full)",
-            padding: "8px 28px 8px 12px",
-            color: filterKind ? "#5B21B6" : "var(--text-muted)",
-            fontSize: 12, fontWeight: filterKind ? 700 : 500,
-            cursor: "pointer", whiteSpace: "nowrap",
-            appearance: "none", WebkitAppearance: "none",
-            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(filterKind ? "#5B21B6" : "#888")}' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>")`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 10px center",
-            fontFamily: "inherit", outline: "none",
-            flexShrink: 0, maxWidth: "40%",
-            textOverflow: "ellipsis", overflow: "hidden",
-          }}>
-          <option value="">Tous types</option>
-          {POST_KINDS.map((k) => (
-            <option key={k.id} value={k.id}>{k.emoji} {k.label}</option>
-          ))}
-        </select>
+      {/* Recherche + tri */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "stretch" }}>
         <input
           type="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="🔍 Rechercher…"
+          placeholder="🔍 Rechercher (membre, #thème, verset…)"
           style={{
-            flex: 1, minWidth: 0, padding: "8px 14px",
+            flex: 1, minWidth: 0, padding: "10px 16px",
             background: "var(--card-bg)", border: "1px solid var(--border)",
             borderRadius: "var(--radius-full)", color: "var(--text-primary)",
-            fontSize: 13, outline: "none", boxSizing: "border-box",
+            fontSize: 13.5, outline: "none", boxSizing: "border-box",
           }}
         />
         <button onClick={() => setSortMode(sortMode === "recent" ? "popular" : "recent")}
-          title={sortMode === "recent" ? "Trié par récent" : "Trié par popularité"}
+          title={sortMode === "recent" ? "Trié par récent — appuyer pour Populaire" : "Trié par populaire — appuyer pour Récent"}
           style={{
-            background: "var(--card-bg)", border: "1px solid var(--border)",
-            borderRadius: "var(--radius-full)", padding: "8px 12px",
-            color: "var(--text-secondary)", fontSize: 12, fontWeight: 700,
-            cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+            background: sortMode === "popular" ? "rgba(91,33,182,0.10)" : "var(--card-bg)",
+            border: `1px solid ${sortMode === "popular" ? "#5B21B6" : "var(--border)"}`,
+            borderRadius: "var(--radius-full)", padding: "8px 14px",
+            color: sortMode === "popular" ? "#5B21B6" : "var(--text-secondary)",
+            fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
           }}>
           {sortMode === "recent" ? "🕐" : "🔥"}
         </button>
+      </div>
+
+      {/* Suggestion référence biblique détectée dans la recherche */}
+      {searchQuery.trim() && isBibleRef && (
+        <a href={`/bible?q=${encodeURIComponent(searchQuery.trim())}`} style={{ display: "flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg, rgba(91,33,182,0.07), rgba(212,175,55,0.06))", border: "1px solid rgba(91,33,182,0.18)", borderRadius: 14, padding: "10px 14px", marginBottom: 10, textDecoration: "none" }}>
+          <span style={{ fontSize: 20 }}>📖</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>Lire « {searchQuery.trim()} » dans Ma Bible</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Référence biblique détectée</div>
+          </div>
+          <span style={{ color: "#5B21B6", fontWeight: 800, flexShrink: 0 }}>→</span>
+        </a>
+      )}
+
+      {/* Catégories — navigation segmentée (pills scrollables) */}
+      <div className="ccb-cat-nav" style={{ display: "flex", gap: 7, overflowX: "auto", marginBottom: 14, paddingBottom: 2 }}>
+        <button onClick={() => setFilterKind("")} className="ccb-pill" style={pillStyle(filterKind === "")}>✦ Tous</button>
+        {POST_KINDS.map((k) => (
+          <button key={k.id} onClick={() => setFilterKind(filterKind === k.id ? "" : k.id)} className="ccb-pill" style={pillStyle(filterKind === k.id)}>
+            {k.emoji} {k.label}
+          </button>
+        ))}
       </div>
 
       {/* Tendances (découverte) */}
