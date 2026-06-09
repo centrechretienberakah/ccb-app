@@ -167,7 +167,7 @@ export default function AiAdminTab() {
         <h3 style={{ margin: "0 0 .8rem", fontSize: "1.05rem" }}>🌐 Connexions externes</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: ".5rem" }}>
           {[
-            { key: "youtube", label: "YouTube — JESUS DAILY TV", env: "YOUTUBE_API_KEY + YOUTUBE_CHANNEL_ID" },
+            { key: "youtube", label: "YouTube — JESUS DAILY TV", env: "YOUTUBE_API_KEY (chaîne CCB par défaut)" },
             { key: "web", label: "Recherche web", env: "BRAVE_API_KEY (sinon repli DuckDuckGo limité)" },
             { key: "facebook", label: "Facebook CCB", env: "FACEBOOK_PAGE_ID + FACEBOOK_PAGE_ACCESS_TOKEN" },
             { key: "instagram", label: "Instagram (à venir)", env: "INSTAGRAM_ACCESS_TOKEN" },

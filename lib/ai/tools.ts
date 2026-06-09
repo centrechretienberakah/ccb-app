@@ -4,11 +4,14 @@
  * pas configurée, la fonction renvoie null et l'IA continue sans (zéro erreur).
  *
  * Variables d'env (toutes optionnelles) :
- *   YOUTUBE_API_KEY + YOUTUBE_CHANNEL_ID        → dernières vidéos JESUS DAILY TV
+ *   YOUTUBE_API_KEY (CHANNEL_ID par défaut = chaîne CCB)  → dernières vidéos JESUS DAILY TV
  *   BRAVE_API_KEY                               → recherche web (sinon repli DuckDuckGo)
  *   FACEBOOK_PAGE_ID + FACEBOOK_PAGE_ACCESS_TOKEN → dernières publications Facebook
  *   INSTAGRAM_ACCESS_TOKEN / TIKTOK_ACCESS_TOKEN → réservés (à venir)
  */
+
+// Chaîne YouTube officielle du CCB (JESUS DAILY TV) — déjà utilisée par /api/youtube.
+const CCB_YOUTUBE_CHANNEL_ID = "UCFwp158Jrg_AKlYm6Wdg4kw";
 
 const deburr = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
@@ -18,8 +21,8 @@ let ytCache: { at: number; items: YtVideo[] } | null = null;
 
 export async function fetchLatestYouTube(max = 5): Promise<YtVideo[] | null> {
   const key = process.env.YOUTUBE_API_KEY;
-  const channel = process.env.YOUTUBE_CHANNEL_ID;
-  if (!key || !channel) return null;
+  const channel = process.env.YOUTUBE_CHANNEL_ID || CCB_YOUTUBE_CHANNEL_ID;
+  if (!key) return null;
   if (ytCache && Date.now() - ytCache.at < 30 * 60 * 1000) return ytCache.items.slice(0, max);
   try {
     const url = `https://www.googleapis.com/youtube/v3/search?key=${key}&channelId=${channel}&part=snippet&order=date&type=video&maxResults=8`;
@@ -99,7 +102,7 @@ export async function fetchLatestFacebook(max = 3): Promise<FbPost[] | null> {
 // ── État des connexions (pour l'admin) ────────────────────────────────────────
 export function aiConnections() {
   return {
-    youtube: !!(process.env.YOUTUBE_API_KEY && process.env.YOUTUBE_CHANNEL_ID),
+    youtube: !!process.env.YOUTUBE_API_KEY, // CHANNEL_ID a une valeur par défaut (chaîne CCB)
     web: !!process.env.BRAVE_API_KEY, // DuckDuckGo reste dispo en repli (limité)
     facebook: !!(process.env.FACEBOOK_PAGE_ID && process.env.FACEBOOK_PAGE_ACCESS_TOKEN),
     instagram: !!process.env.INSTAGRAM_ACCESS_TOKEN,
