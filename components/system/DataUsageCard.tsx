@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { isDataSaverEnabled } from "@/lib/net/dataSaver";
+import { isDataSaverEnabled, perfBytes } from "@/lib/net/dataSaver";
 
 /**
  * Tableau de bord data (personnel) — mesure RÉELLE via la Performance API.
@@ -23,21 +23,8 @@ interface Stats {
 }
 
 function collect(): Stats {
-  if (typeof performance === "undefined" || !performance.getEntriesByType) {
-    return { network: 0, cachedBytes: 0, cachedCount: 0, resCount: 0 };
-  }
-  const entries = [
-    ...(performance.getEntriesByType("resource") as PerformanceResourceTiming[]),
-    ...(performance.getEntriesByType("navigation") as PerformanceResourceTiming[]),
-  ];
-  let network = 0, cachedBytes = 0, cachedCount = 0;
-  for (const e of entries) {
-    const transfer = e.transferSize || 0;
-    const decoded = e.decodedBodySize || 0;
-    network += transfer;
-    if (transfer === 0 && decoded > 0) { cachedBytes += decoded; cachedCount++; }
-  }
-  return { network, cachedBytes, cachedCount, resCount: entries.length };
+  const p = perfBytes();
+  return { network: p.network, cachedBytes: p.cached, cachedCount: p.cachedCount, resCount: p.resCount };
 }
 
 export default function DataUsageCard() {

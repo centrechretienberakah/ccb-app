@@ -10,6 +10,7 @@ import SessionBeacon from "@/components/system/SessionBeacon";
 import TzBeacon from "@/components/system/TzBeacon";
 import OfflineBanner from "@/components/system/OfflineBanner";
 import PreloadOnWifi from "@/components/system/PreloadOnWifi";
+import DataUsageBeacon from "@/components/system/DataUsageBeacon";
 import { useHeartbeat } from "@/lib/presence";
 
 function shouldShowShell(pathname: string): boolean {
@@ -83,6 +84,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Préchargement du contenu spirituel sur Wi-Fi (jamais sur données mobiles) */}
       <PreloadOnWifi />
+
+      {/* Remonte l'usage data (agrégat) pour le tableau de bord admin */}
+      <DataUsageBeacon />
     </div>
   );
 }

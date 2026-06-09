@@ -135,6 +135,32 @@ function shouldPreload(): boolean {
   return effectiveNetworkType() === "4g";
 }
 
+/* ───────────── Mesure de l'usage data (Performance API) ───────────── */
+
+export interface PerfBytes { network: number; cached: number; cachedCount: number; resCount: number; }
+
+/**
+ * Octets réellement passés par le réseau (transferSize) + octets servis depuis
+ * le cache (transferSize 0 mais corps décodé > 0) pour le document courant.
+ */
+export function perfBytes(): PerfBytes {
+  if (typeof performance === "undefined" || !performance.getEntriesByType) {
+    return { network: 0, cached: 0, cachedCount: 0, resCount: 0 };
+  }
+  const entries = [
+    ...(performance.getEntriesByType("resource") as PerformanceResourceTiming[]),
+    ...(performance.getEntriesByType("navigation") as PerformanceResourceTiming[]),
+  ];
+  let network = 0, cached = 0, cachedCount = 0;
+  for (const e of entries) {
+    const transfer = e.transferSize || 0;
+    const decoded = e.decodedBodySize || 0;
+    network += transfer;
+    if (transfer === 0 && decoded > 0) { cached += decoded; cachedCount++; }
+  }
+  return { network, cached, cachedCount, resCount: entries.length };
+}
+
 /** Précharge en arrière-plan les pages de contenu (warm le cache offline). */
 export async function preloadSpiritualContent(): Promise<void> {
   if (!shouldPreload()) return;
