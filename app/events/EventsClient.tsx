@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { browserTimeZone, zonedNaiveToUtcISO, formatInZone, tzCity, COMMON_TIMEZONES } from "@/lib/time/tz";
 
 // ─── Types ────────────────────────────────────────────────────
 export interface CCBEvent {
@@ -11,6 +12,7 @@ export interface CCBEvent {
   event_type: "culte" | "bootcamp" | "etude" | "louange" | "priere" | "special" | "autre";
   event_date: string;   // original column name in schema.sql
   end_date?: string;    // original column name in schema.sql
+  timezone?: string;    // fuseau d'origine (ex. "Europe/Paris")
   location?: string;
   is_online: boolean;
   link_url?: string;
@@ -67,6 +69,7 @@ function EventCard({ event, userRsvp, goingCount, maybeCount, currentUserId, onR
   const date = formatDate(event.event_date);
   const duration = formatDuration(event.event_date, event.end_date);
   const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [showTz, setShowTz] = useState(false);
   const joinUrl = event.link_url || event.stream_url;
 
   async function handleRsvp(status: "going" | "maybe" | "not_going") {
@@ -147,15 +150,32 @@ function EventCard({ event, userRsvp, goingCount, maybeCount, currentUserId, onR
         )}
 
         {/* Meta details */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--text-muted)" }}>
-            <span>🕐</span>
-            <span>{date.dow} {date.time}{duration ? ` · ${duration}` : ""}</span>
-          </div>
-          {event.location && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--text-muted)" }}>
-              <span>📍</span>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{event.location}</span>
+              <span>🕐</span>
+              <span>{date.dow} {date.time}{duration ? ` · ${duration}` : ""}</span>
+            </div>
+            <button onClick={() => setShowTz((v) => !v)} style={{
+              background: "none", border: "none", cursor: "pointer", padding: 0,
+              fontSize: 11.5, color: "var(--violet)", fontWeight: 600,
+              display: "inline-flex", alignItems: "center", gap: 3, fontFamily: "inherit",
+            }}>
+              📍 Heure locale{event.timezone ? (showTz ? " ▲" : " ▼") : ""}
+            </button>
+            {event.location && (
+              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--text-muted)" }}>
+                <span>📍</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{event.location}</span>
+              </div>
+            )}
+          </div>
+          {showTz && (
+            <div style={{ marginTop: 8, padding: "8px 11px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", fontSize: 11.5, color: "var(--text-secondary)", lineHeight: 1.7 }}>
+              {event.timezone && (
+                <div>🌍 Heure d&apos;origine : <b>{formatInZone(event.event_date, event.timezone)}</b> ({tzCity(event.timezone)})</div>
+              )}
+              <div>📍 Votre heure : <b>{date.time}</b> ({tzCity(browserTimeZone())})</div>
             </div>
           )}
         </div>
@@ -223,7 +243,7 @@ function CreateEventModal({ currentUserId, onCreated, onClose }: {
   const [form, setForm] = useState({
     title: "", description: "", event_type: "culte",
     event_date: "", end_date: "", location: "",
-    is_online: false, link_url: "",
+    is_online: false, link_url: "", timezone: browserTimeZone(),
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -243,8 +263,9 @@ function CreateEventModal({ currentUserId, onCreated, onClose }: {
       title: form.title,
       description: form.description || null,
       event_type: form.event_type,
-      event_date: new Date(form.event_date).toISOString(),
-      end_date: form.end_date ? new Date(form.end_date).toISOString() : null,
+      event_date: zonedNaiveToUtcISO(form.event_date, form.timezone),
+      end_date: form.end_date ? zonedNaiveToUtcISO(form.end_date, form.timezone) : null,
+      timezone: form.timezone,
       location: form.location || null,
       is_online: form.is_online,
       link_url: form.link_url || null,
@@ -291,6 +312,17 @@ function CreateEventModal({ currentUserId, onCreated, onClose }: {
             <div>
               <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: 0.5, textTransform: "uppercase", display: "block", marginBottom: 6 }}>Fin</label>
               <input type="datetime-local" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} style={inputStyle} />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: 0.5, textTransform: "uppercase", display: "block", marginBottom: 6 }}>Fuseau horaire de l&apos;événement</label>
+            <select value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} style={{ ...inputStyle, appearance: "auto" as any }}>
+              {COMMON_TIMEZONES.map((t) => (<option key={t.id} value={t.id}>{t.label}</option>))}
+              {!COMMON_TIMEZONES.some((t) => t.id === form.timezone) && <option value={form.timezone}>{form.timezone}</option>}
+            </select>
+            <div style={{ fontSize: 10.5, color: "var(--text-muted)", marginTop: 4 }}>
+              L&apos;heure saisie correspond à ce fuseau. Chaque membre la verra dans son fuseau local.
             </div>
           </div>
 
