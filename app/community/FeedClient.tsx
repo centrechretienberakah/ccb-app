@@ -288,11 +288,11 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
   if (!open) return (
     <>
       <style>{`
-        .ccb-composer-closed { padding: 10px 14px; gap: 10px; margin-bottom: 12px; }
+        .ccb-composer-closed { padding: 7px 12px; gap: 9px; margin-bottom: 8px; }
         .ccb-composer-closed .ccb-composer-text { font-size: 13px; }
         @media (min-width: 768px) {
-          .ccb-composer-closed { padding: 14px 18px; gap: 14px; margin-bottom: 16px; }
-          .ccb-composer-closed .ccb-composer-text { font-size: 15px; white-space: normal; }
+          .ccb-composer-closed { padding: 9px 14px; gap: 11px; margin-bottom: 10px; }
+          .ccb-composer-closed .ccb-composer-text { font-size: 14px; white-space: normal; }
         }
       `}</style>
       <div className="ccb-composer-closed" onClick={() => setOpen(true)} style={{
@@ -301,14 +301,14 @@ function PostCreator({ categories, currentUserProfile, currentUserId, members, o
         display: "flex", alignItems: "center",
         cursor: "pointer",
       }}>
-        <Avatar profile={currentUserProfile} size={36} />
+        <Avatar profile={currentUserProfile} size={30} />
         <div className="ccb-composer-text" style={{
           flex: 1, color: "var(--text-muted)",
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
         }}>
           Partager avec la communauté…
         </div>
-        <span style={{ fontSize: 18 }}>✍️</span>
+        <span style={{ fontSize: 16 }}>✍️</span>
       </div>
     </>
   );
@@ -1029,8 +1029,6 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
   });
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [filterKind, setFilterKind] = useState<PostKind | "">("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortMode, setSortMode] = useState<"recent" | "popular">("recent");
   const [likedIds, setLikedIds] = useState<Set<string>>(() => {
     const cache = getClientCache();
     return cache && cache.likedIds.size > 0 ? cache.likedIds : new Set(userLikedPostIds);
@@ -1212,36 +1210,12 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     };
   }, []);
 
-  // Filtres : kind + recherche full-text
+  // Filtre par catégorie (tri récent déjà assuré par le DB query : pinned puis date)
   let filtered = posts;
   if (filterKind) filtered = filtered.filter((p) => p.post_kind === filterKind);
-  if (searchQuery.trim()) {
-    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-    const q = norm(searchQuery.replace(/^#/, "")); // recherche par #hashtag aussi
-    filtered = filtered.filter((p) => {
-      const hay = norm([
-        p.content,
-        p.title || "",
-        p.user_profiles?.display_name || "",
-        p.post_categories?.name || "",
-        getPostKindDef(p.post_kind).label,
-      ].join(" "));
-      return hay.includes(q);
-    });
-  }
-  // Tri (les pinned restent toujours en premier dans le DB query)
-  if (sortMode === "popular") {
-    filtered = [...filtered].sort((a, b) => {
-      // Pinned d'abord, puis par engagement (likes + comments)
-      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-      const scoreA = (a.likeCount || 0) * 2 + (a.comments?.length || 0);
-      const scoreB = (b.likeCount || 0) * 2 + (b.comments?.length || 0);
-      return scoreB - scoreA;
-    });
-  }
 
   // Rendu progressif : remet le compteur à 8 quand filtre / recherche / tri change.
-  useEffect(() => { setVisibleCount(8); }, [filterKind, searchQuery, sortMode]);
+  useEffect(() => { setVisibleCount(8); }, [filterKind]);
 
   // Infinite scroll : +8 posts quand le sentinel approche (perf mobile).
   useEffect(() => {
@@ -1254,11 +1228,8 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     return () => io.disconnect();
   }, [visibleCount, filtered.length]);
 
-  // Détection d'une référence biblique dans la recherche (ex. "Jean 3:16")
-  const isBibleRef = /^\s*(\d\s*)?[a-zà-ÿ]{3,}\.?\s+\d{1,3}([:.\s]\d{1,3})?\s*$/i.test(searchQuery.trim());
-
   // Tendances de la semaine (par engagement) — sur le feed par défaut.
-  const showTrending = !searchQuery.trim() && !filterKind && sortMode === "recent";
+  const showTrending = !filterKind;
   const weekAgoMs = Date.now() - 7 * 86400000;
   const trending = showTrending
     ? [...posts]
@@ -1491,47 +1462,8 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       {/* Créer un post */}
       <PostCreator categories={categories} currentUserProfile={currentUserProfile} currentUserId={currentUserId} members={members} onPostCreated={handlePostCreated} />
 
-      {/* Recherche + tri */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "stretch" }}>
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="🔍 Rechercher (membre, #thème, verset…)"
-          style={{
-            flex: 1, minWidth: 0, padding: "10px 16px",
-            background: "var(--card-bg)", border: "1px solid var(--border)",
-            borderRadius: "var(--radius-full)", color: "var(--text-primary)",
-            fontSize: 13.5, outline: "none", boxSizing: "border-box",
-          }}
-        />
-        <button onClick={() => setSortMode(sortMode === "recent" ? "popular" : "recent")}
-          title={sortMode === "recent" ? "Trié par récent — appuyer pour Populaire" : "Trié par populaire — appuyer pour Récent"}
-          style={{
-            background: sortMode === "popular" ? "rgba(91,33,182,0.10)" : "var(--card-bg)",
-            border: `1px solid ${sortMode === "popular" ? "#5B21B6" : "var(--border)"}`,
-            borderRadius: "var(--radius-full)", padding: "8px 14px",
-            color: sortMode === "popular" ? "#5B21B6" : "var(--text-secondary)",
-            fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-          }}>
-          {sortMode === "recent" ? "🕐" : "🔥"}
-        </button>
-      </div>
-
-      {/* Suggestion référence biblique détectée dans la recherche */}
-      {searchQuery.trim() && isBibleRef && (
-        <a href={`/bible?q=${encodeURIComponent(searchQuery.trim())}`} style={{ display: "flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg, rgba(91,33,182,0.07), rgba(212,175,55,0.06))", border: "1px solid rgba(91,33,182,0.18)", borderRadius: 14, padding: "10px 14px", marginBottom: 10, textDecoration: "none" }}>
-          <span style={{ fontSize: 20 }}>📖</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>Lire « {searchQuery.trim()} » dans Ma Bible</div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Référence biblique détectée</div>
-          </div>
-          <span style={{ color: "#5B21B6", fontWeight: 800, flexShrink: 0 }}>→</span>
-        </a>
-      )}
-
       {/* Catégories — navigation segmentée (pills scrollables) */}
-      <div className="ccb-cat-nav" style={{ display: "flex", gap: 7, overflowX: "auto", marginBottom: 14, paddingBottom: 2 }}>
+      <div className="ccb-cat-nav" style={{ display: "flex", gap: 7, overflowX: "auto", marginBottom: 8, paddingBottom: 2 }}>
         <button onClick={() => setFilterKind("")} className="ccb-pill" style={pillStyle(filterKind === "")}>✦ Tous</button>
         {POST_KINDS.map((k) => (
           <button key={k.id} onClick={() => setFilterKind(filterKind === k.id ? "" : k.id)} className="ccb-pill" style={pillStyle(filterKind === k.id)}>
@@ -1549,8 +1481,8 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
           <FeedSkeleton />
         ) : (
           <div style={{ textAlign: "center", padding: "60px 20px" }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>{searchQuery || filterKind ? "🔍" : "📝"}</div>
-            <div style={{ color: "var(--text-muted)", fontSize: 14 }}>{searchQuery || filterKind ? "Aucun résultat pour ce filtre." : "Aucun post pour l'instant. Soyez le premier à partager !"}</div>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>{filterKind ? "🔍" : "📝"}</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 14 }}>{filterKind ? "Aucune publication dans cette catégorie." : "Aucun post pour l'instant. Soyez le premier à partager !"}</div>
           </div>
         )
       ) : (
