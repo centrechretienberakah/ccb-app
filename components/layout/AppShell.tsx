@@ -7,6 +7,7 @@ import BottomNav from "./BottomNav";
 import TopBar from "./TopBar";
 import PushNotificationsBanner from "@/components/PushNotificationsBanner";
 import SessionBeacon from "@/components/system/SessionBeacon";
+import TzBeacon from "@/components/system/TzBeacon";
 import { useHeartbeat } from "@/lib/presence";
 
 function shouldShowShell(pathname: string): boolean {
@@ -71,6 +72,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Enregistre la session (IP/appareil) du membre — vue Admin profil */}
       <SessionBeacon />
+
+      {/* Synchronise le fuseau horaire (auto-détection + override manuel) */}
+      <TzBeacon />
     </div>
   );
 }

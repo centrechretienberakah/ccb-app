@@ -32,6 +32,29 @@ export function browserTimeZone(): string {
   }
 }
 
+/** Clé de préférence locale (override manuel choisi dans le profil). */
+export const USER_TZ_KEY = "ccb-user-tz";
+
+/**
+ * Fuseau EFFECTIF du visiteur : préférence enregistrée (override manuel
+ * synchronisé depuis le profil), sinon fuseau détecté de l'appareil.
+ */
+export function userTimeZone(): string {
+  try {
+    const o = typeof localStorage !== "undefined" ? localStorage.getItem(USER_TZ_KEY) : null;
+    if (o) return o;
+  } catch { /* noop */ }
+  return browserTimeZone();
+}
+
+/** Enregistre l'override de fuseau côté appareil (utilisé par l'affichage). */
+export function setUserTimeZoneLocal(tz: string): void {
+  try {
+    if (tz) localStorage.setItem(USER_TZ_KEY, tz);
+    else localStorage.removeItem(USER_TZ_KEY);
+  } catch { /* noop */ }
+}
+
 /** Ville lisible déduite d'un identifiant de fuseau ("Europe/Paris" → "Paris"). */
 export function tzCity(tz?: string | null): string {
   if (!tz) return "";

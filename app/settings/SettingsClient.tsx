@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usePushNotifications } from "@/lib/push-notifications";
+import { userTimeZone, setUserTimeZoneLocal, COMMON_TIMEZONES } from "@/lib/time/tz";
 
 // ─── Types ────────────────────────────────────────────────────
 interface Profile {
@@ -124,6 +125,20 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);
     setAvatarUrl(data.publicUrl + "?v=" + Date.now());
     setUploadingAvatar(false);
+  }
+
+  // ── Fuseau horaire (auto-détecté + modifiable) ──
+  const [timezone, setTimezone] = useState<string>("");
+  useEffect(() => { setTimezone(userTimeZone()); }, []);
+  function changeTimezone(tz: string) {
+    setTimezone(tz);
+    setUserTimeZoneLocal(tz);
+    (async () => {
+      try {
+        const sb = createClient();
+        await sb.from("user_profiles").update({ timezone: tz }).eq("user_id", userId);
+      } catch { /* colonne absente (v61 non migrée) → override local conservé */ }
+    })();
   }
 
   // ── Save profile ──────────────────────────────────────────
@@ -251,6 +266,18 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
             <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: 0.5, textTransform: "uppercase", display: "block", marginBottom: 5 }}>Bio</label>
             <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Quelques mots sur vous..." rows={3}
               style={{ ...inputStyle, resize: "vertical" }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: 0.5, textTransform: "uppercase", display: "block", marginBottom: 5 }}>🕒 Fuseau horaire</label>
+            <select value={timezone} onChange={(e) => changeTimezone(e.target.value)} style={{ ...inputStyle, appearance: "auto" as React.CSSProperties["appearance"] }}>
+              {!!timezone && !COMMON_TIMEZONES.some((t) => t.id === timezone) && (
+                <option value={timezone}>{timezone} (détecté)</option>
+              )}
+              {COMMON_TIMEZONES.map((t) => (<option key={t.id} value={t.id}>{t.label}</option>))}
+            </select>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+              Détecté automatiquement. Tous les événements, réunions et rendez-vous s&apos;affichent dans ce fuseau.
+            </div>
           </div>
         </div>
 

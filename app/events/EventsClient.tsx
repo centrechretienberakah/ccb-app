@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { browserTimeZone, zonedNaiveToUtcISO, formatInZone, tzCity, COMMON_TIMEZONES } from "@/lib/time/tz";
+import { browserTimeZone, userTimeZone, zonedNaiveToUtcISO, formatInZone, tzCity, COMMON_TIMEZONES } from "@/lib/time/tz";
 
 // ─── Types ────────────────────────────────────────────────────
 export interface CCBEvent {
@@ -38,12 +38,18 @@ const MONTH_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct",
 const DAY_FR   = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
 
 function formatDate(dateStr: string) {
+  const tz = userTimeZone();
   const d = new Date(dateStr);
+  const parts: Record<string, string> = {};
+  for (const p of new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, year: "numeric", month: "numeric", day: "numeric", weekday: "short",
+  }).formatToParts(d)) parts[p.type] = p.value;
+  const dowMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   return {
-    day:   d.getDate(),
-    month: MONTH_FR[d.getMonth()],
-    dow:   DAY_FR[d.getDay()],
-    time:  d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+    day:   Number(parts.day),
+    month: MONTH_FR[Number(parts.month) - 1] ?? "",
+    dow:   DAY_FR[dowMap[parts.weekday] ?? d.getDay()] ?? "",
+    time:  formatInZone(dateStr, tz, { hour: "2-digit", minute: "2-digit" }),
     past:  d < new Date(),
   };
 }
@@ -175,7 +181,7 @@ function EventCard({ event, userRsvp, goingCount, maybeCount, currentUserId, onR
               {event.timezone && (
                 <div>🌍 Heure d&apos;origine : <b>{formatInZone(event.event_date, event.timezone)}</b> ({tzCity(event.timezone)})</div>
               )}
-              <div>📍 Votre heure : <b>{date.time}</b> ({tzCity(browserTimeZone())})</div>
+              <div>📍 Votre heure : <b>{date.time}</b> ({tzCity(userTimeZone())})</div>
             </div>
           )}
         </div>
