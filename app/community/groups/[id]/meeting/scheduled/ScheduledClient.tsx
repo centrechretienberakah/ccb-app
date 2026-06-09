@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GROUPS_THEME as T, GROUPS_FONTS as F } from "@/lib/groups/theme";
 import { fetchUnmutedMembers } from "@/lib/groups/notify";
+import { userTimeZone } from "@/lib/time/tz";
 
 export interface ScheduledRow {
   id: string;
@@ -58,11 +59,12 @@ function formatScheduledAt(iso: string): string {
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
   const isTomorrow = d.toDateString() === tomorrow.toDateString();
-  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const tz = userTimeZone();
+  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: tz });
   if (sameDay) return `Aujourd'hui · ${time}`;
   if (isTomorrow) return `Demain · ${time}`;
   return d.toLocaleDateString("fr-FR", {
-    weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+    weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: tz,
   });
 }
 

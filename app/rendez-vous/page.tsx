@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { userTimeZone, tzCity } from "@/lib/time/tz";
 
 const SUBJECTS = [
   "Conseil spirituel",
@@ -67,6 +68,7 @@ export default function RendezVousPage() {
 
     // 2. Send email notification to pastor
     const dateLabel = new Date(form.preferred_date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const userTz = userTimeZone();
     const modalityLabel = { presentiel: "Présentiel 🏛️", visio: "Visioconférence 📹", telephone: "Téléphone 📞" }[form.modality];
     try {
       await fetch("/api/email", {
@@ -86,6 +88,7 @@ export default function RendezVousPage() {
                 ${form.email ? `<tr><td style="padding:8px 0;font-weight:600;color:#555">Email</td><td style="padding:8px 0"><a href="mailto:${form.email}">${form.email}</a></td></tr>` : ""}
                 <tr><td style="padding:8px 0;font-weight:600;color:#555">Sujet</td><td style="padding:8px 0"><strong>${form.subject}</strong></td></tr>
                 <tr><td style="padding:8px 0;font-weight:600;color:#555">Date souhaitée</td><td style="padding:8px 0;font-weight:700;color:#7c3aed">${dateLabel} à ${form.preferred_time}</td></tr>
+                <tr><td style="padding:8px 0;font-weight:600;color:#555">Fuseau du demandeur</td><td style="padding:8px 0">${userTz} (${tzCity(userTz)})</td></tr>
                 <tr><td style="padding:8px 0;font-weight:600;color:#555">Modalité</td><td style="padding:8px 0">${modalityLabel}</td></tr>
               </table>
               ${form.message ? `
