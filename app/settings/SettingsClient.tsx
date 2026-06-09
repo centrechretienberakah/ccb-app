@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { userTimeZone, setUserTimeZoneLocal, COMMON_TIMEZONES } from "@/lib/time/tz";
 import { isDataSaverEnabled, setDataSaver, isPreloadEnabled, setPreload } from "@/lib/net/dataSaver";
+import DataUsageCard from "@/components/system/DataUsageCard";
 
 // ─── Types ────────────────────────────────────────────────────
 interface Profile {
@@ -312,6 +313,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
           label="Précharger sur Wi-Fi"
           sublabel="Sur Wi-Fi (ou connexion non bridée), prépare à l'avance Méditons, Prières, Plan et Bible pour une lecture hors-ligne. N'utilise jamais vos données mobiles."
         />
+        <DataUsageCard />
       </SectionCard>
 
       {/* ── Section Sécurité ── */}
