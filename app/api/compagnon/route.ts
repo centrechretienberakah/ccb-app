@@ -103,6 +103,25 @@ async function buildUserContext(sb: Awaited<ReturnType<typeof createServerClient
   return `\n\nCONTEXTE MEMBRE (pour personnaliser, sans le réciter mécaniquement) :\n- ${parts.join("\n- ")}`;
 }
 
+// ── RAG CCB : récupère les contenus pertinents de la base documentaire indexée ──
+async function buildCcbContext(sb: Awaited<ReturnType<typeof createServerClient>>, query: string): Promise<string> {
+  const q = query.slice(0, 200).trim();
+  if (!q) return "";
+  try {
+    const { data } = await sb
+      .from("ai_knowledge")
+      .select("source, title, body, url")
+      .textSearch("fts", q, { type: "websearch", config: "french" })
+      .limit(5);
+    const rows = (data ?? []) as Array<{ source: string; title: string; body: string | null; url: string | null }>;
+    if (!rows.length) return "";
+    const blocks = rows.map((r, i) =>
+      `[${i + 1}] ${r.title}${r.url ? ` (lien interne : ${r.url})` : ""}\n${(r.body || "").slice(0, 700)}`,
+    );
+    return `\n\nCONTENUS CCB PERTINENTS (PRIORITÉ ABSOLUE — appuie ta réponse sur ces ressources du Centre Chrétien Berakah quand elles correspondent, et invite le membre à les consulter via leur lien interne ; n'invente jamais de contenu CCB au-delà de ceci) :\n${blocks.join("\n\n")}`;
+  } catch { return ""; }
+}
+
 async function callOpenRouter(key: string, messages: Array<{ role: string; content: string }>): Promise<{ reply: string; model: string } | null> {
   for (const model of freeModels()) {
     try {
@@ -168,12 +187,15 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const context = await buildUserContext(sb, user.id);
+  const [context, ccb] = await Promise.all([
+    buildUserContext(sb, user.id),
+    buildCcbContext(sb, lastUser),
+  ]);
   const trimmed = messages
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
     .slice(-12)
     .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
-  const payload = [{ role: "system", content: SYSTEM_PROMPT + context }, ...trimmed];
+  const payload = [{ role: "system", content: SYSTEM_PROMPT + ccb + context }, ...trimmed];
 
   let out: { reply: string; model: string } | null = null;
   if (orKey) out = await callOpenRouter(orKey, payload);

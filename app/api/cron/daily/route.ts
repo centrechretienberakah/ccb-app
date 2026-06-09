@@ -4,6 +4,7 @@ import { getParisDateString, getParisDayIndex, STATIC_DEVOTIONS } from "@/app/de
 import { STATIC_PRAYERS, buildPrayerContent } from "@/app/community/prions-ensemble/daily-prayers-data";
 import { ensureDevotionInDb } from "@/lib/devotion/ensure";
 import { ensureDailyPrayerInDb } from "@/lib/prayer/dailyEnsure";
+import { reindexAiKnowledge } from "@/lib/ai/reindex";
 
 export const runtime = "nodejs";
 
@@ -60,10 +61,18 @@ export async function GET(req: NextRequest) {
     content: buildPrayerContent(pr), author: pr.author,
   });
 
+  // 3) Réindexation de la base documentaire BERAKAH AI (RAG) — best-effort.
+  let rag: { total: number; errors: number } = { total: 0, errors: 0 };
+  try {
+    const r = await reindexAiKnowledge(admin);
+    rag = { total: r.total, errors: r.errors.length };
+  } catch { /* table ai_knowledge pas encore migrée → silencieux */ }
+
   return NextResponse.json({
     ok: true,
     date,
     devotion: devotion.id ? { id: devotion.id, created: devotion.created } : { error: devotion.error },
     prayer: prayer.id ? { id: prayer.id, created: prayer.created } : { error: prayer.error },
+    rag,
   });
 }

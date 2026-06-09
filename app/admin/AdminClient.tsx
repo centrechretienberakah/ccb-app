@@ -7,6 +7,7 @@ import ResourceTab, { ColumnDef } from "./ResourceTab";
 import SiteContentTab from "./SiteContentTab";
 import AnalyticsTab, { type AnalyticsData } from "./AnalyticsTab";
 import DataAdminTab from "./DataAdminTab";
+import AiAdminTab from "./AiAdminTab";
 import BroadcastNotification from "./BroadcastNotification";
 import { can, ROLE_LABEL, ROLE_BADGE, type Role } from "@/lib/rbac";
 
@@ -87,7 +88,7 @@ export default function AdminClient({
   adminLogs, testimonies, analytics,
 }: AdminClientProps) {
   type Tab =
-    | "overview" | "analytics" | "data" | "members" | "posts" | "prayers" | "devotions"
+    | "overview" | "analytics" | "data" | "ai" | "members" | "posts" | "prayers" | "devotions"
     | "contacts" | "rdv"
     | "media" | "albums" | "events"
     | "testimonies"
@@ -280,6 +281,7 @@ export default function AdminClient({
     { id: "overview",  label: "Aperçu" },
     { id: "analytics", label: "📊 Statistiques" },
     { id: "data",      label: "📉 Données" },
+    { id: "ai",        label: "🤖 BERAKAH AI" },
     { id: "members",   label: `Membres (${stats.totalMembers})` },
     { id: "posts",     label: `Publications (${stats.totalPosts})` },
     { id: "prayers",   label: `Prières (${stats.openPrayers})` },
@@ -413,6 +415,9 @@ export default function AdminClient({
 
         {/* ===== TABLEAU DE BORD DATA ===== */}
         {tab === "data" && <DataAdminTab />}
+
+        {/* ===== BERAKAH AI (base documentaire RAG) ===== */}
+        {tab === "ai" && <AiAdminTab />}
 
         {/* ===== APERÇU ===== */}
         {tab === "overview" && (
