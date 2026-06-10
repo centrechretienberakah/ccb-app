@@ -12,8 +12,8 @@ const VALUES = [
   { icon: "🎓", title: "Formation", desc: "Nous investissons dans la formation spirituelle, théologique et pratique des membres." },
 ];
 
-const TEAM = [
-  { name: "Rév. Elvis NGUIFFO", role: "Pasteur Principal & Fondateur", desc: "Consacré au service du Seigneur depuis plus de 15 ans, le Révérend Elvis NGUIFFO a reçu l'appel pastoral avec la vision de bâtir une église locale forte, enracinée dans la Parole et animée par le Saint-Esprit. Diplômé en théologie et en leadership chrétien, il est aussi époux et père de famille, modèle de la foi vécue au quotidien.", emoji: "👤" },
+const TEAM: { name: string; role: string; desc: string; emoji: string; photo?: string }[] = [
+  { name: "Rév. Elvis NGUIFFO", role: "Pasteur Principal & Fondateur", desc: "Consacré au service du Seigneur depuis plus de 15 ans, le Révérend Elvis NGUIFFO a reçu l'appel pastoral avec la vision de bâtir une église locale forte, enracinée dans la Parole et animée par le Saint-Esprit. Diplômé en théologie et en leadership chrétien, il est aussi époux et père de famille, modèle de la foi vécue au quotidien.", emoji: "👤", photo: "/rev-elvis-v2.jpg" },
   { name: "L'Équipe Pastorale", role: "Anciens & Responsables", desc: "L'église est gouvernée par un collège d'anciens formés et dédiés, chacun responsable d'un département : jeunesse, femmes, hommes, intercession, louange, et évangélisation.", emoji: "👥" },
 ];
 
@@ -53,7 +53,7 @@ export default async function AProposPage() {
       </div>
 
       {/* Statistiques */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 48 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 48 }}>
         {STATS.map((s) => (
           <div key={s.label} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "20px 12px", textAlign: "center" }}>
             <div style={{ fontSize: 26, fontWeight: 800, background: "linear-gradient(135deg, var(--text-primary), var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.value}</div>
@@ -79,7 +79,7 @@ export default async function AProposPage() {
       </div>
 
       {/* Vision & Mission */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 48 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 48 }}>
         <div style={{ background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: "var(--radius-xl)", padding: "24px 22px" }}>
           <div style={{ fontSize: 30, marginBottom: 10 }}>🔭</div>
           <h3 style={{ fontSize: 15, fontWeight: 800, color: "var(--gold)", marginBottom: 10 }}>Notre Vision</h3>
@@ -101,7 +101,7 @@ export default async function AProposPage() {
         <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
           <span>💎</span> Nos Valeurs Fondamentales
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
           {VALUES.map((v) => (
             <div key={v.title} style={{ display: "flex", gap: 14, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "18px 20px", alignItems: "flex-start" }}>
               <div style={{ fontSize: 24, flexShrink: 0, marginTop: 2 }}>{v.icon}</div>
@@ -122,9 +122,13 @@ export default async function AProposPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {TEAM.map((t) => (
             <div key={t.name} style={{ display: "flex", gap: 18, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "22px 24px", alignItems: "flex-start" }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(212,175,55,0.15)", border: "2px solid rgba(212,175,55,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>
-                {t.emoji}
-              </div>
+              {t.photo ? (
+                <img src={t.photo} alt={t.name} decoding="async" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(212,175,55,0.45)", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(212,175,55,0.15)", border: "2px solid rgba(212,175,55,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>
+                  {t.emoji}
+                </div>
+              )}
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 800, fontSize: 15, color: "var(--text-primary)", marginBottom: 2 }}>{t.name}</div>
                 <div style={{ fontSize: 12, color: "var(--gold)", fontWeight: 600, marginBottom: 8 }}>{t.role}</div>
