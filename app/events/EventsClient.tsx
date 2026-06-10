@@ -374,12 +374,21 @@ function CreateEventModal({ currentUserId, onCreated, onClose }: {
 }
 
 // ─── EventsClient (main export) ───────────────────────────────
-export default function EventsClient({ events: initialEvents, userRsvpMap: initialRsvpMap, rsvpCountMap: initialCountMap, currentUserId, isAdmin }: {
+// Programme régulier éditable (CMS "events-programme") : emoji | titre | horaire | sous-titre | lien
+function parseProgramme(md: string): { icon: string; title: string; time: string; sub: string; href: string; accent: string }[] {
+  return md.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
+    const p = l.split("|").map((s) => s.trim());
+    return { icon: p[0] || "📅", title: p[1] || "", time: p[2] || "", sub: p[3] || "", href: p[4] || "/events", accent: "var(--gold)" };
+  }).filter((x) => x.title);
+}
+
+export default function EventsClient({ events: initialEvents, userRsvpMap: initialRsvpMap, rsvpCountMap: initialCountMap, currentUserId, isAdmin, programmeMd }: {
   events: CCBEvent[];
   userRsvpMap: Record<string, string>;
   rsvpCountMap: Record<string, { going: number; maybe: number }>;
   currentUserId: string;
   isAdmin: boolean;
+  programmeMd: string;
 }) {
   const [events, setEvents] = useState<CCBEvent[]>(initialEvents);
   const [rsvpMap, setRsvpMap] = useState<Record<string, string>>(initialRsvpMap);
@@ -467,28 +476,7 @@ export default function EventsClient({ events: initialEvents, userRsvpMap: initi
             📆 Programme régulier
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {[
-              {
-                icon: "⛪",
-                title: "Culte du Dimanche",
-                time: "Tous les dimanches · 17h30 (Belgique)",
-                sub: "En ligne — partout dans le monde",
-                accent: "var(--gold)",
-                href: "/events",
-                tag: "Culte",
-              },
-              {
-                icon: "🌙",
-                title: "Nuit de Prière",
-                time: "Dernier vendredi du mois · 23h30 (Belgique)",
-                sub: "Prochain : 29 Mai 2026 · Intercession collective",
-                accent: "var(--gold)",
-                href: "/prayer",
-                tag: "Prière",
-              },
-              // Bootcamp Annuel 2026 retiré du hardcoded — il vit maintenant dans la table events
-              // (voir supabase/seed_initial_events_testimonies.sql). Géré via /admin → Événements.
-            ].map((item) => (
+            {parseProgramme(programmeMd).map((item) => (
               <div key={item.title} style={{
                 display: "flex", gap: 14, alignItems: "center",
                 background: "var(--card-bg)", border: "1px solid var(--border)",

@@ -1,6 +1,8 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSiteContent } from "@/lib/site-content";
+import { DEFAULT_EVENTS_PROGRAMME_MD } from "@/lib/about-defaults";
 import EventsClient from "./EventsClient";
 
 export const metadata: Metadata = { title: "Evenements CCB" };
@@ -42,6 +44,9 @@ export default async function EventsPage() {
     if (r.status === "maybe") countMap[r.event_id].maybe++;
   }
 
+  const programmeCms = await getSiteContent("events-programme");
+  const programmeMd = programmeCms?.body_md || DEFAULT_EVENTS_PROGRAMME_MD;
+
   return (
     <EventsClient
       events={events ?? []}
@@ -49,6 +54,7 @@ export default async function EventsPage() {
       rsvpCountMap={countMap}
       currentUserId={user.id}
       isAdmin={!!roleRow}
+      programmeMd={programmeMd}
     />
   );
 }

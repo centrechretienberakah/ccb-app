@@ -171,6 +171,11 @@ export const DEFAULT_DONS_BODY = "Ta générosité permet au Centre Chrétien Be
 export const DEFAULT_SUIVRE_TITLE = "Restez Connectés";
 export const DEFAULT_SUIVRE_BODY = "Suivez le Centre Chrétien Berakah sur toutes les plateformes pour ne manquer aucun message, aucun live ni aucune ressource spirituelle.";
 
+// Programme régulier de la page Événements — une ligne par item :
+// emoji | titre | horaire | sous-titre | lien
+export const DEFAULT_EVENTS_PROGRAMME_MD = `⛪ | Culte du Dimanche | Tous les dimanches · 17h30 (Belgique) | En ligne — partout dans le monde | /events
+🌙 | Nuit de Prière | Dernier vendredi du mois · 23h30 (Belgique) | Prochain : 29 Mai 2026 · Intercession collective | /prayer`;
+
 // Mappe chaque clé CMS à son contenu par défaut (title/body) — utilisé pour
 // pré-remplir l'éditeur admin avec le contenu ACTUEL.
 export const PAGE_DEFAULTS: Record<string, { title?: string; body?: string }> = {
@@ -183,4 +188,5 @@ export const PAGE_DEFAULTS: Record<string, { title?: string; body?: string }> = 
   "confession-foi":    { body: DEFAULT_CONFESSION_MD },
   "dons":              { title: DEFAULT_DONS_TITLE, body: DEFAULT_DONS_BODY },
   "nous-suivre":       { title: DEFAULT_SUIVRE_TITLE, body: DEFAULT_SUIVRE_BODY },
+  "events-programme":  { body: DEFAULT_EVENTS_PROGRAMME_MD },
 };

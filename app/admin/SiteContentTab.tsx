@@ -28,6 +28,7 @@ const PAGES: { key: string; label: string; icon: string; hint?: string }[] = [
   { key: "dons",        label: "Faire un don", icon: "💝", hint: "Présentation des moyens de soutien" },
   { key: "jesus-daily", label: "Jesus Daily TV", icon: "📺", hint: "Description de la rubrique vidéos" },
   { key: "nous-suivre", label: "Nous suivre",  icon: "📡", hint: "Liens vers réseaux sociaux (JSON: { links: [{ platform, url, label }] })" },
+  { key: "events-programme", label: "Événements · Programme régulier", icon: "📆", hint: "Programme récurrent affiché en haut de la page Événements. Champ « Contenu » — une ligne par item : emoji | titre | horaire | sous-titre | lien." },
 ];
 
 export default function SiteContentTab({ initialRows }: { initialRows: Record<string, unknown>[] }) {
