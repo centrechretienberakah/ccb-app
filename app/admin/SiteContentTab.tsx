@@ -18,9 +18,7 @@ const inputStyle: React.CSSProperties = { width: "100%", padding: "0.6rem 0.8rem
 const labelStyle: React.CSSProperties = { display: "block", color: "var(--text-muted)", fontSize: "0.72rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.3rem" };
 
 const PAGES: { key: string; label: string; icon: string; hint?: string }[] = [
-  { key: "a-propos",          label: "À propos · En-tête",  icon: "⛪", hint: "Titre (hero) + intro (champ Contenu). Les autres blocs ont leur propre entrée ci-dessous." },
-  { key: "a-propos-stats",    label: "À propos · Stats",    icon: "📊", hint: "Une ligne par statistique : valeur | libellé (ex. « 2010 | Année de fondation »)." },
-  { key: "a-propos-histoire", label: "À propos · Histoire", icon: "📜", hint: "Notre Histoire — un paragraphe par ligne. **gras** supporté." },
+  { key: "a-propos",          label: "À propos · En-tête",  icon: "⛪", hint: "Titre = grand titre · Contenu = texte de présentation (carte d'intro sous le titre)." },
   { key: "a-propos-vision",   label: "À propos · Vision",   icon: "🔭", hint: "Texte de la vision (champ Contenu)." },
   { key: "a-propos-mission",  label: "À propos · Mission",  icon: "🎯", hint: "Texte de la mission (champ Contenu)." },
   { key: "a-propos-valeurs",  label: "À propos · Valeurs",  icon: "💎", hint: "Une ligne par valeur : emoji | titre | description." },

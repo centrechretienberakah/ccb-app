@@ -175,8 +175,6 @@ export const DEFAULT_SUIVRE_BODY = "Suivez le Centre Chrétien Berakah sur toute
 // pré-remplir l'éditeur admin avec le contenu ACTUEL.
 export const PAGE_DEFAULTS: Record<string, { title?: string; body?: string }> = {
   "a-propos":          { title: "Centre Chrétien Berakah", body: DEFAULT_INTRO },
-  "a-propos-stats":    { body: DEFAULT_STATS_MD },
-  "a-propos-histoire": { body: DEFAULT_HISTOIRE_MD },
   "a-propos-vision":   { body: DEFAULT_VISION },
   "a-propos-mission":  { body: DEFAULT_MISSION },
   "a-propos-valeurs":  { body: DEFAULT_VALUES_MD },

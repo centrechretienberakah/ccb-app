@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import type { ReactNode } from "react";
 import { getSiteContents } from "@/lib/site-content";
 import {
-  DEFAULT_INTRO, DEFAULT_STATS_MD, DEFAULT_HISTOIRE_MD, DEFAULT_VISION, DEFAULT_MISSION,
+  DEFAULT_INTRO, DEFAULT_VISION, DEFAULT_MISSION,
   DEFAULT_VALUES_MD, DEFAULT_TEAM_MD, DEFAULT_CTA_TITLE, DEFAULT_CTA_BODY, DEFAULT_CONFESSION_MD,
 } from "@/lib/about-defaults";
 
@@ -12,12 +12,6 @@ export const metadata: Metadata = { title: "À Propos — Centre Chrétien Berak
  * contenus par défaut vivent dans lib/about-defaults.ts (partagés avec l'admin). */
 
 /* ── Parseurs (formats simples éditables) ── */
-function parseStats(md: string): { value: string; label: string }[] {
-  return md.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
-    const p = l.split("|");
-    return { value: (p[0] || "").trim(), label: p.slice(1).join("|").trim() };
-  });
-}
 function parseValues(md: string): { icon: string; title: string; desc: string }[] {
   return md.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
     const p = l.split("|");
@@ -72,13 +66,11 @@ function renderMd(md: string): ReactNode[] {
 
 export default async function AProposPage() {
   const c = await getSiteContents([
-    "a-propos", "a-propos-stats", "a-propos-histoire", "a-propos-vision",
-    "a-propos-mission", "a-propos-valeurs", "a-propos-equipe", "a-propos-cta", "confession-foi",
+    "a-propos", "a-propos-vision", "a-propos-mission",
+    "a-propos-valeurs", "a-propos-equipe", "a-propos-cta", "confession-foi",
   ]);
   const heroTitle = c["a-propos"]?.title || "Centre Chrétien Berakah";
   const heroIntro = c["a-propos"]?.body_md || DEFAULT_INTRO;
-  const stats = parseStats(c["a-propos-stats"]?.body_md || DEFAULT_STATS_MD);
-  const histoireMd = c["a-propos-histoire"]?.body_md || DEFAULT_HISTOIRE_MD;
   const vision = c["a-propos-vision"]?.body_md || DEFAULT_VISION;
   const mission = c["a-propos-mission"]?.body_md || DEFAULT_MISSION;
   const values = parseValues(c["a-propos-valeurs"]?.body_md || DEFAULT_VALUES_MD);
@@ -93,31 +85,15 @@ export default async function AProposPage() {
       {/* Hero */}
       <div style={{ textAlign: "center", marginBottom: 48 }}>
         <div style={{ fontSize: 60, marginBottom: 16 }}>⛪</div>
-        <h1 style={{ fontSize: 30, fontWeight: 800, background: "linear-gradient(135deg, var(--text-primary), var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 10, lineHeight: 1.2 }}>
+        <h1 style={{ fontSize: 30, fontWeight: 800, background: "linear-gradient(135deg, var(--text-primary), var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", margin: 0, lineHeight: 1.2 }}>
           {heroTitle}
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 16, lineHeight: 1.7, maxWidth: 540, margin: "0 auto", whiteSpace: "pre-wrap" }}>
-          {heroIntro}
-        </p>
       </div>
 
-      {/* Statistiques */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 48 }}>
-        {stats.map((s, i) => (
-          <div key={i} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "20px 12px", textAlign: "center" }}>
-            <div style={{ fontSize: 26, fontWeight: 800, background: "linear-gradient(135deg, var(--text-primary), var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.3 }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Histoire */}
+      {/* Présentation (intro éditable via CMS — clé "a-propos") */}
       <div style={{ marginBottom: 48 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-          <span>📜</span> Notre Histoire
-        </h2>
         <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "24px 28px" }}>
-          {renderMd(histoireMd)}
+          <p style={{ fontSize: 15.5, color: "var(--text-secondary)", lineHeight: 1.8, margin: 0, whiteSpace: "pre-wrap" }}>{heroIntro}</p>
         </div>
       </div>
 
