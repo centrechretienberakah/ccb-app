@@ -17,7 +17,8 @@ const inputStyle: React.CSSProperties = { width: "100%", padding: "0.6rem 0.8rem
 const labelStyle: React.CSSProperties = { display: "block", color: "var(--text-muted)", fontSize: "0.72rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.3rem" };
 
 const PAGES: { key: string; label: string; icon: string; hint?: string }[] = [
-  { key: "a-propos",    label: "À propos",    icon: "⛪", hint: "Texte de présentation du Centre" },
+  { key: "a-propos",    label: "À propos",    icon: "⛪", hint: "Titre + intro de la page À propos (le reste = sections dédiées)" },
+  { key: "confession-foi", label: "Profession de foi", icon: "✝️", hint: "Confession de foi du CCB. Édite le champ « Contenu (markdown) » : ### pour un article, --- pour séparer, **gras**. Laisse vide pour revenir au texte par défaut." },
   { key: "dons",        label: "Faire un don", icon: "💝", hint: "Présentation des moyens de soutien" },
   { key: "jesus-daily", label: "Jesus Daily TV", icon: "📺", hint: "Description de la rubrique vidéos" },
   { key: "nous-suivre", label: "Nous suivre",  icon: "📡", hint: "Liens vers réseaux sociaux (JSON: { links: [{ platform, url, label }] })" },
