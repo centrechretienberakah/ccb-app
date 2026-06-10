@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { ABOUT_DEFAULTS } from "@/lib/about-defaults";
+import { PAGE_DEFAULTS } from "@/lib/about-defaults";
 
 interface SiteContentRow {
   id: string;
@@ -39,7 +39,7 @@ export default function SiteContentTab({ initialRows }: { initialRows: Record<st
 
   const [selectedKey, setSelectedKey] = useState(PAGES[0].key);
   const current = byKey[selectedKey];
-  const def0 = ABOUT_DEFAULTS[PAGES[0].key];
+  const def0 = PAGE_DEFAULTS[PAGES[0].key];
   const [title, setTitle] = useState(current?.title ?? def0?.title ?? "");
   const [body, setBody] = useState(current?.body_md ?? def0?.body ?? "");
   const [json, setJson] = useState(current?.data_json ? JSON.stringify(current.data_json, null, 2) : "{}");
@@ -48,7 +48,7 @@ export default function SiteContentTab({ initialRows }: { initialRows: Record<st
 
   const switchTo = (key: string) => {
     const r = byKey[key];
-    const def = ABOUT_DEFAULTS[key];
+    const def = PAGE_DEFAULTS[key];
     setSelectedKey(key);
     setTitle(r?.title ?? def?.title ?? "");
     setBody(r?.body_md ?? def?.body ?? "");
@@ -57,7 +57,7 @@ export default function SiteContentTab({ initialRows }: { initialRows: Record<st
   };
 
   const resetToDefault = () => {
-    const def = ABOUT_DEFAULTS[selectedKey];
+    const def = PAGE_DEFAULTS[selectedKey];
     setTitle(def?.title ?? "");
     setBody(def?.body ?? "");
     setMsg(null);
@@ -108,7 +108,7 @@ export default function SiteContentTab({ initialRows }: { initialRows: Record<st
         <div>
           <h3 style={{ margin: "0 0 0.25rem" }}>{pageMeta.icon} {pageMeta.label}</h3>
           {pageMeta.hint && <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.82rem" }}>{pageMeta.hint}</p>}
-          {ABOUT_DEFAULTS[selectedKey] && (
+          {PAGE_DEFAULTS[selectedKey] && (
             <div style={{ marginTop: "0.5rem", fontSize: "0.72rem", fontWeight: 700, display: "inline-block", padding: "0.22rem 0.65rem", borderRadius: "9999px", background: current ? "rgba(34,197,94,0.14)" : "rgba(212,175,55,0.14)", color: current ? "#16a34a" : "var(--gold)" }}>
               {current ? "✓ Personnalisé (enregistré)" : "Contenu actuel pré-rempli — modifie-le directement ci-dessous"}
             </div>
@@ -136,7 +136,7 @@ export default function SiteContentTab({ initialRows }: { initialRows: Record<st
           <button onClick={handleSave} disabled={saving} style={{ padding: "0.7rem 1.3rem", borderRadius: "9999px", border: "none", background: "var(--gold)", color: "#1a0a00", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", opacity: saving ? 0.6 : 1 }}>
             {saving ? "..." : "💾 Enregistrer"}
           </button>
-          {ABOUT_DEFAULTS[selectedKey] && (
+          {PAGE_DEFAULTS[selectedKey] && (
             <button onClick={resetToDefault} type="button" style={{ padding: "0.7rem 1.1rem", borderRadius: "9999px", border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
               ↺ Recharger le texte par défaut
             </button>

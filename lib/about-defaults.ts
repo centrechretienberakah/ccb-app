@@ -165,9 +165,15 @@ Nous nous engageons à bâtir une Église centrée sur Christ, conduite par l'Es
 
 **Nous déclarons que Jésus-Christ est Seigneur, Sauveur, Roi et Chef suprême de l'Église pour les siècles des siècles. Amen.**`;
 
+/* ── Autres pages CMS (hors À propos) ── */
+export const DEFAULT_DONS_TITLE = "Soutiens le ministère";
+export const DEFAULT_DONS_BODY = "Ta générosité permet au Centre Chrétien Berakah de proclamer l'Évangile, former des disciples et transformer des vies pour la gloire de Dieu.";
+export const DEFAULT_SUIVRE_TITLE = "Restez Connectés";
+export const DEFAULT_SUIVRE_BODY = "Suivez le Centre Chrétien Berakah sur toutes les plateformes pour ne manquer aucun message, aucun live ni aucune ressource spirituelle.";
+
 // Mappe chaque clé CMS à son contenu par défaut (title/body) — utilisé pour
-// pré-remplir l'éditeur admin avec le contenu actuel.
-export const ABOUT_DEFAULTS: Record<string, { title?: string; body?: string }> = {
+// pré-remplir l'éditeur admin avec le contenu ACTUEL.
+export const PAGE_DEFAULTS: Record<string, { title?: string; body?: string }> = {
   "a-propos":          { title: "Centre Chrétien Berakah", body: DEFAULT_INTRO },
   "a-propos-stats":    { body: DEFAULT_STATS_MD },
   "a-propos-histoire": { body: DEFAULT_HISTOIRE_MD },
@@ -177,4 +183,6 @@ export const ABOUT_DEFAULTS: Record<string, { title?: string; body?: string }> =
   "a-propos-equipe":   { body: DEFAULT_TEAM_MD },
   "a-propos-cta":      { title: DEFAULT_CTA_TITLE, body: DEFAULT_CTA_BODY },
   "confession-foi":    { body: DEFAULT_CONFESSION_MD },
+  "dons":              { title: DEFAULT_DONS_TITLE, body: DEFAULT_DONS_BODY },
+  "nous-suivre":       { title: DEFAULT_SUIVRE_TITLE, body: DEFAULT_SUIVRE_BODY },
 };
