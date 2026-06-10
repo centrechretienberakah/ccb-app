@@ -195,7 +195,7 @@ export default function BerakahAI() {
     <>
       {!open && (
         <button className="berakah-fab" onClick={() => setOpen(true)} aria-label="Ouvrir BERAKAH AI" title="BERAKAH AI — assistant pastoral 24h/24">
-          <span style={{ fontSize: 26, lineHeight: 1 }}>🤖</span>
+          <img src="/rev-elvis-v2.jpg" alt="BERAKAH AI" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         </button>
       )}
 
@@ -203,7 +203,7 @@ export default function BerakahAI() {
         <div className="berakah-panel" role="dialog" aria-label="BERAKAH AI">
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "12px 14px", background: "linear-gradient(135deg, var(--violet) 0%, var(--violet-dark) 100%)", color: "#fff", flexShrink: 0 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 21, flexShrink: 0 }}>🤖</div>
+            <img src="/rev-elvis-v2.jpg" alt="BERAKAH AI" decoding="async" style={{ width: 38, height: 38, borderRadius: 11, objectFit: "cover", flexShrink: 0, border: "1.5px solid rgba(255,255,255,0.6)" }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: "var(--font-title)", fontWeight: 800, fontSize: 15.5, lineHeight: 1.1 }}>BERAKAH AI</div>
               <div style={{ fontSize: 11, opacity: 0.85, display: "flex", alignItems: "center", gap: 5 }}>
@@ -316,8 +316,9 @@ export default function BerakahAI() {
         .berakah-fab {
           position: fixed; right: 18px; bottom: 22px; z-index: 130;
           width: 58px; height: 58px; border-radius: 50%; border: none; cursor: pointer;
+          padding: 0; overflow: hidden;
           background: linear-gradient(135deg, var(--violet) 0%, var(--violet-dark) 100%);
-          box-shadow: 0 10px 28px rgba(91,33,182,0.42); color: #fff;
+          box-shadow: 0 10px 28px rgba(91,33,182,0.42), inset 0 0 0 2px rgba(255,255,255,0.85); color: #fff;
           display: flex; align-items: center; justify-content: center;
           animation: berakah-pop .35s ease both;
         }
