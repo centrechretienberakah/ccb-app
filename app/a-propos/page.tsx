@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: "À Propos — Centre Chrétien Berak
  *   confession-foi    → markdown (### article, --- séparateur, **gras**)
  * ───────────────────────────────────────────────────────────────────────── */
 
-const DEFAULT_INTRO = "Une église locale vivante, ancrée dans la Parole, portée par le Saint-Esprit, et consacrée à faire des disciples de Jésus-Christ.";
+const DEFAULT_INTRO = "Le Centre Chrétien Berakah (CCB) est une communauté chrétienne engagée dans la formation de disciples de Jésus-Christ, la transformation des vies par la puissance de l'Évangile et la manifestation de la bénédiction de Dieu dans toutes les sphères de la vie.";
 
 const DEFAULT_STATS_MD = `2010 | Année de fondation
 500+ | Membres actifs
@@ -28,7 +28,7 @@ const DEFAULT_STATS_MD = `2010 | Année de fondation
 const DEFAULT_HISTOIRE_MD = `Le Centre Chrétien Berakah a été fondé avec la conviction que l'église locale est le plan de Dieu pour transformer les individus, les familles et les nations. **Berakah** — mot hébreu signifiant « bénédiction » — reflète notre identité : être un peuple béni pour être une bénédiction.
 Depuis sa création, l'église a grandi en nombre et en maturité spirituelle, développant des ministères de formation, d'intercession, de louange et de service à la communauté. Nous croyons que chaque membre est un ministère — appelé, équipé et envoyé.`;
 
-const DEFAULT_VISION = "Être une église de référence qui forme des disciples de Christ, transforme les familles et impacte les nations par la puissance de l'Évangile.";
+const DEFAULT_VISION = "Notre vision est de voir des hommes et des femmes profondément enracinés dans la Parole de Dieu, transformés par le Saint-Esprit et équipés pour impacter leur génération avec l'amour, la vérité et la puissance de Jésus-Christ.";
 const DEFAULT_MISSION = "Annoncer l'Évangile de Jésus-Christ, former des disciples bibliquement solides, bâtir la communauté et envoyer des ouvriers dans la moisson.";
 
 const DEFAULT_VALUES_MD = `📖 | Parole de Dieu | Toute doctrine et pratique est fondée sur la Bible, Parole inspirée et infaillible de Dieu.
