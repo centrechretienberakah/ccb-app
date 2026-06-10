@@ -1,31 +1,53 @@
 import { Metadata } from "next";
 import type { ReactNode } from "react";
-import { getSiteContent } from "@/lib/site-content";
+import { getSiteContents } from "@/lib/site-content";
 
 export const metadata: Metadata = { title: "À Propos — Centre Chrétien Berakah" };
 
-const VALUES = [
-  { icon: "📖", title: "Parole de Dieu", desc: "Toute doctrine et pratique est fondée sur la Bible, Parole inspirée et infaillible de Dieu." },
-  { icon: "🙏", title: "Prière & Intercession", desc: "La prière est le pilier de notre vie spirituelle individuelle et collective." },
-  { icon: "🕊️", title: "Saint-Esprit", desc: "Nous croyons aux dons et au mouvement du Saint-Esprit dans l'église aujourd'hui." },
-  { icon: "🤝", title: "Communauté", desc: "Nous nous accompagnons mutuellement dans la croissance, la guérison et la foi." },
-  { icon: "🌍", title: "Mission", desc: "L'évangélisation et l'envoi de disciples sont au cœur de notre appel." },
-  { icon: "🎓", title: "Formation", desc: "Nous investissons dans la formation spirituelle, théologique et pratique des membres." },
-];
+/* ─────────────────────────────────────────────────────────────────────────
+ * Toute la page À propos est ÉDITABLE depuis Admin → 📝 Pages (CMS).
+ * Chaque bloc a une clé CMS et une valeur par défaut (affichée si non éditée).
+ *   a-propos          → Titre (hero) + Contenu (intro)
+ *   a-propos-stats    → "valeur | libellé" par ligne
+ *   a-propos-histoire → markdown (paragraphes, **gras**)
+ *   a-propos-vision   → texte
+ *   a-propos-mission  → texte
+ *   a-propos-valeurs  → "emoji | titre | description" par ligne
+ *   a-propos-equipe   → bloc "nom | rôle | photo" puis description ; --- entre membres
+ *   a-propos-cta      → Titre + Contenu
+ *   confession-foi    → markdown (### article, --- séparateur, **gras**)
+ * ───────────────────────────────────────────────────────────────────────── */
 
-const TEAM: { name: string; role: string; desc: string; emoji: string; photo?: string }[] = [
-  { name: "Rév. Elvis NGUIFFO", role: "Pasteur Principal & Fondateur", desc: "Consacré au service du Seigneur depuis plus de 15 ans, le Révérend Elvis NGUIFFO a reçu l'appel pastoral avec la vision de bâtir une église locale forte, enracinée dans la Parole et animée par le Saint-Esprit. Diplômé en théologie et en leadership chrétien, il est aussi époux et père de famille, modèle de la foi vécue au quotidien.", emoji: "👤", photo: "/rev-elvis-v2.jpg" },
-  { name: "L'Équipe Pastorale", role: "Anciens & Responsables", desc: "L'église est gouvernée par un collège d'anciens formés et dédiés, chacun responsable d'un département : jeunesse, femmes, hommes, intercession, louange, et évangélisation.", emoji: "👥" },
-];
+const DEFAULT_INTRO = "Une église locale vivante, ancrée dans la Parole, portée par le Saint-Esprit, et consacrée à faire des disciples de Jésus-Christ.";
 
-const STATS = [
-  { value: "2010", label: "Année de fondation" },
-  { value: "500+", label: "Membres actifs" },
-  { value: "10+", label: "Groupes de cellule" },
-  { value: "3", label: "Services par semaine" },
-];
+const DEFAULT_STATS_MD = `2010 | Année de fondation
+500+ | Membres actifs
+10+ | Groupes de cellule
+3 | Services par semaine`;
 
-// Profession de foi — valeur par défaut (éditable via CMS clé "confession-foi", markdown).
+const DEFAULT_HISTOIRE_MD = `Le Centre Chrétien Berakah a été fondé avec la conviction que l'église locale est le plan de Dieu pour transformer les individus, les familles et les nations. **Berakah** — mot hébreu signifiant « bénédiction » — reflète notre identité : être un peuple béni pour être une bénédiction.
+Depuis sa création, l'église a grandi en nombre et en maturité spirituelle, développant des ministères de formation, d'intercession, de louange et de service à la communauté. Nous croyons que chaque membre est un ministère — appelé, équipé et envoyé.`;
+
+const DEFAULT_VISION = "Être une église de référence qui forme des disciples de Christ, transforme les familles et impacte les nations par la puissance de l'Évangile.";
+const DEFAULT_MISSION = "Annoncer l'Évangile de Jésus-Christ, former des disciples bibliquement solides, bâtir la communauté et envoyer des ouvriers dans la moisson.";
+
+const DEFAULT_VALUES_MD = `📖 | Parole de Dieu | Toute doctrine et pratique est fondée sur la Bible, Parole inspirée et infaillible de Dieu.
+🙏 | Prière & Intercession | La prière est le pilier de notre vie spirituelle individuelle et collective.
+🕊️ | Saint-Esprit | Nous croyons aux dons et au mouvement du Saint-Esprit dans l'église aujourd'hui.
+🤝 | Communauté | Nous nous accompagnons mutuellement dans la croissance, la guérison et la foi.
+🌍 | Mission | L'évangélisation et l'envoi de disciples sont au cœur de notre appel.
+🎓 | Formation | Nous investissons dans la formation spirituelle, théologique et pratique des membres.`;
+
+const DEFAULT_TEAM_MD = `Rév. Elvis NGUIFFO | Pasteur Principal & Fondateur | /rev-elvis-v2.jpg
+Consacré au service du Seigneur depuis plus de 15 ans, le Révérend Elvis NGUIFFO a reçu l'appel pastoral avec la vision de bâtir une église locale forte, enracinée dans la Parole et animée par le Saint-Esprit. Diplômé en théologie et en leadership chrétien, il est aussi époux et père de famille, modèle de la foi vécue au quotidien.
+---
+L'Équipe Pastorale | Anciens & Responsables |
+L'église est gouvernée par un collège d'anciens formés et dédiés, chacun responsable d'un département : jeunesse, femmes, hommes, intercession, louange, et évangélisation.`;
+
+const DEFAULT_CTA_TITLE = "Rejoignez la Famille Berakah";
+const DEFAULT_CTA_BODY = "Vous cherchez une église, une communauté spirituelle, ou vous avez des questions ?\nNous serions heureux de vous accueillir.";
+
+// Profession de foi — valeur par défaut (éditable via CMS clé "confession-foi").
 const DEFAULT_CONFESSION_MD = `# Confession de Foi
 ## Centre Chrétien Berakah (CCB)
 
@@ -160,7 +182,37 @@ Nous nous engageons à bâtir une Église centrée sur Christ, conduite par l'Es
 
 **Nous déclarons que Jésus-Christ est Seigneur, Sauveur, Roi et Chef suprême de l'Église pour les siècles des siècles. Amen.**`;
 
-// Mini-rendu markdown pour la profession de foi (titres ###/##/#, séparateurs ---, **gras**).
+/* ── Parseurs (formats simples éditables) ── */
+function parseStats(md: string): { value: string; label: string }[] {
+  return md.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
+    const p = l.split("|");
+    return { value: (p[0] || "").trim(), label: p.slice(1).join("|").trim() };
+  });
+}
+function parseValues(md: string): { icon: string; title: string; desc: string }[] {
+  return md.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
+    const p = l.split("|");
+    return { icon: (p[0] || "").trim(), title: (p[1] || "").trim(), desc: (p[2] || "").trim() };
+  });
+}
+function parseTeam(md: string): { name: string; role: string; photo?: string; desc: string }[] {
+  return md.split(/\n-{3,}\n/).flatMap((block) => {
+    const lines = block.trim().split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) return [];
+    const head = lines[0].split("|");
+    const name = (head[0] || "").trim();
+    if (!name) return [];
+    const photo = (head[2] || "").trim();
+    return [{
+      name,
+      role: (head[1] || "").trim(),
+      ...(photo ? { photo } : {}),
+      desc: lines.slice(1).join(" ").trim(),
+    }];
+  });
+}
+
+/* ── Mini-rendu markdown (titres ###/##/#, séparateurs ---, **gras**) ── */
 function parseBold(text: string, k: string): ReactNode[] {
   return text.split("**").map((part, i) =>
     i % 2 === 1
@@ -168,12 +220,12 @@ function parseBold(text: string, k: string): ReactNode[] {
       : <span key={`${k}-t${i}`}>{part}</span>,
   );
 }
-function renderConfession(md: string): ReactNode[] {
+function renderMd(md: string): ReactNode[] {
   const out: ReactNode[] = [];
   md.split("\n").forEach((raw, idx) => {
     const line = raw.trim();
     if (!line) return;
-    const k = `c-${idx}`;
+    const k = `m-${idx}`;
     if (line === "---") {
       out.push(<div key={k} style={{ height: 1, background: "var(--border)", margin: "20px 0" }} />);
     } else if (line.startsWith("### ")) {
@@ -183,18 +235,29 @@ function renderConfession(md: string): ReactNode[] {
     } else if (line.startsWith("# ")) {
       out.push(<h2 key={k} style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>{line.slice(2)}</h2>);
     } else {
-      out.push(<p key={k} style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7, margin: "0 0 9px" }}>{parseBold(line, k)}</p>);
+      out.push(<p key={k} style={{ fontSize: 14.5, color: "var(--text-secondary)", lineHeight: 1.75, margin: "0 0 12px" }}>{parseBold(line, k)}</p>);
     }
   });
   return out;
 }
 
 export default async function AProposPage() {
-  const cms = await getSiteContent("a-propos");
-  const heroTitle = cms?.title || "Centre Chrétien Berakah";
-  const heroIntro = cms?.body_md || "Une église locale vivante, ancrée dans la Parole, portée par le Saint-Esprit, et consacrée à faire des disciples de Jésus-Christ.";
-  const conf = await getSiteContent("confession-foi");
-  const confessionMd = conf?.body_md || DEFAULT_CONFESSION_MD;
+  const c = await getSiteContents([
+    "a-propos", "a-propos-stats", "a-propos-histoire", "a-propos-vision",
+    "a-propos-mission", "a-propos-valeurs", "a-propos-equipe", "a-propos-cta", "confession-foi",
+  ]);
+  const heroTitle = c["a-propos"]?.title || "Centre Chrétien Berakah";
+  const heroIntro = c["a-propos"]?.body_md || DEFAULT_INTRO;
+  const stats = parseStats(c["a-propos-stats"]?.body_md || DEFAULT_STATS_MD);
+  const histoireMd = c["a-propos-histoire"]?.body_md || DEFAULT_HISTOIRE_MD;
+  const vision = c["a-propos-vision"]?.body_md || DEFAULT_VISION;
+  const mission = c["a-propos-mission"]?.body_md || DEFAULT_MISSION;
+  const values = parseValues(c["a-propos-valeurs"]?.body_md || DEFAULT_VALUES_MD);
+  const team = parseTeam(c["a-propos-equipe"]?.body_md || DEFAULT_TEAM_MD);
+  const ctaTitle = c["a-propos-cta"]?.title || DEFAULT_CTA_TITLE;
+  const ctaBody = c["a-propos-cta"]?.body_md || DEFAULT_CTA_BODY;
+  const confessionMd = c["confession-foi"]?.body_md || DEFAULT_CONFESSION_MD;
+
   return (
     <div style={{ maxWidth: 780, margin: "0 auto", padding: "32px 16px 80px" }}>
 
@@ -211,8 +274,8 @@ export default async function AProposPage() {
 
       {/* Statistiques */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 48 }}>
-        {STATS.map((s) => (
-          <div key={s.label} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "20px 12px", textAlign: "center" }}>
+        {stats.map((s, i) => (
+          <div key={i} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "20px 12px", textAlign: "center" }}>
             <div style={{ fontSize: 26, fontWeight: 800, background: "linear-gradient(135deg, var(--text-primary), var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.value}</div>
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.3 }}>{s.label}</div>
           </div>
@@ -225,13 +288,7 @@ export default async function AProposPage() {
           <span>📜</span> Notre Histoire
         </h2>
         <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "24px 28px" }}>
-          <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.8, margin: "0 0 16px" }}>
-            Le Centre Chrétien Berakah a été fondé avec la conviction que l&apos;église locale est le plan de Dieu pour transformer les individus, les familles et les nations.{" "}
-            <strong style={{ color: "var(--text-primary)" }}>Berakah</strong> — mot hébreu signifiant <em>&quot;bénédiction&quot;</em> — reflète notre identité : être un peuple béni pour être une bénédiction.
-          </p>
-          <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.8, margin: 0 }}>
-            Depuis sa création, l&apos;église a grandi en nombre et en maturité spirituelle, développant des ministères de formation, d&apos;intercession, de louange et de service à la communauté. Nous croyons que chaque membre est un ministère — appelé, équipé et envoyé.
-          </p>
+          {renderMd(histoireMd)}
         </div>
       </div>
 
@@ -240,16 +297,12 @@ export default async function AProposPage() {
         <div style={{ background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: "var(--radius-xl)", padding: "24px 22px" }}>
           <div style={{ fontSize: 30, marginBottom: 10 }}>🔭</div>
           <h3 style={{ fontSize: 15, fontWeight: 800, color: "var(--gold)", marginBottom: 10 }}>Notre Vision</h3>
-          <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.7, margin: 0 }}>
-            Être une église de référence qui forme des disciples de Christ, transforme les familles et impacte les nations par la puissance de l&apos;Évangile.
-          </p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>{vision}</p>
         </div>
         <div style={{ background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: "var(--radius-xl)", padding: "24px 22px" }}>
           <div style={{ fontSize: 30, marginBottom: 10 }}>🎯</div>
           <h3 style={{ fontSize: 15, fontWeight: 800, color: "var(--gold)", marginBottom: 10 }}>Notre Mission</h3>
-          <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.7, margin: 0 }}>
-            Annoncer l&apos;Évangile de Jésus-Christ, former des disciples bibliquement solides, bâtir la communauté et envoyer des ouvriers dans la moisson.
-          </p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>{mission}</p>
         </div>
       </div>
 
@@ -259,8 +312,8 @@ export default async function AProposPage() {
           <span>💎</span> Nos Valeurs Fondamentales
         </h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-          {VALUES.map((v) => (
-            <div key={v.title} style={{ display: "flex", gap: 14, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "18px 20px", alignItems: "flex-start" }}>
+          {values.map((v, i) => (
+            <div key={i} style={{ display: "flex", gap: 14, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "18px 20px", alignItems: "flex-start" }}>
               <div style={{ fontSize: 24, flexShrink: 0, marginTop: 2 }}>{v.icon}</div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)", marginBottom: 4 }}>{v.title}</div>
@@ -277,13 +330,13 @@ export default async function AProposPage() {
           <span>👤</span> L&apos;Équipe
         </h2>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {TEAM.map((t) => (
-            <div key={t.name} style={{ display: "flex", gap: 18, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "22px 24px", alignItems: "flex-start" }}>
+          {team.map((t, i) => (
+            <div key={i} style={{ display: "flex", gap: 18, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "22px 24px", alignItems: "flex-start" }}>
               {t.photo ? (
                 <img src={t.photo} alt={t.name} decoding="async" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(212,175,55,0.45)", flexShrink: 0 }} />
               ) : (
                 <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(212,175,55,0.15)", border: "2px solid rgba(212,175,55,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>
-                  {t.emoji}
+                  👥
                 </div>
               )}
               <div style={{ flex: 1 }}>
@@ -296,24 +349,21 @@ export default async function AProposPage() {
         </div>
       </div>
 
-      {/* Notre Profession de Foi (éditable via CMS — clé "confession-foi", markdown) */}
+      {/* Notre Profession de Foi */}
       <div style={{ marginBottom: 48 }}>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
           <span>✝️</span> Notre Profession de Foi
         </h2>
         <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "24px 28px" }}>
-          {renderConfession(confessionMd)}
+          {renderMd(confessionMd)}
         </div>
       </div>
 
       {/* CTA */}
       <div style={{ padding: 28, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: "var(--radius-xl)", textAlign: "center" }}>
         <div style={{ fontSize: 28, marginBottom: 10 }}>🤝</div>
-        <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>Rejoignez la Famille Berakah</h3>
-        <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "0 0 18px", lineHeight: 1.6 }}>
-          Vous cherchez une église, une communauté spirituelle, ou vous avez des questions ?<br/>
-          Nous serions heureux de vous accueillir.
-        </p>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>{ctaTitle}</h3>
+        <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "0 0 18px", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{ctaBody}</p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
           <a href="/contact" style={{ background: "var(--gold)", color: "#000", borderRadius: "var(--radius-full)", padding: "10px 22px", fontWeight: 700, fontSize: 14, textDecoration: "none" }}>
             Nous contacter →

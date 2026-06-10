@@ -17,8 +17,15 @@ const inputStyle: React.CSSProperties = { width: "100%", padding: "0.6rem 0.8rem
 const labelStyle: React.CSSProperties = { display: "block", color: "var(--text-muted)", fontSize: "0.72rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.3rem" };
 
 const PAGES: { key: string; label: string; icon: string; hint?: string }[] = [
-  { key: "a-propos",    label: "À propos",    icon: "⛪", hint: "Titre + intro de la page À propos (le reste = sections dédiées)" },
-  { key: "confession-foi", label: "Profession de foi", icon: "✝️", hint: "Confession de foi du CCB. Édite le champ « Contenu (markdown) » : ### pour un article, --- pour séparer, **gras**. Laisse vide pour revenir au texte par défaut." },
+  { key: "a-propos",          label: "À propos · En-tête",  icon: "⛪", hint: "Titre (hero) + intro (champ Contenu). Les autres blocs ont leur propre entrée ci-dessous." },
+  { key: "a-propos-stats",    label: "À propos · Stats",    icon: "📊", hint: "Une ligne par statistique : valeur | libellé (ex. « 2010 | Année de fondation »)." },
+  { key: "a-propos-histoire", label: "À propos · Histoire", icon: "📜", hint: "Notre Histoire — un paragraphe par ligne. **gras** supporté." },
+  { key: "a-propos-vision",   label: "À propos · Vision",   icon: "🔭", hint: "Texte de la vision (champ Contenu)." },
+  { key: "a-propos-mission",  label: "À propos · Mission",  icon: "🎯", hint: "Texte de la mission (champ Contenu)." },
+  { key: "a-propos-valeurs",  label: "À propos · Valeurs",  icon: "💎", hint: "Une ligne par valeur : emoji | titre | description." },
+  { key: "a-propos-equipe",   label: "À propos · Équipe",   icon: "👥", hint: "Par membre : 1re ligne « nom | rôle | /photo.jpg » puis la description ; séparer les membres par une ligne contenant ---." },
+  { key: "a-propos-cta",      label: "À propos · Appel",    icon: "🤝", hint: "Encart final : Titre + texte (champ Contenu)." },
+  { key: "confession-foi", label: "Profession de foi", icon: "✝️", hint: "Confession de foi du CCB. Champ « Contenu (markdown) » : ### pour un article, --- pour séparer, **gras**. Laisse vide pour revenir au texte par défaut." },
   { key: "dons",        label: "Faire un don", icon: "💝", hint: "Présentation des moyens de soutien" },
   { key: "jesus-daily", label: "Jesus Daily TV", icon: "📺", hint: "Description de la rubrique vidéos" },
   { key: "nous-suivre", label: "Nous suivre",  icon: "📡", hint: "Liens vers réseaux sociaux (JSON: { links: [{ platform, url, label }] })" },
