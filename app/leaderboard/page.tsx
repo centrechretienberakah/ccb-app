@@ -11,6 +11,8 @@ const LEVEL_LABEL: Record<string, string> = {
   debutant: 'Débutant', intermediaire: 'Intermédiaire', 'avancé': 'Avancé', expert: 'Expert',
 };
 
+const MEDAL = ['🥇', '🥈', '🥉'];
+
 export default function LeaderboardPage() {
   const [scores, setScores] = useState<Score[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,32 +39,32 @@ export default function LeaderboardPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-6 md:p-12">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-black mb-8">🏆 Classement du Championnat</h1>
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : scores.length === 0 ? (
-          <p className="text-slate-400 text-sm">Aucun score enregistré pour le moment. Sois le premier à jouer !</p>
-        ) : (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-            {scores.map((s, index) => (
-              <div key={index} className="flex justify-between items-center p-4 border-b border-slate-800 last:border-0">
-                <div className="flex items-center gap-4">
-                  <span className="font-mono text-amber-400 font-bold w-8">#{index + 1}</span>
-                  <div>
-                    <p className="text-white font-bold">{s.name}</p>
-                    <p className="text-xs text-slate-500">{s.team_name} · {LEVEL_LABEL[s.level] ?? 'Débutant'}</p>
-                  </div>
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px 96px' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 20px', fontFamily: 'var(--font-title)' }}>🏆 Classement du championnat</h1>
+
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+          <div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'qspin 0.8s linear infinite' }} />
+          <style>{`@keyframes qspin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      ) : scores.length === 0 ? (
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Aucun score enregistré pour le moment. Sois le premier à jouer !</p>
+      ) : (
+        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+          {scores.map((s, index) => (
+            <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 16px', borderBottom: index === scores.length - 1 ? 'none' : '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+                <span style={{ width: 28, textAlign: 'center', fontWeight: 800, color: 'var(--gold-dark)', fontSize: index < 3 ? 18 : 14 }}>{MEDAL[index] ?? `#${index + 1}`}</span>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontSize: 14.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '1px 0 0' }}>{s.team_name} · {LEVEL_LABEL[s.level] ?? 'Débutant'}</p>
                 </div>
-                <span className="text-xl font-black text-indigo-400">{s.total_score} pts</span>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </main>
+              <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--violet)', whiteSpace: 'nowrap' }}>{s.total_score} pts</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

@@ -15,6 +15,15 @@ interface QuizAdmin {
   answers_count?: number;
 }
 
+const card: React.CSSProperties = {
+  background: 'var(--card-bg)', border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-sm)',
+};
+const chip: React.CSSProperties = {
+  fontSize: 11.5, background: 'var(--surface-2)', color: 'var(--text-muted)',
+  border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '3px 8px',
+};
+
 export default function QuizControlClient() {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
@@ -35,15 +44,9 @@ export default function QuizControlClient() {
         const fullData = await Promise.all(
           quizzesData.map(async (quiz) => {
             const { count: qCount } = await supabase
-              .from('quiz_questions')
-              .select('*', { count: 'exact', head: true })
-              .eq('quiz_id', quiz.id);
-
+              .from('quiz_questions').select('*', { count: 'exact', head: true }).eq('quiz_id', quiz.id);
             const { count: aCount } = await supabase
-              .from('quiz_answers')
-              .select('*', { count: 'exact', head: true })
-              .eq('quiz_id', quiz.id);
-
+              .from('quiz_answers').select('*', { count: 'exact', head: true }).eq('quiz_id', quiz.id);
             return { ...quiz, questions_count: qCount || 0, answers_count: aCount || 0 };
           })
         );
@@ -71,16 +74,9 @@ export default function QuizControlClient() {
   const toggleQuizStatus = async (id: string, currentStatus: boolean) => {
     setActionLoading(id);
     try {
-      const { error } = await supabase
-        .from('quiz_quizzes')
-        .update({ is_active: !currentStatus })
-        .eq('id', id);
-
+      const { error } = await supabase.from('quiz_quizzes').update({ is_active: !currentStatus }).eq('id', id);
       if (error) throw error;
-
-      setQuizzes((prev) =>
-        prev.map((q) => (q.id === id ? { ...q, is_active: !currentStatus } : q))
-      );
+      setQuizzes((prev) => prev.map((q) => (q.id === id ? { ...q, is_active: !currentStatus } : q)));
     } catch {
       alert("Erreur lors du changement d'état du quiz.");
     } finally {
@@ -106,49 +102,41 @@ export default function QuizControlClient() {
 
   if (loading || !allowed) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <div className="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-3"></div>
-        <p className="text-slate-400 text-sm">Chargement du panneau d&apos;administration...</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: 12 }}>
+        <div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'qspin 0.8s linear infinite' }} />
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Chargement du panneau d&apos;administration…</p>
+        <style>{`@keyframes qspin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-8">
-        <div>
-          <span className="text-xs font-bold text-amber-400 uppercase tracking-widest bg-amber-400/10 px-3 py-1 rounded-full">
-            Espace Super-Admin
-          </span>
-          <h1 className="text-3xl font-black tracking-tight text-white mt-2">
-            Contrôle du Championnat
-          </h1>
-        </div>
+      <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 20, marginBottom: 28 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', background: 'var(--gold-pale)', color: 'var(--gold-dark)', borderRadius: 'var(--radius-full)', padding: '4px 12px' }}>Espace Admin</span>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', margin: '12px 0 0', fontFamily: 'var(--font-title)' }}>Contrôle du championnat</h1>
       </div>
 
-      <div className="grid gap-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {quizzes.map((quiz) => (
-          <div key={quiz.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-1.5 flex-1">
-              <h3 className="text-lg font-bold text-slate-100">{quiz.title}</h3>
-              <div className="flex flex-wrap gap-2 text-xs text-slate-400">
-                <span className="bg-slate-950 px-2 py-1 rounded border border-slate-800">Questions: {quiz.questions_count}</span>
-                <span className="bg-slate-950 px-2 py-1 rounded border border-slate-800">Réponses: {quiz.answers_count}</span>
-                {quiz.is_active && <span className="bg-green-500/10 text-green-400 px-2 py-1 rounded border border-green-500/30">● Active</span>}
+          <div key={quiz.id} style={{ ...card, padding: '18px 20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 8px' }}>{quiz.title}</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <span style={chip}>Questions : {quiz.questions_count}</span>
+                <span style={chip}>Réponses : {quiz.answers_count}</span>
+                {quiz.is_active && <span style={{ ...chip, background: 'rgba(34,197,94,0.12)', color: 'var(--success)', borderColor: 'rgba(34,197,94,0.3)' }}>● Active</span>}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                disabled={actionLoading === quiz.id}
-                onClick={() => toggleQuizStatus(quiz.id, quiz.is_active)}
-                className={`text-xs font-bold px-4 py-2 rounded-xl ${quiz.is_active ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}
-              >
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button disabled={actionLoading === quiz.id} onClick={() => toggleQuizStatus(quiz.id, quiz.is_active)}
+                style={{ fontSize: 12.5, fontWeight: 700, padding: '8px 16px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer',
+                  background: quiz.is_active ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.12)',
+                  color: quiz.is_active ? 'var(--error)' : 'var(--success)' }}>
                 {quiz.is_active ? 'Désactiver' : 'Activer'}
               </button>
-              <button
-                onClick={() => resetQuizAnswers(quiz.id)}
-                className="bg-slate-800 text-slate-300 text-xs font-bold px-4 py-2 rounded-xl"
-              >
+              <button onClick={() => resetQuizAnswers(quiz.id)}
+                style={{ fontSize: 12.5, fontWeight: 700, padding: '8px 16px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', cursor: 'pointer' }}>
                 Réinitialiser
               </button>
             </div>

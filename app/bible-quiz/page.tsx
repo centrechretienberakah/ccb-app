@@ -20,6 +20,11 @@ const LEVEL_LABEL: Record<string, string> = {
   debutant: 'Débutant', intermediaire: 'Intermédiaire', 'avancé': 'Avancé', expert: 'Expert',
 };
 
+const card: React.CSSProperties = {
+  background: 'var(--card-bg)', border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-sm)',
+};
+
 export default function BibleQuizHub() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -33,7 +38,6 @@ export default function BibleQuizHub() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/auth/login?redirect=/bible-quiz'); return; }
 
-      // Profil quiz unifié (créé à la volée depuis le compte CCB).
       const { data: profile } = await supabase.rpc('quiz_ensure_profile');
       const p = profile as MyStats | null;
       if (p) {
@@ -44,7 +48,6 @@ export default function BibleQuizHub() {
         }
       }
 
-      // Tous les quiz + repère la manche active (tolère 0 ou plusieurs).
       const { data: list } = await supabase
         .from('quiz_quizzes')
         .select('id, title, description, category, difficulty, is_active, sort_order')
@@ -59,80 +62,74 @@ export default function BibleQuizHub() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
-      </main>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'qspin 0.8s linear infinite' }} />
+        <style>{`@keyframes qspin{to{transform:rotate(360deg)}}`}</style>
+      </div>
     );
   }
 
   const activeQuiz = quizzes.find((q) => q.id === activeId) ?? null;
+  const stat = (label: string, value: string, color: string) => (
+    <div style={{ ...card, padding: '14px 10px', textAlign: 'center' }}>
+      <span style={{ display: 'block', fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ fontSize: 20, fontWeight: 800, color, display: 'block', marginTop: 2 }}>{value}</span>
+    </div>
+  );
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-6 md:p-12">
-      <div className="max-w-4xl mx-auto">
-        <span className="text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full">
-          Bootcamp Berakah
-        </span>
-        <h1 className="text-3xl font-black mb-6 mt-3">Bible Quiz Championship</h1>
-
-        {/* Mes stats */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
-            <span className="block text-xs uppercase tracking-wider text-slate-500 font-bold">Score</span>
-            <span className="text-2xl font-black text-amber-400">{stats?.total_score ?? 0}</span>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
-            <span className="block text-xs uppercase tracking-wider text-slate-500 font-bold">Niveau</span>
-            <span className="text-lg font-bold text-indigo-400">{LEVEL_LABEL[stats?.level ?? 'debutant'] ?? 'Débutant'}</span>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
-            <span className="block text-xs uppercase tracking-wider text-slate-500 font-bold">Équipe</span>
-            <span className="text-sm font-bold text-slate-200">{teamName ?? '—'}</span>
-          </div>
-        </div>
-
-        {/* Manche en cours */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 mb-8">
-          <h2 className="text-xl font-bold mb-4">Manche actuelle</h2>
-          {activeQuiz ? (
-            <div>
-              <p className="text-indigo-400 font-bold mb-1">{activeQuiz.title}</p>
-              {activeQuiz.description && <p className="text-slate-400 text-sm mb-4">{activeQuiz.description}</p>}
-              <Link href={`/quiz/${activeQuiz.id}`} className="inline-block bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl font-bold transition">
-                Rejoindre la manche
-              </Link>
-            </div>
-          ) : (
-            <p className="text-slate-400">Aucune manche active pour le moment. Préparez-vous pour la prochaine !</p>
-          )}
-        </div>
-
-        {/* Toutes les manches */}
-        {quizzes.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-bold mb-3 text-slate-300">Toutes les manches</h2>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {quizzes.map((q) => (
-                <Link key={q.id} href={`/quiz/${q.id}`}
-                  className="bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-4 transition">
-                  <p className="font-bold text-slate-100">{q.title}</p>
-                  {q.description && <p className="text-xs text-slate-500 mt-1">{q.description}</p>}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Navigation rapide */}
-        <div className="grid grid-cols-2 gap-4">
-          <Link href="/leaderboard" className="p-6 bg-slate-800 rounded-2xl text-center hover:bg-slate-700 transition">
-            🏆 Voir le classement
-          </Link>
-          <Link href="/team" className="p-6 bg-slate-800 rounded-2xl text-center hover:bg-slate-700 transition">
-            👥 Gérer mon équipe
-          </Link>
-        </div>
+    <div style={{ maxWidth: 820, margin: '0 auto', padding: '24px 16px 96px' }}>
+      {/* Hero */}
+      <div style={{ marginBottom: 22 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', background: 'var(--gold-pale)', color: 'var(--gold-dark)', borderRadius: 'var(--radius-full)', padding: '4px 12px' }}>Bootcamp Berakah</span>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-primary)', margin: '12px 0 0', fontFamily: 'var(--font-title)' }}>🏆 Bible Quiz Championship</h1>
       </div>
-    </main>
+
+      {/* Mes stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 24 }}>
+        {stat('Score', String(stats?.total_score ?? 0), 'var(--gold-dark)')}
+        {stat('Niveau', LEVEL_LABEL[stats?.level ?? 'debutant'] ?? 'Débutant', 'var(--violet)')}
+        {stat('Équipe', teamName ?? '—', 'var(--text-primary)')}
+      </div>
+
+      {/* Manche actuelle */}
+      <div style={{ ...card, padding: '20px 22px', marginBottom: 24 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px' }}>Manche actuelle</h2>
+        {activeQuiz ? (
+          <div>
+            <p style={{ color: 'var(--violet)', fontWeight: 800, margin: '0 0 4px', fontSize: 15 }}>{activeQuiz.title}</p>
+            {activeQuiz.description && <p style={{ color: 'var(--text-muted)', fontSize: 13.5, margin: '0 0 14px' }}>{activeQuiz.description}</p>}
+            <Link href={`/quiz/${activeQuiz.id}`}
+              style={{ display: 'inline-block', background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '11px 24px', borderRadius: 'var(--radius-full)', textDecoration: 'none', boxShadow: 'var(--shadow-gold)' }}>
+              Rejoindre la manche →
+            </Link>
+          </div>
+        ) : (
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>Aucune manche active pour le moment. Préparez-vous pour la prochaine !</p>
+        )}
+      </div>
+
+      {/* Toutes les manches */}
+      {quizzes.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Toutes les manches</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+            {quizzes.map((q) => (
+              <Link key={q.id} href={`/quiz/${q.id}`}
+                style={{ ...card, padding: '14px 16px', textDecoration: 'none', display: 'block' }}>
+                <p style={{ fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontSize: 14 }}>{q.title}</p>
+                {q.description && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>{q.description}</p>}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Nav rapide */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Link href="/leaderboard" style={{ ...card, padding: '18px', textAlign: 'center', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700, fontSize: 14 }}>🏆 Voir le classement</Link>
+        <Link href="/team" style={{ ...card, padding: '18px', textAlign: 'center', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700, fontSize: 14 }}>👥 Gérer mon équipe</Link>
+      </div>
+    </div>
   );
 }

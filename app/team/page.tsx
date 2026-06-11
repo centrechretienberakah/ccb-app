@@ -8,6 +8,11 @@ const supabase = createClient();
 
 interface Team { id: string; name: string; total_score: number; }
 
+const card: React.CSSProperties = {
+  background: 'var(--card-bg)', border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-sm)',
+};
+
 export default function TeamPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -52,59 +57,58 @@ export default function TeamPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
-      </main>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'qspin 0.8s linear infinite' }} />
+        <style>{`@keyframes qspin{to{transform:rotate(360deg)}}`}</style>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-6 md:p-12">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-black mb-2">Mon équipe</h1>
-        <p className="text-slate-400 text-sm mb-6">Rejoins une équipe existante ou crée la tienne.</p>
+    <div style={{ maxWidth: 620, margin: '0 auto', padding: '24px 16px 96px' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontFamily: 'var(--font-title)' }}>👥 Mon équipe</h1>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '0 0 22px' }}>Rejoins une équipe existante ou crée la tienne.</p>
 
-        {message && (
-          <div className="mb-5 p-3 rounded-xl text-center text-xs font-medium bg-slate-900 border border-slate-800">{message}</div>
-        )}
+      {message && (
+        <div style={{ ...card, padding: '10px 14px', textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 18 }}>{message}</div>
+      )}
 
-        {/* Créer une équipe */}
-        <form onSubmit={createTeam} className="flex gap-2 mb-8">
-          <input
-            type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
-            placeholder="Nom de la nouvelle équipe (ex: Les Flambeaux)"
-            className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400 transition"
-          />
-          <button type="submit" disabled={busy || !newName.trim()}
-            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-slate-950 font-bold px-5 py-3 rounded-xl transition text-sm">
-            Créer
-          </button>
-        </form>
+      {/* Créer une équipe */}
+      <form onSubmit={createTeam} style={{ display: 'flex', gap: 8, marginBottom: 26 }}>
+        <input
+          type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
+          placeholder="Nom de la nouvelle équipe (ex : Les Flambeaux)"
+          style={{ flex: 1, boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-full)', padding: '11px 16px', fontSize: 14, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
+        />
+        <button type="submit" disabled={busy || !newName.trim()}
+          style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 13.5, padding: '11px 20px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', opacity: (busy || !newName.trim()) ? 0.4 : 1, whiteSpace: 'nowrap' }}>
+          Créer
+        </button>
+      </form>
 
-        {/* Liste des équipes */}
-        <div className="grid gap-3">
-          {teams.length === 0 && <p className="text-slate-500 text-sm">Aucune équipe pour l&apos;instant. Crée la première !</p>}
-          {teams.map((t) => {
-            const isMine = t.id === myTeamId;
-            return (
-              <div key={t.id} className={`flex items-center justify-between gap-4 p-4 rounded-2xl border ${isMine ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-900 border-slate-800'}`}>
-                <div>
-                  <p className="font-bold text-slate-100">{t.name}</p>
-                  <p className="text-xs text-slate-500">{t.total_score} pts</p>
-                </div>
-                {isMine ? (
-                  <span className="text-xs font-bold text-amber-400 uppercase">Mon équipe ✓</span>
-                ) : (
-                  <button disabled={busy} onClick={() => joinTeam(t.id)}
-                    className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-sm font-bold px-4 py-2 rounded-xl transition">
-                    Rejoindre
-                  </button>
-                )}
+      {/* Liste des équipes */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {teams.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Aucune équipe pour l&apos;instant. Crée la première !</p>}
+        {teams.map((t) => {
+          const isMine = t.id === myTeamId;
+          return (
+            <div key={t.id} style={{ ...card, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, ...(isMine ? { borderColor: 'var(--gold)', background: 'var(--gold-pale)' } : {}) }}>
+              <div>
+                <p style={{ fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontSize: 15 }}>{t.name}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{t.total_score} pts</p>
               </div>
-            );
-          })}
-        </div>
+              {isMine ? (
+                <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--gold-dark)', textTransform: 'uppercase' }}>Mon équipe ✓</span>
+              ) : (
+                <button disabled={busy} onClick={() => joinTeam(t.id)}
+                  style={{ background: 'var(--violet)', color: '#fff', fontWeight: 700, fontSize: 13, padding: '8px 16px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', opacity: busy ? 0.5 : 1 }}>
+                  Rejoindre
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
-    </main>
+    </div>
   );
 }

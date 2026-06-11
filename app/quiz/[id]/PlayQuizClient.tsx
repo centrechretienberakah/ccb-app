@@ -30,6 +30,15 @@ interface Verdict {
   reference: string | null;
 }
 
+const card: React.CSSProperties = {
+  background: 'var(--card-bg)', border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-md)',
+};
+const pill = (bg: string, color: string): React.CSSProperties => ({
+  fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
+  background: bg, color, borderRadius: 'var(--radius-full)', padding: '4px 10px',
+});
+
 export default function PlayQuizClient({ quizId }: { quizId: string }) {
   const router = useRouter();
 
@@ -55,22 +64,16 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
           router.push('/auth/login?redirect=/bible-quiz');
           return;
         }
-        // Crée (idempotent) le profil quiz lié au compte CCB.
         await supabase.rpc('quiz_ensure_profile');
 
         const { data: quiz } = await supabase
-          .from('quiz_quizzes')
-          .select('title')
-          .eq('id', quizId)
-          .single();
+          .from('quiz_quizzes').select('title').eq('id', quizId).single();
         if (quiz) setQuizTitle(quiz.title);
 
         // Questions SANS la bonne réponse (vue publique sécurisée).
         const { data: questionsData } = await supabase
-          .from('quiz_questions_public')
-          .select('*')
-          .eq('quiz_id', quizId)
-          .order('sort_order', { ascending: true });
+          .from('quiz_questions_public').select('*')
+          .eq('quiz_id', quizId).order('sort_order', { ascending: true });
 
         setQuestions((questionsData as PublicQuestion[]) || []);
       } catch (error) {
@@ -79,13 +82,11 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         setLoading(false);
       }
     }
-
     if (quizId) loadQuizData();
   }, [quizId, router]);
 
   const currentQuestion = questions[currentIndex];
   const currentQuestionId = currentQuestion?.id;
-  // Question à réponse libre = aucune option proposée.
   const isFreeInput = !!currentQuestion
     && !currentQuestion.option_a && !currentQuestion.option_b
     && !currentQuestion.option_c && !currentQuestion.option_d;
@@ -126,11 +127,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
     setTimeLeft(10);
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          submitAnswer();
-          return 0;
-        }
+        if (prev <= 1) { clearInterval(interval); submitAnswer(); return 0; }
         return prev - 1;
       });
     }, 1000);
@@ -145,7 +142,6 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
       setIsAnswered(false);
       setVerdict(null);
     } else {
-      // Clôture serveur : score recalculé depuis la source de vérité.
       try {
         const { data } = await supabase.rpc('quiz_finish_attempt', { p_quiz_id: quizId });
         const res = data as { score?: number } | null;
@@ -160,151 +156,128 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
 
   if (loading) {
     return (
-      <div className="w-full min-h-[70vh] flex flex-col items-center justify-center text-slate-100">
-        <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-400 text-sm">Chargement du Championnat...</p>
+      <div style={{ minHeight: '50vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+        <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'qspin 0.8s linear infinite' }} />
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Chargement du Championnat…</p>
+        <style>{`@keyframes qspin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
   if (questions.length === 0) {
     return (
-      <div className="w-full min-h-[70vh] flex items-center justify-center p-4">
-        <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 text-center max-w-md shadow-xl w-full">
-          <h2 className="text-xl font-bold text-amber-400">Aucune Question</h2>
-          <p className="text-slate-400 text-sm mt-2">Ce questionnaire est en cours de configuration par l&apos;organisation.</p>
-        </div>
+      <div style={{ ...card, padding: 40, textAlign: 'center' }}>
+        <div style={{ fontSize: 44, marginBottom: 10 }}>📖</div>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--gold)', fontFamily: 'var(--font-title)' }}>Aucune question</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 8 }}>Ce questionnaire est en cours de configuration par l&apos;organisation.</p>
       </div>
     );
   }
 
   if (!currentQuestion) return null;
 
+  if (quizFinished) {
+    return (
+      <div style={{ ...card, padding: '36px 24px', textAlign: 'center' }}>
+        <span style={{ fontSize: 52 }}>🏆</span>
+        <h1 style={{ fontSize: 28, fontWeight: 800, margin: '14px 0 4px', color: 'var(--text-primary)', fontFamily: 'var(--font-title)' }}>Étape validée !</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>Vos points ont été ajoutés au classement général.</p>
+        <div style={{ margin: '24px auto', maxWidth: 240, background: 'var(--gold-pale)', border: '1px solid var(--gold)', borderRadius: 'var(--radius-lg)', padding: '16px 0' }}>
+          <span style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--gold-dark)' }}>Points marqués</span>
+          <span style={{ fontSize: 40, fontWeight: 800, color: 'var(--gold-dark)', display: 'block', marginTop: 4 }}>+{finalScore ?? score} pts</span>
+        </div>
+        <button onClick={() => router.push('/bible-quiz')}
+          style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '12px 28px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-gold)' }}>
+          Retour au championnat
+        </button>
+      </div>
+    );
+  }
+
+  const timerCritical = timeLeft <= 3;
   return (
-    <div className="w-full block py-12 px-4 md:px-8 font-sans">
-      <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl mx-auto">
+    <div style={{ ...card, padding: '22px 20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <span style={{ ...pill('var(--gold-pale)', 'var(--gold-dark)'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{quizTitle}</span>
+          {currentQuestion.is_difficult && <span style={pill('var(--violet-50)', 'var(--violet)')}>🔥 Difficile</span>}
+        </div>
+        <div style={{
+          fontSize: 14, fontWeight: 800, padding: '4px 12px', borderRadius: 'var(--radius-md)',
+          border: `1px solid ${timerCritical ? 'var(--error)' : 'var(--border)'}`,
+          background: timerCritical ? 'rgba(239,68,68,0.10)' : 'var(--surface-2)',
+          color: timerCritical ? 'var(--error)' : 'var(--text-secondary)',
+        }}>⏱️ {timeLeft}s</div>
+      </div>
 
-        {quizFinished ? (
-          <div className="text-center py-6">
-            <span className="text-5xl">🏆</span>
-            <h1 className="text-3xl font-black mt-4 tracking-tight text-white">Étape Validée !</h1>
-            <p className="text-slate-400 text-sm mt-1">Vos points ont été ajoutés au classement général.</p>
+      {/* Barre de progression */}
+      <div style={{ width: '100%', height: 6, background: 'var(--surface-2)', borderRadius: 'var(--radius-full)', overflow: 'hidden', marginBottom: 22 }}>
+        <div style={{ height: '100%', width: `${((currentIndex + 1) / questions.length) * 100}%`, background: 'var(--gold)', transition: 'width 0.3s' }} />
+      </div>
 
-            <div className="my-6 bg-slate-950 border border-slate-800 rounded-2xl py-4 max-w-xs mx-auto">
-              <span className="block text-xs uppercase tracking-widest font-bold text-slate-500">Points Marqués</span>
-              <span className="text-4xl font-black text-amber-400 mt-1 block">+{finalScore ?? score} pts</span>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.4, margin: '0 0 20px' }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 15, fontWeight: 600, marginRight: 8 }}>Q{currentIndex + 1}.</span>
+        {currentQuestion.text}
+      </h2>
+
+      {isFreeInput ? (
+        <div>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 6 }}>Votre réponse (texte court)</label>
+          <input
+            type="text" disabled={isAnswered} value={freeAnswer}
+            onChange={(e) => setFreeAnswer(e.target.value)}
+            placeholder="Écrivez votre réponse ici…"
+            style={{ width: '100%', boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', fontSize: 14, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
+          />
+          {isAnswered && verdict && (
+            <div style={{ marginTop: 10, fontSize: 14, fontWeight: 700, color: verdict.is_correct ? 'var(--success)' : 'var(--error)' }}>
+              {verdict.is_correct ? '✅ Bonne réponse !' : `❌ Réponse attendue : ${verdict.free_answer ?? '—'}`}
             </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {['A', 'B', 'C', 'D'].map((letter) => {
+            const optionText = currentQuestion[`option_${letter.toLowerCase()}` as keyof PublicQuestion] as string | null;
+            if (!optionText) return null;
 
-            <button onClick={() => router.push('/bible-quiz')} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm px-8 py-3.5 rounded-xl transition shadow-lg">
-              Retour au Dashboard
-            </button>
-          </div>
+            let bg = 'var(--surface-2)', border = 'var(--border)', color = 'var(--text-primary)', opacity = 1;
+            if (!isAnswered && selectedAnswer === letter) { bg = 'var(--gold-pale)'; border = 'var(--gold)'; color = 'var(--gold-dark)'; }
+            else if (isAnswered && verdict) {
+              if (letter === verdict.correct_option?.toUpperCase().trim()) { bg = 'rgba(34,197,94,0.12)'; border = 'var(--success)'; color = 'var(--success)'; }
+              else if (selectedAnswer === letter) { bg = 'rgba(239,68,68,0.10)'; border = 'var(--error)'; color = 'var(--error)'; }
+              else { opacity = 0.5; }
+            }
+
+            return (
+              <button key={letter} disabled={isAnswered} onClick={() => handleSelectOption(letter)}
+                style={{ width: '100%', textAlign: 'left', padding: '13px 16px', borderRadius: 'var(--radius-md)', border: `1px solid ${border}`, background: bg, color, opacity, fontSize: 14, fontWeight: 600, cursor: isAnswered ? 'default' : 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.12s' }}>
+                <span style={{ fontWeight: 800, marginRight: 8 }}>{letter}.</span>{optionText}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {isAnswered && verdict?.reference && (
+        <div style={{ marginTop: 16, padding: '10px 14px', background: 'var(--gold-pale)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 12.5, color: 'var(--gold-dark)', fontWeight: 600 }}>
+          📖 Écriture : {verdict.reference}
+        </div>
+      )}
+
+      <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end' }}>
+        {!isAnswered ? (
+          <button
+            disabled={submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')}
+            onClick={submitAnswer}
+            style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '11px 26px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', opacity: (submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')) ? 0.4 : 1 }}>
+            {submitting ? '…' : 'Valider'}
+          </button>
         ) : (
-          <div>
-            <div className="flex justify-between items-center mb-4 gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider bg-amber-400/10 px-3 py-1 rounded-full truncate max-w-45">
-                  {quizTitle}
-                </span>
-                {currentQuestion.is_difficult && (
-                  <span className="text-xs font-bold text-purple-400 uppercase bg-purple-500/10 px-3 py-1 rounded-full">
-                    🔥 Difficile
-                  </span>
-                )}
-              </div>
-              <div className={`text-sm font-black px-3 py-1 rounded-lg border transition ${timeLeft <= 3 ? 'bg-red-500/10 border-red-500 text-red-500 animate-pulse' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
-                ⏱️ {timeLeft}s
-              </div>
-            </div>
-
-            <div className="w-full h-1.5 bg-slate-950 rounded-full mb-6 overflow-hidden">
-              <div
-                className="h-full bg-amber-400 transition-all duration-300"
-                style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-              ></div>
-            </div>
-
-            <h2 className="text-lg md:text-xl font-extrabold tracking-tight text-slate-100 mb-6 leading-snug">
-              <span className="text-slate-500 text-base font-medium mr-2">Q{currentIndex + 1}.</span>
-              {currentQuestion.text}
-            </h2>
-
-            {isFreeInput ? (
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Votre réponse (Texte court) :</label>
-                <input
-                  type="text"
-                  disabled={isAnswered}
-                  value={freeAnswer}
-                  onChange={(e) => setFreeAnswer(e.target.value)}
-                  placeholder="Écrivez votre réponse ici..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition"
-                />
-                {isAnswered && verdict && (
-                  <div className={`mt-2 text-sm font-bold ${verdict.is_correct ? 'text-green-400' : 'text-red-400'}`}>
-                    {verdict.is_correct ? '✅ Bonne réponse !' : `❌ Réponse attendue : ${verdict.free_answer ?? '—'}`}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {['A', 'B', 'C', 'D'].map((letter) => {
-                  const optionText = currentQuestion[`option_${letter.toLowerCase()}` as keyof PublicQuestion] as string | null;
-                  if (!optionText) return null;
-
-                  let optionStyle = "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300";
-
-                  if (!isAnswered && selectedAnswer === letter) {
-                    optionStyle = "bg-amber-500/10 border-amber-500 text-amber-400";
-                  } else if (isAnswered && verdict) {
-                    if (letter === verdict.correct_option?.toUpperCase().trim()) {
-                      optionStyle = "bg-green-500/10 border-green-500 text-green-400 font-semibold";
-                    } else if (selectedAnswer === letter) {
-                      optionStyle = "bg-red-500/10 border-red-500 text-red-400";
-                    } else {
-                      optionStyle = "bg-slate-950/40 border-slate-900 text-slate-600 opacity-50";
-                    }
-                  }
-
-                  return (
-                    <button
-                      key={letter}
-                      disabled={isAnswered}
-                      onClick={() => handleSelectOption(letter)}
-                      className={`w-full text-left p-3.5 rounded-xl border text-sm transition font-medium flex items-center justify-between gap-4 ${optionStyle}`}
-                    >
-                      <span>{letter}. {optionText}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {isAnswered && verdict?.reference && (
-              <div className="mt-4 p-3 bg-slate-950 border border-slate-800/80 rounded-xl text-xs text-amber-400/90 font-medium">
-                📖 Écriture : {verdict.reference}
-              </div>
-            )}
-
-            <div className="mt-6 pt-4 border-t border-slate-800/60 flex justify-end">
-              {!isAnswered ? (
-                <button
-                  disabled={submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')}
-                  onClick={submitAnswer}
-                  className="bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:hover:bg-amber-500 text-slate-950 font-bold text-sm px-6 py-2.5 rounded-xl transition"
-                >
-                  {submitting ? '...' : 'Valider'}
-                </button>
-              ) : (
-                <button
-                  onClick={handleNext}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-sm px-6 py-2.5 rounded-xl transition border border-slate-700"
-                >
-                  {currentIndex + 1 === questions.length ? 'Terminer la manche' : 'Question Suivante →'}
-                </button>
-              )}
-            </div>
-          </div>
+          <button onClick={handleNext}
+            style={{ background: 'var(--violet)', color: '#fff', fontWeight: 800, fontSize: 14, padding: '11px 26px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer' }}>
+            {currentIndex + 1 === questions.length ? 'Terminer la manche' : 'Question suivante →'}
+          </button>
         )}
       </div>
     </div>
