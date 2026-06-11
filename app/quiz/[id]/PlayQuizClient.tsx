@@ -4,22 +4,30 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/client';
 
-// SOLUTION ANTIMATRICE : Instanciation à l'extérieur pour bloquer la boucle infinie de re-renders
+// Instanciation hors composant pour éviter les re-renders en boucle.
 const supabase = createClient();
 
-interface Question {
+// La question telle que vue par le joueur : SANS la bonne réponse
+// (la vue quiz_questions_public ne l'expose jamais).
+interface PublicQuestion {
   id: string;
   quiz_id: string;
   text: string;
-  option_a: string;
-  option_b: string;
-  option_c: string;
-  option_d: string;
-  correct_option: string;
-  free_answer?: string;
+  option_a: string | null;
+  option_b: string | null;
+  option_c: string | null;
+  option_d: string | null;
   is_difficult: boolean;
+  reference?: string | null;
   sort_order: number;
-  reference?: string;
+}
+
+interface Verdict {
+  is_correct: boolean;
+  points: number;
+  correct_option: string | null;
+  free_answer: string | null;
+  reference: string | null;
 }
 
 export default function PlayQuizClient({ quizId }: { quizId: string }) {
@@ -27,15 +35,16 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
 
   const [loading, setLoading] = useState(true);
   const [quizTitle, setQuizTitle] = useState('');
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<PublicQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [freeAnswer, setFreeAnswer] = useState('');
   const [isAnswered, setIsAnswered] = useState(false);
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [score, setScore] = useState(0);
+  const [finalScore, setFinalScore] = useState<number | null>(null);
   const [quizFinished, setQuizFinished] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [teamId, setTeamId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(10);
 
   useEffect(() => {
@@ -43,33 +52,27 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          router.push('/register');
+          router.push('/auth/login?redirect=/bible-quiz');
           return;
         }
-        setUserId(user.id);
-
-        const { data: profile } = await supabase
-          .from('quiz_profiles')
-          .select('team_id')
-          .eq('id', user.id)
-          .single();
-        if (profile) setTeamId(profile.team_id);
+        // Crée (idempotent) le profil quiz lié au compte CCB.
+        await supabase.rpc('quiz_ensure_profile');
 
         const { data: quiz } = await supabase
           .from('quiz_quizzes')
           .select('title')
           .eq('id', quizId)
           .single();
-
         if (quiz) setQuizTitle(quiz.title);
 
+        // Questions SANS la bonne réponse (vue publique sécurisée).
         const { data: questionsData } = await supabase
-          .from('quiz_questions')
+          .from('quiz_questions_public')
           .select('*')
           .eq('quiz_id', quizId)
           .order('sort_order', { ascending: true });
 
-        setQuestions(questionsData || []);
+        setQuestions((questionsData as PublicQuestion[]) || []);
       } catch (error) {
         console.error('Erreur lors du chargement des données :', error);
       } finally {
@@ -80,84 +83,59 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
     if (quizId) loadQuizData();
   }, [quizId, router]);
 
+  const currentQuestion = questions[currentIndex];
+  const currentQuestionId = currentQuestion?.id;
+  // Question à réponse libre = aucune option proposée.
+  const isFreeInput = !!currentQuestion
+    && !currentQuestion.option_a && !currentQuestion.option_b
+    && !currentQuestion.option_c && !currentQuestion.option_d;
+
   const handleSelectOption = (letter: string) => {
     if (isAnswered) return;
     setSelectedAnswer(letter);
   };
 
-  const handleTimeout = useCallback(async (questionId: string) => {
+  // Validation côté serveur : le verdict + les points viennent de la base.
+  const submitAnswer = useCallback(async () => {
+    if (isAnswered || submitting || !currentQuestion) return;
+    setSubmitting(true);
     setIsAnswered(true);
     try {
-      await supabase.from('quiz_answers').insert({
-        user_id: userId,
-        team_id: teamId,
-        quiz_id: quizId,
-        question_id: questionId,
-        selected_option: null,
-        selected_free_answer: null,
-        is_correct: false,
-        time_taken: 10
+      const { data, error } = await supabase.rpc('quiz_submit_answer', {
+        p_quiz_id: quizId,
+        p_question_id: currentQuestion.id,
+        p_selected: selectedAnswer,
+        p_free: isFreeInput ? freeAnswer : null,
+        p_time_taken: 10 - timeLeft,
       });
+      if (error) throw error;
+      const v = data as Verdict;
+      setVerdict(v);
+      if (v?.points) setScore((prev) => prev + v.points);
     } catch (err) {
-      console.error("Erreur lors de l'enregistrement du timeout :", err);
+      console.error("Erreur d'enregistrement de la réponse :", err);
+      setVerdict({ is_correct: false, points: 0, correct_option: null, free_answer: null, reference: currentQuestion.reference ?? null });
+    } finally {
+      setSubmitting(false);
     }
-  }, [userId, teamId, quizId]);
+  }, [isAnswered, submitting, currentQuestion, selectedAnswer, freeAnswer, isFreeInput, quizId, timeLeft]);
 
-  const currentQuestion = questions[currentIndex];
-  const currentQuestionId = currentQuestion?.id;
-
+  // Timer 10s — déclenche la validation automatique à 0.
   useEffect(() => {
     if (loading || !currentQuestionId || quizFinished || isAnswered) return;
-
     setTimeLeft(10);
-    
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          handleTimeout(currentQuestionId);
+          submitAnswer();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(interval);
-  }, [loading, currentQuestionId, quizFinished, isAnswered, handleTimeout]);
-
-  const handleValidate = useCallback(async () => {
-    if (isAnswered || !currentQuestion) return;
-
-    let isCorrect = false;
-
-    if (currentQuestion.correct_option?.toLowerCase() === 'free') {
-      isCorrect = freeAnswer.trim().toLowerCase() === currentQuestion.free_answer?.trim().toLowerCase();
-    } else {
-      isCorrect = selectedAnswer?.toLowerCase() === currentQuestion.correct_option?.toLowerCase().trim();
-    }
-
-    const pointsGained = isCorrect ? (currentQuestion.is_difficult ? 2 : 1) : 0;
-    if (isCorrect) {
-      setScore((prev) => prev + pointsGained);
-    }
-
-    setIsAnswered(true);
-
-    try {
-      await supabase.from('quiz_answers').insert({
-        user_id: userId,
-        team_id: teamId,
-        quiz_id: quizId,
-        question_id: currentQuestion.id,
-        selected_option: selectedAnswer,
-        selected_free_answer: freeAnswer,
-        is_correct: isCorrect,
-        time_taken: 10 - timeLeft
-      });
-    } catch (err) {
-      console.error("Erreur d'enregistrement de la réponse :", err);
-    }
-  }, [isAnswered, currentQuestion, freeAnswer, selectedAnswer, userId, teamId, quizId, timeLeft]);
+  }, [loading, currentQuestionId, quizFinished, isAnswered, submitAnswer]);
 
   const handleNext = async () => {
     if (currentIndex + 1 < questions.length) {
@@ -165,50 +143,18 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
       setSelectedAnswer(null);
       setFreeAnswer('');
       setIsAnswered(false);
+      setVerdict(null);
     } else {
-      setQuizFinished(true);
-      if (userId) {
-        try {
-          await supabase.from('quiz_attempts').insert({
-            user_id: userId,
-            quiz_id: quizId,
-            score: score
-          });
-
-          const { data: profile } = await supabase
-            .from('quiz_profiles')
-            .select('total_score')
-            .eq('id', userId)
-            .single();
-
-          const newTotalScore = (profile?.total_score || 0) + score;
-
-          let computedLevel = 'debutant';
-          if (newTotalScore >= 500) computedLevel = 'expert';
-          else if (newTotalScore >= 300) computedLevel = 'avancé';
-          else if (newTotalScore >= 100) computedLevel = 'intermediaire';
-
-          await supabase
-            .from('quiz_profiles')
-            .update({ total_score: newTotalScore, level: computedLevel })
-            .eq('id', userId);
-
-          if (teamId) {
-            const { data: teamData } = await supabase
-              .from('quiz_teams')
-              .select('total_score')
-              .eq('id', teamId)
-              .single();
-
-            await supabase
-              .from('quiz_teams')
-              .update({ total_score: (teamData?.total_score || 0) + score })
-              .eq('id', teamId);
-          }
-        } catch (err) {
-          console.error('Impossible de sauvegarder le score final :', err);
-        }
+      // Clôture serveur : score recalculé depuis la source de vérité.
+      try {
+        const { data } = await supabase.rpc('quiz_finish_attempt', { p_quiz_id: quizId });
+        const res = data as { score?: number } | null;
+        setFinalScore(res?.score ?? score);
+      } catch (err) {
+        console.error('Impossible de clôturer la manche :', err);
+        setFinalScore(score);
       }
+      setQuizFinished(true);
     }
   };
 
@@ -226,28 +172,27 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
       <div className="w-full min-h-[70vh] flex items-center justify-center p-4">
         <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 text-center max-w-md shadow-xl w-full">
           <h2 className="text-xl font-bold text-amber-400">Aucune Question</h2>
-          <p className="text-slate-400 text-sm mt-2">Ce questionnaire est en cours de configuration par l'organisation.</p>
+          <p className="text-slate-400 text-sm mt-2">Ce questionnaire est en cours de configuration par l&apos;organisation.</p>
         </div>
       </div>
     );
   }
 
   if (!currentQuestion) return null;
-  const isFreeInput = currentQuestion.correct_option?.toLowerCase() === 'free';
 
   return (
     <div className="w-full block py-12 px-4 md:px-8 font-sans">
       <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl mx-auto">
-        
+
         {quizFinished ? (
           <div className="text-center py-6">
             <span className="text-5xl">🏆</span>
             <h1 className="text-3xl font-black mt-4 tracking-tight text-white">Étape Validée !</h1>
             <p className="text-slate-400 text-sm mt-1">Vos points ont été ajoutés au classement général.</p>
-            
+
             <div className="my-6 bg-slate-950 border border-slate-800 rounded-2xl py-4 max-w-xs mx-auto">
               <span className="block text-xs uppercase tracking-widest font-bold text-slate-500">Points Marqués</span>
-              <span className="text-4xl font-black text-amber-400 mt-1 block">+{score} pts</span>
+              <span className="text-4xl font-black text-amber-400 mt-1 block">+{finalScore ?? score} pts</span>
             </div>
 
             <button onClick={() => router.push('/bible-quiz')} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm px-8 py-3.5 rounded-xl transition shadow-lg">
@@ -263,7 +208,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
                 </span>
                 {currentQuestion.is_difficult && (
                   <span className="text-xs font-bold text-purple-400 uppercase bg-purple-500/10 px-3 py-1 rounded-full">
-                    🔥 Difficile (+2)
+                    🔥 Difficile
                   </span>
                 )}
               </div>
@@ -273,7 +218,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
             </div>
 
             <div className="w-full h-1.5 bg-slate-950 rounded-full mb-6 overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-amber-400 transition-all duration-300"
                 style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
               ></div>
@@ -295,19 +240,24 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
                   placeholder="Écrivez votre réponse ici..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition"
                 />
+                {isAnswered && verdict && (
+                  <div className={`mt-2 text-sm font-bold ${verdict.is_correct ? 'text-green-400' : 'text-red-400'}`}>
+                    {verdict.is_correct ? '✅ Bonne réponse !' : `❌ Réponse attendue : ${verdict.free_answer ?? '—'}`}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-2.5">
                 {['A', 'B', 'C', 'D'].map((letter) => {
-                  const optionText = currentQuestion[`option_${letter.toLowerCase()}` as keyof Question] as string;
+                  const optionText = currentQuestion[`option_${letter.toLowerCase()}` as keyof PublicQuestion] as string | null;
                   if (!optionText) return null;
 
                   let optionStyle = "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300";
-                  
+
                   if (!isAnswered && selectedAnswer === letter) {
                     optionStyle = "bg-amber-500/10 border-amber-500 text-amber-400";
-                  } else if (isAnswered) {
-                    if (letter === currentQuestion.correct_option?.toUpperCase().trim()) {
+                  } else if (isAnswered && verdict) {
+                    if (letter === verdict.correct_option?.toUpperCase().trim()) {
                       optionStyle = "bg-green-500/10 border-green-500 text-green-400 font-semibold";
                     } else if (selectedAnswer === letter) {
                       optionStyle = "bg-red-500/10 border-red-500 text-red-400";
@@ -330,20 +280,20 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
               </div>
             )}
 
-            {isAnswered && currentQuestion.reference && (
+            {isAnswered && verdict?.reference && (
               <div className="mt-4 p-3 bg-slate-950 border border-slate-800/80 rounded-xl text-xs text-amber-400/90 font-medium">
-                📖 Écriture : {currentQuestion.reference}
+                📖 Écriture : {verdict.reference}
               </div>
             )}
 
             <div className="mt-6 pt-4 border-t border-slate-800/60 flex justify-end">
               {!isAnswered ? (
                 <button
-                  disabled={!isFreeInput && selectedAnswer === null}
-                  onClick={handleValidate}
+                  disabled={submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')}
+                  onClick={submitAnswer}
                   className="bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:hover:bg-amber-500 text-slate-950 font-bold text-sm px-6 py-2.5 rounded-xl transition"
                 >
-                  Valider
+                  {submitting ? '...' : 'Valider'}
                 </button>
               ) : (
                 <button

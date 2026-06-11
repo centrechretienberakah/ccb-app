@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/client';
+import { isModerator } from '@/lib/rbac';
 
 const supabase = createClient();
 
@@ -14,15 +16,18 @@ interface QuizAdmin {
 }
 
 export default function QuizControlClient() {
+  const router = useRouter();
+  const [allowed, setAllowed] = useState(false);
   const [quizzes, setQuizzes] = useState<QuizAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  async function fetchAdminData() {
+  const fetchAdminData = useCallback(async () => {
     try {
       const { data: quizzesData, error: qError } = await supabase
         .from('quiz_quizzes')
-        .select('id, title, is_active');
+        .select('id, title, is_active')
+        .order('sort_order', { ascending: true });
 
       if (qError) throw qError;
 
@@ -39,11 +44,7 @@ export default function QuizControlClient() {
               .select('*', { count: 'exact', head: true })
               .eq('quiz_id', quiz.id);
 
-            return {
-              ...quiz,
-              questions_count: qCount || 0,
-              answers_count: aCount || 0,
-            };
+            return { ...quiz, questions_count: qCount || 0, answers_count: aCount || 0 };
           })
         );
         setQuizzes(fullData);
@@ -53,11 +54,19 @@ export default function QuizControlClient() {
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    fetchAdminData();
   }, []);
+
+  // Garde de rôle : modérateur+ uniquement (cohérent avec le reste de l'admin CCB).
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.replace('/auth/login?redirect=/admin/quiz-control'); return; }
+      const { data: roleRow } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+      if (!isModerator(roleRow?.role)) { router.replace('/dashboard'); return; }
+      setAllowed(true);
+      fetchAdminData();
+    })();
+  }, [router, fetchAdminData]);
 
   const toggleQuizStatus = async (id: string, currentStatus: boolean) => {
     setActionLoading(id);
@@ -68,7 +77,7 @@ export default function QuizControlClient() {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       setQuizzes((prev) =>
         prev.map((q) => (q.id === id ? { ...q, is_active: !currentStatus } : q))
       );
@@ -83,18 +92,9 @@ export default function QuizControlClient() {
     if (!confirm('⚠️ ATTENTION : Cela va supprimer TOUTES les réponses des joueurs pour ce quiz. Continuer ?')) return;
     setActionLoading(id + '-reset');
     try {
-      const { error: answersError } = await supabase
-        .from('quiz_answers')
-        .delete()
-        .eq('quiz_id', id);
-
-      const { error: attemptsError } = await supabase
-        .from('quiz_attempts')
-        .delete()
-        .eq('quiz_id', id);
-
+      const { error: answersError } = await supabase.from('quiz_answers').delete().eq('quiz_id', id);
+      const { error: attemptsError } = await supabase.from('quiz_attempts').delete().eq('quiz_id', id);
       if (answersError || attemptsError) throw new Error('Erreur');
-
       alert('Toutes les réponses de ce questionnaire ont été réinitialisées !');
       fetchAdminData();
     } catch {
@@ -104,11 +104,11 @@ export default function QuizControlClient() {
     }
   };
 
-  if (loading) {
+  if (loading || !allowed) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <div className="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-3"></div>
-        <p className="text-slate-400 text-sm">Chargement du panneau d'administration...</p>
+        <p className="text-slate-400 text-sm">Chargement du panneau d&apos;administration...</p>
       </div>
     );
   }
@@ -134,6 +134,7 @@ export default function QuizControlClient() {
               <div className="flex flex-wrap gap-2 text-xs text-slate-400">
                 <span className="bg-slate-950 px-2 py-1 rounded border border-slate-800">Questions: {quiz.questions_count}</span>
                 <span className="bg-slate-950 px-2 py-1 rounded border border-slate-800">Réponses: {quiz.answers_count}</span>
+                {quiz.is_active && <span className="bg-green-500/10 text-green-400 px-2 py-1 rounded border border-green-500/30">● Active</span>}
               </div>
             </div>
             <div className="flex gap-2">
