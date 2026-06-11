@@ -29,8 +29,7 @@ const ALL_ITEMS = [
 ];
 
 export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
-  // Sécurisation du pathname pour le Server-Side Rendering (évite le null)
-  const pathname = usePathname() || ""; 
+  const pathname = usePathname() || "";
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
