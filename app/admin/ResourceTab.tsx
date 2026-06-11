@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export type ColumnType = "text" | "textarea" | "boolean" | "number" | "date" | "datetime" | "select" | "url";
+export type ColumnType = "text" | "textarea" | "boolean" | "number" | "date" | "datetime" | "select" | "url" | "image" | "file";
 
 export interface ColumnDef {
   key: string;
@@ -39,9 +39,24 @@ export default function ResourceTab({ table, titleField, columns, initialRows, r
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+
   const showToast = (type: "success" | "error", text: string) => {
     setMsg({ type, text });
     setTimeout(() => setMsg(null), 3000);
+  };
+
+  // Téléverse un fichier (image/document) vers le storage et renseigne l'URL publique.
+  const handleUpload = async (key: string, file: File) => {
+    setUploadingKey(key);
+    const sb = createClient();
+    const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+    const path = `media/${table}-${key}-${Date.now()}.${ext}`;
+    const { error } = await sb.storage.from("posts").upload(path, file, { upsert: true, contentType: file.type || undefined });
+    if (error) { showToast("error", "Upload : " + error.message); setUploadingKey(null); return; }
+    const { data } = sb.storage.from("posts").getPublicUrl(path);
+    setEditing((prev) => (prev ? { ...prev, [key]: data.publicUrl } : prev));
+    setUploadingKey(null);
   };
 
   const initForm = (): Record<string, unknown> => {
@@ -115,7 +130,8 @@ export default function ResourceTab({ table, titleField, columns, initialRows, r
   const renderCell = (value: unknown, type: ColumnType) => {
     if (value === null || value === undefined || value === "") return <span style={{ color: "var(--text-muted)" }}>—</span>;
     if (type === "boolean") return value ? "✓" : "✗";
-    if (type === "url") return <a href={String(value)} target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "underline" }}>Lien</a>;
+    if (type === "image") return <img src={String(value)} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)" }} />;
+    if (type === "url" || type === "file") return <a href={String(value)} target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "underline" }}>Lien</a>;
     if (type === "datetime" || type === "date") {
       try { return new Date(String(value)).toLocaleString("fr-FR"); } catch { return String(value); }
     }
@@ -172,6 +188,35 @@ export default function ResourceTab({ table, titleField, columns, initialRows, r
               )}
               {c.type === "datetime" && (
                 <input type="datetime-local" value={String(editing[c.key] ?? "").slice(0, 16)} onChange={(e) => setEditing({ ...editing, [c.key]: e.target.value })} style={inputStyle} />
+              )}
+              {c.type === "image" && (
+                <div>
+                  {editing[c.key] ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
+                      { }
+                      <img src={String(editing[c.key])} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }} />
+                      <button type="button" onClick={() => setEditing({ ...editing, [c.key]: "" })} style={btn}>Retirer</button>
+                    </div>
+                  ) : (
+                    <label style={{ ...btn, display: "inline-block", cursor: uploadingKey === c.key ? "wait" : "pointer", marginBottom: "0.4rem" }}>
+                      {uploadingKey === c.key ? "⏳ Envoi…" : "📤 Choisir une image"}
+                      <input type="file" accept="image/*" disabled={uploadingKey === c.key} style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(c.key, f); }} />
+                    </label>
+                  )}
+                  <input type="text" value={String(editing[c.key] ?? "")} onChange={(e) => setEditing({ ...editing, [c.key]: e.target.value })} placeholder="…ou colle une URL d'image" style={inputStyle} />
+                </div>
+              )}
+              {c.type === "file" && (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem", flexWrap: "wrap" }}>
+                    <label style={{ ...btn, display: "inline-block", cursor: uploadingKey === c.key ? "wait" : "pointer" }}>
+                      {uploadingKey === c.key ? "⏳ Envoi…" : "📤 Téléverser un fichier"}
+                      <input type="file" disabled={uploadingKey === c.key} style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(c.key, f); }} />
+                    </label>
+                    {editing[c.key] ? <a href={String(editing[c.key])} target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", fontSize: "0.82rem", textDecoration: "underline" }}>Fichier ✓</a> : null}
+                  </div>
+                  <input type="text" value={String(editing[c.key] ?? "")} onChange={(e) => setEditing({ ...editing, [c.key]: e.target.value })} placeholder="…ou colle une URL (YouTube, lien direct…)" style={inputStyle} />
+                </div>
               )}
             </div>
           ))}

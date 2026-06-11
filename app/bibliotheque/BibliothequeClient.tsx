@@ -87,7 +87,7 @@ export default function BibliothequeClient({ resources, isPremium }: { resources
                     </a>
                   ) : (
                     <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: "block", background: info.color, color: "#fff", borderRadius: "var(--radius-full)", padding: "8px", fontSize: 12, fontWeight: 700, textAlign: "center", textDecoration: "none" }}>
-                      {r.type === "video" ? "▶️ Regarder" : r.type === "audio" ? "🎧 Écouter" : "⬇️ Télécharger"}
+                      {r.type === "video" ? "▶️ Regarder" : r.type === "audio" ? "🎧 Écouter" : "📖 Lire"}
                     </a>
                   )}
                 </div>

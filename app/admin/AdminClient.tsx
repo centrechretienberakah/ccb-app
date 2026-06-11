@@ -312,15 +312,15 @@ export default function AdminClient({
     { key: "description", label: "Description", type: "textarea", hiddenInList: true },
     { key: "type", label: "Type", type: "select", options: ["pdf","audio","video","ebook","document"], required: true, defaultValue: "pdf" },
     { key: "category", label: "Catégorie", type: "text", defaultValue: "general" },
-    { key: "file_url", label: "URL fichier", type: "url", required: true },
-    { key: "thumbnail_url", label: "Vignette", type: "url", hiddenInList: true },
+    { key: "file_url", label: "Fichier (téléverser ou URL)", type: "file", required: true },
+    { key: "thumbnail_url", label: "Vignette (image)", type: "image", hiddenInList: true },
     { key: "is_premium", label: "Premium", type: "boolean" },
     { key: "is_published", label: "Publié", type: "boolean", defaultValue: true },
   ];
   const albumCols: ColumnDef[] = [
     { key: "title", label: "Titre", type: "text", required: true },
     { key: "description", label: "Description", type: "textarea", hiddenInList: true },
-    { key: "cover_url", label: "Cover URL", type: "url" },
+    { key: "cover_url", label: "Cover (image)", type: "image" },
     { key: "is_public", label: "Public", type: "boolean", defaultValue: true },
   ];
   const testimonyCols: ColumnDef[] = [
@@ -340,7 +340,7 @@ export default function AdminClient({
     { key: "location", label: "Lieu", type: "text" },
     { key: "is_online", label: "En ligne", type: "boolean" },
     { key: "stream_url", label: "Stream URL", type: "url", hiddenInList: true },
-    { key: "image_url", label: "Image", type: "url", hiddenInList: true },
+    { key: "image_url", label: "Image (téléverser ou URL)", type: "image", hiddenInList: true },
     { key: "status", label: "Statut", type: "select", options: ["draft","upcoming","live","past","cancelled"], defaultValue: "upcoming" },
     { key: "is_published", label: "Publié", type: "boolean", defaultValue: true },
   ];
