@@ -108,7 +108,6 @@ export default function AdminClient({
   const [twoMinutesAgo] = useState(() => new Date(Date.now() - 2 * 60_000).toISOString());
   const [tab, setTab] = useState<Tab>("overview");
   const [members, setMembers] = useState(initialMembers);
-  const [memberSearch, setMemberSearch] = useState("");
   const [posts, setPosts] = useState(initialPosts);
   const [prayers, setPrayers] = useState(initialPrayers);
   const [devotions, setDevotions] = useState(initialDevotions);
@@ -271,7 +270,7 @@ export default function AdminClient({
     setSaving(false);
   };
 
-  const filteredMembers = members.filter(m => !memberSearch || m.full_name?.toLowerCase().includes(memberSearch.toLowerCase()) || m.country?.toLowerCase().includes(memberSearch.toLowerCase()));
+  const filteredMembers = members;
   const nameFor = (profiles: Profile[], userId: string) => profiles.find(p => p.id === userId)?.full_name ?? "Membre";
 
   const unreadContacts = contacts.filter(c => !c.is_read).length;
@@ -499,7 +498,6 @@ export default function AdminClient({
               </div>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
-              <input type="search" placeholder="Rechercher par nom ou pays..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} style={{ ...inputStyle, maxWidth: "320px" }} />
               <span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
                 {filteredMembers.length} membre(s) · <span style={{ color: "#22c55e" }}>● {filteredMembers.filter(m => isOnline(m.id, m.last_seen_at)).length} en ligne</span>
               </span>

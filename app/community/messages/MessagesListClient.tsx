@@ -26,7 +26,6 @@ export default function MessagesListClient({ conversations, currentUserId, callL
   const [showNew, setShowNew] = useState(false);
   const [members, setMembers] = useState<Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const [search, setSearch] = useState("");
   const [starting, setStarting] = useState(false);
 
   async function openNew() {
@@ -275,19 +274,11 @@ export default function MessagesListClient({ conversations, currentUserId, callL
               <span style={{ fontWeight: 800, fontSize: 16, color: T.text, fontFamily: F.title }}>✏️ Nouvelle conversation</span>
               <button onClick={() => setShowNew(false)} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 20, color: T.textMuted, cursor: "pointer" }}>✕</button>
             </div>
-            <div style={{ padding: "10px 16px" }}>
-              <input
-                value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="🔍 Rechercher un membre…"
-                style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", borderRadius: 999, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 14, outline: "none" }}
-              />
-            </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 12px" }}>
               {loadingMembers ? (
                 <div style={{ textAlign: "center", padding: 30, color: T.textMuted, fontSize: 13 }}>Chargement…</div>
               ) : (() => {
-                const q = search.trim().toLowerCase();
-                const filtered = q ? members.filter((m) => (m.display_name || "").toLowerCase().includes(q)) : members;
+                const filtered = members;
                 if (filtered.length === 0) return <div style={{ textAlign: "center", padding: 30, color: T.textMuted, fontSize: 13 }}>Aucun membre trouvé.</div>;
                 return filtered.map((m) => {
                   const nm = m.display_name || "Membre";

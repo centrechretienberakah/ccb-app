@@ -301,22 +301,11 @@ function RecordsTab({
 }) {
   type Filter = "all" | "pending" | "confirmed" | "cancelled";
   const [filter, setFilter] = useState<Filter>("pending");
-  const [search, setSearch] = useState("");
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return records.filter((r) => {
-      if (filter !== "all" && r.status !== filter) return false;
-      if (!q) return true;
-      return (
-        (r.reference ?? "").toLowerCase().includes(q) ||
-        (r.donor_email ?? "").toLowerCase().includes(q) ||
-        (r.donor_name ?? "").toLowerCase().includes(q) ||
-        (r.notes ?? "").toLowerCase().includes(q) ||
-        (r.payment_mode ?? "").toLowerCase().includes(q)
-      );
-    });
-  }, [records, filter, search]);
+  const filtered = useMemo(
+    () => records.filter((r) => filter === "all" || r.status === filter),
+    [records, filter]
+  );
 
   if (records.length === 0) {
     return (
@@ -346,13 +335,6 @@ function RecordsTab({
             fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
           }}>{recordStatusLabel(s)} {records.filter((r) => s === "all" || r.status === s).length}</button>
         ))}
-        <input type="search" placeholder="🔎 Recherche (référence, email, notes…)"
-          value={search} onChange={(e) => setSearch(e.target.value)}
-          style={{
-            flex: 1, minWidth: 220, padding: "8px 12px",
-            background: T.card, color: T.text, border: `1px solid ${T.border}`,
-            borderRadius: 999, fontSize: 12.5, fontFamily: "inherit",
-          }} />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

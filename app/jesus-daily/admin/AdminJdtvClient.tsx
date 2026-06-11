@@ -47,7 +47,6 @@ export default function AdminJdtvClient({ categories: initialCats, videos: initi
   const [newVid, setNewVid] = useState(false);
   const [showYoutubeImport, setShowYoutubeImport] = useState(false);
   const [ytPrefill, setYtPrefill] = useState<Partial<JdtvVideo> | null>(null);
-  const [filter, setFilter] = useState("");
 
   const catsById = useMemo(() => {
     const m = new Map<string, JdtvCategory>();
@@ -55,15 +54,7 @@ export default function AdminJdtvClient({ categories: initialCats, videos: initi
     return m;
   }, [cats]);
 
-  const filteredVids = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    if (!q) return vids;
-    return vids.filter((v) =>
-      v.title.toLowerCase().includes(q) ||
-      (v.speaker ?? "").toLowerCase().includes(q) ||
-      v.slug.toLowerCase().includes(q)
-    );
-  }, [vids, filter]);
+  const filteredVids = vids;
 
   function refreshCat(c: JdtvCategory) {
     setCats((arr) => {
@@ -126,15 +117,6 @@ export default function AdminJdtvClient({ categories: initialCats, videos: initi
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 80px" }}>
         {tab === "videos" ? (
           <>
-            <input
-              type="search" placeholder="🔎 Rechercher (titre, slug, intervenant)..."
-              value={filter} onChange={(e) => setFilter(e.target.value)}
-              style={{
-                width: "100%", padding: "12px 16px", marginBottom: 18,
-                background: T.card, color: T.text, border: `1px solid ${T.border}`,
-                borderRadius: 10, fontSize: 14,
-              }}
-            />
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {filteredVids.length === 0 ? (
                 <EmptyState

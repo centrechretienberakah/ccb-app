@@ -83,17 +83,11 @@ export default function JdtvHomeClient({
         <EmptyHero isAdmin={isAdmin} />
       )}
 
-      {/* Toolbar : recherche + nav catégories + admin */}
+      {/* Toolbar : nav catégories + admin */}
       <div style={{
         maxWidth: 1400, margin: "0 auto",
         padding: "8px 24px 0", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
       }}>
-        <Link href="/jesus-daily/recherche" style={{
-          display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px",
-          background: T.card, border: `1px solid ${T.border}`, color: T.textSoft,
-          borderRadius: 999, fontWeight: 600, fontSize: 13, textDecoration: "none",
-          minWidth: 220,
-        }}>🔎 Rechercher une vidéo…</Link>
         {isAdmin ? (
           <Link href="/jesus-daily/admin" style={{
             display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px",

@@ -65,7 +65,6 @@ export default function AdminGroupsClient({
 }: Props) {
   const [groups, setGroups] = useState<GroupStat[]>(initialGroups);
   const [kpis, setKpis] = useState<GlobalKpis>(initialKpis);
-  const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterMode>("all");
   const [sort, setSort] = useState<SortMode>("activity");
   const [toast, setToast] = useState<string | null>(null);
@@ -78,7 +77,6 @@ export default function AdminGroupsClient({
   }, [profiles]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
     const inactiveCutoff = Date.now() - 30 * 24 * 3600 * 1000;
     let out = groups.filter((g) => {
       if (filter === "archived") return g.is_archived;
@@ -91,12 +89,6 @@ export default function AdminGroupsClient({
       }
       return true;
     });
-    if (q) {
-      out = out.filter((g) => {
-        const t = `${g.name} ${g.description ?? ""}`.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-        return t.includes(q);
-      });
-    }
     out = [...out].sort((a, b) => {
       if (sort === "activity") {
         const tA = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0;
@@ -109,7 +101,7 @@ export default function AdminGroupsClient({
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
     return out;
-  }, [groups, search, filter, sort]);
+  }, [groups, filter, sort]);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
   function setBusy(id: string, b: boolean) {
@@ -257,17 +249,8 @@ export default function AdminGroupsClient({
         </section>
       )}
 
-      {/* Filters & search */}
+      {/* Filters */}
       <section style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px 12px" }}>
-        <input type="search" placeholder="🔎 Rechercher (nom, description)…"
-          value={search} onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: "100%", boxSizing: "border-box",
-            padding: "10px 14px", marginBottom: 10,
-            background: T.card, color: T.text, border: `1px solid ${T.border}`,
-            borderRadius: 999, fontSize: 13, fontFamily: F.body, outline: "none",
-          }}
-        />
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
           {([
             ["all", "📚 Tous"],
@@ -295,7 +278,6 @@ export default function AdminGroupsClient({
         </div>
         <p style={{ fontSize: 12, color: T.textMuted, margin: "10px 0 0" }}>
           {filtered.length} groupe{filtered.length > 1 ? "s" : ""}
-          {search ? <> pour <strong>&ldquo;{search}&rdquo;</strong></> : null}
         </p>
       </section>
 

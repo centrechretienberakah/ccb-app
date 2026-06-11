@@ -1094,7 +1094,6 @@ function AddToCallModal({ conversationId, type, callerName, onClose, onFlash }: 
   onClose: () => void; onFlash: (m: string) => void;
 }) {
   const [candidates, setCandidates] = useState<Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>>([]);
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
