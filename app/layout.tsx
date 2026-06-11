@@ -9,10 +9,6 @@ import { CallProvider } from "@/lib/meet/CallContext";
 import PersistentCallHost from "@/components/meet/PersistentCallHost";
 import IncomingCallHost from "@/components/meet/IncomingCallHost";
 
-// Design system 2026 : polices modernes (Poppins pour les titres, Inter pour
-// le corps) en remplacement de Cinzel/Montserrat. On conserve volontairement
-// les noms de variables CSS (--font-cinzel / --font-montserrat) pour ne PAS
-// avoir à modifier toutes les références existantes dans globals.css.
 const poppins = Poppins({
   variable: "--font-cinzel",
   subsets: ["latin"],
@@ -67,9 +63,6 @@ const themeScript = `(function(){try{var s=localStorage.getItem('ccb-theme');var
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Identifiant de déploiement (SHA du commit Vercel) — sert à BuildCheck pour
-  // forcer un rafraîchissement de TOUS les clients dès qu'un nouveau déploiement
-  // est en ligne (fiable sur l'App Router, contrairement à __NEXT_DATA__).
   const buildId =
     process.env.VERCEL_GIT_COMMIT_SHA ||
     process.env.VERCEL_DEPLOYMENT_ID ||
@@ -83,7 +76,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Correction définitive React 19 : script natif avec attribut async */}
+        <script
+          async
+          id="theme-script"
+          dangerouslySetInnerHTML={{ __html: themeScript }}
+        />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -100,12 +98,7 @@ export default function RootLayout({
         <ChunkErrorReload />
         <CallProvider>
           <AppShell>{children}</AppShell>
-          {/* Reste mounté sur TOUTES les pages pendant un appel actif :
-              full screen quand on est sur /meeting, mini-player ailleurs.
-              Pas de déconnexion en navigant. */}
           <PersistentCallHost />
-          {/* Écran d'appel entrant temps réel (sonnerie + accepter/refuser).
-              Écoute la table `calls` via Supabase Realtime, sur toutes les pages. */}
           <IncomingCallHost />
         </CallProvider>
         <RegisterSW />

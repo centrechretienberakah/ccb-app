@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { IconSearch, IconBell, IconMoon, IconSun, IconMenu, IconUsers } from "@/components/icons";
+import GlobalSearch from "./GlobalSearch";
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":     "Accueil",
@@ -47,33 +48,42 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
   useEffect(() => {
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    let isCurrentMount = true;
 
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || !isCurrentMount) return;
 
       const { count } = await supabase
         .from("notifications")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
         .eq("is_read", false);
-      setUnreadCount(count ?? 0);
+      
+      if (isCurrentMount) setUnreadCount(count ?? 0);
+
+      // Sécurité Strict-Mode : Nom de canal unique par instance de composant
+      const uniqueChannelId = `notif-badge-${user.id}-${Math.random().toString(36).substring(2, 9)}`;
 
       channel = supabase
-        .channel("notif-badge")
+        .channel(uniqueChannelId)
         .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, async () => {
           const { count: c } = await supabase
             .from("notifications")
             .select("id", { count: "exact", head: true })
             .eq("user_id", user.id)
             .eq("is_read", false);
-          setUnreadCount(c ?? 0);
+          if (isCurrentMount) setUnreadCount(c ?? 0);
         })
         .subscribe();
     }
 
     init();
-    return () => { if (channel) supabase.removeChannel(channel); };
+    
+    return () => { 
+      isCurrentMount = false;
+      if (channel) supabase.removeChannel(channel); 
+    };
   }, []);
 
   useEffect(() => {
@@ -100,17 +110,20 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
         <h1 className="topbar-title">{title}</h1>
       </div>
 
-      <div className={`topbar-search ${searchOpen ? "open" : ""}`}>
+      <div className="topbar-search" onClick={() => setSearchOpen(true)} style={{ cursor: "pointer" }}>
         <IconSearch size={16} className="topbar-search-icon" />
         <input
           type="text"
-          placeholder="Rechercher un verset, une priere..."
+          readOnly
+          placeholder="Rechercher dans toute l'app…"
           className="topbar-search-input"
+          style={{ cursor: "pointer" }}
+          onFocus={() => setSearchOpen(true)}
         />
       </div>
 
       <div className="topbar-actions">
-        <button className="topbar-icon-btn" onClick={() => setSearchOpen((v) => !v)} aria-label="Rechercher">
+        <button className="topbar-icon-btn" onClick={() => setSearchOpen(true)} aria-label="Rechercher">
           <IconSearch size={20} />
         </button>
 
@@ -138,6 +151,8 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
           <IconUsers size={18} />
         </Link>
       </div>
+
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   );
 }
