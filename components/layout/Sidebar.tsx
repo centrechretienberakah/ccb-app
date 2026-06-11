@@ -5,38 +5,32 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isModerator } from "@/lib/rbac";
-import {
-  IconUser, IconSettings, IconLogOut,
-} from "@/components/icons";
+import { IconUser, IconSettings, IconLogOut } from "@/components/icons";
 
-// Ordre aligné sur l'accès rapide du Dashboard
 const ALL_ITEMS = [
-  { href: "/dashboard",     label: "Accueil",           emoji: "🏠" },
-  // BERAKAH AI est accessible partout via le bouton flottant 🤖 (plus de page dédiée).
-  // "Méditons ensemble" est affiché directement sur l'accueil (carte du jour)
-  // — retiré du menu principal pour éviter le doublon.
-  { href: "/bible",         label: "Ma Bible",          emoji: "📖" },
-  // "Prions ensemble" est désormais un onglet du module Communauté
-  // (/community/prions-ensemble) — retiré du menu principal.
-  { href: "/community",     label: "Communauté",        emoji: "👥" },
-  { href: "/community/messages", label: "Messagerie",   emoji: "💬" },
-  { href: "/jesus-daily",   label: "Jesus Daily TV",    emoji: "📺" },
-  { href: "/institut",      label: "Institut Berakah",  emoji: "🎓" },
-  { href: "/events",        label: "Événements",        emoji: "📅" },
-  { href: "/dons",          label: "Faire un Don",      emoji: "💝" },
-  { href: "/galerie",       label: "Galerie",           emoji: "🖼️" },
-  { href: "/bibliotheque",  label: "Bibliothèque",      emoji: "📚" },
-  { href: "/rendez-vous",   label: "Rendez-vous",       emoji: "🗓️" },
-  { href: "/temoignages",   label: "Témoignages",       emoji: "✨" },
-  { href: "/contact",       label: "Contact",           emoji: "📬" },
-  { href: "/nous-suivre",   label: "Nous Suivre",       emoji: "📡" },
-  { href: "/a-propos",      label: "À Propos",          emoji: "⛪" },
-  { href: "/notifications", label: "Notifications",     emoji: "🔔" },
-  { href: "/premium",       label: "Premium",           emoji: "👑" },
+  { href: "/dashboard",        label: "Accueil",          emoji: "🏠" },
+  { href: "/bible",            label: "Ma Bible",         emoji: "📖" },
+  { href: "/bible-quiz",       label: "Bible Quiz",       emoji: "🏆" },
+  { href: "/community",        label: "Communauté",       emoji: "👥" },
+  { href: "/community/messages", label: "Messagerie",     emoji: "💬" },
+  { href: "/jesus-daily",      label: "Jesus Daily TV",   emoji: "📺" },
+  { href: "/institut",         label: "Institut Berakah", emoji: "🎓" },
+  { href: "/events",           label: "Événements",       emoji: "📅" },
+  { href: "/dons",             label: "Faire un Don",     emoji: "💝" },
+  { href: "/galerie",          label: "Galerie",          emoji: "🖼️" },
+  { href: "/bibliotheque",     label: "Bibliothèque",     emoji: "📚" },
+  { href: "/rendez-vous",      label: "Rendez-vous",      emoji: "🗓️" },
+  { href: "/temoignages",      label: "Témoignages",      emoji: "✨" },
+  { href: "/contact",          label: "Contact",          emoji: "📬" },
+  { href: "/nous-suivre",      label: "Nous Suivre",      emoji: "📡" },
+  { href: "/a-propos",         label: "À Propos",         emoji: "⛪" },
+  { href: "/notifications",    label: "Notifications",    emoji: "🔔" },
+  { href: "/premium",          label: "Premium",          emoji: "👑" },
 ];
 
 export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
-  const pathname = usePathname();
+  // Sécurisation du pathname pour le Server-Side Rendering (évite le null)
+  const pathname = usePathname() || ""; 
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -47,8 +41,8 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     try {
       const sb = createClient();
       await sb.auth.signOut();
-    } catch { /* on déconnecte quand même côté navigation */ }
-    onLinkClick?.(); // ferme le drawer mobile
+    } catch { }
+    onLinkClick?.();
     router.push("/");
     router.refresh();
   }
@@ -66,11 +60,10 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === href;
-    // Messagerie englobe /community/messages ET /community/groups
+    if (href === "/bible-quiz") return pathname.startsWith("/bible-quiz");
     if (href === "/community/messages") {
       return pathname.startsWith("/community/messages") || pathname.startsWith("/community/groups");
     }
-    // Communauté : tout /community SAUF la zone Messagerie
     if (href === "/community") {
       return pathname.startsWith("/community")
         && !pathname.startsWith("/community/messages")
@@ -81,10 +74,8 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
 
   return (
     <aside className="sidebar">
-      {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-mark">
-          { }
           <img loading="lazy" decoding="async" src="/logo-officiel.png" alt="CCB" className="sidebar-logo-img" />
         </div>
         <div>
@@ -93,7 +84,6 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
         </div>
       </div>
 
-      {/* Menu — ordre aligné sur l'accès rapide */}
       <nav className="sidebar-nav">
         <div className="sidebar-nav-label">MENU</div>
         {ALL_ITEMS.map(({ href, label, emoji }) => {
@@ -115,7 +105,6 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
 
       <div className="sidebar-spacer" />
 
-      {/* Premium banner */}
       <div className="sidebar-premium-card">
         <div className="sidebar-premium-icon">👑</div>
         <div className="sidebar-premium-text">
@@ -124,7 +113,6 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="sidebar-footer">
         {isAdmin && (
           <Link href="/admin" className="sidebar-footer-link" data-label="Administration" onClick={onLinkClick}

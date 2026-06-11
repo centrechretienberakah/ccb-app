@@ -628,7 +628,6 @@ export default function PrayerClient({
   const [intercessedIds, setIntercessedIds] = useState<Set<string>>(new Set(myIntercessedIds));
   const [tab, setTab] = useState<"active" | "mine" | "answered">("active");
   const [filterCat, setFilterCat] = useState<PrayerCategory | "">("");
-  const [search, setSearch] = useState("");
 
   // Realtime placeholder (sync minimal — refetch on demand peut être ajouté)
   useEffect(() => {
@@ -643,16 +642,8 @@ export default function PrayerClient({
     else if (tab === "answered") out = out.filter((p) => p.is_answered);
     else out = out.filter((p) => !p.is_answered);
     if (filterCat) out = out.filter((p) => (p.category ?? "autre") === filterCat);
-    if (search.trim()) {
-      const q = search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-      out = out.filter((p) => {
-        const text = `${p.title ?? ""} ${p.content} ${p.user_profiles?.display_name ?? ""}`
-          .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-        return text.includes(q);
-      });
-    }
     return out;
-  }, [prayers, tab, filterCat, currentUserId, search]);
+  }, [prayers, tab, filterCat, currentUserId]);
 
   const stats = useMemo(() => ({
     active: prayers.filter((p) => !p.is_answered).length,
@@ -914,21 +905,6 @@ export default function PrayerClient({
           <StatChip emoji="❤️" label="Reçues sur les miennes" value={myLife.received} accent={T.gold} />
           <StatChip emoji="🎉" label="Mes exaucées" value={myLife.answered} accent={T.answered} />
         </div>
-
-        {/* Recherche */}
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Rechercher dans les prières…"
-          style={{
-            width: "100%", boxSizing: "border-box",
-            padding: "10px 14px", marginBottom: 12,
-            background: T.card, border: `1px solid ${T.border}`,
-            borderRadius: 999, color: T.text, fontSize: 13,
-            fontFamily: F.body, outline: "none",
-          }}
-        />
 
         <PrayerComposer
           currentUserId={currentUserId}

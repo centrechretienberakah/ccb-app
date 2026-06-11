@@ -1130,7 +1130,7 @@ function AddToCallModal({ conversationId, type, callerName, onClose, onFlash }: 
     setBusyId(null);
   }
 
-  const filtered = candidates.filter((c) => !search.trim() || (c.display_name || "").toLowerCase().includes(search.trim().toLowerCase()));
+  const filtered = candidates;
 
   return (
     <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{
@@ -1141,9 +1141,6 @@ function AddToCallModal({ conversationId, type, callerName, onClose, onFlash }: 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
           <span style={{ fontWeight: 800, fontSize: 15, color: "#fff" }}>➕ Inviter à l&apos;appel</span>
           <button onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "rgba(255,255,255,0.6)" }}>✕</button>
-        </div>
-        <div style={{ padding: "10px 14px" }}>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Rechercher un membre…" style={{ width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 999, padding: "9px 14px", color: "#fff", fontSize: 13, outline: "none" }} />
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 12px" }}>
           {loading ? (

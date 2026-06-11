@@ -30,21 +30,12 @@ function fmtDate(iso: string): string {
 
 export default function GroupFilesClient({ group, files }: { group: Group; files: FileRow[] }) {
   const [filter, setFilter] = useState<"all" | "image" | "pdf" | "audio" | "video">("all");
-  const [search, setSearch] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
-    let out = files;
-    if (filter !== "all") out = out.filter((f) => f.type === filter);
-    if (search.trim()) {
-      const q = search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-      out = out.filter((f) => {
-        const t = `${f.name ?? ""} ${f.display_name ?? ""}`.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-        return t.includes(q);
-      });
-    }
-    return out;
-  }, [files, filter, search]);
+    if (filter === "all") return files;
+    return files.filter((f) => f.type === filter);
+  }, [files, filter]);
 
   const counts = useMemo(() => ({
     image: files.filter((f) => f.type === "image").length,
@@ -102,18 +93,6 @@ export default function GroupFilesClient({ group, files }: { group: Group; files
             </button>
           ))}
         </div>
-
-        {/* Recherche */}
-        <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Rechercher un fichier…"
-          style={{
-            width: "100%", boxSizing: "border-box",
-            padding: "10px 14px", marginBottom: 16,
-            background: T.card, border: `1px solid ${T.border}`,
-            borderRadius: 999, color: T.text, fontSize: 13,
-            fontFamily: F.body, outline: "none",
-          }}
-        />
 
         {/* Liste */}
         {filtered.length === 0 ? (

@@ -77,7 +77,6 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
   const router = useRouter();
   const online = useOnlineUsers();
   const [members, setMembers] = useState<MemberLite[]>(initialMembers);
-  const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
 
   // Admin modal
@@ -94,14 +93,7 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
   const premiumCount = useMemo(() => members.filter((m) => isPremium(m.role)).length, [members]);
 
   const filtered = useMemo(() => {
-    let list = members.filter((m) => {
-      if (!search) return true;
-      const q = search.toLowerCase();
-      return (m.display_name || "").toLowerCase().includes(q)
-        || handleOf(m.display_name).includes(q)
-        || (m.country || "").toLowerCase().includes(q)
-        || (m.cell_group || "").toLowerCase().includes(q);
-    });
+    let list = [...members];
     switch (filter) {
       case "disciples": list = list.filter((m) => !isAdminRole(m.role) && !isLeaderRole(m.role)); break;
       case "leaders":   list = list.filter((m) => isLeaderRole(m.role)); break;
@@ -112,7 +104,7 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
       case "followed":  list = [...list].sort((a, b) => b.followers - a.followers); break;
     }
     return list;
-  }, [members, search, filter]);
+  }, [members, filter]);
 
   function openAdminModal(member: MemberLite) {
     setAdminModal(member);
@@ -181,11 +173,6 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
             <StatBadge icon="🟢" label="En ligne" value={onlineCount} accent="#2E9B47" />
             <StatBadge icon="💎" label="Premium" value={premiumCount} accent={T.gold} />
           </div>
-
-          {/* Recherche compacte */}
-          <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="🔍 Rechercher un membre…"
-            style={{ width: "100%", boxSizing: "border-box", padding: "9px 14px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 999, color: T.text, fontSize: 13.5, fontFamily: F.body, outline: "none" }} />
 
           {/* Filtres chips */}
           <div className="ccb-mb-chips" style={{ display: "flex", gap: 6, overflowX: "auto", marginTop: 9, paddingBottom: 2 }}>

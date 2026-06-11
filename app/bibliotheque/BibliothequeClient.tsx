@@ -18,13 +18,8 @@ const TYPES = ["Tout", "pdf", "audio", "video", "ebook"];
 
 export default function BibliothequeClient({ resources, isPremium }: { resources: Resource[]; isPremium: boolean; userId?: string | null }) {
   const [filter, setFilter] = useState("Tout");
-  const [search, setSearch] = useState("");
 
-  const filtered = resources.filter(r => {
-    const matchType = filter === "Tout" || r.type === filter;
-    const matchSearch = !search || r.title.toLowerCase().includes(search.toLowerCase()) || r.description?.toLowerCase().includes(search.toLowerCase());
-    return matchType && matchSearch;
-  });
+  const filtered = resources.filter(r => filter === "Tout" || r.type === filter);
 
   return (
     <div style={{ maxWidth: 820, margin: "0 auto", padding: "24px 16px 80px" }}>
@@ -34,9 +29,8 @@ export default function BibliothequeClient({ resources, isPremium }: { resources
         <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>PDFs, audio, vidéos et livres pour approfondir votre foi</p>
       </div>
 
-      {/* Search + Filters */}
+      {/* Filtres par type */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Rechercher une ressource..." style={{ width: "100%", background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "12px 16px", color: "var(--text-primary)", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
         <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
           {TYPES.map(t => {
             const info = t === "Tout" ? null : TYPE_INFO[t] ?? TYPE_INFO.default;
@@ -55,7 +49,7 @@ export default function BibliothequeClient({ resources, isPremium }: { resources
         <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: 60, textAlign: "center" }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>📚</div>
           <p style={{ color: "var(--text-muted)", fontSize: 15, margin: 0 }}>
-            {search ? `Aucun résultat pour "${search}"` : "Aucune ressource disponible pour le moment."}
+            {filter === "Tout" ? "Aucune ressource disponible pour le moment." : "Aucune ressource dans cette catégorie."}
           </p>
         </div>
       ) : (

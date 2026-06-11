@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
@@ -58,8 +59,6 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-const themeScript = `(function(){try{var s=localStorage.getItem('ccb-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',s||(d?'dark':'light'));}catch(e){}})();`;
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -76,12 +75,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* Correction définitive React 19 : script natif avec attribut async */}
-        <script
-          async
-          id="theme-script"
-          dangerouslySetInnerHTML={{ __html: themeScript }}
-        />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -92,6 +85,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
+        
+        {/* Le Script est maintenant ici, dans le head */}
+        <Script src="/theme.js" strategy="beforeInteractive" />
       </head>
       <body className="min-h-full bg-background text-foreground antialiased">
         <BuildCheck buildId={buildId} />

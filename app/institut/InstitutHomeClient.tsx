@@ -27,19 +27,12 @@ export default function InstitutHomeClient({
   continueWatching = [], favorites = [],
   isAdmin = false,
 }: Props) {
-  const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"discover" | "mine">("discover");
 
-  const filtered = useMemo(() => {
-    const source = tab === "mine" ? myCourses : popularCourses;
-    if (!search.trim()) return source;
-    const q = search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-    return source.filter((c) => {
-      const t = `${c.title} ${c.subtitle ?? ""} ${c.description ?? ""}`
-        .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-      return t.includes(q);
-    });
-  }, [popularCourses, myCourses, search, tab]);
+  const filtered = useMemo(
+    () => (tab === "mine" ? myCourses : popularCourses),
+    [popularCourses, myCourses, tab]
+  );
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, paddingBottom: 60 }}>
@@ -186,18 +179,6 @@ export default function InstitutHomeClient({
             </button>
           ))}
         </div>
-
-        {/* Recherche */}
-        <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Rechercher une formation…"
-          style={{
-            width: "100%", boxSizing: "border-box",
-            padding: "10px 14px", marginBottom: 16,
-            background: T.card, border: `1px solid ${T.border}`,
-            borderRadius: 999, color: T.text, fontSize: 13,
-            fontFamily: F.body, outline: "none",
-          }}
-        />
 
         {/* Liste cours */}
         {filtered.length === 0 ? (
