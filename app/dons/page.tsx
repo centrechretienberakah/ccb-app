@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getSiteContent } from "@/lib/site-content";
 import { createClient } from "@/lib/supabase/server";
 import DonsClient from "./DonsClient";
-import type { DonationCampaign } from "@/lib/dons/theme";
+import { parsePaymentModes, DEFAULT_DONS_PAIEMENT_MD, type DonationCampaign } from "@/lib/dons/theme";
 
 export const metadata: Metadata = {
   title: "Faire un Don — Centre Chrétien Berakah",
@@ -43,12 +43,16 @@ export default async function DonsPage() {
     campaigns = (data ?? []) as DonationCampaign[];
   } catch { /* table pas migrée */ }
 
+  const cmsPay = await getSiteContent("dons-paiement");
+  const paymentModes = parsePaymentModes(cmsPay?.body_md || DEFAULT_DONS_PAIEMENT_MD);
+
   return (
     <DonsClient
       heroTitle={heroTitle}
       heroIntro={heroIntro}
       campaigns={campaigns}
       isAdmin={isAdmin}
+      paymentModes={paymentModes}
     />
   );
 }

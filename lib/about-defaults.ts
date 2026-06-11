@@ -1,6 +1,7 @@
 // Contenus par défaut de la page « À propos », partagés entre la page publique
 // (app/a-propos/page.tsx) et l'éditeur admin (SiteContentTab) afin que l'admin
 // voie le contenu ACTUEL pré-rempli et puisse le modifier directement.
+import { DEFAULT_DONS_PAIEMENT_MD } from "@/lib/dons/theme";
 
 export const DEFAULT_INTRO = "Le Centre Chrétien Berakah (CCB) est une communauté chrétienne engagée dans la formation de disciples de Jésus-Christ, la transformation des vies par la puissance de l'Évangile et la manifestation de la bénédiction de Dieu dans toutes les sphères de la vie.";
 
@@ -187,6 +188,7 @@ export const PAGE_DEFAULTS: Record<string, { title?: string; body?: string }> = 
   "a-propos-cta":      { title: DEFAULT_CTA_TITLE, body: DEFAULT_CTA_BODY },
   "confession-foi":    { body: DEFAULT_CONFESSION_MD },
   "dons":              { title: DEFAULT_DONS_TITLE, body: DEFAULT_DONS_BODY },
+  "dons-paiement":     { body: DEFAULT_DONS_PAIEMENT_MD },
   "nous-suivre":       { title: DEFAULT_SUIVRE_TITLE, body: DEFAULT_SUIVRE_BODY },
   "events-programme":  { body: DEFAULT_EVENTS_PROGRAMME_MD },
 };

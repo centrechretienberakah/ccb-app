@@ -125,6 +125,32 @@ export function modesByRegion(region: PayRegion): PaymentMode[] {
   return PAYMENT_MODES.filter((m) => m.region === region);
 }
 
+// ─── Moyens de paiement ÉDITABLES (CMS "dons-paiement") ──────────────
+// Format, une ligne par moyen : region | emoji | titre | détail | numéro/info | type
+//   region = CM | EU | INTL | CD     ·     type = instant | manual | contact
+export const DEFAULT_DONS_PAIEMENT_MD = `CM | 📱 | MTN Mobile Money | Cameroun · MoMo | +237 6XX XXX XXX | instant
+CM | 🟧 | Orange Money | Cameroun | +237 6XX XXX XXX | instant
+CM | 🏦 | Express Union | Mandat / transfert | Bénéficiaire : CCB | manual
+EU | 🇪🇺 | Virement SEPA | Belgique · Compte CCB | BE00 0000 0000 0000 | manual
+INTL | 💳 | PayPal | International · USD/EUR | donate@centrechretienberakah.com | instant
+INTL | 🌐 | Wise | International multi-devises | centrechretienberakah@gmail.com | manual
+CD | 🟢 | M-Pesa Vodacom | RDC | +243 8XX XXX XXX | instant
+CD | 🔴 | Airtel Money | RDC | +243 9XX XXX XXX | instant`;
+
+export function parsePaymentModes(md: string): PaymentMode[] {
+  const colorByRegion: Record<string, string> = { CM: "#D4AF37", EU: "#003399", INTL: "#003087", CD: "#00B040" };
+  return md.split("\n").map((l) => l.trim()).filter(Boolean).flatMap((l, i) => {
+    const p = l.split("|").map((s) => s.trim());
+    const title = p[2] || "";
+    if (!title) return [];
+    const region = (["CM", "EU", "INTL", "CD"].includes(p[0]) ? p[0] : "CM") as PayRegion;
+    const info = p[4] || "";
+    const type: PaymentMode["type"] = p[5] === "manual" ? "manual" : p[5] === "contact" ? "contact" : "instant";
+    const id = title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `mode-${i}`;
+    return [{ id, region, emoji: p[1] || "💳", title, detail: p[3] || "", info, copyValue: info, color: colorByRegion[region] || "#5B21B6", type }];
+  });
+}
+
 // ─── Campagne (DB) ───────────────────────────────────────────────────
 export interface DonationCampaign {
   id: string;

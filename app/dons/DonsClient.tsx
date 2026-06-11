@@ -8,7 +8,7 @@ import {
   DONS_FONTS as F,
   CURRENCIES, type CurrencyCode, getCurrency, formatAmount, toXAF,
   DONATION_KINDS, type DonationKind, getKind,
-  PAYMENT_MODES, type PayRegion, type PaymentMode,
+  type PayRegion, type PaymentMode,
   DONATION_USES,
   type DonationCampaign, campaignProgress, daysLeft,
 } from "@/lib/dons/theme";
@@ -18,6 +18,7 @@ interface Props {
   heroIntro: string;
   campaigns: DonationCampaign[];
   isAdmin: boolean;
+  paymentModes: PaymentMode[];
 }
 
 const VERSES = [
@@ -38,7 +39,7 @@ const REGION_ORDER: PayRegion[] = ["CM", "EU", "INTL", "CD"];
 
 type Tab = "give" | "where";
 
-export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }: Props) {
+export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, paymentModes }: Props) {
   const [currency, setCurrency] = useState<CurrencyCode>("XAF");
   const [kind, setKind] = useState<DonationKind>("offering");
   const [amount, setAmount] = useState<number | "">("");
@@ -90,7 +91,7 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin }:
     return null;
   }, [amount, customAmount]);
 
-  const regionModes = useMemo(() => PAYMENT_MODES.filter((m) => m.region === region), [region]);
+  const regionModes = useMemo(() => paymentModes.filter((m) => m.region === region), [region, paymentModes]);
 
   function rotateVerse() {
     setVerseIdx((i) => (i + 1) % VERSES.length);
