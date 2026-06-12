@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '../../lib/supabase/client';
+import BackButton from '@/components/quiz/BackButton';
 
 const supabase = createClient();
 
@@ -40,6 +41,7 @@ export default function LeaderboardPage() {
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px 96px' }}>
+      <BackButton />
       <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 20px', fontFamily: 'var(--font-title)' }}>🏆 Classement du championnat</h1>
 
       {loading ? (

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '../../lib/supabase/client';
 import Link from 'next/link';
 import { isModerator } from '@/lib/rbac';
+import BackButton from '@/components/quiz/BackButton';
 
 const supabase = createClient();
 
@@ -108,6 +109,7 @@ export default function BibleQuizHub() {
 
   return (
     <div style={{ maxWidth: 820, margin: '0 auto', padding: '24px 16px 96px' }}>
+      <BackButton />
       {/* Hero */}
       <div style={{ marginBottom: 22 }}>
         <h1 style={{ fontSize: 'clamp(22px, 6vw, 28px)', fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontFamily: 'var(--font-title)' }}>🏆 Bible Quiz Championship</h1>

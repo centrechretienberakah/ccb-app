@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../../lib/supabase/client';
+import BackButton from '@/components/quiz/BackButton';
 
 const supabase = createClient();
 
@@ -66,6 +67,7 @@ export default function TeamPage() {
 
   return (
     <div style={{ maxWidth: 620, margin: '0 auto', padding: '24px 16px 96px' }}>
+      <BackButton />
       <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontFamily: 'var(--font-title)' }}>👥 Mon équipe</h1>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '0 0 22px' }}>Rejoins une équipe existante ou crée la tienne.</p>
 
