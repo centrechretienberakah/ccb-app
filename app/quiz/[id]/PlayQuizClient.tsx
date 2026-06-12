@@ -39,6 +39,9 @@ const pill = (bg: string, color: string): React.CSSProperties => ({
   background: bg, color, borderRadius: 'var(--radius-full)', padding: '4px 10px',
 });
 
+const RING_R = 26;
+const RING_C = 2 * Math.PI * RING_R;
+
 export default function PlayQuizClient({ quizId }: { quizId: string }) {
   const router = useRouter();
 
@@ -50,7 +53,9 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
   const [freeAnswer, setFreeAnswer] = useState('');
   const [isAnswered, setIsAnswered] = useState(false);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
   const [score, setScore] = useState(0);
+  const [stats, setStats] = useState({ correct: 0, wrong: 0, missed: 0 });
   const [finalScore, setFinalScore] = useState<number | null>(null);
   const [quizFinished, setQuizFinished] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -58,37 +63,49 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
   const [locked, setLocked] = useState(false);
   const [started, setStarted] = useState(false);
   const timeLeftRef = useRef(10);
+  const audioRef = useRef<AudioContext | null>(null);
+
+  // Petit bip via Web Audio (pas de fichier à charger).
+  const beep = useCallback((freq: number, dur: number, vol: number) => {
+    try {
+      const AC = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return;
+      if (!audioRef.current) audioRef.current = new AC();
+      const ctx = audioRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = vol;
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+      osc.stop(ctx.currentTime + dur);
+    } catch { /* audio indisponible */ }
+  }, []);
 
   useEffect(() => {
     async function loadQuizData() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          router.push('/auth/login?redirect=/bible-quiz');
-          return;
-        }
+        if (!user) { router.push('/auth/login?redirect=/bible-quiz'); return; }
         await supabase.rpc('quiz_ensure_profile');
 
         const { data: quiz } = await supabase
           .from('quiz_quizzes').select('title, phase').eq('id', quizId).single();
         if (quiz) setQuizTitle(quiz.title);
 
-        // Verrouillage par phase : un quiz non-'libre' n'est jouable que si
-        // l'admin a ouvert sa phase (le serveur applique la même règle).
+        // Verrouillage par phase (le serveur applique la même règle).
         const phase = (quiz as { phase?: string } | null)?.phase;
         if (phase && phase !== 'libre') {
           const { data: ph, error: phErr } = await supabase
             .from('quiz_phases').select('is_open').eq('key', phase).maybeSingle();
-          // Verrou uniquement si la phase existe ET est explicitement fermée
-          // (table pas encore migrée → on ne bloque pas).
           if (!phErr && ph && ph.is_open === false) { setLocked(true); return; }
         }
 
-        // Questions SANS la bonne réponse (vue publique sécurisée).
         const { data: questionsData } = await supabase
           .from('quiz_questions_public').select('*')
           .eq('quiz_id', quizId).order('sort_order', { ascending: true });
-
         setQuestions((questionsData as PublicQuestion[]) || []);
       } catch (error) {
         console.error('Erreur lors du chargement des données :', error);
@@ -110,11 +127,13 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
     setSelectedAnswer(letter);
   };
 
-  // Validation côté serveur : le verdict + les points viennent de la base.
-  const submitAnswer = useCallback(async () => {
+  // Validation côté serveur. viaTimeout = déclenché par le chrono à 0.
+  const submitAnswer = useCallback(async (viaTimeout = false) => {
     if (isAnswered || submitting || !currentQuestion) return;
     setSubmitting(true);
     setIsAnswered(true);
+    const noInput = isFreeInput ? freeAnswer.trim() === '' : selectedAnswer === null;
+    let v: Verdict;
     try {
       const { data, error } = await supabase.rpc('quiz_submit_answer', {
         p_quiz_id: quizId,
@@ -124,38 +143,46 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         p_time_taken: 10 - timeLeftRef.current,
       });
       if (error) throw error;
-      const v = data as Verdict;
-      setVerdict(v);
-      if (v?.points) setScore((prev) => prev + v.points);
+      v = data as Verdict;
     } catch (err) {
       console.error("Erreur d'enregistrement de la réponse :", err);
-      setVerdict({ is_correct: false, points: 0, correct_option: null, free_answer: null, reference: currentQuestion.reference ?? null });
-    } finally {
-      setSubmitting(false);
+      v = { is_correct: false, points: 0, correct_option: null, free_answer: null, reference: currentQuestion.reference ?? null };
     }
+    const missed = viaTimeout && noInput;
+    setVerdict(v);
+    setTimedOut(missed);
+    if (v.points) setScore((prev) => prev + v.points);
+    setStats((s) => ({
+      correct: s.correct + (v.is_correct ? 1 : 0),
+      wrong: s.wrong + (!v.is_correct && !missed ? 1 : 0),
+      missed: s.missed + (missed ? 1 : 0),
+    }));
+    setSubmitting(false);
   }, [isAnswered, submitting, currentQuestion, selectedAnswer, freeAnswer, isFreeInput, quizId]);
 
-  // Garde la dernière version de submitAnswer accessible dans l'intervalle sans
-  // en faire une dépendance (sinon le timer se relancerait à chaque frappe/clic).
+  // Ref vers la dernière version de submitAnswer (sans en faire une dépendance
+  // du timer, sinon l'intervalle se relancerait à chaque frappe/clic).
   const submitRef = useRef(submitAnswer);
   useEffect(() => { submitRef.current = submitAnswer; }, [submitAnswer]);
 
-  // Minuterie 10s — ne démarre qu'après appui sur « Démarrer ». On lit le temps
-  // via une ref (pas une dépendance) pour que le décompte ne se réinitialise pas.
+  // Minuterie 10s — démarre après « Démarrer ». Bip sur les 3 dernières
+  // secondes + bip plus grave à 0.
   useEffect(() => {
     if (loading || !currentQuestionId || quizFinished || isAnswered || !started) return;
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         const next = prev <= 1 ? 0 : prev - 1;
         timeLeftRef.current = next;
-        if (next === 0) { clearInterval(interval); submitRef.current(); }
+        if (next >= 1 && next <= 3) beep(880, 0.1, 0.18);
+        if (next === 0) { beep(440, 0.35, 0.22); clearInterval(interval); submitRef.current(true); }
         return next;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [loading, currentQuestionId, quizFinished, isAnswered, started]);
+  }, [loading, currentQuestionId, quizFinished, isAnswered, started, beep]);
 
   const startTimer = () => {
+    try { if (!audioRef.current) audioRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)(); audioRef.current?.resume(); } catch { /* noop */ }
     timeLeftRef.current = 10;
     setTimeLeft(10);
     setStarted(true);
@@ -168,6 +195,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
       setFreeAnswer('');
       setIsAnswered(false);
       setVerdict(null);
+      setTimedOut(false);
       setStarted(false);
       setTimeLeft(10);
       timeLeftRef.current = 10;
@@ -221,15 +249,33 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
   if (!currentQuestion) return null;
 
   if (quizFinished) {
+    const statCard = (emoji: string, label: string, value: number, color: string) => (
+      <div style={{ background: 'var(--surface-2)', borderRadius: 'var(--radius-lg)', padding: '14px 8px', textAlign: 'center' }}>
+        <div style={{ fontSize: 22 }}>{emoji}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color, marginTop: 2 }}>{value}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</div>
+      </div>
+    );
     return (
-      <div style={{ ...card, padding: '36px 24px', textAlign: 'center' }}>
+      <div style={{ ...card, padding: '32px 24px', textAlign: 'center' }}>
         <span style={{ fontSize: 52 }}>🏆</span>
-        <h1 style={{ fontSize: 28, fontWeight: 800, margin: '14px 0 4px', color: 'var(--text-primary)', fontFamily: 'var(--font-title)' }}>Étape validée !</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>Vos points ont été ajoutés au classement général.</p>
-        <div style={{ margin: '24px auto', maxWidth: 240, background: 'var(--gold-pale)', border: '1px solid var(--gold)', borderRadius: 'var(--radius-lg)', padding: '16px 0' }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, margin: '12px 0 4px', color: 'var(--text-primary)', fontFamily: 'var(--font-title)' }}>Manche terminée !</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>Vos points ont été ajoutés au classement.</p>
+
+        <div style={{ margin: '22px auto 18px', maxWidth: 240, background: 'var(--gold-pale)', border: '1px solid var(--gold)', borderRadius: 'var(--radius-lg)', padding: '14px 0' }}>
           <span style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--gold-dark)' }}>Points marqués</span>
-          <span style={{ fontSize: 40, fontWeight: 800, color: 'var(--gold-dark)', display: 'block', marginTop: 4 }}>+{finalScore ?? score} pts</span>
+          <span style={{ fontSize: 38, fontWeight: 800, color: 'var(--gold-dark)', display: 'block', marginTop: 2 }}>+{finalScore ?? score} pts</span>
         </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, maxWidth: 360, margin: '0 auto 8px' }}>
+          {statCard('✅', 'Bonnes', stats.correct, 'var(--success)')}
+          {statCard('❌', 'Ratées', stats.wrong, 'var(--error)')}
+          {statCard('⏱️', 'Manquées', stats.missed, 'var(--text-secondary)')}
+        </div>
+        <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 22px' }}>
+          {stats.correct} / {questions.length} bonnes réponses
+        </p>
+
         <button onClick={() => router.push('/bible-quiz')}
           style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '12px 28px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-gold)' }}>
           Retour au championnat
@@ -238,20 +284,27 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
     );
   }
 
-  const timerCritical = timeLeft <= 3;
+  const timerCritical = timeLeft <= 3 && started;
+  const ringColor = timerCritical ? 'var(--error)' : 'var(--gold)';
+  const frac = Math.max(0, Math.min(1, timeLeft / 10));
+
   return (
     <div style={{ ...card, padding: '22px 20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <span style={{ ...pill('var(--gold-pale)', 'var(--gold-dark)'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{quizTitle}</span>
+          <span style={{ ...pill('var(--gold-pale)', 'var(--gold-dark)'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{quizTitle}</span>
           {currentQuestion.is_difficult && <span style={pill('var(--violet-50)', 'var(--violet)')}>🔥 Difficile</span>}
         </div>
-        <div style={{
-          fontSize: 14, fontWeight: 800, padding: '4px 12px', borderRadius: 'var(--radius-md)',
-          border: `1px solid ${timerCritical ? 'var(--error)' : 'var(--border)'}`,
-          background: timerCritical ? 'rgba(239,68,68,0.10)' : 'var(--surface-2)',
-          color: timerCritical ? 'var(--error)' : 'var(--text-secondary)',
-        }}>⏱️ {timeLeft}s</div>
+        {/* Anneau circulaire de décompte */}
+        <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r={RING_R} fill="none" stroke="var(--surface-2)" strokeWidth="6" />
+            <circle cx="32" cy="32" r={RING_R} fill="none" stroke={ringColor} strokeWidth="6" strokeLinecap="round"
+              strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - frac)} transform="rotate(-90 32 32)"
+              style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }} />
+          </svg>
+          <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 800, color: timerCritical ? 'var(--error)' : 'var(--text-primary)' }}>{timeLeft}</span>
+        </div>
       </div>
 
       {/* Barre de progression */}
@@ -271,7 +324,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
             type="text" disabled={isAnswered || !started} value={freeAnswer}
             onChange={(e) => setFreeAnswer(e.target.value)}
             placeholder="Écrivez votre réponse ici…"
-            style={{ width: '100%', boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', fontSize: 14, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
+            style={{ width: '100%', boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', fontSize: 14, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)', opacity: (!started && !isAnswered) ? 0.5 : 1 }}
           />
           {isAnswered && verdict && (
             <div style={{ marginTop: 10, fontSize: 14, fontWeight: 700, color: verdict.is_correct ? 'var(--success)' : 'var(--error)' }}>
@@ -304,8 +357,14 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         </div>
       )}
 
+      {isAnswered && timedOut && (
+        <div style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(239,68,68,0.10)', border: '1px solid var(--error)', borderRadius: 'var(--radius-md)', fontSize: 13, color: 'var(--error)', fontWeight: 700 }}>
+          ⏱️ Temps écoulé — question manquée
+        </div>
+      )}
+
       {isAnswered && verdict?.reference && (
-        <div style={{ marginTop: 16, padding: '10px 14px', background: 'var(--gold-pale)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 12.5, color: 'var(--gold-dark)', fontWeight: 600 }}>
+        <div style={{ marginTop: 14, padding: '10px 14px', background: 'var(--gold-pale)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 12.5, color: 'var(--gold-dark)', fontWeight: 600 }}>
           📖 Écriture : {verdict.reference}
         </div>
       )}
@@ -314,7 +373,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         {isAnswered ? (
           <button onClick={handleNext}
             style={{ background: 'var(--violet)', color: '#fff', fontWeight: 800, fontSize: 14, padding: '11px 26px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer' }}>
-            {currentIndex + 1 === questions.length ? 'Terminer la manche' : 'Question suivante →'}
+            {currentIndex + 1 === questions.length ? 'Voir mes résultats →' : 'Question suivante →'}
           </button>
         ) : !started ? (
           <button onClick={startTimer}
@@ -324,7 +383,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         ) : (
           <button
             disabled={submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')}
-            onClick={submitAnswer}
+            onClick={() => submitAnswer(false)}
             style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '11px 26px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', opacity: (submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')) ? 0.4 : 1 }}>
             {submitting ? '…' : 'Valider'}
           </button>
