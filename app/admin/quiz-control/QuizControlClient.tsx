@@ -2,19 +2,18 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '../../../lib/supabase/client';
 import { isModerator } from '@/lib/rbac';
 
 const supabase = createClient();
 
 interface QuizAdmin {
-  id: string;
-  title: string;
-  is_active: boolean;
-  questions_count?: number;
-  answers_count?: number;
+  id: string; title: string; is_active: boolean;
+  questions_count?: number; answers_count?: number;
 }
 interface Phase { key: string; label: string; is_open: boolean; sort_order: number; }
+interface Team { id: string; name: string; total_score: number; }
 interface AdminStats {
   players: number; teams: number; attempts: number; answers: number; avg_score: number;
   levels: { debutant: number; intermediaire: number; avance: number; expert: number };
@@ -28,24 +27,34 @@ const chip: React.CSSProperties = {
   fontSize: 11.5, background: 'var(--surface-2)', color: 'var(--text-muted)',
   border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '3px 8px',
 };
+const inp: React.CSSProperties = {
+  flex: 1, minWidth: 0, boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)',
+  borderRadius: 'var(--radius-full)', padding: '9px 14px', fontSize: 13.5, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)',
+};
+const btnGold: React.CSSProperties = { background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 13, padding: '9px 18px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' };
 
 export default function QuizControlClient() {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
   const [quizzes, setQuizzes] = useState<QuizAdmin[]>([]);
   const [phases, setPhases] = useState<Phase[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [newQuiz, setNewQuiz] = useState('');
+  const [newTeam, setNewTeam] = useState('');
 
   const fetchAdminData = useCallback(async () => {
     try {
-      const [{ data: quizzesData }, { data: phaseRows }, { data: statsData }] = await Promise.all([
+      const [{ data: quizzesData }, { data: phaseRows }, { data: teamRows }, { data: statsData }] = await Promise.all([
         supabase.from('quiz_quizzes').select('id, title, is_active').order('sort_order', { ascending: true }),
         supabase.from('quiz_phases').select('key, label, is_open, sort_order').order('sort_order', { ascending: true }),
+        supabase.from('quiz_teams').select('id, name, total_score').order('name', { ascending: true }),
         supabase.rpc('quiz_admin_stats'),
       ]);
       setPhases((phaseRows as Phase[]) ?? []);
+      setTeams((teamRows as Team[]) ?? []);
       setStats((statsData as AdminStats) ?? null);
 
       if (quizzesData) {
@@ -67,7 +76,6 @@ export default function QuizControlClient() {
     }
   }, []);
 
-  // Garde de rôle : modérateur+ uniquement (cohérent avec le reste de l'admin CCB).
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -85,11 +93,8 @@ export default function QuizControlClient() {
       const { error } = await supabase.from('quiz_phases').update({ is_open: !isOpen }).eq('key', key);
       if (error) throw error;
       setPhases((prev) => prev.map((p) => (p.key === key ? { ...p, is_open: !isOpen } : p)));
-    } catch {
-      alert("Erreur lors du changement d'état de la phase.");
-    } finally {
-      setActionLoading(null);
-    }
+    } catch { alert("Erreur lors du changement d'état de la phase."); }
+    finally { setActionLoading(null); }
   };
 
   const toggleQuizStatus = async (id: string, currentStatus: boolean) => {
@@ -98,27 +103,68 @@ export default function QuizControlClient() {
       const { error } = await supabase.from('quiz_quizzes').update({ is_active: !currentStatus }).eq('id', id);
       if (error) throw error;
       setQuizzes((prev) => prev.map((q) => (q.id === id ? { ...q, is_active: !currentStatus } : q)));
-    } catch {
-      alert("Erreur lors du changement d'état du quiz.");
-    } finally {
-      setActionLoading(null);
-    }
+    } catch { alert("Erreur lors du changement d'état du quiz."); }
+    finally { setActionLoading(null); }
+  };
+
+  const createQuiz = async () => {
+    if (!newQuiz.trim()) return;
+    setActionLoading('new-quiz');
+    const { data, error } = await supabase.from('quiz_quizzes')
+      .insert({ title: newQuiz.trim(), phase: 'libre', sort_order: quizzes.length + 1 })
+      .select('id').single();
+    setActionLoading(null);
+    if (error) { alert('Erreur : ' + error.message); return; }
+    setNewQuiz('');
+    if (data?.id) router.push(`/admin/quiz-control/${data.id}`);
+  };
+
+  const deleteQuiz = async (id: string, title: string) => {
+    if (!confirm(`Supprimer la manche « ${title} » et toutes ses questions/réponses ? Action irréversible.`)) return;
+    setActionLoading(id + '-del');
+    const { error } = await supabase.from('quiz_quizzes').delete().eq('id', id);
+    setActionLoading(null);
+    if (error) { alert('Erreur : ' + error.message); return; }
+    setQuizzes((prev) => prev.filter((q) => q.id !== id));
   };
 
   const resetQuizAnswers = async (id: string) => {
     if (!confirm('⚠️ ATTENTION : Cela va supprimer TOUTES les réponses des joueurs pour ce quiz. Continuer ?')) return;
     setActionLoading(id + '-reset');
     try {
-      const { error: answersError } = await supabase.from('quiz_answers').delete().eq('quiz_id', id);
-      const { error: attemptsError } = await supabase.from('quiz_attempts').delete().eq('quiz_id', id);
-      if (answersError || attemptsError) throw new Error('Erreur');
-      alert('Toutes les réponses de ce questionnaire ont été réinitialisées !');
+      await supabase.from('quiz_answers').delete().eq('quiz_id', id);
+      await supabase.from('quiz_attempts').delete().eq('quiz_id', id);
+      alert('Réponses réinitialisées.');
       fetchAdminData();
-    } catch {
-      alert('Erreur lors du nettoyage des réponses.');
-    } finally {
-      setActionLoading(null);
-    }
+    } catch { alert('Erreur lors du nettoyage des réponses.'); }
+    finally { setActionLoading(null); }
+  };
+
+  const createTeam = async () => {
+    if (!newTeam.trim()) return;
+    setActionLoading('new-team');
+    const { error } = await supabase.from('quiz_teams').insert({ name: newTeam.trim() });
+    setActionLoading(null);
+    if (error) { alert('Erreur : ' + error.message); return; }
+    setNewTeam('');
+    fetchAdminData();
+  };
+
+  const saveTeam = async (id: string, name: string) => {
+    if (!name.trim()) return;
+    setActionLoading('team-' + id);
+    const { error } = await supabase.from('quiz_teams').update({ name: name.trim() }).eq('id', id);
+    setActionLoading(null);
+    if (error) alert('Erreur : ' + error.message);
+  };
+
+  const deleteTeam = async (id: string, name: string) => {
+    if (!confirm(`Supprimer l'équipe « ${name} » ? Ses membres seront détachés.`)) return;
+    setActionLoading('team-' + id);
+    const { error } = await supabase.from('quiz_teams').delete().eq('id', id);
+    setActionLoading(null);
+    if (error) { alert('Erreur : ' + error.message); return; }
+    setTeams((prev) => prev.filter((t) => t.id !== id));
   };
 
   if (loading || !allowed) {
@@ -180,8 +226,7 @@ export default function QuizControlClient() {
                 </div>
                 <button disabled={actionLoading === 'phase-' + ph.key} onClick={() => togglePhase(ph.key, ph.is_open)}
                   style={{ fontSize: 12.5, fontWeight: 700, padding: '8px 18px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer',
-                    background: ph.is_open ? 'rgba(239,68,68,0.10)' : 'var(--gold)',
-                    color: ph.is_open ? 'var(--error)' : '#1a0a00' }}>
+                    background: ph.is_open ? 'rgba(239,68,68,0.10)' : 'var(--gold)', color: ph.is_open ? 'var(--error)' : '#1a0a00' }}>
                   {ph.is_open ? 'Fermer' : 'Ouvrir'}
                 </button>
               </div>
@@ -190,8 +235,13 @@ export default function QuizControlClient() {
         </div>
       )}
 
-      {/* Quiz */}
+      {/* Manches + création */}
       <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Manches</h2>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <input style={inp} value={newQuiz} onChange={(e) => setNewQuiz(e.target.value)} placeholder="Titre d'une nouvelle manche…"
+          onKeyDown={(e) => { if (e.key === 'Enter') createQuiz(); }} />
+        <button onClick={createQuiz} disabled={actionLoading === 'new-quiz' || !newQuiz.trim()} style={{ ...btnGold, opacity: (!newQuiz.trim()) ? 0.4 : 1 }}>+ Créer</button>
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {quizzes.map((quiz) => (
           <div key={quiz.id} style={{ ...card, padding: '18px 20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
@@ -203,18 +253,45 @@ export default function QuizControlClient() {
                 {quiz.is_active && <span style={{ ...chip, background: 'rgba(34,197,94,0.12)', color: 'var(--success)', borderColor: 'rgba(34,197,94,0.3)' }}>● Active</span>}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Link href={`/admin/quiz-control/${quiz.id}`}
+                style={{ fontSize: 12.5, fontWeight: 700, padding: '8px 16px', borderRadius: 'var(--radius-full)', border: '1px solid var(--gold)', background: 'var(--gold-pale)', color: 'var(--gold-dark)', textDecoration: 'none' }}>
+                ✏️ Éditer
+              </Link>
               <button disabled={actionLoading === quiz.id} onClick={() => toggleQuizStatus(quiz.id, quiz.is_active)}
                 style={{ fontSize: 12.5, fontWeight: 700, padding: '8px 16px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer',
-                  background: quiz.is_active ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.12)',
-                  color: quiz.is_active ? 'var(--error)' : 'var(--success)' }}>
+                  background: quiz.is_active ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.12)', color: quiz.is_active ? 'var(--error)' : 'var(--success)' }}>
                 {quiz.is_active ? 'Désactiver' : 'Activer'}
               </button>
               <button onClick={() => resetQuizAnswers(quiz.id)}
                 style={{ fontSize: 12.5, fontWeight: 700, padding: '8px 16px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', cursor: 'pointer' }}>
                 Réinitialiser
               </button>
+              <button disabled={actionLoading === quiz.id + '-del'} onClick={() => deleteQuiz(quiz.id, quiz.title)}
+                style={{ fontSize: 12.5, fontWeight: 700, padding: '8px 14px', borderRadius: 'var(--radius-full)', border: 'none', background: 'transparent', color: 'var(--error)', cursor: 'pointer' }}>
+                🗑️
+              </button>
             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Équipes */}
+      <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '32px 0 12px' }}>Équipes</h2>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <input style={inp} value={newTeam} onChange={(e) => setNewTeam(e.target.value)} placeholder="Nom d'une nouvelle équipe…"
+          onKeyDown={(e) => { if (e.key === 'Enter') createTeam(); }} />
+        <button onClick={createTeam} disabled={actionLoading === 'new-team' || !newTeam.trim()} style={{ ...btnGold, opacity: (!newTeam.trim()) ? 0.4 : 1 }}>+ Créer</button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {teams.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Aucune équipe.</p>}
+        {teams.map((t) => (
+          <div key={t.id} style={{ ...card, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <input style={{ ...inp, flex: '1 1 160px' }} value={t.name}
+              onChange={(e) => setTeams((prev) => prev.map((x) => (x.id === t.id ? { ...x, name: e.target.value } : x)))} />
+            <span style={chip}>{t.total_score} pts</span>
+            <button disabled={actionLoading === 'team-' + t.id} onClick={() => saveTeam(t.id, t.name)} style={{ ...btnGold, padding: '7px 14px', fontSize: 12 }}>Enregistrer</button>
+            <button onClick={() => deleteTeam(t.id, t.name)} style={{ fontSize: 12.5, fontWeight: 700, padding: '7px 12px', borderRadius: 'var(--radius-full)', border: 'none', background: 'transparent', color: 'var(--error)', cursor: 'pointer' }}>🗑️</button>
           </div>
         ))}
       </div>
