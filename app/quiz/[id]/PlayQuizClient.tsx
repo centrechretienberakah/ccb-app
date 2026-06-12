@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/client';
 
@@ -56,6 +56,8 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(10);
   const [locked, setLocked] = useState(false);
+  const [started, setStarted] = useState(false);
+  const timeLeftRef = useRef(10);
 
   useEffect(() => {
     async function loadQuizData() {
@@ -119,7 +121,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         p_question_id: currentQuestion.id,
         p_selected: selectedAnswer,
         p_free: isFreeInput ? freeAnswer : null,
-        p_time_taken: 10 - timeLeft,
+        p_time_taken: 10 - timeLeftRef.current,
       });
       if (error) throw error;
       const v = data as Verdict;
@@ -131,20 +133,33 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
     } finally {
       setSubmitting(false);
     }
-  }, [isAnswered, submitting, currentQuestion, selectedAnswer, freeAnswer, isFreeInput, quizId, timeLeft]);
+  }, [isAnswered, submitting, currentQuestion, selectedAnswer, freeAnswer, isFreeInput, quizId]);
 
-  // Timer 10s — déclenche la validation automatique à 0.
+  // Garde la dernière version de submitAnswer accessible dans l'intervalle sans
+  // en faire une dépendance (sinon le timer se relancerait à chaque frappe/clic).
+  const submitRef = useRef(submitAnswer);
+  useEffect(() => { submitRef.current = submitAnswer; }, [submitAnswer]);
+
+  // Minuterie 10s — ne démarre qu'après appui sur « Démarrer ». On lit le temps
+  // via une ref (pas une dépendance) pour que le décompte ne se réinitialise pas.
   useEffect(() => {
-    if (loading || !currentQuestionId || quizFinished || isAnswered) return;
-    setTimeLeft(10);
+    if (loading || !currentQuestionId || quizFinished || isAnswered || !started) return;
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) { clearInterval(interval); submitAnswer(); return 0; }
-        return prev - 1;
+        const next = prev <= 1 ? 0 : prev - 1;
+        timeLeftRef.current = next;
+        if (next === 0) { clearInterval(interval); submitRef.current(); }
+        return next;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [loading, currentQuestionId, quizFinished, isAnswered, submitAnswer]);
+  }, [loading, currentQuestionId, quizFinished, isAnswered, started]);
+
+  const startTimer = () => {
+    timeLeftRef.current = 10;
+    setTimeLeft(10);
+    setStarted(true);
+  };
 
   const handleNext = async () => {
     if (currentIndex + 1 < questions.length) {
@@ -153,6 +168,9 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
       setFreeAnswer('');
       setIsAnswered(false);
       setVerdict(null);
+      setStarted(false);
+      setTimeLeft(10);
+      timeLeftRef.current = 10;
     } else {
       try {
         const { data } = await supabase.rpc('quiz_finish_attempt', { p_quiz_id: quizId });
@@ -250,7 +268,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 6 }}>Votre réponse (texte court)</label>
           <input
-            type="text" disabled={isAnswered} value={freeAnswer}
+            type="text" disabled={isAnswered || !started} value={freeAnswer}
             onChange={(e) => setFreeAnswer(e.target.value)}
             placeholder="Écrivez votre réponse ici…"
             style={{ width: '100%', boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', fontSize: 14, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
@@ -274,10 +292,11 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
               else if (selectedAnswer === letter) { bg = 'rgba(239,68,68,0.10)'; border = 'var(--error)'; color = 'var(--error)'; }
               else { opacity = 0.5; }
             }
+            if (!started && !isAnswered) opacity = 0.5;
 
             return (
-              <button key={letter} disabled={isAnswered} onClick={() => handleSelectOption(letter)}
-                style={{ width: '100%', textAlign: 'left', padding: '13px 16px', borderRadius: 'var(--radius-md)', border: `1px solid ${border}`, background: bg, color, opacity, fontSize: 14, fontWeight: 600, cursor: isAnswered ? 'default' : 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.12s' }}>
+              <button key={letter} disabled={isAnswered || !started} onClick={() => handleSelectOption(letter)}
+                style={{ width: '100%', textAlign: 'left', padding: '13px 16px', borderRadius: 'var(--radius-md)', border: `1px solid ${border}`, background: bg, color, opacity, fontSize: 14, fontWeight: 600, cursor: (isAnswered || !started) ? 'default' : 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.12s' }}>
                 <span style={{ fontWeight: 800, marginRight: 8 }}>{letter}.</span>{optionText}
               </button>
             );
@@ -291,18 +310,23 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         </div>
       )}
 
-      <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end' }}>
-        {!isAnswered ? (
+      <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: (isAnswered || started) ? 'flex-end' : 'center' }}>
+        {isAnswered ? (
+          <button onClick={handleNext}
+            style={{ background: 'var(--violet)', color: '#fff', fontWeight: 800, fontSize: 14, padding: '11px 26px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer' }}>
+            {currentIndex + 1 === questions.length ? 'Terminer la manche' : 'Question suivante →'}
+          </button>
+        ) : !started ? (
+          <button onClick={startTimer}
+            style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 15, padding: '13px 32px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-gold)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            ▶️ Démarrer le chrono
+          </button>
+        ) : (
           <button
             disabled={submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')}
             onClick={submitAnswer}
             style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '11px 26px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', opacity: (submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')) ? 0.4 : 1 }}>
             {submitting ? '…' : 'Valider'}
-          </button>
-        ) : (
-          <button onClick={handleNext}
-            style={{ background: 'var(--violet)', color: '#fff', fontWeight: 800, fontSize: 14, padding: '11px 26px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer' }}>
-            {currentIndex + 1 === questions.length ? 'Terminer la manche' : 'Question suivante →'}
           </button>
         )}
       </div>
