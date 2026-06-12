@@ -96,7 +96,10 @@ export default function BibleQuizHub() {
     );
   };
 
-  const libre = quizzes.filter((q) => (q.phase ?? 'libre') === 'libre');
+  // "Disponibles" = quiz 'libre' + tout quiz dont la phase n'est pas (encore)
+  // gérée dans quiz_phases → robuste si la migration v67 n'est pas appliquée.
+  const phaseKeys = new Set(phases.map((p) => p.key));
+  const available = quizzes.filter((q) => !(q.phase && q.phase !== 'libre' && phaseKeys.has(q.phase)));
 
   return (
     <div style={{ maxWidth: 820, margin: '0 auto', padding: '24px 16px 96px' }}>
@@ -135,11 +138,11 @@ export default function BibleQuizHub() {
       })}
 
       {/* Toujours disponible */}
-      {libre.length > 0 && (
+      {available.length > 0 && (
         <div style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Toujours disponible</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-            {libre.map((q) => quizCard(q, false))}
+            {available.map((q) => quizCard(q, false))}
           </div>
         </div>
       )}

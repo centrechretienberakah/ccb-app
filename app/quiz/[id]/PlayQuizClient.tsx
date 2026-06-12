@@ -75,9 +75,11 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         // l'admin a ouvert sa phase (le serveur applique la même règle).
         const phase = (quiz as { phase?: string } | null)?.phase;
         if (phase && phase !== 'libre') {
-          const { data: ph } = await supabase
-            .from('quiz_phases').select('is_open').eq('key', phase).single();
-          if (!ph?.is_open) { setLocked(true); return; }
+          const { data: ph, error: phErr } = await supabase
+            .from('quiz_phases').select('is_open').eq('key', phase).maybeSingle();
+          // Verrou uniquement si la phase existe ET est explicitement fermée
+          // (table pas encore migrée → on ne bloque pas).
+          if (!phErr && ph && ph.is_open === false) { setLocked(true); return; }
         }
 
         // Questions SANS la bonne réponse (vue publique sécurisée).
