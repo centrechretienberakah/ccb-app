@@ -11,6 +11,20 @@
 -- Idempotent. À exécuter dans Supabase SQL Editor. Dépend de v66.
 -- =====================================================================
 
+-- ─── Compatibilité : si une ancienne table quiz_phases existe (issue du
+--     générateur initial : colonnes name/order, sans 'key'), on l'archive
+--     sous quiz_phases_legacy_<horodatage> pour repartir sur le bon schéma
+--     SANS perte de données. ─────────────────────────────────────────────
+DO $compat$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+              WHERE table_schema = 'public' AND table_name = 'quiz_phases')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = 'quiz_phases' AND column_name = 'key') THEN
+    EXECUTE 'ALTER TABLE public.quiz_phases RENAME TO quiz_phases_legacy_' || to_char(now(), 'YYYYMMDDHH24MISS');
+  END IF;
+END $compat$;
+
 -- ─── Table quiz_phases ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.quiz_phases (
   key        TEXT PRIMARY KEY,        -- qualifications / quarts / demi / finale
