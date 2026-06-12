@@ -79,7 +79,7 @@ export default function BibleQuizHub() {
   const stat = (label: string, value: string, color: string) => (
     <div style={{ ...card, padding: '14px 10px', textAlign: 'center' }}>
       <span style={{ display: 'block', fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, color: 'var(--text-muted)' }}>{label}</span>
-      <span style={{ fontSize: 20, fontWeight: 800, color, display: 'block', marginTop: 2 }}>{value}</span>
+      <span style={{ fontSize: 'clamp(13px, 3.6vw, 20px)', fontWeight: 800, color, display: 'block', marginTop: 2, lineHeight: 1.15, wordBreak: 'break-word' }}>{value}</span>
     </div>
   );
 
@@ -110,7 +110,7 @@ export default function BibleQuizHub() {
     <div style={{ maxWidth: 820, margin: '0 auto', padding: '24px 16px 96px' }}>
       {/* Hero */}
       <div style={{ marginBottom: 22 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontFamily: 'var(--font-title)' }}>🏆 Bible Quiz Championship</h1>
+        <h1 style={{ fontSize: 'clamp(22px, 6vw, 28px)', fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontFamily: 'var(--font-title)' }}>🏆 Bible Quiz Championship</h1>
         {isAdmin && (
           <Link href="/admin/quiz-control"
             style={{ display: 'inline-block', marginTop: 12, background: 'var(--violet)', color: '#fff', fontWeight: 800, fontSize: 13, padding: '9px 18px', borderRadius: 'var(--radius-full)', textDecoration: 'none' }}>

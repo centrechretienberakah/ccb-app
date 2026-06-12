@@ -257,9 +257,9 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
       </div>
     );
     return (
-      <div style={{ ...card, padding: '32px 24px', textAlign: 'center' }}>
+      <div style={{ ...card, padding: '32px clamp(16px, 5vw, 24px)', textAlign: 'center' }}>
         <span style={{ fontSize: 52 }}>🏆</span>
-        <h1 style={{ fontSize: 26, fontWeight: 800, margin: '12px 0 4px', color: 'var(--text-primary)', fontFamily: 'var(--font-title)' }}>Manche terminée !</h1>
+        <h1 style={{ fontSize: 'clamp(21px, 6vw, 26px)', fontWeight: 800, margin: '12px 0 4px', color: 'var(--text-primary)', fontFamily: 'var(--font-title)' }}>Manche terminée !</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>Vos points ont été ajoutés au classement.</p>
 
         <div style={{ margin: '22px auto 18px', maxWidth: 240, background: 'var(--gold-pale)', border: '1px solid var(--gold)', borderRadius: 'var(--radius-lg)', padding: '14px 0' }}>
@@ -289,15 +289,15 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
   const frac = Math.max(0, Math.min(1, timeLeft / 10));
 
   return (
-    <div style={{ ...card, padding: '22px 20px' }}>
+    <div style={{ ...card, padding: '22px clamp(14px, 4vw, 20px)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <span style={{ ...pill('var(--gold-pale)', 'var(--gold-dark)'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{quizTitle}</span>
-          {currentQuestion.is_difficult && <span style={pill('var(--violet-50)', 'var(--violet)')}>🔥 Difficile</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+          <span style={{ ...pill('var(--gold-pale)', 'var(--gold-dark)'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>{quizTitle}</span>
+          {currentQuestion.is_difficult && <span style={{ ...pill('var(--violet-50)', 'var(--violet)'), flexShrink: 0 }}>🔥 Difficile</span>}
         </div>
         {/* Anneau circulaire de décompte */}
-        <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
-          <svg width="64" height="64" viewBox="0 0 64 64">
+        <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
+          <svg width="56" height="56" viewBox="0 0 64 64">
             <circle cx="32" cy="32" r={RING_R} fill="none" stroke="var(--surface-2)" strokeWidth="6" />
             <circle cx="32" cy="32" r={RING_R} fill="none" stroke={ringColor} strokeWidth="6" strokeLinecap="round"
               strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - frac)} transform="rotate(-90 32 32)"
@@ -312,7 +312,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         <div style={{ height: '100%', width: `${((currentIndex + 1) / questions.length) * 100}%`, background: 'var(--gold)', transition: 'width 0.3s' }} />
       </div>
 
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.4, margin: '0 0 20px' }}>
+      <h2 style={{ fontSize: 'clamp(15.5px, 4.5vw, 18px)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.4, margin: '0 0 20px' }}>
         <span style={{ color: 'var(--text-muted)', fontSize: 15, fontWeight: 600, marginRight: 8 }}>Q{currentIndex + 1}.</span>
         {currentQuestion.text}
       </h2>

@@ -165,7 +165,7 @@ export default function QuizEditorClient({ quizId }: { quizId: string }) {
             <div style={{ display: 'grid', gap: 10 }}>
               <div><label style={lbl}>Question</label><textarea style={{ ...inp, minHeight: 54, resize: 'vertical' }} value={q.text} onChange={(e) => updateQ(i, { text: e.target.value })} /></div>
               {q.correct_option !== 'free' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
                   {(['a', 'b', 'c', 'd'] as const).map((opt) => (
                     <div key={opt}><label style={lbl}>Option {opt.toUpperCase()}</label>
                       <input style={inp} value={(q[`option_${opt}` as keyof Question] as string) ?? ''} onChange={(e) => updateQ(i, { [`option_${opt}`]: e.target.value } as Partial<Question>)} /></div>

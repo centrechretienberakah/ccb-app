@@ -244,8 +244,8 @@ export default function QuizControlClient() {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {quizzes.map((quiz) => (
-          <div key={quiz.id} style={{ ...card, padding: '18px 20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-            <div style={{ flex: 1, minWidth: 200 }}>
+          <div key={quiz.id} style={{ ...card, padding: '16px 18px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 150 }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 8px' }}>{quiz.title}</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 <span style={chip}>Questions : {quiz.questions_count}</span>
