@@ -14,6 +14,7 @@ interface QuizAdmin {
 }
 interface Phase { key: string; label: string; is_open: boolean; sort_order: number; }
 interface Team { id: string; name: string; total_score: number; }
+interface Player { id: string; name: string | null; team_id: string | null; total_score: number; }
 interface AdminStats {
   players: number; teams: number; attempts: number; answers: number; avg_score: number;
   levels: { debutant: number; intermediaire: number; avance: number; expert: number };
@@ -39,6 +40,7 @@ export default function QuizControlClient() {
   const [quizzes, setQuizzes] = useState<QuizAdmin[]>([]);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -47,14 +49,16 @@ export default function QuizControlClient() {
 
   const fetchAdminData = useCallback(async () => {
     try {
-      const [{ data: quizzesData }, { data: phaseRows }, { data: teamRows }, { data: statsData }] = await Promise.all([
+      const [{ data: quizzesData }, { data: phaseRows }, { data: teamRows }, { data: playerRows }, { data: statsData }] = await Promise.all([
         supabase.from('quiz_quizzes').select('id, title, is_active').order('sort_order', { ascending: true }),
         supabase.from('quiz_phases').select('key, label, is_open, sort_order').order('sort_order', { ascending: true }),
         supabase.from('quiz_teams').select('id, name, total_score').order('name', { ascending: true }),
+        supabase.from('quiz_profiles').select('id, name, team_id, total_score').order('total_score', { ascending: false }),
         supabase.rpc('quiz_admin_stats'),
       ]);
       setPhases((phaseRows as Phase[]) ?? []);
       setTeams((teamRows as Team[]) ?? []);
+      setPlayers((playerRows as Player[]) ?? []);
       setStats((statsData as AdminStats) ?? null);
 
       if (quizzesData) {
@@ -161,10 +165,29 @@ export default function QuizControlClient() {
   const deleteTeam = async (id: string, name: string) => {
     if (!confirm(`Supprimer l'équipe « ${name} » ? Ses membres seront détachés.`)) return;
     setActionLoading('team-' + id);
+    // Détache les membres d'abord (robuste même sans la FK ON DELETE SET NULL).
+    await supabase.from('quiz_profiles').update({ team_id: null }).eq('team_id', id);
     const { error } = await supabase.from('quiz_teams').delete().eq('id', id);
+    if (error) { alert('Erreur : ' + error.message); setActionLoading(null); return; }
+    await fetchAdminData();
     setActionLoading(null);
-    if (error) { alert('Erreur : ' + error.message); return; }
-    setTeams((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const assignMember = async (userId: string, teamId: string | null) => {
+    setActionLoading('mem-' + userId);
+    const { error } = await supabase.from('quiz_profiles').update({ team_id: teamId }).eq('id', userId);
+    if (error) { alert('Erreur : ' + error.message); setActionLoading(null); return; }
+    try { await supabase.rpc('quiz_recompute_scores'); } catch { /* best-effort */ }
+    await fetchAdminData();
+    setActionLoading(null);
+  };
+
+  const recomputeScores = async () => {
+    setActionLoading('recompute');
+    const { error } = await supabase.rpc('quiz_recompute_scores');
+    if (error) alert('Erreur : ' + error.message);
+    else await fetchAdminData();
+    setActionLoading(null);
   };
 
   if (loading || !allowed) {
@@ -277,23 +300,58 @@ export default function QuizControlClient() {
       </div>
 
       {/* Équipes */}
-      <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '32px 0 12px' }}>Équipes</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, margin: '32px 0 12px', flexWrap: 'wrap' }}>
+        <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: 0 }}>Équipes &amp; membres</h2>
+        <button onClick={recomputeScores} disabled={actionLoading === 'recompute'}
+          style={{ fontSize: 12.5, fontWeight: 700, padding: '8px 16px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          {actionLoading === 'recompute' ? '…' : '↻ Recalculer les scores'}
+        </button>
+      </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
         <input style={inp} value={newTeam} onChange={(e) => setNewTeam(e.target.value)} placeholder="Nom d'une nouvelle équipe…"
           onKeyDown={(e) => { if (e.key === 'Enter') createTeam(); }} />
         <button onClick={createTeam} disabled={actionLoading === 'new-team' || !newTeam.trim()} style={{ ...btnGold, opacity: (!newTeam.trim()) ? 0.4 : 1 }}>+ Créer</button>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {teams.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Aucune équipe.</p>}
-        {teams.map((t) => (
-          <div key={t.id} style={{ ...card, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <input style={{ ...inp, flex: '1 1 160px' }} value={t.name}
-              onChange={(e) => setTeams((prev) => prev.map((x) => (x.id === t.id ? { ...x, name: e.target.value } : x)))} />
-            <span style={chip}>{t.total_score} pts</span>
-            <button disabled={actionLoading === 'team-' + t.id} onClick={() => saveTeam(t.id, t.name)} style={{ ...btnGold, padding: '7px 14px', fontSize: 12 }}>Enregistrer</button>
-            <button onClick={() => deleteTeam(t.id, t.name)} style={{ fontSize: 12.5, fontWeight: 700, padding: '7px 12px', borderRadius: 'var(--radius-full)', border: 'none', background: 'transparent', color: 'var(--error)', cursor: 'pointer' }}>🗑️</button>
-          </div>
-        ))}
+        {teams.map((t) => {
+          const teamMembers = players.filter((p) => p.team_id === t.id);
+          const others = players.filter((p) => p.team_id !== t.id);
+          return (
+            <div key={t.id} style={{ ...card, padding: '14px 16px' }}>
+              {/* En-tête équipe */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <input style={{ ...inp, flex: '1 1 150px' }} value={t.name}
+                  onChange={(e) => setTeams((prev) => prev.map((x) => (x.id === t.id ? { ...x, name: e.target.value } : x)))} />
+                <span style={chip}>{t.total_score} pts</span>
+                <button disabled={actionLoading === 'team-' + t.id} onClick={() => saveTeam(t.id, t.name)} style={{ ...btnGold, padding: '7px 14px', fontSize: 12 }}>Enregistrer</button>
+                <button onClick={() => deleteTeam(t.id, t.name)} style={{ fontSize: 12.5, fontWeight: 700, padding: '7px 12px', borderRadius: 'var(--radius-full)', border: 'none', background: 'transparent', color: 'var(--error)', cursor: 'pointer' }}>🗑️</button>
+              </div>
+
+              {/* Membres */}
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Membres ({teamMembers.length})</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                  {teamMembers.length === 0 && <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Aucun membre.</span>}
+                  {teamMembers.map((m) => (
+                    <span key={m.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-full)', padding: '4px 6px 4px 10px' }}>
+                      👤 {m.name || 'Joueur'} · {m.total_score} pts
+                      <button disabled={actionLoading === 'mem-' + m.id} onClick={() => assignMember(m.id, null)} title="Retirer de l'équipe"
+                        style={{ border: 'none', background: 'transparent', color: 'var(--error)', cursor: 'pointer', fontWeight: 800, fontSize: 14, lineHeight: 1, padding: '0 2px' }}>✕</button>
+                    </span>
+                  ))}
+                </div>
+                <select defaultValue="" onChange={(e) => { const v = e.target.value; e.target.value = ''; if (v) assignMember(v, t.id); }}
+                  style={{ ...inp, flex: 'unset', maxWidth: 280, cursor: 'pointer' }}>
+                  <option value="">+ Ajouter un membre…</option>
+                  {others.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name || 'Joueur'}{p.team_id ? ' (déplacer)' : ''}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

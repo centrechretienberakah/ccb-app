@@ -8,6 +8,7 @@ import BackButton from '@/components/quiz/BackButton';
 const supabase = createClient();
 
 interface Team { id: string; name: string; total_score: number; }
+interface Member { id: string; name: string | null; total_score: number; team_id: string | null; }
 
 const card: React.CSSProperties = {
   background: 'var(--card-bg)', border: '1px solid var(--border)',
@@ -18,6 +19,7 @@ export default function TeamPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [myTeamId, setMyTeamId] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -27,12 +29,14 @@ export default function TeamPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/auth/login?redirect=/team'); return; }
     await supabase.rpc('quiz_ensure_profile');
-    const [{ data: teamRows }, { data: profile }] = await Promise.all([
+    const [{ data: teamRows }, { data: profs }] = await Promise.all([
       supabase.from('quiz_teams').select('id, name, total_score').order('total_score', { ascending: false }),
-      supabase.from('quiz_profiles').select('team_id').eq('id', user.id).single(),
+      supabase.from('quiz_profiles').select('id, name, total_score, team_id'),
     ]);
     setTeams((teamRows as Team[]) ?? []);
-    setMyTeamId(profile?.team_id ?? null);
+    const mem = (profs as Member[]) ?? [];
+    setMembers(mem);
+    setMyTeamId(mem.find((m) => m.id === user.id)?.team_id ?? null);
     setLoading(false);
   }, [router]);
 
@@ -43,6 +47,14 @@ export default function TeamPage() {
     const { error } = await supabase.rpc('quiz_join_team', { p_team_id: teamId });
     if (error) setMessage('❌ ' + error.message);
     else { setMessage('✅ Équipe rejointe !'); await refresh(); }
+    setBusy(false);
+  }
+
+  async function leaveTeam() {
+    setBusy(true); setMessage('');
+    const { error } = await supabase.rpc('quiz_leave_team');
+    if (error) setMessage('❌ ' + error.message);
+    else { setMessage('👋 Tu as quitté ton équipe.'); await refresh(); }
     setBusy(false);
   }
 
@@ -88,24 +100,43 @@ export default function TeamPage() {
         </button>
       </form>
 
-      {/* Liste des équipes */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Liste des équipes + membres */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {teams.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Aucune équipe pour l&apos;instant. Crée la première !</p>}
         {teams.map((t) => {
           const isMine = t.id === myTeamId;
+          const teamMembers = members
+            .filter((m) => m.team_id === t.id)
+            .sort((a, b) => b.total_score - a.total_score);
           return (
-            <div key={t.id} style={{ ...card, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, ...(isMine ? { borderColor: 'var(--gold)', background: 'var(--gold-pale)' } : {}) }}>
-              <div>
-                <p style={{ fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontSize: 15 }}>{t.name}</p>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{t.total_score} pts</p>
+            <div key={t.id} style={{ ...card, padding: '14px 16px', ...(isMine ? { borderColor: 'var(--gold)', background: 'var(--gold-pale)' } : {}) }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontSize: 15 }}>{t.name}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{t.total_score} pts · {teamMembers.length} membre{teamMembers.length > 1 ? 's' : ''}</p>
+                </div>
+                {isMine ? (
+                  <button disabled={busy} onClick={leaveTeam}
+                    style={{ background: 'transparent', color: 'var(--error)', fontWeight: 700, fontSize: 12.5, padding: '8px 14px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', cursor: 'pointer', opacity: busy ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+                    Quitter
+                  </button>
+                ) : (
+                  <button disabled={busy} onClick={() => joinTeam(t.id)}
+                    style={{ background: 'var(--violet)', color: '#fff', fontWeight: 700, fontSize: 13, padding: '8px 16px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', opacity: busy ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+                    Rejoindre
+                  </button>
+                )}
               </div>
-              {isMine ? (
-                <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--gold-dark)', textTransform: 'uppercase' }}>Mon équipe ✓</span>
-              ) : (
-                <button disabled={busy} onClick={() => joinTeam(t.id)}
-                  style={{ background: 'var(--violet)', color: '#fff', fontWeight: 700, fontSize: 13, padding: '8px 16px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', opacity: busy ? 0.5 : 1 }}>
-                  Rejoindre
-                </button>
+
+              {/* Membres de l'équipe */}
+              {teamMembers.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+                  {teamMembers.map((m) => (
+                    <span key={m.id} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-full)', padding: '4px 10px' }}>
+                      👤 {m.name || 'Joueur'} · {m.total_score} pts
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           );
