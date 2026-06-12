@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../../lib/supabase/client';
 import Link from 'next/link';
+import { isModerator } from '@/lib/rbac';
 
 const supabase = createClient();
 
@@ -33,11 +34,15 @@ export default function BibleQuizHub() {
   const [stats, setStats] = useState<MyStats | null>(null);
   const [teamName, setTeamName] = useState<string | null>(null);
   const [history, setHistory] = useState<Attempt[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/auth/login?redirect=/bible-quiz'); return; }
+
+      const { data: roleRow } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+      setIsAdmin(isModerator(roleRow?.role));
 
       const { data: profile } = await supabase.rpc('quiz_ensure_profile');
       const p = profile as MyStats | null;
@@ -107,6 +112,12 @@ export default function BibleQuizHub() {
       <div style={{ marginBottom: 22 }}>
         <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', background: 'var(--gold-pale)', color: 'var(--gold-dark)', borderRadius: 'var(--radius-full)', padding: '4px 12px' }}>Bootcamp Berakah</span>
         <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-primary)', margin: '12px 0 0', fontFamily: 'var(--font-title)' }}>🏆 Bible Quiz Championship</h1>
+        {isAdmin && (
+          <Link href="/admin/quiz-control"
+            style={{ display: 'inline-block', marginTop: 12, background: 'var(--violet)', color: '#fff', fontWeight: 800, fontSize: 13, padding: '9px 18px', borderRadius: 'var(--radius-full)', textDecoration: 'none' }}>
+            ⚙️ Administration du championnat
+          </Link>
+        )}
       </div>
 
       {/* Mes stats */}
