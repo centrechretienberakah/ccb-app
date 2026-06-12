@@ -55,6 +55,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
   const [quizFinished, setQuizFinished] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(10);
+  const [locked, setLocked] = useState(false);
 
   useEffect(() => {
     async function loadQuizData() {
@@ -67,8 +68,17 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         await supabase.rpc('quiz_ensure_profile');
 
         const { data: quiz } = await supabase
-          .from('quiz_quizzes').select('title').eq('id', quizId).single();
+          .from('quiz_quizzes').select('title, phase').eq('id', quizId).single();
         if (quiz) setQuizTitle(quiz.title);
+
+        // Verrouillage par phase : un quiz non-'libre' n'est jouable que si
+        // l'admin a ouvert sa phase (le serveur applique la même règle).
+        const phase = (quiz as { phase?: string } | null)?.phase;
+        if (phase && phase !== 'libre') {
+          const { data: ph } = await supabase
+            .from('quiz_phases').select('is_open').eq('key', phase).single();
+          if (!ph?.is_open) { setLocked(true); return; }
+        }
 
         // Questions SANS la bonne réponse (vue publique sécurisée).
         const { data: questionsData } = await supabase
@@ -160,6 +170,20 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'qspin 0.8s linear infinite' }} />
         <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Chargement du Championnat…</p>
         <style>{`@keyframes qspin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
+  if (locked) {
+    return (
+      <div style={{ ...card, padding: 40, textAlign: 'center' }}>
+        <div style={{ fontSize: 44, marginBottom: 10 }}>🔒</div>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)' }}>Phase verrouillée</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '8px 0 18px' }}>Cette manche n&apos;est pas encore ouverte par l&apos;organisation.</p>
+        <button onClick={() => router.push('/bible-quiz')}
+          style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '10px 22px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer' }}>
+          Retour au championnat
+        </button>
       </div>
     );
   }
