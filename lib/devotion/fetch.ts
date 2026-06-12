@@ -31,11 +31,27 @@ interface DevotionRow {
   declaration?: string | null;
 }
 
+// Retire les paragraphes en double (mêmes phrases répétées) — défense contre
+// des données dupliquées (ex. même texte dans meditation_p1 ET meditation_p2,
+// ou collé deux fois). Comparaison insensible à la casse / aux espaces.
+function dedupeParagraphs(text: string): string {
+  const seen = new Set<string>();
+  return text
+    .split("\n\n")
+    .filter((p) => {
+      const key = p.trim().toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join("\n\n");
+}
+
 function normalize(d: DevotionRow | null): UnifiedDevotion | null {
   if (!d) return null;
   const dateStr = d.devotion_date || d.date || getParisDateString();
   const meditationParts = [d.meditation_p1, d.meditation_p2, d.meditation_p3].filter(Boolean) as string[];
-  const content = meditationParts.length > 0 ? meditationParts.join("\n\n") : (d.content || "");
+  const content = dedupeParagraphs(meditationParts.length > 0 ? meditationParts.join("\n\n") : (d.content || ""));
   return {
     id: d.id,
     date: dateStr,
@@ -84,7 +100,7 @@ export async function getTodayDevotion(
       title: f.title,
       verse_ref: f.verse_ref,
       verse_text: f.verse_text,
-      content: f.content,
+      content: dedupeParagraphs(f.content),
       application: f.application,
       prayer: f.prayer,
       declaration: f.declaration,

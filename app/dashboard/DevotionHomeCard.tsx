@@ -50,7 +50,17 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
   const [shared, setShared] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  const paragraphs = devotion.content.split("\n\n").filter((p) => p.trim().length > 0);
+  // Dédoublonnage défensif : ignore tout paragraphe identique déjà affiché.
+  const paragraphs = (() => {
+    const seen = new Set<string>();
+    return devotion.content.split("\n\n").map((p) => p.trim()).filter((p) => {
+      if (!p) return false;
+      const k = p.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  })();
   const hasMore = paragraphs.length > 1 || !!devotion.application || !!devotion.prayer || !!devotion.declaration;
 
   function buildShareText(includeUrl: boolean) {
