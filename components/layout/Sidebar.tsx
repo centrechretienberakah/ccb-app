@@ -68,7 +68,9 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
         && !pathname.startsWith("/community/messages")
         && !pathname.startsWith("/community/groups");
     }
-    return pathname.startsWith(href);
+    // Frontière sur « / » pour éviter les faux positifs de préfixe :
+    // sans ça, /bible-quiz activerait « Ma Bible » (/bible).
+    return pathname === href || pathname.startsWith(href + "/");
   };
 
   return (
