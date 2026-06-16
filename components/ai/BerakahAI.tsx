@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useDraggable } from "@/components/ui/useDraggable";
 import {
   loadConversations, loadMessages, createConversation, saveMessage,
   touchConversation, deleteConversation, type AiConversation,
@@ -33,6 +34,7 @@ export default function BerakahAI() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const recRef = useRef<any>(null);
   const router = useRouter();
+  const fab = useDraggable<HTMLButtonElement>("ccb-ai-fab-pos");
 
   // Mémoire (best-effort : si v64 non migrée, le chat marche sans persistance)
   const sbRef = useRef<ReturnType<typeof createClient> | null>(null);
@@ -194,7 +196,15 @@ export default function BerakahAI() {
   return (
     <>
       {!open && (
-        <button className="berakah-fab" onClick={() => setOpen(true)} aria-label="Ouvrir BERAKAH AI" title="BERAKAH AI — assistant pastoral 24h/24">
+        <button
+          ref={fab.ref}
+          {...fab.handlers}
+          style={fab.style}
+          className="berakah-fab"
+          onClick={() => { if (fab.moved.current) { fab.moved.current = false; return; } setOpen(true); }}
+          aria-label="Ouvrir BERAKAH AI"
+          title="BERAKAH AI — assistant pastoral 24h/24 (glisse pour déplacer)"
+        >
           <img src="/rev-elvis-v2.jpg" alt="BERAKAH AI" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         </button>
       )}

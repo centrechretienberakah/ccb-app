@@ -23,6 +23,7 @@ import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useRef } from "react";
 import MeetStage from "./MeetStage";
+import { useDraggable } from "@/components/ui/useDraggable";
 
 export default function PersistentCallHost() {
   const { state, endCall } = useCall();
@@ -123,6 +124,7 @@ function MiniPlayer() {
   const { state } = useCall();
   const room = useRoomContext();
   const router = useRouter();
+  const bar = useDraggable<HTMLDivElement>("ccb-mini-call-pos");
 
   const isAudio = state.mode === "audio";
   const groupId = state.groupId;
@@ -139,9 +141,11 @@ function MiniPlayer() {
 
   return (
     <div
+      ref={bar.ref}
       role="button"
       tabIndex={0}
-      onClick={handleExpand}
+      {...bar.handlers}
+      onClick={() => { if (bar.moved.current) { bar.moved.current = false; return; } handleExpand(); }}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleExpand(); }}
       style={{
         position: "fixed",
@@ -158,6 +162,7 @@ function MiniPlayer() {
         zIndex: 150,
         cursor: "pointer",
         animation: "ccb-pulse-mini 2.2s ease-in-out infinite",
+        ...bar.style,
       }}>
       <style>{`
         @keyframes ccb-pulse-mini {
