@@ -220,6 +220,7 @@ export default function QuizControlClient() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, marginBottom: 10 }}>
             {metric('Joueurs', stats.players)}
             {metric('Équipes', stats.teams)}
+            {metric('Réponses', stats.answers)}
             {metric('Tentatives', stats.attempts)}
             {metric('Score moyen', stats.avg_score)}
           </div>
