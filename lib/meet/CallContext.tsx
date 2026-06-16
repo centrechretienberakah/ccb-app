@@ -14,7 +14,12 @@
  * Le LiveKit ne se reconnecte JAMAIS pendant la session.
  */
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+
+// Persistance de l'appel pour survivre à un rechargement de page (refresh
+// manuel OU page « discardée » par l'OS quand le téléphone se met en veille).
+const STORAGE_KEY = "ccb-call-state";
+const MAX_AGE_MS = 2 * 60 * 60 * 1000; // au-delà, on considère le token périmé
 
 export interface CallState {
   active: boolean;
@@ -26,6 +31,7 @@ export interface CallState {
   mode: "audio" | "video" | null;
   token: string | null;
   serverUrl: string | null;
+  tokenAt: number | null;        // timestamp d'obtention du token (TTL)
   displayName: string;
   audioEnabled: boolean;
   videoEnabled: boolean;
@@ -57,6 +63,7 @@ const initial: CallState = {
   mode: null,
   token: null,
   serverUrl: null,
+  tokenAt: null,
   displayName: "Membre CCB",
   audioEnabled: true,
   videoEnabled: false,
@@ -68,6 +75,34 @@ const CallContext = createContext<CallContextValue | null>(null);
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<CallState>(initial);
+
+  // Réhydratation au montage : si un appel récent était en cours avant le
+  // rechargement, on le restaure → PersistentCallHost remonte LiveKitRoom et
+  // se reconnecte automatiquement avec le token sauvegardé.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as CallState;
+      if (saved?.active && saved.token && saved.serverUrl && saved.tokenAt
+          && Date.now() - saved.tokenAt < MAX_AGE_MS) {
+        setState({ ...initial, ...saved, status: "live" });
+      } else {
+        sessionStorage.removeItem(STORAGE_KEY);
+      }
+    } catch { /* noop */ }
+  }, []);
+
+  // Sauvegarde à chaque changement tant qu'un appel est actif.
+  useEffect(() => {
+    try {
+      if (state.active && state.token && state.serverUrl) {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } else {
+        sessionStorage.removeItem(STORAGE_KEY);
+      }
+    } catch { /* noop */ }
+  }, [state]);
 
   const startCall = useCallback(async (opts: {
     groupId?: string;
@@ -120,6 +155,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         active: true,
         token: data.token,
         serverUrl: data.url,
+        tokenAt: Date.now(),
         displayName: data.displayName ?? s.displayName,
         status: "live",
       }));
@@ -129,6 +165,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   }, [state.active, state.groupId, state.conversationId, state.mode]);
 
   const endCall = useCallback(() => {
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
     setState(initial);
   }, []);
 
