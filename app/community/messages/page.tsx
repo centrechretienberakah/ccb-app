@@ -38,6 +38,14 @@ export default async function DiscussionsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?redirect=/community/messages");
 
+  // Rôle global (pour autoriser la création de groupe + l'accès admin)
+  let userRole: string | null = null;
+  try {
+    const { data: roleRow } = await supabase
+      .from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+    userRole = (roleRow as { role: string } | null)?.role ?? null;
+  } catch { /* noop */ }
+
   const discussions: Discussion[] = [];
 
   // ─── 1. Conversations privées / mini-groupes (système DM) ───────────
@@ -212,5 +220,5 @@ export default async function DiscussionsPage() {
     });
   } catch { /* table calls absente → journal vide */ }
 
-  return <MessagesListClient discussions={discussions} currentUserId={user.id} callLog={callLog} />;
+  return <MessagesListClient discussions={discussions} currentUserId={user.id} callLog={callLog} userRole={userRole} />;
 }

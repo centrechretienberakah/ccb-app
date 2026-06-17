@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import MessagingTabs from "./MessagingTabs";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
+import { canCreateGroup, GROUP_CATEGORIES } from "@/lib/groups/theme";
+import { notifyGroupsStaff } from "@/lib/groups/theme";
 import type { Discussion, CallLogItem } from "./page";
 
 function timeAgo(iso: string | null): string {
@@ -24,29 +26,34 @@ function initialsOf(name: string) {
 
 type Filter = "tous" | "prives" | "groupes" | "nonlus" | "historique";
 
-export default function MessagesListClient({ discussions, currentUserId, callLog }: { discussions: Discussion[]; currentUserId: string; callLog: CallLogItem[] }) {
+export default function MessagesListClient({ discussions, currentUserId, callLog, userRole }: { discussions: Discussion[]; currentUserId: string; callLog: CallLogItem[]; userRole: string | null }) {
   const router = useRouter();
   const [items, setItems] = useState<Discussion[]>(discussions);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("tous");
-  const [search, setSearch] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [members, setMembers] = useState<Array<{ user_id: string; display_name: string | null; avatar_url: string | null }>>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [starting, setStarting] = useState(false);
 
+  // Création de groupe (rapatriée ici depuis l'ancienne page Groupes)
+  const canCreate = canCreateGroup(userRole);
+  const [showCreate, setShowCreate] = useState(false);
+  const [gName, setGName] = useState("");
+  const [gDesc, setGDesc] = useState("");
+  const [gType, setGType] = useState<"public" | "private">("public");
+  const [gCat, setGCat] = useState("general");
+  const [gSaving, setGSaving] = useState(false);
+  const [gError, setGError] = useState("");
+
   const unreadCount = useMemo(() => items.filter((c) => c.unread).length, [items]);
 
-  const visible = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return items.filter((d) => {
-      if (filter === "prives" && d.kind !== "private") return false;
-      if (filter === "groupes" && d.kind !== "group") return false;
-      if (filter === "nonlus" && !d.unread) return false;
-      if (q && !d.name.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [items, filter, search]);
+  const visible = useMemo(() => items.filter((d) => {
+    if (filter === "prives" && d.kind !== "private") return false;
+    if (filter === "groupes" && d.kind !== "group") return false;
+    if (filter === "nonlus" && !d.unread) return false;
+    return true;
+  }), [items, filter]);
 
   async function openNew() {
     setShowNew(true);
@@ -79,6 +86,31 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
     setStarting(false);
   }
 
+  async function createGroup() {
+    if (!gName.trim()) { setGError("Le nom est requis."); return; }
+    if (!canCreate) { setGError("Permissions insuffisantes."); return; }
+    setGSaving(true); setGError("");
+    const supabase = createClient();
+    const { data, error } = await supabase.from("groups").insert({
+      name: gName.trim(), description: gDesc.trim() || null, type: gType, category: gCat, created_by: currentUserId,
+    }).select("id, name").single();
+    if (error) {
+      setGSaving(false);
+      setGError(/policy|permission|denied|row.*level/i.test(error.message)
+        ? "Permission refusée. Seuls owner/admin/leader/modérateur peuvent créer un groupe."
+        : error.message);
+      return;
+    }
+    const g = data as { id: string; name: string };
+    try {
+      await supabase.from("group_members").upsert({ group_id: g.id, user_id: currentUserId, role: "owner" }, { onConflict: "group_id,user_id" });
+    } catch { /* trigger SQL a déjà créé l'owner */ }
+    try {
+      notifyGroupsStaff(`🧑‍🤝‍🧑 Nouveau groupe : ${g.name}`, gType === "public" ? "Public" : "Privé", `/community/groups/${g.id}`);
+    } catch { /* noop */ }
+    router.push(`/community/groups/${g.id}`);
+  }
+
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.preventDefault();
     e.stopPropagation();
@@ -102,23 +134,7 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, paddingBottom: 80 }}>
       <MessagingTabs />
 
-      {/* Recherche */}
-      <div style={{ background: T.card, borderBottom: `1px solid ${T.borderSoft}` }}>
-        <div style={{ maxWidth: 680, margin: "0 auto", padding: "10px 12px 4px" }}>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="🔍 Rechercher une discussion…"
-            style={{
-              width: "100%", boxSizing: "border-box", background: T.bg, color: T.text,
-              border: `1px solid ${T.border}`, borderRadius: 999, padding: "9px 16px",
-              fontSize: 14, fontFamily: F.body, outline: "none",
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Filtres + actions — une seule ligne */}
+      {/* Filtres + actions — directement sous la barre violette */}
       <div style={{ background: T.card, borderBottom: `1px solid ${T.border}` }}>
         <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 6, padding: "8px 12px", alignItems: "center" }}>
           {FILTERS.map(([key, label]) => {
@@ -138,10 +154,7 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
               }}>
                 {label}
                 {key === "nonlus" && unreadCount > 0 && (
-                  <span style={{
-                    background: active ? "rgba(255,255,255,0.25)" : "#C24B7A", color: "#fff",
-                    fontSize: 10, fontWeight: 800, borderRadius: 999, padding: "1px 6px", minWidth: 16, textAlign: "center",
-                  }}>{unreadCount}</span>
+                  <span style={{ background: active ? "rgba(255,255,255,0.25)" : "#C24B7A", color: "#fff", fontSize: 10, fontWeight: 800, borderRadius: 999, padding: "1px 6px", minWidth: 16, textAlign: "center" }}>{unreadCount}</span>
                 )}
               </button>
             );
@@ -160,6 +173,14 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
       `}</style>
 
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px" }}>
+        {/* Actions groupe (admins) — rapatriées de l'ancienne page Groupes */}
+        {canCreate && filter !== "historique" && (
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 12, flexWrap: "wrap" }}>
+            <Link href="/community/groups/admin" style={{ padding: "7px 14px", background: T.violetSoft, color: T.violet, border: `1px solid ${T.violet}`, borderRadius: 999, fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>⚙️ Dashboard admin</Link>
+            <button onClick={() => setShowCreate(true)} style={{ padding: "7px 16px", background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, color: "#fff", border: "none", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>➕ Créer un groupe</button>
+          </div>
+        )}
+
         {filter === "historique" ? (
           callLog.length === 0 ? (
             <div style={{ textAlign: "center", padding: "44px 18px", color: T.textMuted, fontSize: 14, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14 }}>
@@ -197,16 +218,15 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
           <div style={{ textAlign: "center", padding: "48px 18px", color: T.textMuted, fontSize: 14, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14 }}>
             <div style={{ fontSize: 44, marginBottom: 10 }}>💬</div>
             Aucune discussion pour le moment.<br />
-            Démarre une conversation ou rejoins un groupe.
-            <div style={{ marginTop: 16, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            Démarre une conversation{canCreate ? " ou crée un groupe" : ""}.
+            <div style={{ marginTop: 16 }}>
               <button onClick={openNew} style={{ background: T.violet, color: "#fff", border: "none", borderRadius: 999, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✏️ Nouvelle conversation</button>
-              <Link href="/community/groups" style={{ display: "inline-block", background: T.card, color: T.violet, border: `1px solid ${T.violet}`, borderRadius: 999, padding: "9px 18px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>👥 Découvrir des groupes</Link>
             </div>
           </div>
         ) : visible.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 18px", color: T.textMuted, fontSize: 14, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14 }}>
-            <div style={{ fontSize: 38, marginBottom: 8 }}>{filter === "nonlus" ? "✅" : "🔍"}</div>
-            {filter === "nonlus" ? "Aucune discussion non lue." : "Aucun résultat."}
+            <div style={{ fontSize: 38, marginBottom: 8 }}>{filter === "nonlus" ? "✅" : "💬"}</div>
+            {filter === "nonlus" ? "Aucune discussion non lue." : "Aucune discussion ici."}
           </div>
         ) : (
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
@@ -241,7 +261,7 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
                       </div>
                     </div>
                     {d.unreadCount > 0 ? (
-                      <span style={{ flexShrink: 0, background: T.violet, color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 999, padding: "2px 7px", minWidth: 20, textAlign: "center" }}>{d.unreadCount > 99 ? "99+" : d.unreadCount}</span>
+                      <span style={{ flexShrink: 0, alignSelf: "center", background: T.violet, color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 999, padding: "2px 7px", minWidth: 20, textAlign: "center" }}>{d.unreadCount > 99 ? "99+" : d.unreadCount}</span>
                     ) : d.unread ? (
                       <span style={{ width: 10, height: 10, borderRadius: "50%", background: T.violet, flexShrink: 0, alignSelf: "center" }} />
                     ) : null}
@@ -258,7 +278,7 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
         )}
       </div>
 
-      {/* Nouvelle conversation — sélecteur de membre (feuille du bas) */}
+      {/* Nouvelle conversation — sélecteur de membre */}
       {showNew && (
         <div onClick={(e) => { if (e.target === e.currentTarget) setShowNew(false); }}
           style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
@@ -289,6 +309,47 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
           </div>
         </div>
       )}
+
+      {/* Créer un groupe — modal (rapatriée ici) */}
+      {showCreate && canCreate && (
+        <div onClick={(e) => { if (e.target === e.currentTarget) setShowCreate(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(31,26,51,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 14 }}>
+          <div style={{ background: T.card, borderRadius: 18, padding: 20, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", border: `1px solid ${T.border}` }}>
+            <div style={{ fontFamily: F.title, fontSize: 17, fontWeight: 700, color: T.violet, marginBottom: 16 }}>➕ Créer un groupe</div>
+            <div style={{ marginBottom: 10 }}>
+              <label style={lbl}>NOM *</label>
+              <input value={gName} onChange={(e) => setGName(e.target.value)} placeholder="ex. Intercesseurs CCB, Équipe Louange…" maxLength={80} style={inputStyle} />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <label style={lbl}>DESCRIPTION (optionnel)</label>
+              <textarea value={gDesc} onChange={(e) => setGDesc(e.target.value)} rows={3} placeholder="À quoi sert ce groupe ?" style={{ ...inputStyle, resize: "vertical" }} />
+            </div>
+            <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <label style={lbl}>TYPE</label>
+                <select value={gType} onChange={(e) => setGType(e.target.value as "public" | "private")} style={inputStyle}>
+                  <option value="public">🌍 Public — tout le monde peut rejoindre</option>
+                  <option value="private">🔒 Privé — sur invitation</option>
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <label style={lbl}>CATÉGORIE</label>
+                <select value={gCat} onChange={(e) => setGCat(e.target.value)} style={inputStyle}>
+                  {GROUP_CATEGORIES.map((c) => (<option key={c.id} value={c.id}>{c.emoji} {c.label}</option>))}
+                </select>
+              </div>
+            </div>
+            {gError && <div style={{ color: "#C24B7A", fontSize: 12, marginBottom: 10 }}>{gError}</div>}
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 14 }}>
+              <button onClick={() => setShowCreate(false)} style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 10, padding: "8px 16px", color: T.textMuted, cursor: "pointer", fontSize: 12, fontFamily: F.body }}>Annuler</button>
+              <button onClick={createGroup} disabled={gSaving || !gName.trim()} style={{ background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, border: "none", borderRadius: 10, padding: "8px 16px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: (gSaving || !gName.trim()) ? "not-allowed" : "pointer", opacity: !gName.trim() ? 0.5 : 1 }}>{gSaving ? "Création…" : "Créer le groupe"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+const lbl: React.CSSProperties = { display: "block", fontSize: 11, fontWeight: 700, color: T.textMuted, marginBottom: 4, letterSpacing: 0.4, textTransform: "uppercase" };
+const inputStyle: React.CSSProperties = { width: "100%", boxSizing: "border-box", padding: "10px 12px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, fontSize: 13, fontFamily: F.body, outline: "none" };
