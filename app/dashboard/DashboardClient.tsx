@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { IconCalendar } from "@/components/icons";
 import DevotionHomeCard from "./DevotionHomeCard";
+import OngoingCallBanner from "./OngoingCallBanner";
 import type { UnifiedDevotion } from "@/lib/devotion/fetch";
 
 interface Props {
@@ -62,6 +63,10 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
           <p className="dashboard-hero-bless">Que le Seigneur vous bénisse aujourd&apos;hui.</p>
         </div>
       </div>
+
+      {/* CTA « Rejoindre l'appel en cours » — visible uniquement si un appel de
+          groupe est actif dans l'un des groupes du membre */}
+      <OngoingCallBanner />
 
       {/* Méditons ensemble — carte premium (juste sous le message de bienvenue) */}
       <DevotionHomeCard devotion={devotion} userId={userId} initialRead={devotionRead} />
