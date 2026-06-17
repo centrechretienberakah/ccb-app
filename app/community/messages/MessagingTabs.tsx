@@ -31,7 +31,7 @@ export default function MessagingTabs() {
             borderRadius: 8, padding: "6px 11px", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none",
           }}>←</Link>
           <h1 style={{ fontFamily: F.title, fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: "0.04em" }}>
-            💬 Messagerie
+            💬 Discussions
           </h1>
         </div>
       </div>
@@ -41,7 +41,7 @@ export default function MessagingTabs() {
         maxWidth: 1080, margin: "0 auto", display: "flex", borderBottom: `1px solid ${T.border}`,
       }}>
         <Link href="/community/messages" style={tab(isDiscussions)}>💬 Discussions</Link>
-        <Link href="/community/groups" style={tab(isGroups)}>👥 Groupes</Link>
+        <Link href="/community/groups" style={tab(isGroups)}>🧭 Découvrir des groupes</Link>
       </div>
     </div>
   );
