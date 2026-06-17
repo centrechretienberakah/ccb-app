@@ -448,6 +448,17 @@ export default function GroupDetailClient({
     }
   }, [messages.length]);
 
+  // À l'ouverture : atterrir directement sur le dernier message — y compris sur
+  // mobile où c'est la page qui défile (et non le conteneur interne).
+  useEffect(() => {
+    const el = scrollRef.current;
+    const id = requestAnimationFrame(() => {
+      if (el) el.scrollTop = el.scrollHeight;
+      if (typeof window !== "undefined") window.scrollTo({ top: document.body.scrollHeight });
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
 
   // 📖 Insère un verset formaté dans la zone de saisie (l'utilisateur l'envoie ensuite)

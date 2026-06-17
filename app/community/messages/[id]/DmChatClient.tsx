@@ -53,6 +53,15 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+  // Marque la conversation comme lue (à l'ouverture + à chaque message) → évite
+  // qu'un message qu'on vient d'envoyer apparaisse « non lu » pour soi-même.
+  useEffect(() => {
+    const sb = createClient();
+    void sb.from("conversation_members")
+      .update({ last_read_at: new Date().toISOString() })
+      .eq("conversation_id", conversationId).eq("user_id", currentUserId);
+  }, [conversationId, currentUserId, messages.length]);
+
   // Charge les réactions initiales
   const loadReactions = useCallback(async () => {
     try {
