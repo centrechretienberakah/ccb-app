@@ -39,9 +39,19 @@ export async function ringCall(opts: {
       p_group_id: opts.groupId ?? null,
       p_type: opts.type,
     });
-    if (error || !data) return null;
+    if (error || !data) {
+      if (typeof window !== "undefined") {
+        console.warn(
+          "[CCB call] call_ring a échoué — la sonnerie temps réel ne partira pas. " +
+          "Vérifie que la migration calls (v57/v70) est exécutée et que la table est dans " +
+          "la publication supabase_realtime. Détail :", error?.message ?? "aucune donnée renvoyée",
+        );
+      }
+      return null;
+    }
     return data as CallRow;
-  } catch {
+  } catch (e) {
+    if (typeof window !== "undefined") console.warn("[CCB call] ringCall exception :", e);
     return null;
   }
 }
@@ -75,7 +85,7 @@ export async function pushCallNotification(opts: {
     const url = isGroup
       ? `/community/groups/${opts.groupId}/meeting${opts.type === "audio" ? "?mode=audio&join=1" : "?join=1"}`
       : `/community/messages/${opts.conversationId}/call?mode=${opts.type}&join=1`;
-    await fetch("/api/notifications/send", {
+    const res = await fetch("/api/notifications/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -92,7 +102,13 @@ export async function pushCallNotification(opts: {
         vibrate: [500, 250, 500, 250, 500, 250, 800],
       }),
     });
-  } catch {
-    /* noop */
+    // Diagnostic : si sent=0, c'est que les destinataires n'ont pas activé les
+    // notifications (aucun abonnement push) — pas un bug applicatif.
+    try {
+      const data = await res.json();
+      if (typeof window !== "undefined") console.log("[CCB call] push appel →", res.status, data);
+    } catch { /* noop */ }
+  } catch (e) {
+    if (typeof window !== "undefined") console.warn("[CCB call] pushCallNotification erreur réseau :", e);
   }
 }

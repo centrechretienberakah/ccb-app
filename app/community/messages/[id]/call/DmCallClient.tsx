@@ -58,7 +58,9 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
       const call = await ringCall({ conversationId, type: mode });
       if (cancelled) return;
       if (!call) {
-        // Table v57 non migrée → repli sur l'ancien comportement (join direct)
+        // Table v57 non migrée → on prévient quand même le destinataire par push
+        // (il rejoindra la room LiveKit directement), puis repli sur join direct.
+        void pushCallNotification({ type: mode, callerName: myName, conversationId });
         stopRingtone();
         setPhase("joining");
         doStartCall();
