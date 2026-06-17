@@ -32,7 +32,7 @@ interface Props {
 const TABS = [
   { key: "feed",       label: "Fil d'actualité", short: "Fil",      emoji: "📰", href: "/community" },
   { key: "prayer",     label: "Prions Ensemble", short: "Prière",   emoji: "🙏", href: "/community/prions-ensemble" },
-  { key: "messagerie", label: "Messagerie",      short: "Messages", emoji: "💬", href: "/community/messages" },
+  { key: "messagerie", label: "Discussions",      short: "Discussions", emoji: "💬", href: "/community/messages" },
   { key: "members",    label: "Membres",         short: "Membres",  emoji: "👥", href: "/community/membres" },
 ] as const;
 

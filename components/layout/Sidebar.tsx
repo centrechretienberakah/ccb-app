@@ -12,7 +12,7 @@ const ALL_ITEMS = [
   { href: "/bible",            label: "Ma Bible",         emoji: "📖" },
   { href: "/bible-quiz",       label: "Bible Quiz",       emoji: "🏆" },
   { href: "/community",        label: "Communauté",       emoji: "👥" },
-  { href: "/community/messages", label: "Messagerie",     emoji: "💬" },
+  { href: "/community/messages", label: "Discussions",    emoji: "💬" },
   { href: "/jesus-daily",      label: "Jesus Daily TV",   emoji: "📺" },
   { href: "/institut",         label: "Institut Berakah", emoji: "🎓" },
   { href: "/events",           label: "Événements",       emoji: "📅" },
