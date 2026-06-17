@@ -342,7 +342,13 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
       )}
 
       {/* ── Zone principale ── */}
-      <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
+      <div style={{
+        flex: 1, minHeight: 0, position: "relative", overflow: "hidden",
+        // Desktop : on rétrécit la scène quand un panneau latéral est ouvert
+        // pour que la vidéo reste visible à côté (et non cachée dessous).
+        marginRight: !isMobile && panel !== "none" ? "min(380px, 100vw)" : 0,
+        transition: "margin-right .25s ease",
+      }}>
         {screenShare ? (
           <Presentation screen={screenShare} cams={cameraTracks} isMobile={isMobile} />
         ) : isDmOneToOne ? (
@@ -512,9 +518,30 @@ function CcbTile({ trackRef }: { trackRef: TrackReferenceOrPlaceholder }) {
 
 /* ─────────────── Grille adaptative ─────────────── */
 function AdaptiveGrid({ tracks, count, isMobile }: { tracks: TrackReferenceOrPlaceholder[]; count: number; isMobile: boolean }) {
-  const cols = gridCols(count, isMobile);
+  const tileCount = Math.max(1, tracks.length);
+  const cols = gridCols(Math.max(count, tileCount), isMobile);
+
+  // Mobile : tuiles carrées centrées (portrait). Inchangé.
+  if (isMobile) {
+    return (
+      <div className="ccb-meet-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, height: "100%", alignContent: "center" }}>
+        {tracks.map((t, i) => (
+          <CcbTile key={(t.participant?.identity ?? "p") + i} trackRef={t} />
+        ))}
+      </div>
+    );
+  }
+
+  // Desktop : les tuiles REMPLISSENT toute la zone (style Google Meet) — grille
+  // colonnes × lignes occupant 100% de la hauteur. Fini les petits carrés
+  // centrés avec d'énormes bandes noires, et la vidéo n'est plus rognée.
+  const rows = Math.max(1, Math.ceil(tileCount / cols));
   return (
-    <div className="ccb-meet-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, height: "100%", alignContent: "center" }}>
+    <div className="ccb-meet-grid ccb-meet-grid--fill" style={{
+      gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+      gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+      height: "100%",
+    }}>
       {tracks.map((t, i) => (
         <CcbTile key={(t.participant?.identity ?? "p") + i} trackRef={t} />
       ))}

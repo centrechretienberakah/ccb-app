@@ -245,6 +245,12 @@ function CallBrandingStyles({ isAudio }: { isAudio: boolean }) {
         border-radius: 12px !important;
         overflow: hidden !important;
       }
+      /* Desktop : tuiles qui remplissent la cellule (plus de carré forcé) */
+      .ccb-meet-grid.ccb-meet-grid--fill { align-content: stretch; }
+      .ccb-meet-grid.ccb-meet-grid--fill .lk-participant-tile {
+        height: 100% !important;
+        aspect-ratio: auto !important;
+      }
       @media (max-width: 380px)  { .ccb-meet-grid { grid-template-columns: repeat(3, 1fr); } }
       @media (min-width: 381px) and (max-width: 640px)  { .ccb-meet-grid { grid-template-columns: repeat(3, 1fr); } }
       @media (min-width: 641px) and (max-width: 1023px) { .ccb-meet-grid { grid-template-columns: repeat(4, 1fr); } }
