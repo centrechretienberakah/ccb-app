@@ -10,7 +10,6 @@ import {
   type JdtvVideo,
   type JdtvWatchProgress,
   formatVideoDuration,
-  formatViewCount,
   getEmbedUrl,
   getYoutubeThumbnail,
 } from "@/lib/jdtv/theme";
@@ -26,6 +25,17 @@ interface Props {
   progress: JdtvWatchProgress[];
   isAdmin: boolean;
   isAuth: boolean;
+}
+
+/** Image avec skeleton + fondu à l'apparition (perf + douceur). */
+function FadeImg({ src, alt, style }: { src: string; alt: string; style?: React.CSSProperties }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <img
+      loading="lazy" decoding="async" src={src} alt={alt} onLoad={() => setLoaded(true)}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: loaded ? 1 : 0, transition: "opacity .4s ease", ...style }}
+    />
+  );
 }
 
 export default function JdtvHomeClient({
@@ -51,7 +61,15 @@ export default function JdtvHomeClient({
     return m;
   }, [videos]);
 
-  const recentVideos = useMemo(() => videos.slice(0, 12), [videos]);
+  const recentVideos = useMemo(() => videos.slice(0, 14), [videos]);
+  const popularVideos = useMemo(
+    () => [...videos].filter((v) => (v.view_count ?? 0) > 0).sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0)).slice(0, 14),
+    [videos],
+  );
+  const featuredCat = useMemo(
+    () => (featured ? categories.find((c) => c.id === featured.category_id) ?? null : null),
+    [featured, categories],
+  );
 
   async function toggleWatchlist(videoId: string) {
     if (busy) return;
@@ -62,117 +80,61 @@ export default function JdtvHomeClient({
     if (!user) { setBusy(false); router.push("/auth/login?redirect=/jesus-daily"); return; }
     if (wlIds.has(videoId)) {
       await supabase.from("jdtv_user_watchlist").delete().eq("user_id", user.id).eq("video_id", videoId);
-      const next = new Set(wlIds);
-      next.delete(videoId);
-      setWlIds(next);
+      const next = new Set(wlIds); next.delete(videoId); setWlIds(next);
     } else {
       await supabase.from("jdtv_user_watchlist").insert({ user_id: user.id, video_id: videoId });
-      const next = new Set(wlIds);
-      next.add(videoId);
-      setWlIds(next);
+      const next = new Set(wlIds); next.add(videoId); setWlIds(next);
     }
     setBusy(false);
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: T.bgGrad, color: T.text, fontFamily: F.body }}>
+    <div style={{ minHeight: "100vh", background: T.bg, color: T.text, fontFamily: F.body }}>
       {/* HERO */}
       {featured ? (
-        <HeroLive video={featured} isInWatchlist={wlIds.has(featured.id)} onToggle={() => toggleWatchlist(featured.id)} />
+        <Hero video={featured} categoryName={featuredCat?.name ?? null} isInWatchlist={wlIds.has(featured.id)} onToggle={() => toggleWatchlist(featured.id)} />
       ) : (
         <EmptyHero isAdmin={isAdmin} />
       )}
 
-      {/* Toolbar : nav catégories + admin */}
-      <div style={{
-        maxWidth: 1400, margin: "0 auto",
-        padding: "8px 24px 0", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
-      }}>
-        {isAdmin ? (
+      {/* Accès admin (discret) */}
+      {isAdmin ? (
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "14px 20px 0", display: "flex", justifyContent: "flex-end" }}>
           <Link href="/jesus-daily/admin" style={{
-            display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px",
-            background: T.violetSoft, border: `1px solid ${T.violet}`, color: T.text,
-            borderRadius: 999, fontWeight: 700, fontSize: 13, textDecoration: "none",
-          }}>⚙️ Espace admin JDTV</Link>
-        ) : null}
-      </div>
-
-      {/* Nav catégories cliquable */}
-      {categories.length > 0 ? (
-        <div className="jdtv-cat-nav" style={{
-          maxWidth: 1400, margin: "0 auto",
-          padding: "12px 24px 0", display: "flex", gap: 8, overflowX: "auto",
-          scrollbarWidth: "none",
-        }}>
-          {categories.map((c) => (
-            <Link key={c.id} href={`/jesus-daily/categorie/${c.slug}`} style={{
-              flex: "0 0 auto", padding: "8px 14px",
-              background: "rgba(255,255,255,0.04)", color: T.textSoft,
-              border: `1px solid ${T.border}`, borderRadius: 999,
-              fontSize: 12.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap",
-            }}>{c.icon ?? "📂"} {c.name}</Link>
-          ))}
-          <style jsx global>{`
-            .jdtv-cat-nav::-webkit-scrollbar { display: none; }
-          `}</style>
+            display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 14px",
+            background: "rgba(255,255,255,0.05)", border: `1px solid ${T.border}`, color: T.textSoft,
+            borderRadius: 999, fontWeight: 600, fontSize: 12.5, textDecoration: "none",
+          }}>⚙️ Espace admin</Link>
         </div>
       ) : null}
 
-      {/* Dernières vidéos YouTube CCB (fetch /api/youtube, cache 1h) */}
       <YouTubeRail />
 
-      {/* Continue watching */}
       {continueVideos.length > 0 ? (
-        <Rail
-          title="🔥 Reprends où tu étais"
-          videos={continueVideos}
-          progressMap={progressByVideo}
-          wlIds={wlIds}
-          onToggleWl={toggleWatchlist}
-        />
+        <Rail title="Reprendre" videos={continueVideos} progressMap={progressByVideo} wlIds={wlIds} onToggleWl={toggleWatchlist} />
       ) : null}
 
-      {/* My list */}
       {watchlistVideos.length > 0 ? (
-        <Rail
-          title="❤️ Ma liste"
-          videos={watchlistVideos}
-          progressMap={progressByVideo}
-          wlIds={wlIds}
-          onToggleWl={toggleWatchlist}
-        />
+        <Rail title="Ma liste" videos={watchlistVideos} progressMap={progressByVideo} wlIds={wlIds} onToggleWl={toggleWatchlist} />
       ) : null}
 
-      {/* Nouveautés */}
       {recentVideos.length > 0 ? (
-        <Rail
-          title="✨ Nouveautés"
-          videos={recentVideos}
-          progressMap={progressByVideo}
-          wlIds={wlIds}
-          onToggleWl={toggleWatchlist}
-        />
+        <Rail title="Nouveautés" videos={recentVideos} progressMap={progressByVideo} wlIds={wlIds} onToggleWl={toggleWatchlist} />
       ) : null}
 
-      {/* Catégories */}
       {categories.map((cat) => {
         const catVideos = videosByCategory.get(cat.id) ?? [];
         if (catVideos.length === 0) return null;
         return (
-          <Rail
-            key={cat.id}
-            title={`${cat.icon ?? "📺"}  ${cat.name}`}
-            subtitle={cat.description}
-            videos={catVideos}
-            progressMap={progressByVideo}
-            wlIds={wlIds}
-            onToggleWl={toggleWatchlist}
-            href={`/jesus-daily/categorie/${cat.slug}`}
-          />
+          <Rail key={cat.id} title={cat.name} videos={catVideos} progressMap={progressByVideo}
+            wlIds={wlIds} onToggleWl={toggleWatchlist} href={`/jesus-daily/categorie/${cat.slug}`} />
         );
       })}
 
-      {/* Empty global */}
+      {popularVideos.length > 0 ? (
+        <Rail title="Vidéos populaires" videos={popularVideos} progressMap={progressByVideo} wlIds={wlIds} onToggleWl={toggleWatchlist} />
+      ) : null}
+
       {videos.length === 0 ? (
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "60px 24px", textAlign: "center" }}>
           <div style={{ fontSize: 64, marginBottom: 12 }}>📺</div>
@@ -188,132 +150,64 @@ export default function JdtvHomeClient({
   );
 }
 
-// ─── HERO ───────────────────────────────────────────────────────────
-function HeroLive({ video, isInWatchlist, onToggle }: { video: JdtvVideo; isInWatchlist: boolean; onToggle: () => void; }) {
+// ─── HERO (minimal, façon Netflix) ──────────────────────────────────
+function Hero({ video, categoryName, isInWatchlist, onToggle }: { video: JdtvVideo; categoryName: string | null; isInWatchlist: boolean; onToggle: () => void; }) {
   const heroImg = video.hero_url || video.thumbnail_url || getYoutubeThumbnail(video.video_url);
   const embed = getEmbedUrl(video.video_url);
   const showLivePlayer = video.is_live && embed?.provider === "youtube";
 
   return (
-    <div style={{
-      position: "relative", width: "100%", overflow: "hidden",
-      minHeight: "min(620px, 80vh)", background: "#000",
-    }}>
-      {/* Background image / live player */}
+    <div style={{ position: "relative", width: "100%", overflow: "hidden", minHeight: "min(60vh, 560px)", background: "#000", display: "flex" }}>
       {showLivePlayer ? (
-        <iframe
-          src={`${embed!.src}&autoplay=1&mute=1&controls=0&loop=1`}
-          title={video.title}
+        <iframe src={`${embed!.src}&autoplay=1&mute=1&controls=0&loop=1`} title={video.title}
           allow="autoplay; encrypted-media; picture-in-picture"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", pointerEvents: "none" }}
-        />
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", pointerEvents: "none" }} />
       ) : heroImg ? (
-        <img loading="lazy" decoding="async" src={heroImg} alt={video.title}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        <FadeImg src={heroImg} alt={video.title} />
       ) : (
         <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, ${T.violetDark}, ${T.violet})` }} />
       )}
 
-      {/* Vignettage */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "linear-gradient(180deg, rgba(10,10,15,0.25) 0%, rgba(10,10,15,0.6) 60%, rgba(10,10,15,0.96) 100%)",
-      }} />
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "linear-gradient(90deg, rgba(10,10,15,0.85) 0%, rgba(10,10,15,0.35) 50%, rgba(10,10,15,0) 80%)",
-      }} />
+      {/* Dégradés (lisibilité, pas décoratif) */}
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10,10,15,0.15) 0%, rgba(10,10,15,0.55) 62%, rgba(10,10,15,0.98) 100%)" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(10,10,15,0.8) 0%, rgba(10,10,15,0.2) 55%, rgba(10,10,15,0) 85%)" }} />
 
-      {/* Content */}
-      <div style={{
-        position: "relative", zIndex: 2, maxWidth: 1400, margin: "0 auto",
-        padding: "120px 24px 60px", display: "flex", flexDirection: "column", gap: 16,
-      }}>
-        {/* Badges */}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      {/* Contenu — ancré en bas, minimal */}
+      <div style={{ position: "relative", zIndex: 2, width: "100%", maxWidth: 1400, margin: "0 auto", padding: "0 22px 40px", alignSelf: "flex-end", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {video.is_live ? (
-            <span style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "6px 12px", borderRadius: 6, background: T.live, color: "#fff",
-              fontWeight: 800, fontSize: 12, letterSpacing: 1.2,
-            }}>
-              <span style={{
-                width: 8, height: 8, borderRadius: 999, background: "#fff",
-                animation: "jdtvPulse 1.4s ease-in-out infinite",
-              }} />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 6, background: T.live, color: "#fff", fontWeight: 800, fontSize: 11, letterSpacing: 1.2 }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: "#fff", animation: "jdtvPulse 1.4s ease-in-out infinite" }} />
               EN DIRECT
             </span>
-          ) : null}
-          {video.is_premium ? (
-            <span style={{
-              padding: "6px 12px", borderRadius: 6, background: T.goldSoft, color: T.gold,
-              fontWeight: 800, fontSize: 12, letterSpacing: 1, border: `1px solid ${T.gold}`,
-            }}>👑 PREMIUM</span>
-          ) : null}
-          <span style={{
-            padding: "6px 12px", borderRadius: 6, background: T.violetSoft, color: "#fff",
-            fontWeight: 700, fontSize: 12, letterSpacing: 1, border: `1px solid ${T.violet}`,
-          }}>📺 JESUS DAILY TV</span>
+          ) : (
+            <span style={{ padding: "5px 12px", borderRadius: 6, background: T.violetSoft, color: "#fff", fontWeight: 800, fontSize: 11, letterSpacing: 1.4, border: `1px solid ${T.violet}`, textTransform: "uppercase" }}>
+              {categoryName || "À la une"}
+            </span>
+          )}
         </div>
 
-        <h1 style={{
-          fontFamily: F.title, fontSize: "clamp(34px, 6vw, 64px)", lineHeight: 1.05,
-          margin: 0, fontWeight: 800, textShadow: "0 4px 24px rgba(0,0,0,0.6)",
-          maxWidth: 800,
-        }}>
+        <h1 style={{ fontFamily: F.title, fontSize: "clamp(32px, 6vw, 48px)", lineHeight: 1.05, margin: 0, fontWeight: 800, textShadow: "0 4px 24px rgba(0,0,0,0.6)", maxWidth: 760 }}>
           {video.title}
         </h1>
         {video.subtitle ? (
-          <p style={{ fontSize: "clamp(15px, 1.6vw, 18px)", color: T.textSoft, margin: 0, maxWidth: 700, lineHeight: 1.5 }}>
+          <p style={{ fontSize: "clamp(14px, 1.5vw, 17px)", color: T.textSoft, margin: 0, maxWidth: 560, lineHeight: 1.45, display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" }}>
             {video.subtitle}
           </p>
         ) : null}
 
-        <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", color: T.textMuted, fontSize: 14 }}>
-          {video.speaker ? <span>🎙️ {video.speaker}</span> : null}
-          {video.duration_secs ? <span>⏱️ {formatVideoDuration(video.duration_secs)}</span> : null}
-          {video.view_count ? <span>👁️ {formatViewCount(video.view_count)} vues</span> : null}
-          {video.scripture ? <span>📖 {video.scripture}</span> : null}
-        </div>
-
-        {video.description ? (
-          <p style={{
-            color: T.textSoft, fontSize: 15, lineHeight: 1.6,
-            margin: "4px 0 0", maxWidth: 720,
-            display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 3, overflow: "hidden",
-          }}>
-            {video.description}
-          </p>
-        ) : null}
-
-        <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-          <Link
-            href={`/jesus-daily/video/${video.slug}`}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 28px",
-              background: "#fff", color: "#000", borderRadius: 8, fontWeight: 800, fontSize: 16,
-              textDecoration: "none", boxShadow: T.shadowMd,
-            }}>
+        <div style={{ display: "flex", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
+          <Link href={`/jesus-daily/video/${video.slug}`} style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "13px 30px", background: "#fff", color: "#000", borderRadius: 8, fontWeight: 800, fontSize: 15.5, textDecoration: "none" }}>
             ▶ Regarder
           </Link>
-          <button
-            onClick={onToggle}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 24px",
-              background: "rgba(255,255,255,0.18)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: "pointer",
-              backdropFilter: "blur(8px)",
-            }}>
-            {isInWatchlist ? "✓ Dans ma liste" : "＋ Ma liste"}
+          <button onClick={onToggle} style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "13px 24px", background: "rgba(255,255,255,0.16)", color: "#fff", border: "1px solid rgba(255,255,255,0.28)", borderRadius: 8, fontWeight: 700, fontSize: 14.5, cursor: "pointer", backdropFilter: "blur(6px)" }}>
+            {isInWatchlist ? "✓ Ma liste" : "＋ Ma liste"}
           </button>
         </div>
       </div>
 
       <style jsx global>{`
-        @keyframes jdtvPulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.85); }
-        }
+        @keyframes jdtvPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.85); } }
       `}</style>
     </div>
   );
@@ -321,32 +215,22 @@ function HeroLive({ video, isInWatchlist, onToggle }: { video: JdtvVideo; isInWa
 
 function EmptyHero({ isAdmin }: { isAdmin: boolean }) {
   return (
-    <div style={{
-      position: "relative", padding: "120px 24px 80px",
-      background: `linear-gradient(135deg, ${T.violetDark}, ${T.violet})`,
-      textAlign: "center",
-    }}>
-      <div style={{ fontSize: 64, marginBottom: 16 }}>📺</div>
-      <h1 style={{ fontFamily: F.title, fontSize: "clamp(34px, 6vw, 56px)", margin: "0 0 12px" }}>Jesus Daily TV</h1>
-      <p style={{ color: T.textSoft, fontSize: 17, maxWidth: 600, margin: "0 auto" }}>
+    <div style={{ position: "relative", padding: "110px 24px 80px", background: `linear-gradient(135deg, ${T.violetDark}, ${T.violet})`, textAlign: "center" }}>
+      <div style={{ fontSize: 60, marginBottom: 14 }}>📺</div>
+      <h1 style={{ fontFamily: F.title, fontSize: "clamp(32px, 6vw, 52px)", margin: "0 0 12px" }}>Jesus Daily TV</h1>
+      <p style={{ color: T.textSoft, fontSize: 16, maxWidth: 560, margin: "0 auto" }}>
         La TV chrétienne premium du Centre Chrétien Berakah. Bientôt en ligne.
       </p>
       {isAdmin ? (
-        <Link href="/jesus-daily/admin" style={{
-          display: "inline-flex", marginTop: 22, gap: 8, padding: "12px 22px",
-          background: "#fff", color: T.violetDark, borderRadius: 999, fontWeight: 800, textDecoration: "none",
-        }}>⚙️ Publier la première vidéo</Link>
+        <Link href="/jesus-daily/admin" style={{ display: "inline-flex", marginTop: 20, gap: 8, padding: "11px 22px", background: "#fff", color: T.violetDark, borderRadius: 999, fontWeight: 800, textDecoration: "none" }}>⚙️ Publier la première vidéo</Link>
       ) : null}
     </div>
   );
 }
 
 // ─── RAIL (carousel horizontal) ─────────────────────────────────────
-function Rail({
-  title, subtitle, videos, progressMap, wlIds, onToggleWl, href,
-}: {
+function Rail({ title, videos, progressMap, wlIds, onToggleWl, href }: {
   title: string;
-  subtitle?: string | null;
   videos: JdtvVideo[];
   progressMap: Map<string, JdtvWatchProgress>;
   wlIds: Set<string>;
@@ -362,59 +246,42 @@ function Rail({
 
   const TitleEl = href ? (
     <Link href={href} style={{ textDecoration: "none", color: "inherit" }}>
-      <h2 style={{ fontFamily: F.title, fontSize: 22, margin: 0, fontWeight: 700 }}>{title} <span style={{ color: T.textMuted, fontSize: 16 }}>›</span></h2>
+      <h2 style={{ fontFamily: F.title, fontSize: "clamp(20px, 3vw, 26px)", margin: 0, fontWeight: 700 }}>{title} <span style={{ color: T.textMuted, fontSize: 16 }}>›</span></h2>
     </Link>
   ) : (
-    <h2 style={{ fontFamily: F.title, fontSize: 22, margin: 0, fontWeight: 700 }}>{title}</h2>
+    <h2 style={{ fontFamily: F.title, fontSize: "clamp(20px, 3vw, 26px)", margin: 0, fontWeight: 700 }}>{title}</h2>
   );
 
   return (
-    <section style={{ maxWidth: 1400, margin: "0 auto", padding: "28px 24px 8px", position: "relative" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12, gap: 10 }}>
-        <div>
-          {TitleEl}
-          {subtitle ? <p style={{ margin: "4px 0 0", color: T.textMuted, fontSize: 13 }}>{subtitle}</p> : null}
-        </div>
+    <section style={{ maxWidth: 1400, margin: "0 auto", padding: "26px 20px 4px", position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 10 }}>
+        {TitleEl}
         <div style={{ display: "flex", gap: 6 }}>
           <button onClick={() => scroll(-1)} aria-label="Précédent" style={railBtn}>‹</button>
           <button onClick={() => scroll(1)} aria-label="Suivant" style={railBtn}>›</button>
         </div>
       </div>
 
-      <div
-        ref={ref}
-        className="jdtv-rail"
-        style={{
-          display: "flex", gap: 14, overflowX: "auto", overflowY: "hidden",
-          scrollSnapType: "x mandatory", paddingBottom: 16, scrollbarWidth: "none",
-        }}>
+      <div ref={ref} className="jdtv-rail" style={{ display: "flex", gap: 16, overflowX: "auto", overflowY: "hidden", scrollSnapType: "x mandatory", paddingBottom: 12, scrollbarWidth: "none" }}>
         {videos.map((v) => (
-          <VideoCard key={v.id} video={v}
-            progress={progressMap.get(v.id) ?? null}
-            isInWatchlist={wlIds.has(v.id)}
-            onToggleWl={() => onToggleWl(v.id)}
-          />
+          <VideoCard key={v.id} video={v} progress={progressMap.get(v.id) ?? null} isInWatchlist={wlIds.has(v.id)} onToggleWl={() => onToggleWl(v.id)} />
         ))}
       </div>
 
-      <style jsx global>{`
-        .jdtv-rail::-webkit-scrollbar { display: none; }
-      `}</style>
+      <style jsx global>{`.jdtv-rail::-webkit-scrollbar { display: none; }`}</style>
     </section>
   );
 }
 
 const railBtn: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: 999,
-  background: "rgba(255,255,255,0.08)", color: "#fff",
-  border: "1px solid rgba(255,255,255,0.12)", fontSize: 20, cursor: "pointer",
+  width: 34, height: 34, borderRadius: 999,
+  background: "rgba(255,255,255,0.07)", color: "#fff",
+  border: "1px solid rgba(255,255,255,0.1)", fontSize: 19, cursor: "pointer",
   display: "inline-flex", alignItems: "center", justifyContent: "center",
 };
 
-// ─── CARD ───────────────────────────────────────────────────────────
-function VideoCard({
-  video, progress, isInWatchlist, onToggleWl,
-}: {
+// ─── CARD (affiche portrait 2:3) ────────────────────────────────────
+function VideoCard({ video, progress, isInWatchlist, onToggleWl }: {
   video: JdtvVideo;
   progress: JdtvWatchProgress | null;
   isInWatchlist: boolean;
@@ -432,104 +299,57 @@ function VideoCard({
       onMouseLeave={() => setHover(false)}
       style={{
         flex: "0 0 auto", scrollSnapAlign: "start",
-        width: "clamp(220px, 26vw, 300px)",
-        position: "relative",
-        transform: hover ? "translateY(-4px) scale(1.02)" : "none",
-        transition: "transform 220ms ease",
+        width: "clamp(132px, 33vw, 168px)", position: "relative",
+        transform: hover ? "scale(1.04)" : "none", transition: "transform 220ms ease",
+        zIndex: hover ? 2 : 1,
       }}>
       <Link href={`/jesus-daily/video/${video.slug}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+        {/* Affiche 2:3, coins 12px, sans bordure */}
         <div style={{
-          position: "relative", paddingBottom: "56.25%",
-          background: T.card, borderRadius: 12, overflow: "hidden",
-          border: `1px solid ${T.border}`,
-          boxShadow: hover ? T.shadowMd : T.shadowSoft,
+          position: "relative", paddingBottom: "150%", background: T.card,
+          borderRadius: 12, overflow: "hidden",
+          boxShadow: hover ? T.shadowMd : "none",
         }}>
           {thumb ? (
-            <img loading="lazy" decoding="async" src={thumb} alt={video.title}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+            <FadeImg src={thumb} alt={video.title} />
           ) : (
-            <div style={{
-              position: "absolute", inset: 0,
-              background: `linear-gradient(135deg, ${T.violetDark}, ${T.violet})`,
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48,
-            }}>📺</div>
+            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, ${T.violetDark}, ${T.violet})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>📺</div>
           )}
 
-          {/* Badges */}
-          <div style={{
-            position: "absolute", top: 8, left: 8, right: 8,
-            display: "flex", justifyContent: "space-between", gap: 6, pointerEvents: "none",
-          }}>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {video.is_live ? (
-                <span style={{
-                  padding: "3px 8px", borderRadius: 4, background: T.live, color: "#fff",
-                  fontSize: 10, fontWeight: 800, letterSpacing: 1,
-                }}>🔴 LIVE</span>
-              ) : null}
-              {video.is_premium ? (
-                <span style={{
-                  padding: "3px 8px", borderRadius: 4, background: T.gold, color: "#000",
-                  fontSize: 10, fontWeight: 800, letterSpacing: 0.6,
-                }}>👑 PREMIUM</span>
-              ) : null}
-            </div>
+          {/* Badges minimalistes */}
+          <div style={{ position: "absolute", top: 8, left: 8, right: 8, display: "flex", justifyContent: "space-between", gap: 6, pointerEvents: "none" }}>
+            {video.is_live ? (
+              <span style={{ padding: "3px 8px", borderRadius: 4, background: T.live, color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.8 }}>🔴 LIVE</span>
+            ) : <span />}
             {video.duration_secs ? (
-              <span style={{
-                padding: "3px 8px", borderRadius: 4, background: "rgba(0,0,0,0.7)", color: "#fff",
-                fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums",
-              }}>{formatVideoDuration(video.duration_secs)}</span>
+              <span style={{ padding: "3px 7px", borderRadius: 4, background: "rgba(0,0,0,0.72)", color: "#fff", fontSize: 10.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{formatVideoDuration(video.duration_secs)}</span>
             ) : null}
           </div>
 
-          {/* Progress bar */}
+          {/* Progression */}
           {pct > 0 ? (
-            <div style={{
-              position: "absolute", left: 0, right: 0, bottom: 0,
-              height: 3, background: "rgba(0,0,0,0.4)",
-            }}>
+            <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 3, background: "rgba(0,0,0,0.4)" }}>
               <div style={{ height: "100%", width: `${pct}%`, background: T.violet }} />
             </div>
           ) : null}
 
-          {/* Hover overlay */}
+          {/* Overlay au survol */}
           {hover ? (
-            <div style={{
-              position: "absolute", inset: 0,
-              background: "linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.78) 100%)",
-              display: "flex", alignItems: "flex-end", padding: 10,
-            }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 999, background: "#fff", color: "#000",
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                fontWeight: 800, fontSize: 18, marginRight: 8,
-              }}>▶</div>
-              <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleWl(); }}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.8) 100%)", display: "flex", alignItems: "flex-end", padding: 10 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 999, background: "#fff", color: "#000", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16, marginRight: 8 }}>▶</div>
+              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleWl(); }}
                 aria-label={isInWatchlist ? "Retirer de ma liste" : "Ajouter à ma liste"}
-                style={{
-                  width: 36, height: 36, borderRadius: 999,
-                  background: "rgba(0,0,0,0.6)", color: "#fff",
-                  border: "1px solid rgba(255,255,255,0.4)", cursor: "pointer",
-                  fontSize: 16, fontWeight: 700,
-                }}>
+                style={{ width: 34, height: 34, borderRadius: 999, background: "rgba(0,0,0,0.6)", color: "#fff", border: "1px solid rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
                 {isInWatchlist ? "✓" : "＋"}
               </button>
             </div>
           ) : null}
         </div>
 
-        {/* Caption */}
-        <div style={{ padding: "10px 4px 0" }}>
-          <div style={{
-            fontWeight: 700, fontSize: 14, color: T.text,
-            display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden",
-            lineHeight: 1.3,
-          }}>{video.title}</div>
-          <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {video.speaker ? <span>{video.speaker}</span> : null}
-            {video.view_count ? <span>· {formatViewCount(video.view_count)} vues</span> : null}
-          </div>
+        {/* Titre sous l'affiche */}
+        <div style={{ padding: "8px 2px 0" }}>
+          <div style={{ fontWeight: 600, fontSize: 13.5, color: T.text, display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden", lineHeight: 1.3 }}>{video.title}</div>
+          {video.speaker ? <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{video.speaker}</div> : null}
         </div>
       </Link>
     </div>
