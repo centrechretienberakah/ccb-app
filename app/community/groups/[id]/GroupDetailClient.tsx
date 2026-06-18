@@ -1219,7 +1219,7 @@ export default function GroupDetailClient({
                 }
               } : undefined}
               style={{
-                flex: 1, overflowY: "auto", padding: "14px",
+                flex: 1, overflowY: "auto", overflowX: "hidden", minWidth: 0, padding: "14px",
                 background: T.bg, position: "relative",
               }}>
               {/* Overlay drag&drop */}
@@ -1251,7 +1251,7 @@ export default function GroupDetailClient({
                   {search ? "Aucun message ne correspond à la recherche." : "💬 Aucun message. Sois le premier à écrire !"}
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, maxWidth: "100%" }}>
                   <style>{`
                     .ccb-msg-actions { display: none; }
                     .ccb-msg:hover .ccb-msg-actions, .ccb-msg-actions.on { display: flex; }
@@ -1266,7 +1266,7 @@ export default function GroupDetailClient({
                     const actionsOn = activeMsgId === m.id;
                     return (
                       <div key={m.id} id={`msg-${m.id}`} className="ccb-msg" style={{
-                        display: "flex", gap: 8,
+                        display: "flex", gap: 8, minWidth: 0,
                         flexDirection: isMine ? "row-reverse" : "row",
                         marginTop: grouped ? 1 : 9,
                       }}>
@@ -1274,7 +1274,7 @@ export default function GroupDetailClient({
                           ? <div style={{ width: 32, flexShrink: 0 }} />
                           : <Avatar profile={m.user_profiles} size={32} />}
                         <div style={{
-                          maxWidth: "78%",
+                          maxWidth: "78%", minWidth: 0,
                           display: "flex", flexDirection: "column",
                           alignItems: isMine ? "flex-end" : "flex-start",
                           position: "relative",

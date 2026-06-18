@@ -284,23 +284,23 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
       {/* Messages */}
       <div ref={scrollRef} onClick={() => { setMenuFor(null); setReactPickerFor(null); setShowEmoji(false); }}
         className="ccb-chat-bg"
-        style={{ flex: 1, overflowY: "auto", padding: "14px", background: T.bg }}>
+        style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minWidth: 0, padding: "14px", background: T.bg }}>
         {messages.length === 0 ? (
           <div style={{ textAlign: "center", color: T.textMuted, fontSize: 13, padding: "40px 14px" }}>
             Démarre la conversation avec {name} 👋
           </div>
         ) : (
-          <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
             {messages.map((m) => {
               const mine = m.sender_id === currentUserId;
               const parent = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
               const rx = reactionsFor(m.id);
               return (
-                <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start", position: "relative" }}>
+                <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start", position: "relative", minWidth: 0, maxWidth: "100%" }}>
                   <div
                     onClick={(e) => { e.stopPropagation(); if (!m.is_deleted) setMenuFor(menuFor === m.id ? null : m.id); }}
                     style={{
-                      maxWidth: "80%", padding: "8px 12px", borderRadius: 14, cursor: "pointer",
+                      maxWidth: "80%", minWidth: 0, overflowWrap: "anywhere", padding: "8px 12px", borderRadius: 14, cursor: "pointer",
                       background: mine ? T.violet : T.card,
                       color: mine ? "#fff" : T.text,
                       border: mine ? "none" : `1px solid ${T.border}`,
