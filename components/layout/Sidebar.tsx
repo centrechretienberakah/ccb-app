@@ -14,7 +14,7 @@ const ALL_ITEMS = [
   { href: "/community",        label: "Communauté",       emoji: "👥" },
   { href: "/community/messages", label: "Discussions",    emoji: "💬" },
   { href: "/jesus-daily",      label: "Jesus Daily TV",   emoji: "📺" },
-  { href: "/institut",         label: "Institut Berakah", emoji: "🎓" },
+  { href: "/institut",         label: "Institut Biblique Berakah", emoji: "🎓" },
   { href: "/events",           label: "Événements",       emoji: "📅" },
   { href: "/dons",             label: "Faire un Don",     emoji: "💝" },
   { href: "/galerie",          label: "Galerie",          emoji: "🖼️" },

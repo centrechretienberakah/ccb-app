@@ -117,7 +117,7 @@ export default function CertificatClient({ course, category, studentName, comple
               fontSize: 11, color: T.textMuted, marginBottom: 28,
               letterSpacing: "0.1em",
             }}>
-              INSTITUT BERAKAH
+              INSTITUT BIBLIQUE BERAKAH
             </div>
 
             {/* Titre */}

@@ -6,7 +6,7 @@ const card: React.CSSProperties = { background: "var(--card-bg)", border: "1px s
 
 const SOURCE_LABELS: Record<string, string> = {
   devotion: "Méditons ensemble", prayer: "Prions ensemble", jdtv: "JESUS DAILY TV",
-  lesson: "Institut Berakah", media: "Bibliothèque", testimony: "Témoignages", event: "Événements",
+  lesson: "Institut Biblique Berakah", media: "Bibliothèque", testimony: "Témoignages", event: "Événements",
 };
 
 interface AiStats {

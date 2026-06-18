@@ -242,7 +242,7 @@ export function toXAF(amount: number, currency: CurrencyCode): number {
 export const DONATION_USES = [
   { emoji: "🎙️", label: "Production de prédications et enseignements" },
   { emoji: "📺", label: "Studio livestream & équipement Jesus Daily TV" },
-  { emoji: "🎓", label: "Formation et bourses Institut Berakah" },
+  { emoji: "🎓", label: "Formation et bourses Institut Biblique Berakah" },
   { emoji: "🏗️", label: "Construction et entretien du lieu de culte" },
   { emoji: "🌍", label: "Missions et évangélisation" },
   { emoji: "🤲", label: "Actions sociales et aide aux familles" },

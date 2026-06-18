@@ -77,14 +77,14 @@ export async function reindexAiKnowledge(admin: SupabaseClient): Promise<Reindex
     })));
   } catch (e) { errors.push("jdtv: " + (e as Error).message); }
 
-  // ── Institut Berakah (institut_lessons) ──
+  // ── Institut Biblique Berakah (institut_lessons) ──
   try {
     const { data } = await admin.from("institut_lessons")
       .select("id, slug, title, description, content_md")
       .limit(1500);
     await upsert("lesson", (data ?? []).map((d: Row) => ({
       source: "lesson", source_id: str(d.id),
-      title: `Institut Berakah — ${str(d.title)}`,
+      title: `Institut Biblique Berakah — ${str(d.title)}`,
       body: join(d.description, d.content_md),
       url: d.slug ? `/institut/lecon/${str(d.slug)}` : "/institut",
     })));

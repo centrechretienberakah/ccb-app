@@ -200,7 +200,7 @@ const ECO = [
   { icon: "📚", title: "Ma Bible", desc: "Lisez la Bible dans plusieurs versions et suivez des plans de lecture personnalisés.", href: "/bible", g: "linear-gradient(145deg,#1e3a5f,#1e40af 55%,#3b82f6)" },
   { icon: "🙏", title: "Prions Ensemble", desc: "Partagez vos sujets de prière et intercédez avec la communauté.", href: "/prayer", g: "linear-gradient(145deg,#4c0519,#9f1239 55%,#fb7185)" },
   { icon: "👥", title: "Communauté", desc: "Échangez, apprenez et grandissez avec d'autres croyants.", href: "/community", g: "linear-gradient(145deg,#14532d,#16a34a 55%,#4ade80)" },
-  { icon: "🎓", title: "Institut Berakah", desc: "Des formations structurées pour développer votre connaissance biblique.", href: "/institut", g: "linear-gradient(145deg,#4C1D95,#7c3aed 55%,#d4af37)" },
+  { icon: "🎓", title: "Institut Biblique Berakah", desc: "Des formations structurées pour développer votre connaissance biblique.", href: "/institut", g: "linear-gradient(145deg,#4C1D95,#7c3aed 55%,#d4af37)" },
   { icon: "📺", title: "Jesus Daily TV", desc: "Prédications, enseignements, lives et contenus inspirants.", href: "/jesus-daily", g: "linear-gradient(145deg,#4C1D95,#5B21B6 55%,#a78bfa)" },
   { icon: "💬", title: "Groupes", desc: "Travaillez, échangez et collaborez dans des groupes publics ou privés.", href: "/community/groups", g: "linear-gradient(145deg,#164e63,#0891b2 55%,#67e8f9)" },
 ];
@@ -445,7 +445,7 @@ function BootcampSection() {
 const TESTIMONIALS = [
   { name: "Christiana", img: "/testimonie-christiana.jpg", text: "Le CCB a transformé ma manière de vivre ma foi au quotidien. Les méditations me nourrissent chaque matin." },
   { name: "Cabrelle", img: "/testimonie-cabrelle.jpg", text: "Grâce à la communauté, je ne marche plus seule. J'ai trouvé une vraie famille spirituelle." },
-  { name: "Daïna", img: "/testimonie-daina.jpg", text: "Les formations de l'Institut Berakah m'ont permis de grandir et de mieux comprendre la Parole." },
+  { name: "Daïna", img: "/testimonie-daina.jpg", text: "Les formations de l'Institut Biblique Berakah m'ont permis de grandir et de mieux comprendre la Parole." },
   { name: "Kevin", img: "/testimonie-kevin.jpg", text: "Jesus Daily TV et les lives m'accompagnent partout. Un ministère vraiment moderne et puissant." },
 ];
 
@@ -544,7 +544,7 @@ function Visionnaire() {
 const EVENTS = [
   { icon: "⛪", title: "Culte du Dimanche", date: "Tous les dimanches · 17h30 (Belgique)", tag: "Culte" },
   { icon: "🌙", title: "Nuit de Prière", date: "Prochaine : 29 Mai · 23h30", tag: "Prière" },
-  { icon: "🎓", title: "Formation Institut Berakah", date: "Cohorte 2026 · Inscriptions ouvertes", tag: "Formation" },
+  { icon: "🎓", title: "Formation Institut Biblique Berakah", date: "Cohorte 2026 · Inscriptions ouvertes", tag: "Formation" },
   { icon: "🔥", title: "Bootcamp CCB 2026", date: "26 – 28 Juin 2026 · Douala & Online", tag: "Bootcamp" },
 ];
 
@@ -667,7 +667,7 @@ function Footer() {
           <div>
             <h4>Ministère</h4>
             <Link href="/a-propos">À propos</Link>
-            <Link href="/institut">Institut Berakah</Link>
+            <Link href="/institut">Institut Biblique Berakah</Link>
             <Link href="/events">Événements</Link>
             <Link href="/dons">Faire un don</Link>
           </div>

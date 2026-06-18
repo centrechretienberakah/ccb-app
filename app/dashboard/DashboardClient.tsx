@@ -20,7 +20,7 @@ const QUICK_ACTIONS = [
   { emoji: "📖", label: "Ma Bible",         sub: "Lire & étudier la Parole",    href: "/bible",        accent: "#2563EB" },
   { emoji: "👥", label: "Communauté",       sub: "Échanges & partages",         href: "/community",    accent: "#16A34A" },
   { emoji: "📺", label: "Jesus Daily TV",   sub: "Prédications & directs",      href: "/jesus-daily",  accent: "#7C3AED" },
-  { emoji: "🎓", label: "Institut Berakah", sub: "Formations & enseignements",  href: "/institut",     accent: "#6D28D9" },
+  { emoji: "🎓", label: "Institut Biblique Berakah", sub: "Formations & enseignements",  href: "/institut",     accent: "#6D28D9" },
   { emoji: "📅", label: "Événements",       sub: "Agenda du ministère",         href: "/events",       accent: "#0EA5E9" },
   { emoji: "💝", label: "Faire un don",     sub: "Soutenir la mission",         href: "/dons",         accent: "#DC2626" },
   { emoji: "🖼️", label: "Galerie",          sub: "Photos & souvenirs",          href: "/galerie",      accent: "#DB2777" },

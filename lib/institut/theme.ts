@@ -1,4 +1,4 @@
-// Charte visuelle module Institut Berakah — premium chrétien moderne
+// Charte visuelle module Institut Biblique Berakah — premium chrétien moderne
 // Violet royal + or + lavande sur fond ivoire
 
 export const INSTITUT_THEME = {

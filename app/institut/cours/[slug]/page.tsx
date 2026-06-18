@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const supabase = await createClient();
   const { data } = await supabase
     .from("institut_courses").select("title").eq("slug", slug).maybeSingle();
-  return { title: data ? `${(data as { title: string }).title} — Institut Berakah` : "Formation" };
+  return { title: data ? `${(data as { title: string }).title} — Institut Biblique Berakah` : "Formation" };
 }
 
 interface LessonLite extends Lesson {

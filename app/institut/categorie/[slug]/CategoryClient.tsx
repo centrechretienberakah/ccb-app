@@ -57,7 +57,7 @@ export default function CategoryClient({ category, subcategories, courses }: Pro
             borderRadius: 8, padding: "6px 12px",
             color: "#fff", fontSize: 12, fontWeight: 700,
             textDecoration: "none", display: "inline-block", marginBottom: 12,
-          }}>← Institut Berakah</Link>
+          }}>← Institut Biblique Berakah</Link>
           <div style={{ fontSize: 38, marginBottom: 4 }}>{category.icon ?? "📚"}</div>
           <h1 style={{
             fontFamily: F.title, fontSize: "clamp(1.4rem, 5vw, 2rem)",

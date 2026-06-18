@@ -78,7 +78,7 @@ export default function InstitutHomeClient({
             display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
           }}>
             <span aria-hidden="true">🎓</span>
-            <span>INSTITUT BERAKAH</span>
+            <span>INSTITUT BIBLIQUE BERAKAH</span>
           </h1>
           <p className="institut-tagline" style={{
             margin: 0, opacity: 0.92, fontStyle: "italic", color: T.lavender,

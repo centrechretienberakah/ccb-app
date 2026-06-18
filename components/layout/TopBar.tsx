@@ -22,7 +22,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings":      "Parametres",
   "/admin":         "Administration",
   "/galerie":       "Galerie Photos",
-  "/institut":      "Institut Berakah",
+  "/institut":      "Institut Biblique Berakah",
   "/bibliotheque":  "Bibliothèque",
   "/rendez-vous":   "Rendez-vous Pastoral",
   "/temoignages":   "Témoignages",

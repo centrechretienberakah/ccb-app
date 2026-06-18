@@ -4,7 +4,7 @@ import InstitutHomeClient from "./InstitutHomeClient";
 import type { Category, Course } from "@/lib/institut/theme";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Institut Berakah — CCB" };
+export const metadata = { title: "Institut Biblique Berakah — CCB" };
 
 interface CourseLite extends Course {
   category_slug: string;

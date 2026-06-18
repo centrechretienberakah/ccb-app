@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .from("institut_categories")
     .select("name")
     .eq("slug", slug).maybeSingle();
-  return { title: data ? `${(data as { name: string }).name} — Institut Berakah` : "Catégorie" };
+  return { title: data ? `${(data as { name: string }).name} — Institut Biblique Berakah` : "Catégorie" };
 }
 
 interface CourseLite extends Course {

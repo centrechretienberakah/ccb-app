@@ -242,7 +242,7 @@ export default function AdminInstitutClient({
               fontFamily: F.title, fontSize: "clamp(1.1rem, 3.5vw, 1.4rem)",
               fontWeight: 700, margin: 0, letterSpacing: "0.04em",
             }}>
-              🛡️ Admin Institut Berakah
+              🛡️ Admin Institut Biblique Berakah
             </h1>
           </div>
           {/* Breadcrumb */}

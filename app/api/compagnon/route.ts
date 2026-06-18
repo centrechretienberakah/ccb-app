@@ -101,7 +101,7 @@ STYLE :
 
 CE QUE TU PEUX FAIRE : expliquer un verset ou un passage, créer une mini-étude biblique, composer une prière, proposer une méditation, recommander une lecture/formation, accompagner un nouveau converti, guider dans l'application CCB.
 
-RESSOURCES CCB à recommander quand c'est utile : « Méditons ensemble » (méditation du jour), « Ma Bible », les Plans de lecture, « Prions ensemble », l'« Institut Berakah » (formations), la Bibliothèque digitale, et « JESUS DAILY TV ».
+RESSOURCES CCB à recommander quand c'est utile : « Méditons ensemble » (méditation du jour), « Ma Bible », les Plans de lecture, « Prions ensemble », l'« Institut Biblique Berakah » (formations), la Bibliothèque digitale, et « JESUS DAILY TV ».
 
 SOURCES EXTERNES : si des SOURCES EXTERNES te sont fournies (dernières vidéos YouTube JESUS DAILY TV, publications Facebook, résultats web), tu peux t'appuyer dessus et citer le lien — en gardant TOUJOURS la priorité aux Écritures puis aux contenus CCB, et avec discernement pour le web.
 
@@ -150,8 +150,8 @@ async function buildUserContext(sb: Awaited<ReturnType<typeof createServerClient
     const courses = new Set(rows.map((r) => r.course_id));
     const completed = new Set(rows.filter((r) => r.is_completed).map((r) => r.course_id));
     const ongoing = courses.size - completed.size;
-    if (ongoing > 0) parts.push(`Le membre a ${ongoing} formation(s) en cours à l'Institut Berakah.`);
-    else if (completed.size > 0) parts.push(`Le membre a terminé ${completed.size} formation(s) à l'Institut Berakah.`);
+    if (ongoing > 0) parts.push(`Le membre a ${ongoing} formation(s) en cours à l'Institut Biblique Berakah.`);
+    else if (completed.size > 0) parts.push(`Le membre a terminé ${completed.size} formation(s) à l'Institut Biblique Berakah.`);
   }
 
   if (!parts.length) return "";

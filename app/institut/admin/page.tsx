@@ -4,7 +4,7 @@ import AdminInstitutClient from "./AdminInstitutClient";
 import type { Category, Subcategory, Course, Module, Lesson } from "@/lib/institut/theme";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Admin — Institut Berakah" };
+export const metadata = { title: "Admin — Institut Biblique Berakah" };
 
 export default async function InstitutAdminPage() {
   const supabase = await createClient();

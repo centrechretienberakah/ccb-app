@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     "Une communauté chrétienne moderne dédiée à la croissance spirituelle, au discipulat, à la formation et à l'impact du Royaume de Dieu. Méditations quotidiennes, Bible, Jesus Daily TV, communauté, formations et bien plus.",
   keywords: [
     "Centre Chrétien Berakah", "CCB", "église", "chrétien", "discipulat",
-    "méditation quotidienne", "Bible", "Jesus Daily TV", "Institut Berakah",
+    "méditation quotidienne", "Bible", "Jesus Daily TV", "Institut Biblique Berakah",
     "Bootcamp CCB", "communauté chrétienne", "Cameroun", "foi",
   ],
   openGraph: {
