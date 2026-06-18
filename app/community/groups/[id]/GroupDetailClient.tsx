@@ -762,7 +762,12 @@ export default function GroupDetailClient({
   }
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body }}>
+    // overflowX: "clip" (et NON "hidden") : empêche le débordement horizontal
+    // SANS transformer ce div en conteneur de défilement. Sinon la règle globale
+    // `.app-content > * { overflow-x: hidden }` force overflow-y:auto et casse le
+    // `position: sticky` du header (qui s'accroche alors à ce div au lieu de la
+    // zone de scroll réelle .app-content) → header qui "part" au défilement mobile.
+    <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, overflowX: "clip" }}>
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
