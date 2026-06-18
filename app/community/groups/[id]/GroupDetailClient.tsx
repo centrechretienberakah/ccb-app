@@ -838,6 +838,13 @@ export default function GroupDetailClient({
         .ccb-grp-root { min-height: 100vh; overflow-x: clip; }
         .ccb-grp-members-sidebar { display: none; } /* défaut caché (mobile/tablette) */
 
+        /* ANTI-DÉBORDEMENT : les enfants flex directs du root (bannières + wrapper
+           de contenu) héritent de .ccb-grp-detail { margin: 0 auto }. Sur un flex
+           item, une marge auto sur l'axe transversal DÉSACTIVE le stretch → l'élément
+           se dimensionne à son contenu (max-content = plus longue ligne) et déborde.
+           On force donc pleine largeur, sans marge auto. */
+        .ccb-grp-root > .ccb-grp-detail { width: 100%; max-width: 100%; margin: 0; align-self: stretch; }
+
         /* ── Desktop (≥ 1024px) : chat PLEIN ÉCRAN (comme le chat privé) ──
            Racine pleine hauteur, header figé, et chat + sidebar membres sur
            toute la hauteur, chacun avec son propre défilement interne. */
