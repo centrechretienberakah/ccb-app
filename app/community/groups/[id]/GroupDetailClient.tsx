@@ -1019,13 +1019,7 @@ export default function GroupDetailClient({
             </>
           )}
 
-          {/* Recherche directe */}
-          <button onClick={() => setShowSearch(true)} title="Rechercher" aria-label="Rechercher"
-            style={{ ...topbarIconBtn(), fontSize: 16 }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.22)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}>
-            🔍
-          </button>
+          {/* Recherche : déplacée dans le menu 3 points (header plus épuré) */}
 
           {/* Menu 3 points */}
           <div ref={menuRef} style={{ position: "relative" }}>
