@@ -650,6 +650,39 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1.1px) !important;
 }
 
+/* ── Lecteur vidéo Institut Biblique Berakah — responsive desktop/tablette/mobile ──
+   16:9, centré, hauteur plafonnée (~74vh) pour ne jamais dépasser l'écran sur les
+   fenêtres courtes/paysage ; plein-bord sur mobile (variante --bleed) pour un
+   visionnage plus grand. */
+.ibb-video {
+  width: 100%;
+  max-width: calc(74vh * 16 / 9);
+  margin: 0 auto 16px;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(31, 20, 60, 0.10);
+}
+.ibb-video iframe,
+.ibb-video video {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+@media (max-width: 639px) {
+  /* Vidéo principale (leçon) : plein-bord pour maximiser la surface sur mobile.
+     Annule le padding horizontal 14px du conteneur .lesson-layout. */
+  .ibb-video--bleed {
+    margin-left: -14px;
+    margin-right: -14px;
+    width: calc(100% + 28px);
+    max-width: none;
+    border-radius: 0;
+  }
+}
+
 /* ── BOTTOM NAV ── */
 .bottom-nav {
   display: none;

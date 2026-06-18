@@ -190,19 +190,13 @@ export default function CourseClient({ course, category, modules, totalLessons, 
           {/* Colonne gauche : Trailer + Description + CTA */}
           <div>
             {trailer && (
-              <div style={{
-                marginBottom: 18,
-                borderRadius: 14, overflow: "hidden",
-                aspectRatio: "16/9", background: "#000",
-                boxShadow: T.shadowSoft,
-              }}>
+              <div className="ibb-video">
                 {trailer.provider === "youtube" || trailer.provider === "vimeo" ? (
-                  <iframe src={trailer.src} width="100%" height="100%"
-                    style={{ border: 0, display: "block" }} allowFullScreen
+                  <iframe src={trailer.src} title={course.title} loading="lazy" allowFullScreen
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   />
                 ) : (
-                  <video src={trailer.src} controls style={{ width: "100%", height: "100%" }} />
+                  <video src={trailer.src} controls playsInline />
                 )}
               </div>
             )}

@@ -166,20 +166,15 @@ export default function LessonClient({
           </div>
         )}
 
-        {/* Vidéo */}
+        {/* Vidéo — responsive (plein-bord mobile, centrée + plafonnée desktop/tablette) */}
         {!isPremiumLocked && video && (
-          <div style={{
-            marginBottom: 16, borderRadius: 14, overflow: "hidden",
-            aspectRatio: "16/9", background: "#000",
-            boxShadow: T.shadowSoft,
-          }}>
+          <div className="ibb-video ibb-video--bleed">
             {video.provider === "youtube" || video.provider === "vimeo" ? (
-              <iframe src={video.src} width="100%" height="100%"
-                style={{ border: 0, display: "block" }} allowFullScreen
+              <iframe src={video.src} title={lesson.title} loading="lazy" allowFullScreen
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               />
             ) : (
-              <video src={video.src} controls style={{ width: "100%", height: "100%" }} />
+              <video src={video.src} controls playsInline />
             )}
           </div>
         )}
