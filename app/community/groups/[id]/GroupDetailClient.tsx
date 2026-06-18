@@ -762,12 +762,7 @@ export default function GroupDetailClient({
   }
 
   return (
-    // overflowX: "clip" (et NON "hidden") : empêche le débordement horizontal
-    // SANS transformer ce div en conteneur de défilement. Sinon la règle globale
-    // `.app-content > * { overflow-x: hidden }` force overflow-y:auto et casse le
-    // `position: sticky` du header (qui s'accroche alors à ce div au lieu de la
-    // zone de scroll réelle .app-content) → header qui "part" au défilement mobile.
-    <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, overflowX: "clip" }}>
+    <div className="ccb-grp-root" style={{ background: T.bg, color: T.text, fontFamily: F.body }}>
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
@@ -779,6 +774,7 @@ export default function GroupDetailClient({
 
       <style>{`
         .ccb-grp-detail { max-width: 1080px; margin: 0 auto; }
+        .ccb-grp-root { min-height: 100vh; overflow-x: clip; }
         @media (min-width: 1024px) {
           .ccb-grp-detail-grid {
             display: grid;
@@ -799,49 +795,45 @@ export default function GroupDetailClient({
           50%      { box-shadow: 0 0 0 8px rgba(212,175,55,0); }
         }
 
-        /* ── Composer fixé en bas du viewport sur mobile + tablette ── */
-        /* MOBILE (< 640px) : juste au-dessus de la nav bar du bas */
-        @media (max-width: 639px) {
+        /* ── Mobile + tablette (≤ 1023px) : chat plein écran, header FIGÉ ──
+           Le conteneur racine occupe exactement la zone sous la TopBar et ne
+           défile PAS ; seul le fil de messages défile (comme le chat privé).
+           Le header reste donc immobile sans dépendre de position:sticky (cassé
+           par les overflow:hidden des ancêtres .app-main / .app-content). */
+        @media (max-width: 1023px) {
+          .ccb-grp-root {
+            height: calc(100dvh - var(--ccb-topbar-h, 56px) - var(--ccb-bottomnav-h, 0px));
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+          }
+          .ccb-grp-root > .ccb-grp-topbar { flex: 0 0 auto; }
+          .ccb-grp-main {
+            flex: 1 1 0 !important;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 0 !important;
+          }
+          .ccb-grp-detail-grid {
+            flex: 1 1 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+          }
           .ccb-grp-chat-card {
+            flex: 1 1 0 !important;
+            min-height: 0 !important;
             height: auto !important;
-            min-height: 60vh;
             border: none !important;
             border-radius: 0 !important;
             box-shadow: none !important;
-            overflow: visible !important;
+            overflow: hidden !important;
           }
           .ccb-grp-composer {
-            position: fixed !important;
-            left: 0; right: 0;
-            bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-            z-index: 25;
-            background: ${T.card};
-            border-top: 1px solid ${T.borderSoft};
+            position: static !important;
             padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
-            box-shadow: 0 -4px 16px rgba(31,20,60,0.08);
-          }
-          .ccb-grp-messages {
-            padding-bottom: 84px !important;
-          }
-        }
-        /* TABLETTE (640px – 1023px) : pas de bottom-nav, collé en bas */
-        @media (min-width: 640px) and (max-width: 1023px) {
-          .ccb-grp-chat-card {
-            height: auto !important;
-            min-height: 70vh;
-            overflow: visible !important;
-          }
-          .ccb-grp-composer {
-            position: fixed !important;
-            left: 64px; right: 0;
-            bottom: 0;
-            z-index: 25;
-            background: ${T.card};
-            border-top: 1px solid ${T.borderSoft};
-            box-shadow: 0 -4px 16px rgba(31,20,60,0.08);
-          }
-          .ccb-grp-messages {
-            padding-bottom: 84px !important;
           }
         }
       `}</style>
@@ -1088,7 +1080,7 @@ export default function GroupDetailClient({
         </div>
       )}
 
-      <div className="ccb-grp-detail" style={{ padding: "12px 14px 32px" }}>
+      <div className="ccb-grp-detail ccb-grp-main" style={{ padding: "12px 14px 32px" }}>
         <div className="ccb-grp-detail-grid">
 
           {/* Main : Chat */}
