@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
@@ -46,9 +47,43 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
   const [reactPickerFor, setReactPickerFor] = useState<string | null>(null);
   const [pending, setPending] = useState<{ url: string; type: string; name: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [search, setSearch] = useState("");
+  const [showMedia, setShowMedia] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [clearedAt, setClearedAt] = useState(0); // ms — masque (localement) les messages antérieurs
+  const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const muteKey = `ccb-dm-mute-${conversationId}`;
+  const blockKey = other.user_id ? `ccb-dm-block-${other.user_id}` : `ccb-dm-block-${conversationId}`;
+  const clearKey = `ccb-dm-cleared-${conversationId}`;
+
+  // Préférences locales (mute / blocage / effacement) — chargées après mount
+  useEffect(() => {
+    try {
+      setMuted(localStorage.getItem(muteKey) === "1");
+      setBlocked(localStorage.getItem(blockKey) === "1");
+      const c = Number(localStorage.getItem(clearKey) || 0);
+      if (Number.isFinite(c)) setClearedAt(c);
+    } catch { /* noop */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
+
+  // Ferme le menu au clic extérieur
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [menuOpen]);
 
   const name = other.display_name || "Membre";
   const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -216,6 +251,47 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
     }
   }
 
+  // ── Actions du menu 3 points ──────────────────────────────────────────
+  function toggleMute() {
+    setMenuOpen(false);
+    setMuted((m) => { const nv = !m; try { localStorage.setItem(muteKey, nv ? "1" : "0"); } catch { /* noop */ } return nv; });
+  }
+  function toggleBlock() {
+    setMenuOpen(false);
+    setBlocked((b) => { const nv = !b; try { localStorage.setItem(blockKey, nv ? "1" : "0"); } catch { /* noop */ } return nv; });
+  }
+  function clearChat() {
+    setMenuOpen(false);
+    if (!confirm("Effacer la discussion sur cet appareil ? Les messages ne sont pas supprimés pour l'autre personne.")) return;
+    const now = Date.now();
+    try { localStorage.setItem(clearKey, String(now)); } catch { /* noop */ }
+    setClearedAt(now);
+  }
+  async function reportUser() {
+    setMenuOpen(false);
+    if (!confirm(`Signaler « ${name} » à l'équipe de modération ?`)) return;
+    try {
+      await fetch("/api/notifications/send", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "🚩 Signalement d'un membre",
+          body: `${myDisplayName} a signalé ${name} (conversation privée).`,
+          url: other.user_id ? `/community/profil/${other.user_id}` : "/community",
+          audience: "admins",
+        }),
+      });
+      alert("Merci. L'équipe de modération a été notifiée.");
+    } catch { alert("Impossible d'envoyer le signalement pour le moment."); }
+  }
+
+  // Messages visibles : on retire (localement) les messages antérieurs à l'effacement
+  // + filtre de recherche éventuel.
+  const visibleMessages = messages.filter((m) => {
+    if (clearedAt && new Date(m.created_at).getTime() <= clearedAt) return false;
+    if (search.trim() && !(m.content || "").toLowerCase().includes(search.trim().toLowerCase())) return false;
+    return true;
+  });
+
   async function toggleReaction(messageId: string, emoji: string) {
     setReactPickerFor(null); setMenuFor(null);
     const sb = createClient();
@@ -281,7 +357,41 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
         </Link>
         <Link href={`/community/messages/${conversationId}/call?mode=audio`} title="Appel audio" style={hdrBtn}>📞</Link>
         <Link href={`/community/messages/${conversationId}/call`} title="Appel vidéo" style={hdrBtn}>📹</Link>
+
+        {/* Menu 3 points */}
+        <div ref={menuRef} style={{ position: "relative", flexShrink: 0 }}>
+          <button onClick={() => setMenuOpen((v) => !v)} aria-label="Menu" style={{ ...hdrBtn, fontSize: 19, fontWeight: 700 }}>⋮</button>
+          {menuOpen && (
+            <div role="menu" style={{
+              position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40,
+              minWidth: 224, background: T.card, color: T.text,
+              border: `1px solid ${T.border}`, borderRadius: 12,
+              boxShadow: "0 12px 32px rgba(0,0,0,0.18)", overflow: "hidden", padding: 4,
+            }}>
+              <button onClick={() => { setMenuOpen(false); setShowSearch(true); }} style={dmMenuItem}><span style={dmMenuIco}>🔍</span> Rechercher</button>
+              {other.user_id && (
+                <button onClick={() => { setMenuOpen(false); router.push(`/community/profil/${other.user_id}`); }} style={dmMenuItem}><span style={dmMenuIco}>👤</span> Afficher le profil</button>
+              )}
+              <button onClick={() => { setMenuOpen(false); setShowMedia(true); }} style={dmMenuItem}><span style={dmMenuIco}>🖼️</span> Média, docs et liens</button>
+              <button onClick={toggleMute} style={dmMenuItem}><span style={dmMenuIco}>{muted ? "🔔" : "🔕"}</span> {muted ? "Réactiver le son" : "Mode silencieux"}</button>
+              <div style={{ height: 1, background: T.borderSoft, margin: "4px 0" }} />
+              <button onClick={reportUser} style={dmMenuItem}><span style={dmMenuIco}>🚩</span> Signaler</button>
+              <button onClick={toggleBlock} style={{ ...dmMenuItem, color: blocked ? T.violet : "#C24B7A" }}><span style={dmMenuIco}>{blocked ? "✅" : "🚫"}</span> {blocked ? "Débloquer" : "Bloquer"}</button>
+              <button onClick={clearChat} style={{ ...dmMenuItem, color: "#C24B7A" }}><span style={dmMenuIco}>🗑️</span> Effacer la discussion</button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Barre de recherche (ouverte depuis le menu ⋮) */}
+      {showSearch && (
+        <div style={{ flexShrink: 0, padding: "8px 12px", background: T.card, borderBottom: `1px solid ${T.borderSoft}`, display: "flex", gap: 8, alignItems: "center" }}>
+          <input autoFocus type="search" value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="🔍 Rechercher dans la conversation…"
+            style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: "9px 14px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 999, color: T.text, fontSize: 14, fontFamily: F.body, outline: "none" }} />
+          <button onClick={() => { setShowSearch(false); setSearch(""); }} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13.5, flexShrink: 0 }}>Fermer</button>
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={scrollRef} onClick={() => { setMenuFor(null); setReactPickerFor(null); setShowEmoji(false); }}
@@ -291,9 +401,13 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
           <div style={{ textAlign: "center", color: T.textMuted, fontSize: 13, padding: "40px 14px" }}>
             Démarre la conversation avec {name} 👋
           </div>
+        ) : visibleMessages.length === 0 ? (
+          <div style={{ textAlign: "center", color: T.textMuted, fontSize: 13, padding: "40px 14px" }}>
+            {search.trim() ? "Aucun message ne correspond à la recherche." : "Discussion effacée sur cet appareil."}
+          </div>
         ) : (
           <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
-            {messages.map((m) => {
+            {visibleMessages.map((m) => {
               const mine = m.sender_id === currentUserId;
               const parent = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
               const rx = reactionsFor(m.id);
@@ -395,8 +509,16 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
         </div>
       )}
 
+      {/* Bloqué : le composer est remplacé par une bannière */}
+      {blocked && (
+        <div style={{ flexShrink: 0, padding: "12px 14px calc(12px + env(safe-area-inset-bottom, 0px))", background: T.card, borderTop: `1px solid ${T.borderSoft}`, textAlign: "center", fontSize: 13, color: T.textMuted }}>
+          🚫 Vous avez bloqué {name}.{" "}
+          <button onClick={toggleBlock} style={{ background: "none", border: "none", color: T.violet, fontWeight: 700, cursor: "pointer", fontSize: 13, padding: 0 }}>Débloquer</button>
+        </div>
+      )}
+
       {/* Composer — style WhatsApp (pill + emoji/📎/📷 + bouton rond mic/envoi) */}
-      <div style={{ padding: "8px 10px calc(8px + env(safe-area-inset-bottom, 0px))", borderTop: `1px solid ${T.borderSoft}`, background: T.card, flexShrink: 0 }}>
+      <div style={{ display: blocked ? "none" : "block", padding: "8px 10px calc(8px + env(safe-area-inset-bottom, 0px))", borderTop: `1px solid ${T.borderSoft}`, background: T.card, flexShrink: 0 }}>
         <input ref={fileRef} type="file" accept="image/*,application/pdf,audio/*,video/*" style={{ display: "none" }}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); if (fileRef.current) fileRef.current.value = ""; }} />
         <input ref={camRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
@@ -446,9 +568,99 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
         </div>
       </div>
 
+      {/* Média, docs et liens */}
+      {showMedia && (
+        <DmMediaModal messages={messages} onClose={() => setShowMedia(false)} />
+      )}
+
     </div>
   );
 }
+
+const dmMenuItem: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: "left",
+  background: "none", border: "none", cursor: "pointer", color: T.text,
+  fontSize: 14, fontFamily: F.body, padding: "10px 12px", borderRadius: 9,
+};
+const dmMenuIco: React.CSSProperties = { fontSize: 17, width: 22, textAlign: "center", flexShrink: 0 };
+
+// ── Modal « Média, docs et liens » — listes extraites des messages ──
+function DmMediaModal({ messages, onClose }: { messages: DmMessageRow[]; onClose: () => void }) {
+  const medias = messages.filter((m) => !m.is_deleted && m.attachment_url);
+  const images = medias.filter((m) => m.attachment_type === "image");
+  const files = medias.filter((m) => m.attachment_type !== "image");
+  const linkRe = /(https?:\/\/[^\s]+)/g;
+  const links: string[] = [];
+  for (const m of messages) {
+    if (m.is_deleted || !m.content) continue;
+    const found = m.content.match(linkRe);
+    if (found) for (const l of found) if (!links.includes(l)) links.push(l);
+  }
+  return (
+    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{
+      position: "fixed", inset: 0, zIndex: 1000, background: "rgba(31,26,51,0.55)",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+    }}>
+      <div style={{
+        background: T.card, borderTop: `3px solid ${T.violet}`, borderRadius: "20px 20px 0 0",
+        padding: "18px 16px calc(20px + env(safe-area-inset-bottom, 0px))",
+        width: "100%", maxWidth: 560, maxHeight: "78vh", overflowY: "auto",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.violet }}>🖼️ Média, docs et liens</div>
+          <button onClick={onClose} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 11px", color: T.textMuted, fontSize: 14, cursor: "pointer" }}>✕</button>
+        </div>
+
+        {images.length === 0 && files.length === 0 && links.length === 0 && (
+          <div style={{ textAlign: "center", color: T.textMuted, fontSize: 13, padding: "30px 10px" }}>Aucun média partagé pour le moment.</div>
+        )}
+
+        {images.length > 0 && (
+          <>
+            <div style={dmMediaSection}>Images ({images.length})</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 6, marginBottom: 14 }}>
+              {images.map((m) => (
+                <a key={m.id} href={m.attachment_url!} target="_blank" rel="noopener noreferrer" style={{ display: "block", aspectRatio: "1 / 1", borderRadius: 8, overflow: "hidden", background: T.bg }}>
+                  <img loading="lazy" decoding="async" src={m.attachment_url!} alt={m.attachment_name || "image"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </a>
+              ))}
+            </div>
+          </>
+        )}
+
+        {files.length > 0 && (
+          <>
+            <div style={dmMediaSection}>Documents ({files.length})</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
+              {files.map((m) => (
+                <a key={m.id} href={m.attachment_url!} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", color: T.text, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 11px", fontSize: 13 }}>
+                  <span style={{ fontSize: 18 }}>{m.attachment_type === "audio" ? "🎵" : m.attachment_type === "video" ? "🎬" : m.attachment_type === "pdf" ? "📄" : "📎"}</span>
+                  <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.attachment_name || "Fichier"}</span>
+                </a>
+              ))}
+            </div>
+          </>
+        )}
+
+        {links.length > 0 && (
+          <>
+            <div style={dmMediaSection}>Liens ({links.length})</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {links.map((l, i) => (
+                <a key={i} href={l} target="_blank" rel="noopener noreferrer" style={{ color: T.violet, fontSize: 13, textDecoration: "none", wordBreak: "break-all", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 11px" }}>🔗 {l}</a>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const dmMediaSection: React.CSSProperties = {
+  fontSize: 11, fontWeight: 800, color: T.textMuted, textTransform: "uppercase",
+  letterSpacing: "0.06em", marginBottom: 8,
+};
 
 const pillIcon: React.CSSProperties = {
   background: "none", border: "none", cursor: "pointer", color: T.textMuted,

@@ -147,8 +147,28 @@ export default function GroupDetailClient({
   // sur le contenu time-formatted du bandeau "Appel en cours"
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+
+  // Charge l'état "mode silencieux" (group_user_state) + effacement local au montage
+  useEffect(() => {
+    try {
+      const c = Number(localStorage.getItem(`ccb-grp-cleared-${group.id}`) || 0);
+      if (Number.isFinite(c)) setGrpClearedAt(c);
+    } catch { /* noop */ }
+    (async () => {
+      try {
+        const sb = createClient();
+        const { data } = await sb.from("group_user_state")
+          .select("muted_until").eq("group_id", group.id).eq("user_id", currentUserId).maybeSingle();
+        const mu = (data as { muted_until: string | null } | null)?.muted_until;
+        setMutedG(!!mu && new Date(mu).getTime() > Date.now());
+      } catch { /* table v39 absente → non muté */ }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group.id]);
   const [plusOpen, setPlusOpen] = useState(false);   // menu ＋ du composer (photo/fichier/verset/prière)
   const [showEmojiG, setShowEmojiG] = useState(false); // sélecteur d'emoji du composer
+  const [mutedG, setMutedG] = useState(false);        // mode silencieux (group_user_state.muted_until)
+  const [grpClearedAt, setGrpClearedAt] = useState(0); // effacement local de la discussion (ms)
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -509,16 +529,19 @@ export default function GroupDetailClient({
     setText((p) => p.startsWith("🙏") ? p : "🙏 Sujet de prière :\n" + p);
   }
 
-  // Messages filtrés par recherche
+  // Messages filtrés : effacement local (depuis le menu) puis recherche
   const filteredMessages = useMemo(() => {
-    if (!search.trim()) return messages;
+    const base = grpClearedAt
+      ? messages.filter((m) => new Date(m.created_at).getTime() > grpClearedAt)
+      : messages;
+    if (!search.trim()) return base;
     const q = search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-    return messages.filter((m) => {
+    return base.filter((m) => {
       const haystack = `${m.content} ${m.user_profiles?.display_name ?? ""} ${m.attachment_name ?? ""}`
         .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
       return haystack.includes(q);
     });
-  }, [messages, search]);
+  }, [messages, search, grpClearedAt]);
 
   function detectAttachmentType(file: File): "image" | "pdf" | "audio" | "video" | "other" {
     if (file.type.startsWith("image/")) return "image";
@@ -755,6 +778,46 @@ export default function GroupDetailClient({
     } finally {
       setSending(false);
     }
+  }
+
+  // ── Actions du menu 3 points (groupe) ─────────────────────────────────
+  async function toggleMuteGroup() {
+    setMenuOpen(false);
+    const next = !mutedG;
+    setMutedG(next);
+    try {
+      const sb = createClient();
+      const { error } = await sb.from("group_user_state").upsert({
+        group_id: group.id, user_id: currentUserId,
+        muted_until: next ? "2099-12-31T00:00:00Z" : null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id,group_id" });
+      if (error) throw error;
+      flash(next ? "🔕 Notifications du groupe coupées" : "🔔 Notifications réactivées");
+    } catch { setMutedG(!next); flash("Mode silencieux indisponible pour le moment."); }
+  }
+  function clearGroupChat() {
+    setMenuOpen(false);
+    if (!confirm("Effacer la discussion sur cet appareil ? Les messages ne sont pas supprimés pour les autres membres.")) return;
+    const now = Date.now();
+    try { localStorage.setItem(`ccb-grp-cleared-${group.id}`, String(now)); } catch { /* noop */ }
+    setGrpClearedAt(now);
+  }
+  async function reportGroup() {
+    setMenuOpen(false);
+    if (!confirm(`Signaler le groupe « ${group.name} » à l'équipe de modération ?`)) return;
+    try {
+      await fetch("/api/notifications/send", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "🚩 Signalement d'un groupe",
+          body: `${currentUserProfile?.display_name || "Un membre"} a signalé le groupe « ${group.name} ».`,
+          url: `/community/groups/${group.id}`,
+          audience: "admins",
+        }),
+      });
+      flash("Merci. L'équipe de modération a été notifiée.");
+    } catch { flash("Impossible d'envoyer le signalement."); }
   }
 
   async function deleteMessage(messageId: string) {
@@ -1057,14 +1120,17 @@ export default function GroupDetailClient({
                 <MenuItem icon="👥" label={`Voir les membres (${members.length})`} onClick={() => { setMenuOpen(false); setShowMembers(true); }} />
                 <MenuItem icon="🗓️" label="Réunions programmées" href={`/community/groups/${group.id}/meeting/scheduled`} onClick={() => setMenuOpen(false)} />
                 <MenuItem icon="📜" label="Historique des appels" href={`/community/groups/${group.id}/meeting/history`} onClick={() => setMenuOpen(false)} />
+                {isMember && (
+                  <MenuItem icon={mutedG ? "🔔" : "🔕"} label={mutedG ? "Réactiver le son" : "Mode silencieux"} onClick={toggleMuteGroup} />
+                )}
                 {(myRole === "owner" || myRole === "admin") && (
                   <MenuItem icon="⚙️" label="Paramètres du groupe" href={`/community/groups/${group.id}/settings`} onClick={() => setMenuOpen(false)} />
                 )}
+                <div style={{ height: 1, background: T.borderSoft, margin: "4px 0" }} />
+                <MenuItem icon="🚩" label="Signaler le groupe" onClick={reportGroup} />
+                <MenuItem icon="🗑️" label="Effacer la discussion" danger onClick={clearGroupChat} />
                 {isMember && myRole !== "owner" && (
-                  <>
-                    <div style={{ height: 1, background: T.borderSoft, margin: "4px 0" }} />
-                    <MenuItem icon="🚪" label="Quitter le groupe" danger onClick={() => { setMenuOpen(false); leaveGroup(); }} />
-                  </>
+                  <MenuItem icon="🚪" label="Quitter le groupe" danger onClick={() => { setMenuOpen(false); leaveGroup(); }} />
                 )}
               </div>
             )}
