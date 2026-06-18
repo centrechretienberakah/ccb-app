@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
+import VoiceComposerButton from "@/components/community/VoiceComposerButton";
 import type { DmMessageRow, DmOther } from "./page";
+
+const COMPOSER_EMOJIS = ["😀","😂","😍","🥰","😅","😊","🙏","🔥","❤️","👍","🙌","🎉","✨","🕊️","💪","😢","😮","🤔","🙇","🥳","😇","👏","🤝","📖"];
 
 interface Props {
   conversationId: string;
@@ -42,8 +45,10 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [reactPickerFor, setReactPickerFor] = useState<string | null>(null);
   const [pending, setPending] = useState<{ url: string; type: string; name: string } | null>(null);
+  const [showEmoji, setShowEmoji] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const camRef = useRef<HTMLInputElement>(null);
 
   const name = other.display_name || "Membre";
   const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -178,6 +183,39 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
     setSending(false);
   }
 
+  function insertEmoji(e: string) {
+    setText((t) => t + e);
+  }
+
+  // Message vocal : upload du blob enregistré → message avec pièce jointe audio
+  async function sendVoice(file: File) {
+    if (sending) return;
+    setSending(true);
+    try {
+      const sb = createClient();
+      const ext = file.name.split(".").pop() || "webm";
+      const path = `dm/${conversationId}/${Date.now()}-${currentUserId}.${ext}`;
+      const { error: upErr } = await sb.storage.from("posts").upload(path, file, { contentType: file.type });
+      if (upErr) { alert("Erreur envoi du vocal : " + upErr.message); return; }
+      const { data: pub } = sb.storage.from("posts").getPublicUrl(path);
+      const { data, error } = await sb.from("dm_messages")
+        .insert({ conversation_id: conversationId, sender_id: currentUserId, content: null, attachment_url: pub.publicUrl, attachment_type: "audio", attachment_name: file.name })
+        .select("id, sender_id, content, attachment_url, attachment_type, attachment_name, reply_to_id, is_pinned, is_edited, is_deleted, created_at")
+        .single();
+      if (!error && data) {
+        const row = data as DmMessageRow;
+        setMessages((prev) => prev.some((x) => x.id === row.id) ? prev : [...prev, row]);
+        void sb.from("conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
+        void fetch("/api/notifications/send", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: `💬 ${myDisplayName}`, body: "🎤 Message vocal", url: `/community/messages/${conversationId}`, audience: "conversation_members", conversationId }),
+        }).catch(() => {});
+      }
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function toggleReaction(messageId: string, emoji: string) {
     setReactPickerFor(null); setMenuFor(null);
     const sb = createClient();
@@ -244,7 +282,8 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} onClick={() => { setMenuFor(null); setReactPickerFor(null); }}
+      <div ref={scrollRef} onClick={() => { setMenuFor(null); setReactPickerFor(null); setShowEmoji(false); }}
+        className="ccb-chat-bg"
         style={{ flex: 1, overflowY: "auto", padding: "14px", background: T.bg }}>
         {messages.length === 0 ? (
           <div style={{ textAlign: "center", color: T.textMuted, fontSize: 13, padding: "40px 14px" }}>
@@ -354,36 +393,71 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
         </div>
       )}
 
-      {/* Composer */}
-      <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.borderSoft}`, background: T.card, flexShrink: 0 }}>
+      {/* Composer — style WhatsApp (pill + emoji/📎/📷 + bouton rond mic/envoi) */}
+      <div style={{ padding: "8px 10px calc(8px + env(safe-area-inset-bottom, 0px))", borderTop: `1px solid ${T.borderSoft}`, background: T.card, flexShrink: 0 }}>
         <input ref={fileRef} type="file" accept="image/*,application/pdf,audio/*,video/*" style={{ display: "none" }}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); if (fileRef.current) fileRef.current.value = ""; }} />
-        <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 8, alignItems: "flex-end" }}>
-          {!editing && (
-            <button onClick={() => fileRef.current?.click()} disabled={uploading} title="Joindre un fichier" style={{
-              background: T.bg, border: `1px solid ${T.border}`, borderRadius: 14, padding: "10px 12px",
-              cursor: uploading ? "wait" : "pointer", color: T.textMuted, fontSize: 18, flexShrink: 0,
-            }}>{uploading ? "⏳" : "📎"}</button>
+        <input ref={camRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); if (camRef.current) camRef.current.value = ""; }} />
+        <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", gap: 8, alignItems: "flex-end", position: "relative" }}>
+          {/* Sélecteur d'emoji */}
+          {showEmoji && (
+            <div style={{
+              position: "absolute", bottom: "calc(100% + 8px)", left: 0, zIndex: 20,
+              background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, boxShadow: T.shadowMd,
+              padding: 8, display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 2, width: "min(320px, 90vw)",
+            }}>
+              {COMPOSER_EMOJIS.map((e) => (
+                <button key={e} onClick={() => insertEmoji(e)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", padding: 4, borderRadius: 8 }}>{e}</button>
+              ))}
+            </div>
           )}
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={editing ? "Modifier le message…" : "Écris un message…"}
-            rows={1}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            style={{ flex: 1, boxSizing: "border-box", padding: "10px 14px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 18, color: T.text, fontSize: 14, fontFamily: F.body, outline: "none", resize: "none", maxHeight: 120 }}
-          />
-          <button onClick={sendMessage} disabled={sending || (!text.trim() && !pending)} style={{
-            background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, color: "#fff", border: "none",
-            borderRadius: 14, padding: "10px 16px", cursor: sending || (!text.trim() && !pending) ? "not-allowed" : "pointer",
-            fontWeight: 700, fontSize: 16, opacity: (!text.trim() && !pending) ? 0.5 : 1, flexShrink: 0,
-          }}>{editing ? "✓" : "➤"}</button>
+
+          {/* Pill : emoji + texte + joindre + photo */}
+          <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-end", gap: 2, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 22, padding: "2px 6px 2px 4px" }}>
+            <button onClick={() => setShowEmoji((v) => !v)} title="Emoji" style={pillIcon}>😊</button>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={editing ? "Modifier le message…" : "Message"}
+              rows={1}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+              style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: "9px 4px", background: "transparent", border: "none", color: T.text, fontSize: 15, fontFamily: F.body, outline: "none", resize: "none", maxHeight: 120, lineHeight: 1.4 }}
+            />
+            {!editing && <button onClick={() => fileRef.current?.click()} disabled={uploading} title="Joindre un fichier" style={pillIcon}>{uploading ? "⏳" : "📎"}</button>}
+            {!editing && <button onClick={() => camRef.current?.click()} title="Appareil photo" style={pillIcon}>📷</button>}
+          </div>
+
+          {/* Bouton rond : valider (édition) · sinon mic/envoi */}
+          {editing ? (
+            <button onClick={sendMessage} disabled={sending} title="Valider" style={roundSend}>✓</button>
+          ) : (
+            <VoiceComposerButton
+              hasContent={!!text.trim() || !!pending}
+              disabled={sending}
+              color={T.violet} colorDark={T.violetDark}
+              onSend={sendMessage}
+              onVoice={sendVoice}
+              onError={(m) => alert(m)}
+            />
+          )}
         </div>
       </div>
 
     </div>
   );
 }
+
+const pillIcon: React.CSSProperties = {
+  background: "none", border: "none", cursor: "pointer", color: T.textMuted,
+  fontSize: 19, padding: "7px 6px", flexShrink: 0, lineHeight: 1,
+};
+const roundSend: React.CSSProperties = {
+  width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+  background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
+  color: "#fff", border: "none", fontSize: 18, cursor: "pointer",
+  boxShadow: `0 3px 10px ${T.violet}44`,
+};
 
 function Bar({ label, onClose }: { label: string; onClose: () => void }) {
   return (

@@ -6,10 +6,23 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineUsers } from "@/lib/presence";
 import { GROUPS_THEME as T, GROUPS_FONTS as F, getGroupCategoryDef, notifyGroupsStaff } from "@/lib/groups/theme";
-import { notifyGroupMention, notifyGroupMeeting, notifyNewMember } from "@/lib/groups/notify";
+import { notifyGroupMention, notifyGroupMeeting, notifyNewMember, notifyGroupMessage } from "@/lib/groups/notify";
 import { ringCall } from "@/lib/meet/calls";
 import { getMentionedUserIds, renderSegments, type MemberLookup } from "@/lib/community/mentions";
 import MentionTextarea from "@/components/community/MentionTextarea";
+import VoiceComposerButton from "@/components/community/VoiceComposerButton";
+
+const GRP_COMPOSER_EMOJIS = ["😀","😂","😍","🥰","😅","😊","🙏","🔥","❤️","👍","🙌","🎉","✨","🕊️","💪","😢","😮","🤔","🙇","🥳","😇","👏","🤝","📖"];
+
+const grpPillIcon: React.CSSProperties = {
+  background: "none", border: "none", cursor: "pointer", color: T.textMuted,
+  fontSize: 19, padding: "7px 6px", flexShrink: 0, lineHeight: 1,
+};
+const grpPlusItem: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+  background: "none", border: "none", cursor: "pointer", color: T.text,
+  fontSize: 13.5, fontFamily: F.body, padding: "9px 10px", borderRadius: 10,
+};
 
 interface Group {
   id: string;
@@ -121,7 +134,10 @@ export default function GroupDetailClient({
   // sur le contenu time-formatted du bandeau "Appel en cours"
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  const [plusOpen, setPlusOpen] = useState(false);   // menu ＋ du composer (photo/fichier/verset/prière)
+  const [showEmojiG, setShowEmojiG] = useState(false); // sélecteur d'emoji du composer
   const fileRef = useRef<HTMLInputElement>(null);
+  const camRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -696,6 +712,38 @@ export default function GroupDetailClient({
     })();
   }
 
+  function insertEmoji(e: string) {
+    handleTextChange(text + e);
+  }
+
+  // Message vocal : upload du blob enregistré → message groupe avec audio
+  async function sendVoice(file: File) {
+    if (sending) return;
+    setSending(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() || "webm";
+      const path = `groups/${group.id}/${Date.now()}-${currentUserId}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("posts").upload(path, file, { contentType: file.type });
+      if (upErr) { flash("Erreur envoi du vocal : " + upErr.message); return; }
+      const { data: pub } = supabase.storage.from("posts").getPublicUrl(path);
+      const { data, error } = await supabase.from("group_messages")
+        .insert({ group_id: group.id, user_id: currentUserId, content: "", attachment_url: pub.publicUrl, attachment_type: "audio", attachment_name: file.name, attachment_size: file.size })
+        .select("id, group_id, user_id, content, reply_to_id, created_at, edited_at, attachment_url, attachment_type, attachment_name, attachment_size, is_pinned, pinned_at, pinned_by")
+        .single();
+      if (error) { flash("Erreur : " + error.message); return; }
+      const row = data as Omit<Message, "user_profiles">;
+      setMessages((prev) => [...prev, { ...row, user_profiles: currentUserProfile }]);
+      void notifyGroupMessage({
+        groupId: group.id, groupName: group.name,
+        authorName: currentUserProfile?.display_name || "Un membre",
+        snippet: "🎤 Message vocal", excludeUserId: currentUserId,
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function deleteMessage(messageId: string) {
     if (!confirm("Supprimer ce message ?")) return;
     const supabase = createClient();
@@ -1151,7 +1199,8 @@ export default function GroupDetailClient({
 
             {/* Messages — avec drag&drop fichiers si membre */}
             <div ref={scrollRef}
-              className="ccb-grp-messages"
+              className="ccb-grp-messages ccb-chat-bg"
+              onClickCapture={() => { if (plusOpen) setPlusOpen(false); if (showEmojiG) setShowEmojiG(false); }}
               onDragEnter={canChat ? (e) => {
                 e.preventDefault();
                 if (e.dataTransfer?.types?.includes("Files")) setIsDragging(true);
@@ -1513,63 +1562,91 @@ export default function GroupDetailClient({
                     if (fileRef.current) fileRef.current.value = "";
                   }}
                 />
+                <input ref={camRef} type="file" accept="image/*" capture="environment"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadFile(f);
+                    if (camRef.current) camRef.current.value = "";
+                  }}
+                />
 
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                  <button onClick={() => fileRef.current?.click()}
-                    disabled={uploading}
-                    title="Joindre un fichier"
-                    style={{
-                      background: T.surface2, border: `1px solid ${T.border}`,
-                      borderRadius: 14, padding: "10px 12px",
-                      cursor: uploading ? "wait" : "pointer",
-                      color: T.textMuted, fontSize: 18,
-                      flexShrink: 0, opacity: uploading ? 0.6 : 1,
-                    }}>
-                    {uploading ? "⏳" : "📎"}
-                  </button>
-                  <button onClick={() => setShowVerse(true)} title="Partager un verset biblique" style={{
-                    background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 14,
-                    padding: "10px 11px", cursor: "pointer", fontSize: 18, flexShrink: 0,
-                  }}>📖</button>
-                  <button onClick={postPrayer} title="Transformer en sujet de prière (groupe + Prions Ensemble)" style={{
-                    background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 14,
-                    padding: "10px 11px", cursor: "pointer", fontSize: 18, flexShrink: 0,
-                  }}>🙏</button>
-                  <div style={{ flex: 1 }}>
-                    <MentionTextarea
-                      value={text} onChange={handleTextChange}
-                      members={memberLookup}
-                      placeholder={pendingAttachment ? "Légende (optionnel)…" : "Écrire un message… (@ pour mentionner)"}
-                      multiline
-                      rows={1}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          sendMessage();
-                        }
-                      }}
+                {/* Rangée composer — style WhatsApp : ＋ menu · pill (emoji + saisie) · bouton rond mic/envoi */}
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-end", position: "relative" }}>
+                  {/* Menu ＋ : photo / fichier / verset / prière */}
+                  <div style={{ position: "relative", flexShrink: 0 }}>
+                    {plusOpen && (
+                      <div style={{
+                        position: "absolute", bottom: "calc(100% + 8px)", left: 0, zIndex: 25,
+                        background: T.card, border: `1px solid ${T.border}`, borderRadius: 14,
+                        boxShadow: T.shadowMd, padding: 6, display: "flex", flexDirection: "column", gap: 2, minWidth: 190,
+                      }}>
+                        <button onClick={() => { setPlusOpen(false); camRef.current?.click(); }} style={grpPlusItem}><span style={{ fontSize: 18 }}>📷</span> Appareil photo</button>
+                        <button onClick={() => { setPlusOpen(false); fileRef.current?.click(); }} style={grpPlusItem}><span style={{ fontSize: 18 }}>🖼️</span> Photo / Fichier</button>
+                        <button onClick={() => { setPlusOpen(false); setShowVerse(true); }} style={grpPlusItem}><span style={{ fontSize: 18 }}>📖</span> Partager un verset</button>
+                        <button onClick={() => { setPlusOpen(false); postPrayer(); }} style={grpPlusItem}><span style={{ fontSize: 18 }}>🙏</span> Sujet de prière</button>
+                      </div>
+                    )}
+                    <button onClick={() => { setPlusOpen((v) => !v); setShowEmojiG(false); }}
+                      disabled={uploading} title="Ajouter"
                       style={{
-                        width: "100%", boxSizing: "border-box",
-                        padding: "10px 14px",
-                        background: T.bg, border: `1px solid ${T.border}`,
-                        borderRadius: 14, color: T.text, fontSize: 14,
-                        fontFamily: F.body, outline: "none",
-                        resize: "none",
-                      } as React.CSSProperties}
-                    />
+                        width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+                        background: T.surface2, border: `1px solid ${T.border}`, color: T.violet,
+                        fontSize: 26, lineHeight: 1, cursor: uploading ? "wait" : "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                      {uploading ? "⏳" : "＋"}
+                    </button>
                   </div>
-                  <button onClick={sendMessage}
-                    disabled={sending || (!text.trim() && !pendingAttachment)}
-                    style={{
-                      background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`,
-                      color: "#fff", border: "none",
-                      borderRadius: 14, padding: "10px 16px",
-                      cursor: sending || (!text.trim() && !pendingAttachment) ? "not-allowed" : "pointer",
-                      fontWeight: 700, fontSize: 14, fontFamily: F.body,
-                      opacity: (!text.trim() && !pendingAttachment) ? 0.5 : 1,
-                    }}>
-                    ➤
-                  </button>
+
+                  {/* Pill : emoji + zone de saisie (avec mentions) */}
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-end", gap: 2, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 22, padding: "2px 6px 2px 4px", position: "relative" }}>
+                    <button onClick={() => { setShowEmojiG((v) => !v); setPlusOpen(false); }} title="Emoji" style={grpPillIcon}>😊</button>
+                    {showEmojiG && (
+                      <div style={{
+                        position: "absolute", bottom: "calc(100% + 10px)", left: 0, zIndex: 25,
+                        background: T.card, border: `1px solid ${T.border}`, borderRadius: 14,
+                        boxShadow: T.shadowMd, padding: 8, display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 2, width: "min(320px, 86vw)",
+                      }}>
+                        {GRP_COMPOSER_EMOJIS.map((e) => (
+                          <button key={e} onClick={() => insertEmoji(e)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", padding: 4, borderRadius: 8 }}>{e}</button>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <MentionTextarea
+                        value={text} onChange={handleTextChange}
+                        members={memberLookup}
+                        placeholder={pendingAttachment ? "Légende (optionnel)…" : "Message"}
+                        multiline
+                        rows={1}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                          }
+                        }}
+                        style={{
+                          width: "100%", boxSizing: "border-box",
+                          padding: "9px 4px",
+                          background: "transparent", border: "none",
+                          color: T.text, fontSize: 15,
+                          fontFamily: F.body, outline: "none",
+                          resize: "none",
+                        } as React.CSSProperties}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bouton rond : message vocal (champ vide) ou envoi */}
+                  <VoiceComposerButton
+                    hasContent={!!text.trim() || !!pendingAttachment}
+                    disabled={sending}
+                    color={T.violet} colorDark={T.violetDark}
+                    onSend={sendMessage}
+                    onVoice={sendVoice}
+                    onError={(m) => flash(m)}
+                  />
                 </div>
               </div>
             ) : (

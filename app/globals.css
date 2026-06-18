@@ -637,6 +637,19 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   max-width: 100%;
 }
 
+/* ── Fond de conversation (chat groupe + privé) — façon WhatsApp ──
+   Trame de points très discrète, teintée marque, posée par-dessus la couleur
+   de fond définie en inline (background-color conservée, background-image
+   ajoutée en !important pour survivre au shorthand inline). */
+.ccb-chat-bg {
+  background-image: radial-gradient(rgba(91, 33, 182, 0.05) 1px, transparent 1.1px) !important;
+  background-size: 22px 22px !important;
+  background-position: 0 0 !important;
+}
+[data-theme="dark"] .ccb-chat-bg {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1.1px) !important;
+}
+
 /* ── BOTTOM NAV ── */
 .bottom-nav {
   display: none;
