@@ -21,6 +21,13 @@ function shouldShowShell(pathname: string): boolean {
   // Meeting room actif (LiveKit) : doit prendre tout l'écran sans TopBar/BottomNav.
   // Match exactement /community/groups/<id>/meeting (pas /meeting/scheduled ni /meeting/history)
   if (/^\/community\/groups\/[^/]+\/meeting$/.test(pathname)) return false;
+  // Écran Conversation (WhatsApp-like) : immersif plein écran, sans TopBar,
+  // sans BottomNav, sans assistant flottant. La conversation a son propre
+  // header compact + bouton retour.
+  //   - Chat privé : /community/messages/<id>  (PAS la liste /community/messages)
+  //   - Chat groupe : /community/groups/<id>    (PAS la liste ni /settings, /files…)
+  if (/^\/community\/messages\/[^/]+$/.test(pathname)) return false;
+  if (/^\/community\/groups\/[^/]+$/.test(pathname)) return false;
   return true;
 }
 

@@ -252,29 +252,31 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
   }
 
   return (
-    <div style={{ background: T.bg, height: "calc(100dvh - var(--ccb-topbar-h, 62px) - var(--ccb-bottomnav-h, 0px))", display: "flex", flexDirection: "column", color: T.text, fontFamily: F.body }}>
-      {/* Header */}
+    <div style={{ background: T.bg, height: "100dvh", display: "flex", flexDirection: "column", color: T.text, fontFamily: F.body }}>
+      {/* Header compact — AppBar unique façon WhatsApp */}
       <div style={{
         background: `linear-gradient(180deg, ${T.violet} 0%, ${T.violetDark} 100%)`,
-        color: "#fff", padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
-        boxShadow: "0 2px 10px rgba(91, 33, 182,0.2)", flexShrink: 0,
+        color: "#fff",
+        paddingTop: "calc(4px + env(safe-area-inset-top, 0px))", paddingBottom: 4, paddingLeft: 8, paddingRight: 8,
+        display: "flex", alignItems: "center", gap: 6,
+        boxShadow: "0 2px 8px rgba(91, 33, 182,0.2)", flexShrink: 0,
       }}>
         <Link href="/community/messages" aria-label="Retour" style={{
-          width: 34, height: 34, borderRadius: 999, background: "rgba(0,0,0,0.22)",
+          width: 32, height: 32, borderRadius: 999,
           display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#fff", textDecoration: "none", fontSize: 17, flexShrink: 0,
+          color: "#fff", textDecoration: "none", fontSize: 20, flexShrink: 0,
         }}>←</Link>
         <Link href={other.user_id ? `/community/profil/${other.user_id}` : "#"} style={{
-          display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff", flex: 1, minWidth: 0,
+          display: "flex", alignItems: "center", gap: 9, textDecoration: "none", color: "#fff", flex: 1, minWidth: 0,
         }}>
           {other.avatar_url ? (
-            <img loading="lazy" decoding="async" src={other.avatar_url} alt={name} style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+            <img loading="lazy" decoding="async" src={other.avatar_url} alt={name} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
           ) : (
-            <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14 }}>{initials}</div>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13 }}>{initials}</div>
           )}
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-            <div style={{ fontSize: 10.5, opacity: 0.75 }}>Conversation privée</div>
+            <div style={{ fontWeight: 700, fontSize: 14.5, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+            <div style={{ fontSize: 10, opacity: 0.7, lineHeight: 1.1 }}>Conversation privée</div>
           </div>
         </Link>
         <Link href={`/community/messages/${conversationId}/call?mode=audio`} title="Appel audio" style={hdrBtn}>📞</Link>
@@ -499,9 +501,9 @@ function DmAttachment({ url, type, name, mine }: { url: string; type: string | n
 }
 
 const hdrBtn: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.16)",
+  width: 34, height: 34, borderRadius: 999, background: "rgba(255,255,255,0.16)",
   display: "flex", alignItems: "center", justifyContent: "center",
-  fontSize: 16, flexShrink: 0, cursor: "pointer", color: "#fff", textDecoration: "none",
+  fontSize: 15, flexShrink: 0, cursor: "pointer", color: "#fff", textDecoration: "none",
 };
 const menuBtn: React.CSSProperties = {
   background: "none", border: "none", cursor: "pointer", fontSize: 17,

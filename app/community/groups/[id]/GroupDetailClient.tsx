@@ -14,6 +14,19 @@ import VoiceComposerButton from "@/components/community/VoiceComposerButton";
 
 const GRP_COMPOSER_EMOJIS = ["😀","😂","😍","🥰","😅","😊","🙏","🔥","❤️","👍","🙌","🎉","✨","🕊️","💪","😢","😮","🤔","🙇","🥳","😇","👏","🤝","📖"];
 
+// Détecte les messages "système" (appel vocal/vidéo, arrivée/départ) → on les
+// rend en séparateur centré compact, pas en bulle. Renvoie le libellé court ou null.
+function parseSystemEvent(content: string | null | undefined): string | null {
+  if (!content) return null;
+  const c = content.trim();
+  // Inséré par startMeeting : "📞 X a lancé un appel vocal — Rejoignez…" / "🎥 …"
+  const m = c.match(/^(📞|🎥)\s*(.+?)\s*(?:—|–|-)\s/);
+  if (m) return `${m[1]} ${m[2]}`.trim();
+  if (/^(📞|🎥)/.test(c) && /(appel|réunion|reunion)/i.test(c)) return c.split(/—|–/)[0].trim();
+  if (/\ba rejoint le groupe\b/i.test(c) || /\ba quitté le groupe\b/i.test(c)) return c;
+  return null;
+}
+
 const grpPillIcon: React.CSSProperties = {
   background: "none", border: "none", cursor: "pointer", color: T.textMuted,
   fontSize: 19, padding: "7px 6px", flexShrink: 0, lineHeight: 1,
@@ -830,7 +843,7 @@ export default function GroupDetailClient({
            toute la hauteur, chacun avec son propre défilement interne. */
         @media (min-width: 1024px) {
           .ccb-grp-root {
-            height: calc(100dvh - var(--ccb-topbar-h, 62px));
+            height: 100dvh;
             min-height: 0;
             overflow: hidden;
             display: flex;
@@ -877,7 +890,7 @@ export default function GroupDetailClient({
            par les overflow:hidden des ancêtres .app-main / .app-content). */
         @media (max-width: 1023px) {
           .ccb-grp-root {
-            height: calc(100dvh - var(--ccb-topbar-h, 56px) - var(--ccb-bottomnav-h, 0px));
+            height: 100dvh;
             min-height: 0;
             overflow: hidden;
             display: flex;
@@ -921,31 +934,29 @@ export default function GroupDetailClient({
         boxShadow: "0 1px 0 rgba(0,0,0,0.18), 0 4px 18px rgba(91, 33, 182,0.18)",
       }}>
         <div className="ccb-grp-detail" style={{
-          display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 12px",
+          display: "flex", alignItems: "center", gap: 8,
+          paddingTop: "calc(4px + env(safe-area-inset-top, 0px))",
+          paddingBottom: 4, paddingLeft: 8, paddingRight: 8,
         }}>
           <Link href="/community/groups" aria-label="Retour"
             style={{
-              width: 36, height: 36, borderRadius: 999,
-              background: "rgba(255,255,255,0.12)", color: "#fff",
+              width: 32, height: 32, borderRadius: 999,
+              color: "#fff",
               display: "inline-flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, textDecoration: "none", flexShrink: 0,
-              transition: "background 150ms ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.22)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}>
+              fontSize: 20, textDecoration: "none", flexShrink: 0,
+            }}>
             ←
           </Link>
 
           {/* Avatar groupe */}
           <div style={{
-            width: 40, height: 40, borderRadius: 999, flexShrink: 0,
+            width: 32, height: 32, borderRadius: 999, flexShrink: 0,
             background: group.cover_url
               ? `url(${group.cover_url}) center/cover`
               : "rgba(212,175,55,0.25)",
             border: "1.5px solid rgba(212,175,55,0.55)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#fff", fontFamily: F.title, fontWeight: 800, fontSize: 16,
+            color: "#fff", fontFamily: F.title, fontWeight: 800, fontSize: 14,
             textTransform: "uppercase",
           }}>
             {!group.cover_url && (group.name?.[0] ?? "?")}
@@ -1264,6 +1275,25 @@ export default function GroupDetailClient({
                       && (new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60 * 1000)
                       && !m.reply_to_id && !m.is_pinned;
                     const actionsOn = activeMsgId === m.id;
+
+                    // Événement système (appel/réunion, arrivée/départ) → séparateur
+                    // centré compact façon WhatsApp/Telegram (pas de bulle).
+                    const sysEvent = !m.attachment_url ? parseSystemEvent(m.content) : null;
+                    if (sysEvent) {
+                      return (
+                        <div key={m.id} id={`msg-${m.id}`} style={{ display: "flex", justifyContent: "center", margin: "10px 0", minWidth: 0 }}>
+                          <span style={{
+                            maxWidth: "88%", fontSize: 11.5, color: T.textMuted,
+                            background: T.surface2, border: `1px solid ${T.borderSoft}`,
+                            borderRadius: 999, padding: "4px 12px", textAlign: "center",
+                            whiteSpace: "normal", overflowWrap: "anywhere", lineHeight: 1.35,
+                          }}>
+                            {sysEvent} · {fmtClock(m.created_at)}
+                          </span>
+                        </div>
+                      );
+                    }
+
                     return (
                       <div key={m.id} id={`msg-${m.id}`} className="ccb-msg" style={{
                         display: "flex", gap: 8, minWidth: 0,
@@ -1994,9 +2024,9 @@ function DotsIcon() {
 // ─── Helpers UI TopBar ──────────────────────────────────────────────
 function topbarIconBtn(): React.CSSProperties {
   return {
-    width: 36, height: 36, borderRadius: 999,
+    width: 32, height: 32, borderRadius: 999,
     background: "rgba(255,255,255,0.12)", color: "#fff",
-    border: "none", cursor: "pointer", flexShrink: 0,
+    border: "none", cursor: "pointer", flexShrink: 0, fontSize: 14,
     display: "inline-flex", alignItems: "center", justifyContent: "center",
     transition: "background 150ms ease",
   };
@@ -2071,58 +2101,41 @@ function PinnedBanner({ pinned, onClick, isGroupAdmin, onUnpin }: {
   isGroupAdmin: boolean;
   onUnpin: (msg: Message) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const visibleCount = expanded ? pinned.length : 1;
+  // Bannière compacte sur UNE seule ligne (façon WhatsApp) : on montre le plus
+  // récent épinglé ; clic → saute au message. Le compteur indique s'il y en a +.
+  const [idx, setIdx] = useState(0);
+  if (pinned.length === 0) return null;
+  const cur = pinned[Math.min(idx, pinned.length - 1)];
+  const preview = (cur.content || "").trim() || (cur.attachment_url ? `📎 ${cur.attachment_name || "Pièce jointe"}` : "Message épinglé");
+
   return (
     <div style={{
-      borderBottom: `1px solid ${T.border}`, background: "rgba(212,175,55,0.07)",
-      padding: "8px 14px",
+      display: "flex", alignItems: "center", gap: 8, minWidth: 0,
+      borderBottom: `1px solid ${T.border}`, background: "rgba(212,175,55,0.10)",
+      padding: "6px 12px",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: T.gold, fontWeight: 800, letterSpacing: 0.4, marginBottom: pinned.length > 0 ? 6 : 0 }}>
-        <span>📌 Épinglé{pinned.length > 1 ? "s" : ""} ({pinned.length})</span>
-        <span style={{ flex: 1 }} />
-        {pinned.length > 1 && (
-          <button onClick={() => setExpanded((v) => !v)} style={{
-            background: "transparent", border: "none", cursor: "pointer",
-            color: T.violet, fontWeight: 700, fontSize: 11,
-          }}>
-            {expanded ? "Réduire ▲" : "Tout voir ▼"}
-          </button>
-        )}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {pinned.slice(0, visibleCount).map((m) => {
-          const preview = (m.content || "").trim() || (m.attachment_url ? `📎 ${m.attachment_name || "Pièce jointe"}` : "");
-          const author = m.user_profiles?.display_name || "Membre";
-          return (
-            <div key={m.id} style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "6px 10px", background: T.card,
-              border: `1px solid ${T.borderSoft}`, borderRadius: 8,
-            }}>
-              <button onClick={() => onClick(m.id)} style={{
-                flex: 1, minWidth: 0, background: "none", border: "none",
-                cursor: "pointer", textAlign: "left",
-                color: T.text, fontFamily: F.body,
-              }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: T.violet, marginBottom: 1 }}>
-                  ↗ {author}
-                </div>
-                <div style={{
-                  fontSize: 12.5, color: T.textSoft,
-                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                }}>{preview || "Message épinglé"}</div>
-              </button>
-              {isGroupAdmin && (
-                <button onClick={() => onUnpin(m)} title="Désépingler" style={{
-                  background: "transparent", border: "none", cursor: "pointer",
-                  color: T.textMuted, fontSize: 13, padding: "2px 6px",
-                }}>×</button>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <span style={{ fontSize: 13, flexShrink: 0 }}>📌</span>
+      <button
+        onClick={() => { onClick(cur.id); if (pinned.length > 1) setIdx((i) => (i + 1) % pinned.length); }}
+        style={{
+          flex: 1, minWidth: 0, background: "none", border: "none", cursor: "pointer",
+          textAlign: "left", color: T.text, fontFamily: F.body,
+          display: "flex", alignItems: "baseline", gap: 6, padding: 0,
+        }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: T.gold, flexShrink: 0, letterSpacing: 0.3 }}>
+          Épinglé{pinned.length > 1 ? ` ${idx + 1}/${pinned.length}` : ""}
+        </span>
+        <span style={{
+          flex: 1, minWidth: 0, fontSize: 12.5, color: T.textSoft,
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        }}>{preview}</span>
+      </button>
+      {isGroupAdmin && (
+        <button onClick={() => onUnpin(cur)} title="Désépingler" style={{
+          background: "transparent", border: "none", cursor: "pointer",
+          color: T.textMuted, fontSize: 15, padding: "0 4px", flexShrink: 0, lineHeight: 1,
+        }}>×</button>
+      )}
     </div>
   );
 }
