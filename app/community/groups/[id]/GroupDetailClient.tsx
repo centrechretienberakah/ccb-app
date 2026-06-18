@@ -775,17 +775,44 @@ export default function GroupDetailClient({
       <style>{`
         .ccb-grp-detail { max-width: 1080px; margin: 0 auto; }
         .ccb-grp-root { min-height: 100vh; overflow-x: clip; }
+        .ccb-grp-members-sidebar { display: none; } /* défaut caché (mobile/tablette) */
+
+        /* ── Desktop (≥ 1024px) : chat PLEIN ÉCRAN (comme le chat privé) ──
+           Racine pleine hauteur, header figé, et chat + sidebar membres sur
+           toute la hauteur, chacun avec son propre défilement interne. */
         @media (min-width: 1024px) {
-          .ccb-grp-detail-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 280px;
-            gap: 20px;
-            align-items: start;
+          .ccb-grp-root {
+            height: calc(100dvh - var(--ccb-topbar-h, 62px));
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
           }
-          .ccb-grp-members-sidebar { display: block; }
+          .ccb-grp-root > .ccb-grp-topbar { flex: 0 0 auto; }
+          .ccb-grp-main {
+            flex: 1 1 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 14px !important;
+          }
+          .ccb-grp-detail-grid {
+            flex: 1 1 0;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 300px;
+            grid-template-rows: minmax(0, 1fr);
+            gap: 18px;
+            align-items: stretch;
+          }
+          .ccb-grp-chat-card { height: auto !important; min-height: 0; }
+          .ccb-grp-members-sidebar {
+            display: block;
+            min-height: 0;
+            overflow-y: auto;
+          }
           .ccb-grp-members-mobile-trigger { display: none; }
         }
-        .ccb-grp-members-sidebar { display: none; }
         @keyframes ccb-typing-dot {
           0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
           30% { opacity: 1; transform: translateY(-2px); }
