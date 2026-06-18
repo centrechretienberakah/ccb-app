@@ -110,13 +110,13 @@ export default function InstitutHomeClient({
           </div>
         )}
 
-        {/* Catégories */}
+        {/* Facultés */}
         <h2 style={sectionTitle}>📚 Explore par faculté</h2>
         {categories.length === 0 ? (
           <div style={emptyState}>
             <div style={{ fontSize: 44, marginBottom: 8 }}>📚</div>
             <div style={{ color: T.textMuted, fontSize: 14 }}>
-              Aucune catégorie pour l&apos;instant. Les premières formations arrivent bientôt !
+              Aucune faculté pour l&apos;instant. Les premières formations arrivent bientôt !
             </div>
           </div>
         ) : (

@@ -36,7 +36,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   if (!courseData) return notFound();
   const course = courseData as Course;
 
-  // Catégorie pour breadcrumb
+  // Faculté pour breadcrumb
   const { data: catRow } = await supabase
     .from("institut_categories")
     .select("id, slug, name, description, icon, cover_url, order_index, is_published")

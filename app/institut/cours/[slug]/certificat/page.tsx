@@ -56,7 +56,7 @@ export default async function CertificatPage({ params }: { params: Promise<{ slu
     || ((profile as { display_name: string | null; full_name: string | null } | null)?.full_name)
     || (user.email?.split("@")[0] ?? "Disciple CCB");
 
-  // Catégorie
+  // Faculté
   const { data: catRow } = await supabase
     .from("institut_categories")
     .select("id, slug, name, description, icon, cover_url, order_index, is_published")

@@ -27,7 +27,7 @@ export default function CategoryClient({ category, subcategories, courses }: Pro
     return courses.filter((c) => c.subcategory_id === filterSub);
   }, [courses, filterSub]);
 
-  // Cours sans sous-catégorie
+  // Cours sans sous-faculté
   const orphanCourses = courses.filter((c) => !c.subcategory_id);
 
   return (
@@ -38,7 +38,7 @@ export default function CategoryClient({ category, subcategories, courses }: Pro
         @media (min-width: 1024px) { .institut-grid { grid-template-columns: 1fr 1fr 1fr; } }
       `}</style>
 
-      {/* Hero spécifique catégorie */}
+      {/* Hero spécifique faculté */}
       <div style={{
         background: category.cover_url
           ? `linear-gradient(135deg, rgba(91, 33, 182,0.85), rgba(62,28,112,0.85)), url(${category.cover_url}) center/cover`
@@ -78,7 +78,7 @@ export default function CategoryClient({ category, subcategories, courses }: Pro
 
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "18px 14px 40px" }}>
 
-        {/* Sous-catégories en chips */}
+        {/* Sous-facultés en chips */}
         {subcategories.length > 0 && (
           <div style={{
             display: "flex", gap: 6, marginBottom: 18,
@@ -99,7 +99,7 @@ export default function CategoryClient({ category, subcategories, courses }: Pro
             })}
             {orphanCourses.length > 0 && (
               <button onClick={() => setFilterSub("none")} style={chipStyle(filterSub === "none")}>
-                Sans sous-catégorie ({orphanCourses.length})
+                Sans sous-faculté ({orphanCourses.length})
               </button>
             )}
           </div>

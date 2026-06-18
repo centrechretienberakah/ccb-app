@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .from("institut_categories")
     .select("name")
     .eq("slug", slug).maybeSingle();
-  return { title: data ? `${(data as { name: string }).name} — Institut Biblique Berakah` : "Catégorie" };
+  return { title: data ? `${(data as { name: string }).name} — Institut Biblique Berakah` : "Faculté" };
 }
 
 interface CourseLite extends Course {
@@ -34,7 +34,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   if (!catData) return notFound();
   const category = catData as Category;
 
-  // Sous-catégories
+  // Sous-facultés
   const { data: subData } = await supabase
     .from("institut_subcategories")
     .select("id, category_id, slug, name, description, icon, order_index, is_published")
@@ -43,7 +43,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     .order("order_index", { ascending: true });
   const subcategories = (subData ?? []) as Subcategory[];
 
-  // Cours de la catégorie (publiés)
+  // Cours de la faculté (publiés)
   const { data: courseData } = await supabase
     .from("institut_courses")
     .select("id, category_id, subcategory_id, slug, title, subtitle, description, thumbnail_url, trailer_url, level, duration_mins, instructor, is_published, is_premium, order_index")

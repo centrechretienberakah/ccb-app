@@ -173,7 +173,7 @@ export default function AdminInstitutClient({
   // ── Breadcrumb dynamique ──
   const breadcrumb = useMemo(() => {
     const items: Array<{ label: string; onClick: () => void }> = [
-      { label: "🎓 Catégories", onClick: () => setView({ type: "root" }) },
+      { label: "🎓 Facultés", onClick: () => setView({ type: "root" }) },
     ];
     if (view.type === "category" || view.type === "course" || view.type === "module") {
       let catId: string | null = null;
@@ -270,14 +270,14 @@ export default function AdminInstitutClient({
 
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "18px 14px 40px" }}>
 
-        {/* ── ROOT : liste catégories ── */}
+        {/* ── ROOT : liste facultés ── */}
         {view.type === "root" && (
           <Section
-            title={`📚 Catégories (${categories.length})`}
-            actionLabel="➕ Nouvelle catégorie"
+            title={`📚 Facultés (${categories.length})`}
+            actionLabel="➕ Nouvelle faculté"
             onAction={() => setEditor({ kind: "category", row: { order_index: categories.length, is_published: true } })}
           >
-            {categories.length === 0 ? <Empty msg="Aucune catégorie. Crée la première !" /> : (
+            {categories.length === 0 ? <Empty msg="Aucune faculté. Crée la première !" /> : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {categories.map((c, i) => (
                   <Row key={c.id}
@@ -291,7 +291,7 @@ export default function AdminInstitutClient({
                     isPublished={c.is_published}
                     onEdit={() => setEditor({ kind: "category", row: c })}
                     onDelete={() => deleteItem("institut_categories", c.id, c.name)}
-                    sub={`${subcategories.filter((s) => s.category_id === c.id).length} sous-catégorie(s) · ${courses.filter((co) => co.category_id === c.id).length} cours`}
+                    sub={`${subcategories.filter((s) => s.category_id === c.id).length} sous-faculté(s) · ${courses.filter((co) => co.category_id === c.id).length} cours`}
                   />
                 ))}
               </div>
@@ -302,17 +302,17 @@ export default function AdminInstitutClient({
         {/* ── CATEGORY VIEW : subcategories + cours ── */}
         {view.type === "category" && (() => {
           const cat = categories.find((x) => x.id === view.id);
-          if (!cat) return <div style={{ color: T.textMuted }}>Catégorie introuvable.</div>;
+          if (!cat) return <div style={{ color: T.textMuted }}>Faculté introuvable.</div>;
           const subs = subcategories.filter((s) => s.category_id === cat.id);
           const cours = courses.filter((c) => c.category_id === cat.id);
           return (
             <>
               <Section
-                title={`🔖 Sous-catégories (${subs.length})`}
-                actionLabel="➕ Nouvelle sous-catégorie"
+                title={`🔖 Sous-facultés (${subs.length})`}
+                actionLabel="➕ Nouvelle sous-faculté"
                 onAction={() => setEditor({ kind: "subcategory", row: { order_index: subs.length, is_published: true }, categoryId: cat.id })}
               >
-                {subs.length === 0 ? <Empty msg="Aucune sous-catégorie." /> : (
+                {subs.length === 0 ? <Empty msg="Aucune sous-faculté." /> : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {subs.map((s, i) => (
                       <Row key={s.id}
@@ -336,7 +336,7 @@ export default function AdminInstitutClient({
                 actionLabel="➕ Nouveau cours"
                 onAction={() => setEditor({ kind: "course", row: { order_index: cours.length, is_published: false, is_premium: false, level: "beginner" }, categoryId: cat.id })}
               >
-                {cours.length === 0 ? <Empty msg="Aucun cours dans cette catégorie." /> : (
+                {cours.length === 0 ? <Empty msg="Aucun cours dans cette faculté." /> : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {cours.map((c, i) => {
                       const sub = subcategories.find((s) => s.id === c.subcategory_id);
@@ -589,8 +589,8 @@ function EditorModal({ target, subcategories, onClose, onSave }: {
 }) {
   const isUpdate = !!target.row?.id;
   const titleMap: Record<string, string> = {
-    category: isUpdate ? "Éditer la catégorie" : "Nouvelle catégorie",
-    subcategory: isUpdate ? "Éditer la sous-catégorie" : "Nouvelle sous-catégorie",
+    category: isUpdate ? "Éditer la faculté" : "Nouvelle faculté",
+    subcategory: isUpdate ? "Éditer la sous-faculté" : "Nouvelle sous-faculté",
     course: isUpdate ? "Éditer le cours" : "Nouveau cours",
     module: isUpdate ? "Éditer le module" : "Nouveau module",
     lesson: isUpdate ? "Éditer la leçon" : "Nouvelle leçon",
@@ -796,7 +796,7 @@ function CourseForm({ row, subcategories, onSave, onCancel }: {
       <Field label="Sous-titre"><input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} style={inputStyle} /></Field>
       <Field label="Description"><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} style={{ ...inputStyle, resize: "vertical" } as React.CSSProperties} /></Field>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <Field label="Sous-catégorie">
+        <Field label="Sous-faculté">
           <select value={subcategoryId} onChange={(e) => setSubcategoryId(e.target.value)} style={inputStyle}>
             <option value="">— Aucune —</option>
             {subcategories.map((s) => <option key={s.id} value={s.id}>{s.icon ?? ""} {s.name}</option>)}
