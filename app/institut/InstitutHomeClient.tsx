@@ -111,7 +111,7 @@ export default function InstitutHomeClient({
         )}
 
         {/* Catégories */}
-        <h2 style={sectionTitle}>📚 Explore par thématique</h2>
+        <h2 style={sectionTitle}>📚 Explore par faculté</h2>
         {categories.length === 0 ? (
           <div style={emptyState}>
             <div style={{ fontSize: 44, marginBottom: 8 }}>📚</div>
