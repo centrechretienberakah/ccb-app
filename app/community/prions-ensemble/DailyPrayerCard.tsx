@@ -213,35 +213,37 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
         {/* Bouton déplier/replier */}
         <button onClick={() => setExpanded((v) => !v)} style={{
           width: "100%", background: "transparent", border: `1px dashed ${T.border}`,
-          borderRadius: 10, padding: "6px", marginBottom: 9,
+          borderRadius: 10, padding: "6px", marginBottom: expanded ? 9 : 0,
           color: T.violet, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: F.body,
         }}>
           {expanded ? "Réduire" : "Lire plus"}
         </button>
 
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={togglePrayed} disabled={busy} style={{
-            flex: "1 1 150px",
-            background: prayed ? "rgba(159,18,57,0.12)" : "linear-gradient(135deg, #9f1239, #4c0519)",
-            color: prayed ? "#9f1239" : "#fff",
-            border: prayed ? "1px solid rgba(159,18,57,0.4)" : "none",
-            borderRadius: 999, padding: "8px 14px", fontWeight: 700, fontSize: 12.5,
-            cursor: busy ? "wait" : "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            opacity: busy ? 0.7 : 1, fontFamily: F.body,
-          }}>
-            {busy ? "⏳ …" : prayed ? `🙏 J'ai prié${count > 0 ? ` · ${count}` : ""}` : `🙏 Je prie${count > 0 ? ` · ${count}` : ""}`}
-          </button>
-          <button onClick={handleShare} style={{
-            flex: "1 1 120px",
-            background: T.card, color: T.text, border: `1px solid ${T.border}`,
-            borderRadius: 999, padding: "8px 14px", fontWeight: 700, fontSize: 12.5, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: F.body,
-          }}>
-            {shared ? "✓ Copié !" : "↗ Partager"}
-          </button>
-        </div>
+        {/* Actions — visibles uniquement quand la prière est dépliée (« Lire plus ») */}
+        {expanded && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={togglePrayed} disabled={busy} style={{
+              flex: "1 1 150px",
+              background: prayed ? "rgba(159,18,57,0.12)" : "linear-gradient(135deg, #9f1239, #4c0519)",
+              color: prayed ? "#9f1239" : "#fff",
+              border: prayed ? "1px solid rgba(159,18,57,0.4)" : "none",
+              borderRadius: 999, padding: "8px 14px", fontWeight: 700, fontSize: 12.5,
+              cursor: busy ? "wait" : "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              opacity: busy ? 0.7 : 1, fontFamily: F.body,
+            }}>
+              {busy ? "⏳ …" : prayed ? `🙏 J'ai prié${count > 0 ? ` · ${count}` : ""}` : `🙏 Je prie${count > 0 ? ` · ${count}` : ""}`}
+            </button>
+            <button onClick={handleShare} style={{
+              flex: "1 1 120px",
+              background: T.card, color: T.text, border: `1px solid ${T.border}`,
+              borderRadius: 999, padding: "8px 14px", fontWeight: 700, fontSize: 12.5, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: F.body,
+            }}>
+              {shared ? "✓ Copié !" : "↗ Partager"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
