@@ -131,16 +131,19 @@ function PrayerComposer({
   if (!open) return (
     <div onClick={() => setOpen(true)} style={{
       background: T.card, border: `1px solid ${T.border}`,
-      borderRadius: 12, padding: "7px 12px",
-      display: "flex", alignItems: "center", gap: 10,
+      borderRadius: 999, padding: "5px 12px 5px 6px",
+      display: "flex", alignItems: "center", gap: 8,
       cursor: "pointer",
       boxShadow: T.shadowSoft,
     }}>
-      <Avatar profile={currentUserProfile} size={28} />
-      <div style={{ flex: 1, color: T.textMuted, fontSize: 13, fontFamily: F.body }}>
+      <Avatar profile={currentUserProfile} size={24} />
+      <div style={{
+        flex: 1, minWidth: 0, color: T.textMuted, fontSize: 12.5, fontFamily: F.body,
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+      }}>
         Partager une demande de prière…
       </div>
-      <span style={{ fontSize: 17 }}>🙏</span>
+      <span style={{ fontSize: 15, flexShrink: 0 }}>🙏</span>
     </div>
   );
 
@@ -845,67 +848,26 @@ export default function PrayerClient({
           position: "absolute", top: 0, left: 0, right: 0, height: 3,
           background: `linear-gradient(90deg, ${T.gold}, transparent)`,
         }} />
-        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center" }}>
-          <h1 className="ccb-prayer-title" style={{
-            fontFamily: F.title, fontWeight: 700, margin: "0 0 4px",
-            letterSpacing: "0.05em",
-          }}>
-            🙏 MUR DE PRIÈRE
-          </h1>
-          <p className="ccb-prayer-tagline" style={{
-            margin: 0, opacity: 0.9, fontStyle: "italic",
-            color: "#EDE7FA",
-          }}>
-            Portons-nous les uns les autres devant le Père.
-          </p>
-        </div>
-      </div>
-
-      <div style={{ background: T.card, borderBottom: `1px solid ${T.border}` }}>
-        <div style={{
-          maxWidth: 760, margin: "0 auto",
-          display: "flex", overflowX: "auto", alignItems: "center",
-        }}>
-          {([
-            { id: "active",   label: "🙏 Demandes actives", count: stats.active },
-            { id: "mine",     label: "🙋 Mes prières",       count: stats.mine },
-            { id: "answered", label: "🎉 Exaucées",         count: stats.answered },
-          ] as const).map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
-              padding: "12px 14px", background: "none", border: "none",
-              borderBottom: `2px solid ${tab === t.id ? T.violet : "transparent"}`,
-              color: tab === t.id ? T.violet : T.textMuted,
-              fontWeight: tab === t.id ? 700 : 500, fontSize: 13,
-              cursor: "pointer", whiteSpace: "nowrap", fontFamily: F.body,
+        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 className="ccb-prayer-title" style={{
+              fontFamily: F.title, fontWeight: 700, margin: "0 0 2px",
+              letterSpacing: "0.05em",
             }}>
-              {t.label} · {t.count}
-            </button>
-          ))}
-          {isAdmin && (
-            <Link href="/prayer/admin" style={{
-              marginLeft: "auto", padding: "6px 14px", fontSize: 11,
-              background: T.violetSoft, color: T.violet, fontWeight: 700,
-              borderRadius: 999, textDecoration: "none", flexShrink: 0,
-              border: `1px solid ${T.violet}`,
-              alignSelf: "center", marginRight: 12,
+              🙏 MUR DE PRIÈRE
+            </h1>
+            <p className="ccb-prayer-tagline" style={{
+              margin: 0, opacity: 0.9, fontStyle: "italic",
+              color: "#EDE7FA",
             }}>
-              🛡️ Modération
-            </Link>
-          )}
+              Portons-nous les uns les autres devant le Père.
+            </p>
+          </div>
+          <ViewStatsMenu tab={tab} setTab={setTab} stats={stats} myLife={myLife} isAdmin={isAdmin} />
         </div>
       </div>
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "10px 14px 48px" }}>
-        {/* Ma vie de prière — 3 stats compactes */}
-        <div style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 6, marginBottom: 8,
-        }}>
-          <StatChip emoji="🙏" label="Intercessions données" value={myLife.given} accent={T.violet} />
-          <StatChip emoji="❤️" label="Reçues sur les miennes" value={myLife.received} accent={T.gold} />
-          <StatChip emoji="🎉" label="Mes exaucées" value={myLife.answered} accent={T.answered} />
-        </div>
-
         {/* Partager une demande + filtre (menu ⋮) sur la même barre */}
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -972,36 +934,96 @@ const btnGhost: React.CSSProperties = {
   color: T.textMuted, cursor: "pointer", fontSize: 12,
   fontFamily: F.body,
 };
-function StatChip({ emoji, label, value, accent }: {
-  emoji: string; label: string; value: number; accent: string;
+// ─── Menu déroulant (sur la barre violette) : vues + statistiques ──────
+type PrayerTab = "active" | "mine" | "answered";
+function ViewStatsMenu({ tab, setTab, stats, myLife, isAdmin }: {
+  tab: PrayerTab;
+  setTab: (t: PrayerTab) => void;
+  stats: { active: number; mine: number; answered: number };
+  myLife: { given: number; received: number; answered: number };
+  isAdmin: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  const VIEWS = [
+    { id: "active" as const,   label: "🙏 Demandes actives", count: stats.active },
+    { id: "mine" as const,     label: "🙋 Mes prières",       count: stats.mine },
+    { id: "answered" as const, label: "🎉 Exaucées",          count: stats.answered },
+  ];
+  const current = VIEWS.find((v) => v.id === tab) ?? VIEWS[0];
+
   return (
-    <div style={{
-      background: T.card, border: `1px solid ${T.border}`,
-      borderRadius: 10, padding: "5px 6px 6px",
-      position: "relative", overflow: "hidden",
-      textAlign: "center",
-    }}>
-      <div style={{
-        position: "absolute", top: 0, left: 0, bottom: 0, width: 3,
-        background: accent,
-      }} />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-        <span style={{ fontSize: 13 }}>{emoji}</span>
-        <span style={{
-          fontFamily: F.title, fontSize: 15, fontWeight: 700,
-          color: T.text, lineHeight: 1,
-        }}>
-          {value}
-        </span>
-      </div>
-      <div style={{
-        fontSize: 8.5, color: T.textMuted, fontWeight: 600,
-        textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 2,
-        lineHeight: 1.25,
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button onClick={() => setOpen((v) => !v)} aria-label="Vues et statistiques" style={{
+        display: "inline-flex", alignItems: "center", gap: 6,
+        background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.3)",
+        color: "#fff", borderRadius: 999, padding: "6px 12px",
+        fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: F.body, whiteSpace: "nowrap",
       }}>
-        {label}
-      </div>
+        <span style={{ maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis" }}>{current.label} · {current.count}</span>
+        <span style={{ fontSize: 9 }}>▾</span>
+      </button>
+      {open && (
+        <div role="menu" style={{
+          position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 50,
+          minWidth: 244, background: T.card, color: T.text,
+          border: `1px solid ${T.border}`, borderRadius: 12,
+          boxShadow: "0 14px 36px rgba(0,0,0,0.22)", padding: 6, textAlign: "left",
+        }}>
+          <div style={menuLabel}>Affichage</div>
+          {VIEWS.map((v) => (
+            <button key={v.id} onClick={() => { setTab(v.id); setOpen(false); }} style={{
+              display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left",
+              background: tab === v.id ? T.violetSoft : "none", border: "none", cursor: "pointer",
+              color: tab === v.id ? T.violet : T.text, fontSize: 13, fontWeight: tab === v.id ? 700 : 500,
+              fontFamily: F.body, padding: "9px 10px", borderRadius: 8,
+            }}>
+              <span style={{ flex: 1 }}>{v.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: tab === v.id ? T.violet : T.textMuted }}>{v.count}</span>
+            </button>
+          ))}
+
+          <div style={{ height: 1, background: T.borderSoft, margin: "6px 4px" }} />
+          <div style={menuLabel}>Ma vie de prière</div>
+          <StatLine emoji="🙏" label="Intercessions données" value={myLife.given} />
+          <StatLine emoji="❤️" label="Reçues sur les miennes" value={myLife.received} />
+          <StatLine emoji="🎉" label="Mes exaucées" value={myLife.answered} />
+
+          {isAdmin && (
+            <>
+              <div style={{ height: 1, background: T.borderSoft, margin: "6px 4px" }} />
+              <Link href="/prayer/admin" onClick={() => setOpen(false)} style={{
+                display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", borderRadius: 8,
+                textDecoration: "none", color: T.violet, fontSize: 13, fontWeight: 700, fontFamily: F.body,
+              }}>
+                🛡️ Modération
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const menuLabel: React.CSSProperties = {
+  fontSize: 10.5, fontWeight: 800, color: T.textMuted,
+  textTransform: "uppercase", letterSpacing: "0.06em", padding: "6px 10px 4px",
+};
+
+function StatLine({ emoji, label, value }: { emoji: string; label: string; value: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px" }}>
+      <span style={{ fontSize: 15, width: 20, textAlign: "center", flexShrink: 0 }}>{emoji}</span>
+      <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: T.textSoft }}>{label}</span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: T.text, fontFamily: F.title }}>{value}</span>
     </div>
   );
 }
@@ -1025,16 +1047,16 @@ function FilterMenu({ filterCat, setFilterCat }: {
   return (
     <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
       <button onClick={() => setOpen((v) => !v)} title="Filtrer par catégorie" aria-label="Filtrer" style={{
-        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+        width: 36, height: 36, borderRadius: 999, flexShrink: 0,
         background: active ? T.violetSoft : T.card,
         border: `1px solid ${active ? T.violet : T.border}`,
         color: active ? T.violet : T.textMuted,
-        cursor: "pointer", fontSize: 20, fontWeight: 700,
+        cursor: "pointer", fontSize: 18, fontWeight: 700,
         display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
         boxShadow: T.shadowSoft,
       }}>
         ⋮
-        {active && <span style={{ position: "absolute", top: 7, right: 8, width: 7, height: 7, borderRadius: "50%", background: T.violet }} />}
+        {active && <span style={{ position: "absolute", top: 5, right: 6, width: 6, height: 6, borderRadius: "50%", background: T.violet }} />}
       </button>
       {open && (
         <div role="menu" style={{
