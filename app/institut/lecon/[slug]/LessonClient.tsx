@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   INSTITUT_THEME as T, INSTITUT_FONTS as F,
-  getEmbedUrl,
+  getEmbedUrl, formatLessonDuration,
   type Lesson, type Course, type Module, type Category, type QuizQuestion,
 } from "@/lib/institut/theme";
 
 interface LessonNav { id: string; slug: string; title: string }
+interface PlaylistLesson { id: string; slug: string; title: string; module_id: string | null; order_index: number; duration_secs: number | null }
+interface ModuleLite { id: string; title: string; order_index: number }
 
 interface Props {
   lesson: Lesson;
@@ -25,12 +27,16 @@ interface Props {
   lessonIndex: number;
   totalLessons: number;
   canAccessPremium?: boolean;
+  playlist?: PlaylistLesson[];
+  modules?: ModuleLite[];
+  completedIds?: string[];
 }
 
 export default function LessonClient({
   lesson, course, module, category, prevLesson, nextLesson,
   isCompleted: initialCompleted, quizScore: initialQuizScore = null, quizMax: initialQuizMax = null,
   lessonIndex, totalLessons, canAccessPremium = true,
+  playlist = [], modules = [], completedIds = [],
 }: Props) {
   const router = useRouter();
   const [isCompleted, setIsCompleted] = useState(initialCompleted);
@@ -77,6 +83,28 @@ export default function LessonClient({
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, paddingBottom: 80 }}>
       <style>{`
         .lesson-layout { max-width: 980px; margin: 0 auto; padding: 14px 14px 40px; }
+        .lesson-main { min-width: 0; }
+        .lesson-playlist { margin-top: 22px; }
+        /* Desktop : layout "watch" type Udemy → vidéo/contenu à gauche, playlist
+           sticky à droite pour naviguer sans quitter la page. */
+        @media (min-width: 1024px) {
+          .lesson-layout {
+            max-width: 1280px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 26px;
+            align-items: start;
+          }
+          .lesson-playlist {
+            margin-top: 0;
+            position: sticky;
+            top: calc(var(--ccb-topbar-h, 62px) + 12px);
+            max-height: calc(100vh - var(--ccb-topbar-h, 62px) - 28px);
+            overflow-y: auto;
+          }
+        }
+        .lesson-playlist::-webkit-scrollbar { width: 8px; }
+        .lesson-playlist::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 8px; }
       `}</style>
 
       {/* Hero compact */}
@@ -119,6 +147,7 @@ export default function LessonClient({
       </div>
 
       <div className="lesson-layout">
+        <div className="lesson-main">
 
         {/* Premium gate */}
         {isPremiumLocked && (
@@ -348,8 +377,131 @@ export default function LessonClient({
             </Link>
           ) : <div />}
         </div>
+        </div>{/* /lesson-main */}
+
+        <PlaylistSidebar
+          modules={modules}
+          playlist={playlist}
+          completedIds={completedIds}
+          currentSlug={lesson.slug}
+          total={totalLessons}
+        />
       </div>
     </div>
+  );
+}
+
+// ─── Playlist du cours (sticky à droite sur desktop, empilée sinon) ───
+function PlaylistSidebar({ modules, playlist, completedIds, currentSlug, total }: {
+  modules: ModuleLite[];
+  playlist: PlaylistLesson[];
+  completedIds: string[];
+  currentSlug: string;
+  total: number;
+}) {
+  if (playlist.length === 0) return <aside className="lesson-playlist" />;
+
+  const doneSet = new Set(completedIds);
+  const doneCount = playlist.filter((l) => doneSet.has(l.id)).length;
+  const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+
+  // Regroupe par module (ordre module puis ordre leçon) ; leçons sans module à la fin
+  const byModule = new Map<string, PlaylistLesson[]>();
+  const noModule: PlaylistLesson[] = [];
+  for (const l of playlist) {
+    if (l.module_id && modules.some((m) => m.id === l.module_id)) {
+      const arr = byModule.get(l.module_id) ?? [];
+      arr.push(l); byModule.set(l.module_id, arr);
+    } else { noModule.push(l); }
+  }
+  for (const arr of byModule.values()) arr.sort((a, b) => a.order_index - b.order_index);
+
+  // Numérotation globale (ordre d'affichage)
+  const ordered: PlaylistLesson[] = [];
+  for (const m of modules) { for (const l of byModule.get(m.id) ?? []) ordered.push(l); }
+  for (const l of noModule) ordered.push(l);
+  const numberById = new Map(ordered.map((l, i) => [l.id, i + 1]));
+
+  const groups = [
+    ...modules
+      .filter((m) => (byModule.get(m.id) ?? []).length > 0)
+      .map((m) => ({ title: m.title as string | null, lessons: byModule.get(m.id) ?? [] })),
+    ...(noModule.length > 0 ? [{ title: null as string | null, lessons: noModule }] : []),
+  ];
+
+  return (
+    <aside className="lesson-playlist">
+      <div style={{
+        background: T.card, border: `1px solid ${T.border}`,
+        borderRadius: 14, boxShadow: T.shadowSoft, overflow: "hidden",
+      }}>
+        {/* En-tête + progression */}
+        <div style={{ padding: "14px 14px 12px", borderBottom: `1px solid ${T.border}` }}>
+          <div style={{ fontFamily: F.title, fontSize: 14, fontWeight: 700, color: T.text, display: "flex", alignItems: "center", gap: 7 }}>
+            📚 Contenu du cours
+          </div>
+          <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 4 }}>
+            {doneCount}/{total} leçon{total > 1 ? "s" : ""} · {pct}%
+          </div>
+          <div style={{ marginTop: 8, height: 6, borderRadius: 999, background: T.surface2, overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, height: "100%", background: `linear-gradient(90deg, ${T.violet}, ${T.gold})`, transition: "width .3s" }} />
+          </div>
+        </div>
+
+        {/* Groupes / leçons */}
+        <div>
+          {groups.map((g, gi) => (
+            <div key={gi}>
+              {g.title && (
+                <div style={{
+                  padding: "9px 14px 5px", fontSize: 10.5, fontWeight: 800,
+                  color: T.violet, textTransform: "uppercase", letterSpacing: "0.06em",
+                  background: T.surface2,
+                }}>
+                  {g.title}
+                </div>
+              )}
+              {g.lessons.map((l) => {
+                const isCurrent = l.slug === currentSlug;
+                const isDone = doneSet.has(l.id);
+                const dur = l.duration_secs ? formatLessonDuration(l.duration_secs) : "";
+                return (
+                  <Link key={l.id} href={`/institut/lecon/${l.slug}`} style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 14px", textDecoration: "none",
+                    borderBottom: `1px solid ${T.borderSoft}`,
+                    background: isCurrent ? T.violetSoft : "transparent",
+                  }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 11, fontWeight: 700,
+                      background: isDone ? T.completed : isCurrent ? T.violet : T.surface2,
+                      color: isDone || isCurrent ? "#fff" : T.textMuted,
+                      border: isDone || isCurrent ? "none" : `1px solid ${T.border}`,
+                    }}>
+                      {isDone ? "✓" : isCurrent ? "▶" : numberById.get(l.id)}
+                    </span>
+                    <span style={{
+                      flex: 1, minWidth: 0, fontSize: 12.5,
+                      fontWeight: isCurrent ? 700 : 500,
+                      color: isCurrent ? T.violet : T.text,
+                      lineHeight: 1.35,
+                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden",
+                    }}>
+                      {l.title}
+                    </span>
+                    {dur && (
+                      <span style={{ fontSize: 10.5, color: T.textMuted, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{dur}</span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </aside>
   );
 }
 

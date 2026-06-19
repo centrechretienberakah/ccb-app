@@ -18,6 +18,8 @@ interface LessonNavLite {
   slug: string;
   title: string;
   module_id: string;
+  order_index: number;
+  duration_secs: number | null;
 }
 
 export default async function LessonPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -55,16 +57,31 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
     .eq("id", course.category_id).maybeSingle();
   const category = (catRow ?? null) as Category | null;
 
-  // Toutes les leçons du cours pour navigation prev/next
+  // Toutes les leçons du cours (navigation prev/next + playlist)
   const { data: allLessonsData } = await supabase
     .from("institut_lessons")
-    .select("id, slug, title, module_id")
+    .select("id, slug, title, module_id, order_index, duration_secs")
     .eq("course_id", course.id)
     .order("order_index", { ascending: true });
   const allLessons = (allLessonsData ?? []) as LessonNavLite[];
   const idx = allLessons.findIndex((l) => l.id === lesson.id);
   const prevLesson = idx > 0 ? allLessons[idx - 1] : null;
   const nextLesson = idx < allLessons.length - 1 ? allLessons[idx + 1] : null;
+
+  // Modules du cours (pour grouper la playlist)
+  const { data: modulesData } = await supabase
+    .from("institut_modules")
+    .select("id, title, order_index")
+    .eq("course_id", course.id)
+    .order("order_index", { ascending: true });
+  const modules = (modulesData ?? []) as { id: string; title: string; order_index: number }[];
+
+  // Leçons déjà complétées (✓ dans la playlist)
+  const { data: doneData } = await supabase
+    .from("institut_user_progress")
+    .select("lesson_id")
+    .eq("user_id", user.id).eq("course_id", course.id).eq("is_completed", true);
+  const completedIds = ((doneData ?? []) as { lesson_id: string }[]).map((r) => r.lesson_id);
 
   // Progression actuelle + quiz
   const { data: progRow } = await supabase
@@ -113,6 +130,9 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
       lessonIndex={idx + 1}
       totalLessons={allLessons.length}
       canAccessPremium={canAccessPremium}
+      playlist={allLessons}
+      modules={modules}
+      completedIds={completedIds}
     />
   );
 }
