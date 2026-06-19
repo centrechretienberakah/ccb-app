@@ -90,13 +90,13 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
   }
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 0" }}>
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "12px 16px 0" }}>
       <div style={{
         position: "relative",
         background: `linear-gradient(160deg, ${T.card} 0%, ${T.surface2} 100%)`,
         border: `1px solid ${T.gold}`,
-        borderRadius: 20,
-        padding: "20px 18px 18px",
+        borderRadius: 16,
+        padding: "12px 16px 12px",
         boxShadow: T.shadowMd,
         overflow: "hidden",
       }}>
@@ -106,12 +106,12 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
         }} />
 
         {/* En-tête */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9 }}>
           <div style={{
-            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+            width: 34, height: 34, borderRadius: 9, flexShrink: 0,
             background: "linear-gradient(145deg, #4c0519, #9f1239 55%, #fb7185)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 23, boxShadow: "0 4px 12px rgba(159,18,57,0.3)",
+            fontSize: 18, boxShadow: "0 4px 12px rgba(159,18,57,0.3)",
           }}>🔥</div>
           <div style={{ minWidth: 0 }}>
             <div style={{
@@ -130,34 +130,37 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
         <div style={{
           display: "inline-block",
           background: "rgba(212,175,55,0.14)", border: `1px solid ${T.gold}`,
-          color: T.goldDark, fontWeight: 800, fontSize: 11,
+          color: T.goldDark, fontWeight: 800, fontSize: 10.5,
           letterSpacing: "0.1em", textTransform: "uppercase",
-          padding: "5px 12px", borderRadius: 999, marginBottom: 12,
+          padding: "4px 11px", borderRadius: 999, marginBottom: 8,
         }}>
           {prayer.dayLabel} · {prayer.theme}
         </div>
 
-        {/* Introduction */}
-        <p style={{ fontSize: 14.5, color: T.text, lineHeight: 1.65, margin: "0 0 14px", fontWeight: 500 }}>
+        {/* Introduction (clampée en aperçu, complète une fois déplié) */}
+        <p style={{
+          fontSize: 14, color: T.text, lineHeight: 1.55, margin: "0 0 8px", fontWeight: 500,
+          ...(expanded ? {} : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }),
+        }}>
           {prayer.intro}
         </p>
-
-        {/* Verset */}
-        <div style={{
-          background: "rgba(91, 33, 182,0.06)", borderLeft: `3px solid ${T.violet}`,
-          borderRadius: "0 12px 12px 0", padding: "11px 13px", marginBottom: 16,
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.violet, marginBottom: 4 }}>
-            📖 {prayer.verse_ref}
-          </div>
-          <div style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.55, fontStyle: "italic" }}>
-            « {prayer.verse_text} »
-          </div>
-        </div>
 
         {/* Contenu déroulable */}
         {expanded && (
           <>
+            {/* Verset */}
+            <div style={{
+              background: "rgba(91, 33, 182,0.06)", borderLeft: `3px solid ${T.violet}`,
+              borderRadius: "0 12px 12px 0", padding: "11px 13px", marginBottom: 16,
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.violet, marginBottom: 4 }}>
+                📖 {prayer.verse_ref}
+              </div>
+              <div style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.55, fontStyle: "italic" }}>
+                « {prayer.verse_text} »
+              </div>
+            </div>
+
             {/* Exhortation */}
             <Section label="✦ Exhortation">
               {prayer.exhortation.map((e, i) => (
@@ -210,22 +213,22 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
         {/* Bouton déplier/replier */}
         <button onClick={() => setExpanded((v) => !v)} style={{
           width: "100%", background: "transparent", border: `1px dashed ${T.border}`,
-          borderRadius: 12, padding: "9px", marginBottom: 12,
+          borderRadius: 10, padding: "6px", marginBottom: 9,
           color: T.violet, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: F.body,
         }}>
-          {expanded ? "▲ Réduire la prière" : "▼ Lire la prière complète (exhortation, points, déclarations…)"}
+          {expanded ? "Réduire" : "Lire plus"}
         </button>
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button onClick={togglePrayed} disabled={busy} style={{
             flex: "1 1 150px",
             background: prayed ? "rgba(159,18,57,0.12)" : "linear-gradient(135deg, #9f1239, #4c0519)",
             color: prayed ? "#9f1239" : "#fff",
             border: prayed ? "1px solid rgba(159,18,57,0.4)" : "none",
-            borderRadius: 999, padding: "11px 16px", fontWeight: 700, fontSize: 13.5,
+            borderRadius: 999, padding: "8px 14px", fontWeight: 700, fontSize: 12.5,
             cursor: busy ? "wait" : "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
             opacity: busy ? 0.7 : 1, fontFamily: F.body,
           }}>
             {busy ? "⏳ …" : prayed ? `🙏 J'ai prié${count > 0 ? ` · ${count}` : ""}` : `🙏 Je prie${count > 0 ? ` · ${count}` : ""}`}
@@ -233,8 +236,8 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
           <button onClick={handleShare} style={{
             flex: "1 1 120px",
             background: T.card, color: T.text, border: `1px solid ${T.border}`,
-            borderRadius: 999, padding: "11px 16px", fontWeight: 700, fontSize: 13.5, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: F.body,
+            borderRadius: 999, padding: "8px 14px", fontWeight: 700, fontSize: 12.5, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: F.body,
           }}>
             {shared ? "✓ Copié !" : "↗ Partager"}
           </button>

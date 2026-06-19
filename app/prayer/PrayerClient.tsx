@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   PRAYER_THEME as T, PRAYER_FONTS as F,
@@ -131,23 +131,23 @@ function PrayerComposer({
   if (!open) return (
     <div onClick={() => setOpen(true)} style={{
       background: T.card, border: `1px solid ${T.border}`,
-      borderRadius: 14, padding: "12px 14px",
-      display: "flex", alignItems: "center", gap: 12,
-      cursor: "pointer", marginBottom: 16,
+      borderRadius: 12, padding: "7px 12px",
+      display: "flex", alignItems: "center", gap: 10,
+      cursor: "pointer",
       boxShadow: T.shadowSoft,
     }}>
-      <Avatar profile={currentUserProfile} size={36} />
-      <div style={{ flex: 1, color: T.textMuted, fontSize: 14, fontFamily: F.body }}>
+      <Avatar profile={currentUserProfile} size={28} />
+      <div style={{ flex: 1, color: T.textMuted, fontSize: 13, fontFamily: F.body }}>
         Partager une demande de prière…
       </div>
-      <span style={{ fontSize: 20 }}>🙏</span>
+      <span style={{ fontSize: 17 }}>🙏</span>
     </div>
   );
 
   return (
     <div style={{
       background: T.card, border: `1px solid ${T.border}`,
-      borderRadius: 14, padding: 18, marginBottom: 16,
+      borderRadius: 14, padding: 18,
       boxShadow: T.shadowSoft,
     }}>
       <div style={{
@@ -827,13 +827,13 @@ export default function PrayerClient({
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body }}>
       <style>{`
-        .ccb-prayer-hero { padding: 22px 14px 18px; }
-        .ccb-prayer-title { font-size: clamp(1.3rem, 4.5vw, 1.6rem); }
-        .ccb-prayer-tagline { font-size: clamp(10px, 2.8vw, 12px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ccb-prayer-hero { padding: 11px 14px 9px; }
+        .ccb-prayer-title { font-size: clamp(1.05rem, 3.6vw, 1.3rem); margin: 0 0 2px; }
+        .ccb-prayer-tagline { font-size: clamp(10px, 2.6vw, 11.5px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         @media (min-width: 768px) {
-          .ccb-prayer-hero { padding: 32px 24px 28px; }
-          .ccb-prayer-title { font-size: 2rem; }
-          .ccb-prayer-tagline { font-size: 14px; white-space: normal; }
+          .ccb-prayer-hero { padding: 16px 24px 14px; }
+          .ccb-prayer-title { font-size: 1.5rem; }
+          .ccb-prayer-tagline { font-size: 13px; white-space: normal; }
         }
       `}</style>
       <div className="ccb-prayer-hero" style={{
@@ -895,33 +895,27 @@ export default function PrayerClient({
         </div>
       </div>
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 14px 48px" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "10px 14px 48px" }}>
         {/* Ma vie de prière — 3 stats compactes */}
         <div style={{
           display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 8, marginBottom: 12,
+          gap: 6, marginBottom: 8,
         }}>
           <StatChip emoji="🙏" label="Intercessions données" value={myLife.given} accent={T.violet} />
           <StatChip emoji="❤️" label="Reçues sur les miennes" value={myLife.received} accent={T.gold} />
           <StatChip emoji="🎉" label="Mes exaucées" value={myLife.answered} accent={T.answered} />
         </div>
 
-        <PrayerComposer
-          currentUserId={currentUserId}
-          currentUserProfile={currentUserProfile}
-          onCreated={handleCreated}
-        />
-
-        <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
-          <button onClick={() => setFilterCat("")} style={catChip(filterCat === "")}>
-            📚 Toutes
-          </button>
-          {PRAYER_CATEGORIES.map((c) => (
-            <button key={c.id} onClick={() => setFilterCat(filterCat === c.id ? "" : c.id)}
-              style={catChip(filterCat === c.id, c.color)}>
-              {c.emoji} {c.label}
-            </button>
-          ))}
+        {/* Partager une demande + filtre (menu ⋮) sur la même barre */}
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <PrayerComposer
+              currentUserId={currentUserId}
+              currentUserProfile={currentUserProfile}
+              onCreated={handleCreated}
+            />
+          </div>
+          <FilterMenu filterCat={filterCat} setFilterCat={setFilterCat} />
         </div>
 
         {filtered.length === 0 ? (
@@ -984,7 +978,7 @@ function StatChip({ emoji, label, value, accent }: {
   return (
     <div style={{
       background: T.card, border: `1px solid ${T.border}`,
-      borderRadius: 12, padding: "10px 8px",
+      borderRadius: 10, padding: "5px 6px 6px",
       position: "relative", overflow: "hidden",
       textAlign: "center",
     }}>
@@ -992,17 +986,19 @@ function StatChip({ emoji, label, value, accent }: {
         position: "absolute", top: 0, left: 0, bottom: 0, width: 3,
         background: accent,
       }} />
-      <div style={{ fontSize: 18, marginBottom: 2 }}>{emoji}</div>
-      <div style={{
-        fontFamily: F.title, fontSize: 18, fontWeight: 700,
-        color: T.text, lineHeight: 1,
-      }}>
-        {value}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+        <span style={{ fontSize: 13 }}>{emoji}</span>
+        <span style={{
+          fontFamily: F.title, fontSize: 15, fontWeight: 700,
+          color: T.text, lineHeight: 1,
+        }}>
+          {value}
+        </span>
       </div>
       <div style={{
-        fontSize: 9, color: T.textMuted, fontWeight: 600,
-        textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 4,
-        lineHeight: 1.3,
+        fontSize: 8.5, color: T.textMuted, fontWeight: 600,
+        textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 2,
+        lineHeight: 1.25,
       }}>
         {label}
       </div>
@@ -1010,15 +1006,72 @@ function StatChip({ emoji, label, value, accent }: {
   );
 }
 
-function catChip(active: boolean, color?: string): React.CSSProperties {
-  const c = color ?? T.violet;
-  return {
-    flexShrink: 0,
-    background: active ? `${c}1f` : T.card,
-    border: `1px solid ${active ? c : T.border}`,
-    color: active ? c : T.textMuted,
-    fontSize: 11, fontWeight: active ? 700 : 500,
-    borderRadius: 999, padding: "5px 12px",
-    cursor: "pointer", whiteSpace: "nowrap", fontFamily: F.body,
-  };
+// ─── Menu de filtre (⋮) — placé sur la même barre que « Partager une demande » ──
+function FilterMenu({ filterCat, setFilterCat }: {
+  filterCat: PrayerCategory | "";
+  setFilterCat: (c: PrayerCategory | "") => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const active = filterCat !== "";
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button onClick={() => setOpen((v) => !v)} title="Filtrer par catégorie" aria-label="Filtrer" style={{
+        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+        background: active ? T.violetSoft : T.card,
+        border: `1px solid ${active ? T.violet : T.border}`,
+        color: active ? T.violet : T.textMuted,
+        cursor: "pointer", fontSize: 20, fontWeight: 700,
+        display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
+        boxShadow: T.shadowSoft,
+      }}>
+        ⋮
+        {active && <span style={{ position: "absolute", top: 7, right: 8, width: 7, height: 7, borderRadius: "50%", background: T.violet }} />}
+      </button>
+      {open && (
+        <div role="menu" style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40,
+          minWidth: 214, maxHeight: 340, overflowY: "auto",
+          background: T.card, border: `1px solid ${T.border}`, borderRadius: 12,
+          boxShadow: "0 12px 32px rgba(0,0,0,0.18)", padding: 5,
+        }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", padding: "6px 10px 4px" }}>
+            Filtrer par catégorie
+          </div>
+          <FilterRow active={filterCat === ""} emoji="📚" label="Toutes" onClick={() => { setFilterCat(""); setOpen(false); }} />
+          {PRAYER_CATEGORIES.map((c) => (
+            <FilterRow key={c.id} active={filterCat === c.id} emoji={c.emoji} label={c.label} color={c.color}
+              onClick={() => { setFilterCat(filterCat === c.id ? "" : c.id); setOpen(false); }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FilterRow({ active, emoji, label, color, onClick }: {
+  active: boolean; emoji: string; label: string; color?: string; onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick} role="menuitem" style={{
+      display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left",
+      background: active ? (color ? `${color}1f` : T.violetSoft) : "none",
+      border: "none", cursor: "pointer",
+      color: active ? (color ?? T.violet) : T.text,
+      fontSize: 13, fontWeight: active ? 700 : 500, fontFamily: F.body,
+      padding: "8px 10px", borderRadius: 8,
+    }}>
+      <span style={{ fontSize: 15, width: 20, textAlign: "center", flexShrink: 0 }}>{emoji}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>{label}</span>
+      {active && <span style={{ color: color ?? T.violet, flexShrink: 0 }}>✓</span>}
+    </button>
+  );
 }
