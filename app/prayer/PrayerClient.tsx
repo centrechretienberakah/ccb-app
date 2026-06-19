@@ -848,22 +848,22 @@ export default function PrayerClient({
           position: "absolute", top: 0, left: 0, right: 0, height: 3,
           background: `linear-gradient(90deg, ${T.gold}, transparent)`,
         }} />
-        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <div style={{ minWidth: 0 }}>
-            <h1 className="ccb-prayer-title" style={{
-              fontFamily: F.title, fontWeight: 700, margin: "0 0 2px",
-              letterSpacing: "0.05em",
-            }}>
-              🙏 MUR DE PRIÈRE
-            </h1>
-            <p className="ccb-prayer-tagline" style={{
-              margin: 0, opacity: 0.9, fontStyle: "italic",
-              color: "#EDE7FA",
-            }}>
-              Portons-nous les uns les autres devant le Père.
-            </p>
+        <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative", textAlign: "center", padding: "0 44px" }}>
+          <h1 className="ccb-prayer-title" style={{
+            fontFamily: F.title, fontWeight: 700, margin: "0 0 2px",
+            letterSpacing: "0.05em",
+          }}>
+            🙏 MUR DE PRIÈRE
+          </h1>
+          <p className="ccb-prayer-tagline" style={{
+            margin: 0, opacity: 0.9, fontStyle: "italic",
+            color: "#EDE7FA",
+          }}>
+            Portons-nous les uns les autres devant le Père.
+          </p>
+          <div style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)" }}>
+            <ViewStatsMenu tab={tab} setTab={setTab} stats={stats} myLife={myLife} isAdmin={isAdmin} />
           </div>
-          <ViewStatsMenu tab={tab} setTab={setTab} stats={stats} myLife={myLife} isAdmin={isAdmin} />
         </div>
       </div>
 
