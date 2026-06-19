@@ -957,18 +957,16 @@ function ViewStatsMenu({ tab, setTab, stats, myLife, isAdmin }: {
     { id: "mine" as const,     label: "🙋 Mes prières",       count: stats.mine },
     { id: "answered" as const, label: "🎉 Exaucées",          count: stats.answered },
   ];
-  const current = VIEWS.find((v) => v.id === tab) ?? VIEWS[0];
 
   return (
     <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
-      <button onClick={() => setOpen((v) => !v)} aria-label="Vues et statistiques" style={{
-        display: "inline-flex", alignItems: "center", gap: 6,
-        background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.3)",
-        color: "#fff", borderRadius: 999, padding: "6px 12px",
-        fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: F.body, whiteSpace: "nowrap",
+      <button onClick={() => setOpen((v) => !v)} aria-label="Vues et statistiques" title="Vues & statistiques" style={{
+        width: 38, height: 38, borderRadius: 999, flexShrink: 0,
+        background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.35)",
+        color: "#fff", fontSize: 18, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
       }}>
-        <span style={{ maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis" }}>{current.label} · {current.count}</span>
-        <span style={{ fontSize: 9 }}>▾</span>
+        ☰
       </button>
       {open && (
         <div role="menu" style={{
