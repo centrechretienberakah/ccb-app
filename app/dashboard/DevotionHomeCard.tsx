@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { UnifiedDevotion } from "@/lib/devotion/fetch";
 
@@ -49,6 +49,28 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
   const [marking, setMarking] = useState(false);
   const [shared, setShared] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [canSpeak, setCanSpeak] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) setCanSpeak(true);
+    return () => { try { window.speechSynthesis?.cancel(); } catch { /* noop */ } };
+  }, []);
+
+  function toggleSpeak() {
+    try {
+      if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+      const synth = window.speechSynthesis;
+      if (speaking) { synth.cancel(); setSpeaking(false); return; }
+      const u = new SpeechSynthesisUtterance(`${devotion.title}. ${devotion.verse_ref}. « ${devotion.verse_text} ». ${devotion.content}`);
+      u.lang = "fr-FR"; u.rate = 0.98;
+      u.onend = () => setSpeaking(false);
+      u.onerror = () => setSpeaking(false);
+      synth.cancel();
+      synth.speak(u);
+      setSpeaking(true);
+    } catch { setSpeaking(false); }
+  }
 
   // Dédoublonnage défensif : ignore tout paragraphe identique déjà affiché.
   const paragraphs = (() => {
@@ -289,6 +311,22 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
           >
             {read ? "✓ Lu aujourd'hui" : (marking ? "⏳ …" : "✓ Marquer comme lu")}
           </button>
+          {canSpeak && (
+            <button
+              onClick={toggleSpeak}
+              style={{
+                flex: "0 1 auto",
+                background: "var(--card-bg)",
+                color: speaking ? "var(--violet)" : "var(--text-primary)",
+                border: `1px solid ${speaking ? "var(--violet)" : "var(--border)"}`,
+                borderRadius: 999, padding: "11px 16px",
+                fontWeight: 700, fontSize: 13.5, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+              }}
+            >
+              {speaking ? "⏹ Stop" : "▶ Écouter"}
+            </button>
+          )}
           <button
             onClick={handleShare}
             style={{
