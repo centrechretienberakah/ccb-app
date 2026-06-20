@@ -65,11 +65,36 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
         .dash-bar-fill { animation: ccb-bar .8s ease both; }
       `}</style>
 
-      {/* Header / salutation */}
-      <div className="dashboard-hero">
-        <div className="dashboard-hero-inner">
-          <p className="dashboard-hero-greet">{greeting} {displayName} <span aria-hidden="true">👋</span></p>
-          <p className="dashboard-hero-bless">Que le Seigneur vous bénisse aujourd&apos;hui.</p>
+      {/* HERO SPIRITUEL — bandeau image + dégradé violet + glassmorphism.
+          Dépose ton visuel dans public/hero-accueil.jpg (paysage ~1600×900, < 300 Ko).
+          En son absence, le dégradé violet sert de repli premium. */}
+      <div style={{
+        position: "relative", overflow: "hidden",
+        backgroundColor: "#4C1D95",
+        backgroundImage: "linear-gradient(135deg, rgba(76,29,149,0.90) 0%, rgba(91,33,182,0.74) 50%, rgba(58,28,112,0.92) 100%), url('/hero-accueil.jpg')",
+        backgroundSize: "cover", backgroundPosition: "center",
+        color: "#fff",
+        padding: "calc(20px + env(safe-area-inset-top, 0px)) 18px 22px",
+      }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, var(--gold), transparent)" }} />
+        <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative" }}>
+          <p style={{ margin: 0, fontFamily: "var(--font-title)", fontWeight: 800, fontSize: "clamp(1.15rem, 4.6vw, 1.55rem)", lineHeight: 1.15 }}>
+            {greeting} {displayName} <span aria-hidden="true">👋</span>
+          </p>
+          <p style={{ margin: "4px 0 0", fontSize: 13, opacity: 0.92, fontStyle: "italic", color: "#EDE7FA" }}>
+            Que le Seigneur vous bénisse aujourd&apos;hui.
+          </p>
+          {devotion?.verse_ref && (
+            <div style={{
+              marginTop: 13, display: "inline-flex", alignItems: "center", gap: 7,
+              background: "rgba(255,255,255,0.14)", backdropFilter: "blur(7px)", WebkitBackdropFilter: "blur(7px)",
+              border: "1px solid rgba(255,255,255,0.22)", borderRadius: 999, padding: "6px 13px",
+              fontSize: 12.5, fontWeight: 600, maxWidth: "100%",
+            }}>
+              <span aria-hidden="true">📖</span>
+              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Verset du jour · {devotion.verse_ref}</span>
+            </div>
+          )}
         </div>
       </div>
 
