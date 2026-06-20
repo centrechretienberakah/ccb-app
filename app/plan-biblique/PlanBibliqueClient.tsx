@@ -10,6 +10,12 @@ import {
   type ReadingPlan,
 } from "@/lib/bible/reading-plans";
 
+// localStorage sécurisé : dans certains navigateurs in-app / modes privés,
+// l'accès à localStorage lève une exception → on ne doit jamais planter la page.
+function lsGet(k: string): string | null { try { return localStorage.getItem(k); } catch { return null; } }
+function lsSet(k: string, v: string) { try { localStorage.setItem(k, v); } catch { /* noop */ } }
+function lsDel(k: string) { try { localStorage.removeItem(k); } catch { /* noop */ } }
+
 interface ActivePlan {
   id: string;
   plan_id: string;
@@ -46,52 +52,67 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
 
+  // Affiche une notification locale SANS jamais planter la page.
+  // Sur mobile, `new Notification(...)` lève « Illegal constructor » : on passe
+  // par le service worker (showNotification), et on protège tout par try/catch.
+  function showLocalNotification(title: string, body: string) {
+    try {
+      if (typeof window === "undefined" || !("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+      if ("serviceWorker" in navigator && navigator.serviceWorker?.ready) {
+        navigator.serviceWorker.ready
+          .then((reg) => { try { reg.showNotification(title, { body, icon: "/logo-officiel.png", badge: "/logo-officiel.png" }); } catch { /* noop */ } })
+          .catch(() => { /* noop */ });
+        return;
+      }
+      new Notification(title, { body, icon: "/logo-officiel.png" });
+    } catch { /* certains mobiles/navigateurs : on ignore */ }
+  }
+
   function checkAndFireReminder() {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
-    const saved = localStorage.getItem("ccb-reading-reminder");
-    if (!saved) return;
-    const { time, enabled } = JSON.parse(saved);
-    if (!enabled || !time) return;
-    const today = new Date().toISOString().split("T")[0];
-    const lastFired = localStorage.getItem("ccb-reminder-last-fired");
-    if (lastFired === today) return; // already fired today
-    const [hh, mm] = time.split(":").map(Number);
-    const now = new Date();
-    if (now.getHours() >= hh && now.getMinutes() >= mm) {
-      new Notification("📖 Rappel de lecture CCB", {
-        body: "C'est l'heure de votre lecture biblique quotidienne ! Continuez votre plan de lecture.",
-        icon: "/logo-officiel.png",
-        badge: "/logo-officiel.png",
-      });
-      localStorage.setItem("ccb-reminder-last-fired", today);
-    }
+    try {
+      if (typeof window === "undefined" || !("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+      const saved = lsGet("ccb-reading-reminder");
+      if (!saved) return;
+      const { time, enabled } = JSON.parse(saved);
+      if (!enabled || !time) return;
+      const today = new Date().toISOString().split("T")[0];
+      if (lsGet("ccb-reminder-last-fired") === today) return; // déjà déclenché aujourd'hui
+      const [hh, mm] = String(time).split(":").map(Number);
+      const now = new Date();
+      if (now.getHours() >= hh && now.getMinutes() >= mm) {
+        showLocalNotification("📖 Rappel de lecture CCB", "C'est l'heure de votre lecture biblique quotidienne !");
+        lsSet("ccb-reminder-last-fired", today);
+      }
+    } catch { /* ne JAMAIS planter la page des plans */ }
   }
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const saved = localStorage.getItem("ccb-reading-reminder");
-    if (saved) {
-      const { time, enabled } = JSON.parse(saved);
-      setReminderTime(time || "07:00");
-      setReminderEnabled(enabled ?? false);
-    } else {
-      setReminderTime("07:00");
-    }
-    if ("Notification" in window) {
-      setNotifPermission(Notification.permission);
-    }
-    // Check if it's time to remind today
-    checkAndFireReminder();
-   
+    try {
+      const saved = lsGet("ccb-reading-reminder");
+      if (saved) {
+        const { time, enabled } = JSON.parse(saved);
+        setReminderTime(time || "07:00");
+        setReminderEnabled(enabled ?? false);
+      } else {
+        setReminderTime("07:00");
+      }
+      if ("Notification" in window) setNotifPermission(Notification.permission);
+      checkAndFireReminder();
+    } catch { setReminderTime("07:00"); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function requestNotifPermission(): Promise<NotificationPermission> {
-    if (!("Notification" in window)) return "denied";
-    if (Notification.permission === "granted") return "granted";
-    const result = await Notification.requestPermission();
-    setNotifPermission(result);
-    return result;
+    try {
+      if (!("Notification" in window)) return "denied";
+      if (Notification.permission === "granted") return "granted";
+      const result = await Notification.requestPermission();
+      setNotifPermission(result);
+      return result;
+    } catch { return "denied"; }
   }
 
   async function saveReminder(time: string) {
@@ -100,21 +121,16 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
       showToast("⚠️ Autorisez les notifications dans votre navigateur");
       return;
     }
-    const data = { time, enabled: true };
-    localStorage.setItem("ccb-reading-reminder", JSON.stringify(data));
+    lsSet("ccb-reading-reminder", JSON.stringify({ time, enabled: true }));
     setReminderTime(time);
     setReminderEnabled(true);
     setShowReminderModal(false);
     showToast(`⏰ Rappel programmé à ${time} chaque jour !`);
-    // Fire a confirmation notification
-    new Notification("⏰ Rappel de lecture activé", {
-      body: `Vous serez rappelé chaque jour à ${time} pour votre lecture biblique.`,
-      icon: "/logo-officiel.png",
-    });
+    showLocalNotification("⏰ Rappel de lecture activé", `Vous serez rappelé chaque jour à ${time}.`);
   }
 
   function clearReminder() {
-    localStorage.removeItem("ccb-reading-reminder");
+    lsDel("ccb-reading-reminder");
     setReminderEnabled(false);
     setShowReminderModal(false);
     showToast("Rappel désactivé");
