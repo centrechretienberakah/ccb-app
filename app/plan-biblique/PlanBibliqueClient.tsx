@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   READING_PLANS, getDayReading, calculateProgress,
@@ -388,7 +389,37 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
             {selectedPlan ? (
               <PlanDetail plan={selectedPlan} onStart={() => startPlan(selectedPlan)} onBack={() => setSelectedPlan(null)} loading={loading} />
             ) : (
-              <PlanGrid plans={READING_PLANS} activePlanIds={activePlans.map((p) => p.plan_id)} onSelect={setSelectedPlan} />
+              <>
+                {/* 1) Plan Systématique (anciennement « annuel ») — lecture structurée */}
+                <div style={{ fontFamily: "var(--font-title)", fontSize: 15, fontWeight: 800, color: "var(--gold)", marginBottom: 4 }}>
+                  📖 Plan Systématique
+                </div>
+                <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 14px" }}>
+                  Lecture structurée de toute la Bible (1 an, 2 ans, Nouveau ou Ancien Testament…).
+                </p>
+                <PlanGrid plans={READING_PLANS} activePlanIds={activePlans.map((p) => p.plan_id)} onSelect={setSelectedPlan} />
+
+                {/* 2) Plan thématique — parcours par thème (existant, inchangé) */}
+                <div style={{ fontFamily: "var(--font-title)", fontSize: 15, fontWeight: 800, color: "var(--gold)", margin: "28px 0 4px" }}>
+                  🎯 Plan thématique
+                </div>
+                <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 14px" }}>
+                  Parcours guidés par thème (foi, salut, prière, sainteté…).
+                </p>
+                <Link href="/bible/theme" style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  background: "var(--card-bg)", border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-lg)", padding: 18, textDecoration: "none",
+                  color: "var(--text-primary)", boxShadow: "var(--shadow-sm)",
+                }}>
+                  <span style={{ fontSize: 28 }}>🎯</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: "block", fontFamily: "var(--font-title)", fontSize: 15, fontWeight: 700 }}>Découvrir les plans thématiques</span>
+                    <span style={{ display: "block", fontSize: 12.5, color: "var(--text-muted)", marginTop: 2 }}>Parcours par thème, avec progression et suivi quotidien.</span>
+                  </span>
+                  <span style={{ color: "var(--gold)", fontSize: 18 }}>→</span>
+                </Link>
+              </>
             )}
           </div>
         )}
