@@ -63,7 +63,19 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
         .dash-rail > * { scroll-snap-align: start; flex-shrink: 0; }
         @keyframes ccb-bar { from { width: 0; } }
         .dash-bar-fill { animation: ccb-bar .8s ease both; }
+        /* Photo en arrière-plan de TOUTE la page d'accueil (fixe) + voile lisibilité */
+        .dash-bg {
+          position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background-image: linear-gradient(rgba(250,248,244,0.84), rgba(250,248,244,0.90)), url('/hero-accueil.webp');
+          background-size: cover; background-position: center;
+        }
+        [data-theme="dark"] .dash-bg {
+          background-image: linear-gradient(rgba(15,10,25,0.88), rgba(20,12,40,0.93)), url('/hero-accueil.webp');
+        }
+        .dash-content { position: relative; z-index: 1; }
       `}</style>
+      <div className="dash-bg" aria-hidden="true" />
+      <div className="dash-content">
 
       {/* HERO SPIRITUEL — bandeau image + dégradé violet + glassmorphism.
           Dépose ton visuel dans public/hero-accueil.jpg (paysage ~1600×900, < 300 Ko).
@@ -247,6 +259,7 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
