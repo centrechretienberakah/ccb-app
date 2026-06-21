@@ -48,7 +48,7 @@ export default function RootLayout({
     >
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#5B21B6" />
+        <meta name="theme-color" content="#0a0a0a" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}

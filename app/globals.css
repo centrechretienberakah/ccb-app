@@ -16,36 +16,36 @@
      vues plein écran (chat) pour que le composer reste au-dessus. 0 hors mobile. */
   --ccb-bottomnav-h: 0px;
 
-  /* Brand */
-  --violet:       #5B21B6;
-  --violet-dark:  #4C1D95;
-  --violet-light: #7C3AED;
-  --violet-pale:  #EDE9FE;
-  --violet-50:    #F5F3FF;
-  --gold:         #d4af37;
-  --gold-dark:    #b8971e;
-  --gold-light:   #e8cc6a;
-  --gold-pale:    #fdf8e8;
+  /* Brand — aligné sur le flyer « Semblable à Christ » */
+  --violet:       #5A2CA0;
+  --violet-dark:  #3d1a72;
+  --violet-light: #7B4FC4;
+  --violet-pale:  rgba(123,79,196,0.18);
+  --violet-50:    rgba(90,44,160,0.10);
+  --gold:         #D4AF37;
+  --gold-dark:    #b8921c;
+  --gold-light:   #f0d060;
+  --gold-pale:    rgba(212,175,55,0.12);
 
-  /* Fonds — ivoire clair + cartes BLANCHES (hybride moderne : net & chaleureux,
-     aligné sur les modules Communauté/Bible déjà en blanc/ivoire) */
-  --background:    #f6f3ee;
-  --page-bg:       #f6f3ee;
-  --foreground:    #17130c;
-  --surface:       #ffffff;
-  --surface-2:     #f1ece3;
-  --card-bg:       #ffffff;
-  --border:        #e6dfcf;
-  --border-subtle: #efe9dc;
-  --input-bg:      #ffffff;
-  --input-border:  #e3dbc9;
-  --nav-bg:        rgba(246,243,238,0.88);
+  /* Fonds — IMMERSIF SOMBRE (flyer « Semblable à Christ ») : noir profond
+     #0a0a0a + nuances violet/nuit, cartes glassmorphism à liseré or. */
+  --background:    #0a0a0a;
+  --page-bg:       #0a0a0a;
+  --foreground:    #ffffff;
+  --surface:       #140f1f;
+  --surface-2:     #1b1530;
+  --card-bg:       #140f1f;
+  --border:        rgba(212,175,55,0.18);
+  --border-subtle: rgba(255,255,255,0.07);
+  --input-bg:      rgba(255,255,255,0.05);
+  --input-border:  rgba(255,255,255,0.12);
+  --nav-bg:        rgba(10,10,10,0.85);
 
-  /* Texte */
-  --text-primary:   #17130c;
-  --text-secondary: #5a5040;
-  --text-muted:     #978a74;
-  --text-inverse:   #ffffff;
+  /* Texte — clair sur fond sombre */
+  --text-primary:   #ffffff;
+  --text-secondary: rgba(255,255,255,0.78);
+  --text-muted:     rgba(255,255,255,0.50);
+  --text-inverse:   #0a0a0a;
 
   /* Status */
   --success: #16a34a;
@@ -53,11 +53,11 @@
   --error:   #dc2626;
   --info:    #0ea5e9;
 
-  /* Ombres */
-  --shadow-sm:   0 1px 3px rgba(91, 33, 182,0.07);
-  --shadow-md:   0 4px 16px rgba(91, 33, 182,0.10);
-  --shadow-lg:   0 8px 32px rgba(91, 33, 182,0.14);
-  --shadow-gold: 0 4px 20px rgba(212,175,55,0.28);
+  /* Ombres — glows sombres (noir profond + halo or/violet) */
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.45);
+  --shadow-md:   0 8px 28px rgba(0,0,0,0.55);
+  --shadow-lg:   0 20px 60px rgba(90,44,160,0.40);
+  --shadow-gold: 0 0 30px rgba(212,175,55,0.45);
 
   /* Radii */
   --radius-sm:   8px;
@@ -71,96 +71,46 @@
   --font-title: var(--font-cinzel), "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-body:  var(--font-montserrat), "Segoe UI", system-ui, -apple-system, sans-serif;
 
-  /* Header */
-  --header-gradient: linear-gradient(160deg, #4a2c0e 0%, #7c4a1e 55%, #a87030 100%);
+  /* Header — dégradé violet du flyer */
+  --header-gradient: linear-gradient(135deg,#3d1a72 0%,#5A2CA0 55%,#7B4FC4 100%);
 }
 
-/* ── Mode SOMBRE via préférence système ── */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --background:    #0e0b07;
-    --page-bg:       #0e0b07;
-    --foreground:    #f0e8d8;
-    --surface:       #1a1610;
-    --surface-2:     #252018;
-    --card-bg:       #1a1610;
-    --border:        #352e20;
-    --border-subtle: #2a2418;
-    --input-bg:      #151210;
-    --input-border:  #352e20;
-    --nav-bg:        rgba(14,11,7,0.94);
-
-    --text-primary:   #f0e8d8;
-    --text-secondary: #c0a880;
-    --text-muted:     #7a6848;
-    --text-inverse:   #1e150a;
-
-    --success: #22c55e;
-    --warning: #f59e0b;
-    --error:   #ef4444;
-    --info:    #3b82f6;
-
-    --shadow-sm:   0 1px 3px rgba(0,0,0,0.35);
-    --shadow-md:   0 4px 16px rgba(0,0,0,0.45);
-    --shadow-lg:   0 8px 32px rgba(0,0,0,0.55);
-    --shadow-gold: 0 4px 20px rgba(212,175,55,0.25);
-
-    --header-gradient: linear-gradient(160deg,#1e0e04 0%,#3d2010 50%,#5c3018 100%);
-  }
-}
-
-/* ── Mode SOMBRE explicite (toggle JS → data-theme="dark") ── */
+/* ── DARK-ONLY IMMERSIF ──────────────────────────────────────────────
+   L'app adopte l'identité sombre du flyer « Semblable à Christ » partout.
+   Le toggle clair/sombre est neutralisé : toutes les variantes de thème
+   (système, data-theme="dark", data-theme="light") résolvent vers la même
+   palette sombre. `:root` est déjà sombre ; on aligne juste les variantes
+   explicites pour que public/theme.js ne rebascule jamais en clair. */
+[data-theme="light"],
 [data-theme="dark"] {
-  --background:    #0e0b07;
-  --page-bg:       #0e0b07;
-  --foreground:    #f0e8d8;
-  --surface:       #1a1610;
-  --surface-2:     #252018;
-  --card-bg:       #1a1610;
-  --border:        #352e20;
-  --border-subtle: #2a2418;
-  --input-bg:      #151210;
-  --input-border:  #352e20;
-  --nav-bg:        rgba(14,11,7,0.94);
+  --background:    #0a0a0a;
+  --page-bg:       #0a0a0a;
+  --foreground:    #ffffff;
+  --surface:       #140f1f;
+  --surface-2:     #1b1530;
+  --card-bg:       #140f1f;
+  --border:        rgba(212,175,55,0.18);
+  --border-subtle: rgba(255,255,255,0.07);
+  --input-bg:      rgba(255,255,255,0.05);
+  --input-border:  rgba(255,255,255,0.12);
+  --nav-bg:        rgba(10,10,10,0.85);
 
-  --text-primary:   #f0e8d8;
-  --text-secondary: #c0a880;
-  --text-muted:     #7a6848;
-  --text-inverse:   #1e150a;
+  --text-primary:   #ffffff;
+  --text-secondary: rgba(255,255,255,0.78);
+  --text-muted:     rgba(255,255,255,0.50);
+  --text-inverse:   #0a0a0a;
 
   --success: #22c55e;
   --warning: #f59e0b;
   --error:   #ef4444;
   --info:    #3b82f6;
 
-  --shadow-sm:   0 1px 3px rgba(0,0,0,0.35);
-  --shadow-md:   0 4px 16px rgba(0,0,0,0.45);
-  --shadow-lg:   0 8px 32px rgba(0,0,0,0.55);
-  --shadow-gold: 0 4px 20px rgba(212,175,55,0.25);
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.45);
+  --shadow-md:   0 8px 28px rgba(0,0,0,0.55);
+  --shadow-lg:   0 20px 60px rgba(90,44,160,0.40);
+  --shadow-gold: 0 0 30px rgba(212,175,55,0.45);
 
-  --header-gradient: linear-gradient(160deg,#1e0e04 0%,#3d2010 50%,#5c3018 100%);
-}
-
-/* ── Mode CLAIR explicite (data-theme="light") — clair & tiède ── */
-[data-theme="light"] {
-  --background:    #f6f2ea;
-  --page-bg:       #f6f2ea;
-  --foreground:    #1e150a;
-  --surface:       #fffdf8;
-  --surface-2:     #efe9de;
-  --card-bg:       #fffdf8;
-  --border:        #e7e0d2;
-  --border-subtle: #f0ebe1;
-  --input-bg:      #fffefb;
-  --input-border:  #e4dccc;
-  --nav-bg:        rgba(246,242,234,0.92);
-
-  --text-primary:   #1e150a;
-  --text-secondary: #5e4d35;
-  --text-muted:     #9a8060;
-  --text-inverse:   #ffffff;
-
-  --header-gradient: linear-gradient(160deg,#4a2c0e 0%,#7c4a1e 55%,#a87030 100%);
+  --header-gradient: linear-gradient(135deg,#3d1a72 0%,#5A2CA0 55%,#7B4FC4 100%);
 }
 
 /* ============================================================
@@ -243,35 +193,41 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 
+/* CTA principal = bouton OR du flyer (dégradé or + halo lumineux). */
 .btn-primary {
-  background: var(--violet); color: white; padding: .75rem 1.5rem;
-  border-radius: var(--radius-full); font-family: var(--font-body); font-weight: 600;
-  font-size: .9rem; letter-spacing: .03em; border: none; cursor: pointer;
-  transition: all .2s ease; display: inline-flex; align-items: center; gap: .5rem;
+  background: linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%); color: #0a0a0a;
+  padding: .8rem 1.75rem; border-radius: var(--radius-full); font-family: var(--font-body);
+  font-weight: 700; font-size: .9rem; letter-spacing: .04em; border: none; cursor: pointer;
+  box-shadow: 0 0 26px rgba(212,175,55,.4);
+  transition: all .25s ease; display: inline-flex; align-items: center; gap: .5rem;
 }
-.btn-primary:hover { background: var(--violet-dark); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+.btn-primary:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 46px rgba(212,175,55,.65); }
 
 .btn-gold {
-  background: linear-gradient(135deg,var(--gold-dark),var(--gold)); color: var(--violet-dark);
-  padding: .75rem 1.5rem; border-radius: var(--radius-full); font-family: var(--font-body);
-  font-weight: 700; font-size: .9rem; letter-spacing: .03em; border: none; cursor: pointer;
-  transition: all .2s ease; display: inline-flex; align-items: center; gap: .5rem;
+  background: linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%); color: #0a0a0a;
+  padding: .8rem 1.75rem; border-radius: var(--radius-full); font-family: var(--font-body);
+  font-weight: 700; font-size: .9rem; letter-spacing: .04em; border: none; cursor: pointer;
+  box-shadow: 0 0 26px rgba(212,175,55,.4);
+  transition: all .25s ease; display: inline-flex; align-items: center; gap: .5rem;
 }
-.btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+.btn-gold:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 46px rgba(212,175,55,.65); }
 
+/* Bouton secondaire = contour OR du flyer. */
 .btn-outline {
-  background: transparent; color: var(--violet); padding: .75rem 1.5rem;
-  border-radius: var(--radius-full); font-family: var(--font-body); font-weight: 600;
-  font-size: .9rem; border: 2px solid var(--violet); cursor: pointer;
-  transition: all .2s ease; display: inline-flex; align-items: center; gap: .5rem;
+  background: transparent; color: var(--gold); padding: .8rem 1.75rem;
+  border-radius: var(--radius-full); font-family: var(--font-body); font-weight: 700;
+  font-size: .9rem; letter-spacing: .04em; border: 2px solid var(--gold); cursor: pointer;
+  transition: all .25s ease; display: inline-flex; align-items: center; gap: .5rem;
 }
-.btn-outline:hover { background: var(--violet-pale); }
+.btn-outline:hover { background: var(--gold); color: #0a0a0a; transform: translateY(-2px); }
 
+/* Carte standard = glassmorphism sombre à liseré or (flyer). */
 .card-ccb {
-  background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: var(--radius-lg);
   padding: 1.5rem; box-shadow: var(--shadow-sm); transition: box-shadow .2s ease, transform .2s ease;
+  backdrop-filter: blur(8px);
 }
-.card-ccb:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.card-ccb:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: rgba(212,175,55,0.4); }
 
 /* ============================================================
    ANIMATIONS
@@ -293,7 +249,10 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 .app-shell {
   display: flex;
   min-height: 100dvh;
-  background: var(--background);
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -8%, rgba(90,44,160,0.32) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 45% at 92% 96%, rgba(212,175,55,0.07) 0%, transparent 60%),
+    var(--background);
   position: relative;
   overflow-x: hidden;        /* bloque tout enfant débordant */
   max-width: 100vw;
@@ -1229,12 +1188,12 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 .dashboard-see-all {
   margin-left: auto;
   font-size: 12px;
-  color: var(--violet);
+  color: var(--gold);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.15s ease;
 }
-.dashboard-see-all:hover { color: var(--violet-dark); }
+.dashboard-see-all:hover { color: var(--gold-light); }
 
 /* Stats */
 .dashboard-stats-grid {
@@ -2105,4 +2064,99 @@ table {
 /* Iframe / vidéo embed responsive (ratio 16:9 géré inline mais sécurité) */
 iframe {
   max-width: 100%;
+}
+
+/* ============================================================
+   PRIMITIVES « SEMBLABLE À CHRIST » (flyer) — vocabulaire réutilisable
+   pour l'accueil et les modules : tags, dividers, glass cards, helpers
+   couleur, reveal au scroll et particules dorées.
+   ============================================================ */
+
+/* Pastille de section dorée */
+.section-tag {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 5px 16px;
+  border-radius: var(--radius-full);
+  margin-bottom: 14px;
+}
+
+/* Titre / sous-titre de section façon flyer */
+.section-title {
+  font-family: var(--font-title);
+  font-size: clamp(1.6rem, 4vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 14px;
+}
+.section-sub {
+  font-size: 1rem;
+  font-weight: 300;
+  opacity: .8;
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* Filet doré dégradé */
+.gold-divider {
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  margin: 22px auto;
+  border-radius: 2px;
+}
+
+/* Helpers couleur du flyer */
+.text-gold   { color: var(--gold); }
+.text-purple { color: var(--violet-light); }
+
+/* Carte glassmorphism (violet/or + liseré or supérieur) */
+.glass-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(90,44,160,.20) 0%, rgba(212,175,55,.06) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 2rem 1.75rem;
+  transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--violet), var(--gold), var(--violet));
+}
+.glass-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(212,175,55,.45);
+}
+
+/* Reveal au scroll (piloté par IntersectionObserver côté composant) */
+.fade-in { opacity: 1; transform: translateY(0); transition: opacity .7s ease, transform .7s ease; }
+.fade-in.will-animate { opacity: 0; transform: translateY(30px); }
+.fade-in.will-animate.visible { opacity: 1; transform: translateY(0); }
+
+/* Particules dorées flottantes (hero immersif) */
+.particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0;
+  animation: floatUp var(--dur, 8s) var(--delay, 0s) ease-in infinite;
+}
+@keyframes floatUp {
+  0%   { opacity: 0;  transform: translateY(100%) scale(0); }
+  10%  { opacity: .5; }
+  90%  { opacity: .1; }
+  100% { opacity: 0;  transform: translateY(-10vh) scale(1.2); }
 }
