@@ -71,7 +71,7 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
       <div style={{
         position: "relative", overflow: "hidden",
         backgroundColor: "#4C1D95",
-        backgroundImage: "linear-gradient(135deg, rgba(76,29,149,0.90) 0%, rgba(91,33,182,0.74) 50%, rgba(58,28,112,0.92) 100%), url('/hero-accueil.jpg')",
+        backgroundImage: "linear-gradient(135deg, rgba(76,29,149,0.90) 0%, rgba(91,33,182,0.74) 50%, rgba(58,28,112,0.92) 100%), url('/hero-accueil.webp')",
         backgroundSize: "cover", backgroundPosition: "center",
         color: "#fff",
         padding: "calc(20px + env(safe-area-inset-top, 0px)) 18px 22px",
