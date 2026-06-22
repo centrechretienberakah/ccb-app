@@ -2,26 +2,26 @@
 // Beige doux, violet royal, or subtil. Cinzel pour les titres, Montserrat pour le texte.
 
 export const BIBLE_THEME = {
-  // Palette claire
-  bg:          "#F5F1E8",
-  card:        "#FAF8F4",
-  surface2:    "#EFEAE0",
-  border:      "#E5DECC",
-  borderSoft:  "#EFE9DA",
-  text:        "#1F1A33",
-  textSoft:    "#4A4257",
-  textMuted:   "#857C95",
-  violet:      "#5B21B6",
-  violetDark:  "#4C1D95",
-  violetSoft:  "rgba(91, 33, 182,0.08)",
+  // Palette sombre immersive (flyer « Semblable à Christ »)
+  bg:          "#0a0a0a",
+  card:        "#140f1f",
+  surface2:    "#1b1530",
+  border:      "rgba(212,175,55,0.16)",
+  borderSoft:  "rgba(255,255,255,0.07)",
+  text:        "#f5f1e8",
+  textSoft:    "#cbc4d6",
+  textMuted:   "#8a8296",
+  violet:      "#7C3AED",
+  violetDark:  "#5A2CA0",
+  violetSoft:  "rgba(124,58,237,0.16)",
   gold:        "#D4AF37",
   goldDark:    "#A8862B",
 
-  // Couleurs de surlignage
-  hlYellow: "#FFE680",
-  hlGreen:  "#B6E2B2",
-  hlBlue:   "#BFD9F7",
-  hlPink:   "#F7C6D5",
+  // Couleurs de surlignage — teintes translucides lisibles sous texte clair
+  hlYellow: "rgba(212,175,55,0.30)",
+  hlGreen:  "rgba(52,208,88,0.26)",
+  hlBlue:   "rgba(96,165,250,0.28)",
+  hlPink:   "rgba(244,114,182,0.28)",
 } as const;
 
 export const BIBLE_FONTS = {

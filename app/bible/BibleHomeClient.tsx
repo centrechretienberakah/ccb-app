@@ -40,9 +40,11 @@ export default function BibleHomeClient({ chaptersRead, notesCount, versesCount 
       }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, var(--gold), transparent)" }} />
         <div style={{ maxWidth: 960, margin: "0 auto", textAlign: "center" }}>
+          <span className="section-tag">✦ Parole de Dieu ✦</span>
           <h1 style={{ fontFamily: "var(--font-title)", fontWeight: 700, margin: 0, fontSize: "clamp(1.2rem, 4.5vw, 1.6rem)", letterSpacing: "0.04em" }}>
-            📖 MA BIBLE
+            📖 MA <span className="text-gold">BIBLE</span>
           </h1>
+          <div className="gold-divider" style={{ margin: "12px auto" }} />
           <p style={{ margin: "3px 0 0", opacity: 0.9, fontStyle: "italic", fontSize: "clamp(11px, 2.8vw, 13px)", color: "#EDE7FA" }}>
             Lire, étudier et suivre la Parole de Dieu.
           </p>

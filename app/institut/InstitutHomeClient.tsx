@@ -73,13 +73,15 @@ export default function InstitutHomeClient({
               🛡️ Admin
             </Link>
           )}
+          <span className="section-tag">✦ Formation biblique ✦</span>
           <h1 className="institut-title" style={{
             fontFamily: F.title, fontWeight: 700, letterSpacing: "0.04em",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
           }}>
             <span aria-hidden="true">🎓</span>
-            <span>INSTITUT BIBLIQUE BERAKAH</span>
+            <span>INSTITUT BIBLIQUE <span className="text-gold">BERAKAH</span></span>
           </h1>
+          <div className="gold-divider" style={{ margin: "12px auto" }} />
           <p className="institut-tagline" style={{
             margin: 0, opacity: 0.92, fontStyle: "italic", color: T.lavender,
           }}>

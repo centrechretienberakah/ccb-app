@@ -849,12 +849,14 @@ export default function PrayerClient({
           background: `linear-gradient(90deg, ${T.gold}, transparent)`,
         }} />
         <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative", textAlign: "center", padding: "0 44px" }}>
+          <span className="section-tag">✦ Intercession ✦</span>
           <h1 className="ccb-prayer-title" style={{
             fontFamily: F.title, fontWeight: 700, margin: "0 0 2px",
             letterSpacing: "0.05em",
           }}>
-            🙏 MUR DE PRIÈRE
+            🙏 MUR DE <span className="text-gold">PRIÈRE</span>
           </h1>
+          <div className="gold-divider" style={{ margin: "10px auto" }} />
           <p className="ccb-prayer-tagline" style={{
             margin: 0, opacity: 0.9, fontStyle: "italic",
             color: "#EDE7FA",

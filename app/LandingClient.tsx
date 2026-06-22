@@ -14,25 +14,16 @@ const BOOTCAMP_DATE = "2026-06-26T08:00:00+01:00";
 const BOOTCAMP_URL = "https://bootcamp.centrechretienberakah.com";
 
 export default function LandingClient() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
-  // Sync avec le thème global (data-theme posé par le themeScript du layout)
+  // App dark-only immersif : on force le thème sombre sur la landing.
   useEffect(() => {
-    const current = document.documentElement.getAttribute("data-theme");
-    if (current === "dark" || current === "light") setTheme(current);
+    document.documentElement.setAttribute("data-theme", "dark");
+    try { localStorage.setItem("ccb-theme", "dark"); } catch { /* noop */ }
   }, []);
-
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem("ccb-theme", next); } catch { /* noop */ }
-  }
 
   return (
     <div className="ccb-land">
       <LandingStyles />
-      <Nav theme={theme} onToggle={toggleTheme} />
+      <Nav />
       <Hero />
       <Stats />
       <Ecosystem />
@@ -52,7 +43,7 @@ export default function LandingClient() {
 }
 
 /* ─────────────────────────── NAV ─────────────────────────── */
-function Nav({ theme, onToggle }: { theme: string; onToggle: () => void }) {
+function Nav() {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -73,9 +64,6 @@ function Nav({ theme, onToggle }: { theme: string; onToggle: () => void }) {
           </span>
         </Link>
         <div className="ccb-nav-actions">
-          <button onClick={onToggle} className="ccb-nav-theme" aria-label="Basculer le thème">
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
           <Link href="/auth/login" className="ccb-nav-link">Se connecter</Link>
           <Link href="/auth/register" className="ccb-btn ccb-btn-sm">Rejoindre</Link>
         </div>
@@ -702,18 +690,22 @@ function SectionKicker({ children, light }: { children: React.ReactNode; light?:
 function LandingStyles() {
   return (
     <style>{`
+      /* App dark-only immersif (flyer « Semblable à Christ ») : palette de base sombre,
+         violet #5A2CA0 / or #D4AF37 / noir #0a0a0a — alignée sur les tokens globaux. */
       .ccb-land {
-        --v:#5B21B6; --v-light:#7C3AED; --v-dark:#4C1D95;
+        --v:#5A2CA0; --v-light:#7B4FC4; --v-dark:#3d1a72;
         --gold:#D4AF37; --gold-dark:#b8971e;
-        --bg:#ffffff; --bg-soft:#F5F1E8; --surface:#ffffff;
-        --text:#121212; --text-soft:#4a4a4a; --text-muted:#8a8a8a;
-        --border:rgba(18,18,18,0.08); --shadow:0 10px 40px rgba(91, 33, 182,0.10);
+        --bg:#0a0a0a; --bg-soft:#120e1d; --surface:#1a1525;
+        --text:#f5f1e8; --text-soft:#cbc4d6; --text-muted:#8a8296;
+        --border:rgba(255,255,255,0.09); --shadow:0 10px 40px rgba(0,0,0,0.45);
         background:var(--bg); color:var(--text);
         font-family:'Montserrat',var(--font-montserrat),system-ui,sans-serif;
         overflow-x:hidden;
       }
-      [data-theme="dark"] .ccb-land {
-        --bg:#0c0913; --bg-soft:#13101d; --surface:#1a1525;
+      /* Variante explicite identique (l'app est sombre, quel que soit data-theme) */
+      [data-theme="dark"] .ccb-land,
+      [data-theme="light"] .ccb-land {
+        --bg:#0a0a0a; --bg-soft:#120e1d; --surface:#1a1525;
         --text:#f5f1e8; --text-soft:#cbc4d6; --text-muted:#8a8296;
         --border:rgba(255,255,255,0.09); --shadow:0 10px 40px rgba(0,0,0,0.45);
       }
@@ -763,9 +755,6 @@ function LandingStyles() {
       .ccb-nav-brand-text strong{font-family:'Cinzel',serif;font-size:17px;color:var(--text);letter-spacing:0.08em;}
       .ccb-nav-brand-text em{font-size:9.5px;color:var(--text-muted);font-style:normal;letter-spacing:0.04em;white-space:nowrap;}
       .ccb-nav-actions{display:flex;align-items:center;gap:10px;}
-      .ccb-nav-theme{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);
-        background:var(--surface);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:transform .2s;}
-      .ccb-nav-theme:hover{transform:scale(1.08);}
       .ccb-nav-link{color:var(--text-soft);text-decoration:none;font-weight:600;font-size:0.88rem;padding:8px 6px;}
       .ccb-nav-link:hover{color:var(--v);}
       @media(max-width:560px){.ccb-nav-link{display:none;} .ccb-nav-brand-text em{display:none;}}

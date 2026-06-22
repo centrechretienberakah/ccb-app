@@ -1,11 +1,11 @@
-// Charte visuelle Communauté CCB — Skool style, premium chrétien
-// Violet royal + or + lavande sur fond ivoire/blanc.
+// Charte visuelle Communauté CCB — premium chrétien, sombre immersif
+// (flyer « Semblable à Christ ») : violet royal + or sur noir #0a0a0a.
 
 export const COMMUNITY_THEME = {
   // Palette
-  violet:       "#5B21B6",
-  violetDark:   "#4C1D95",
-  violetSoft:   "rgba(91, 33, 182,0.08)",
+  violet:       "#7C3AED",       // violet lumineux (lisible sur sombre)
+  violetDark:   "#5A2CA0",
+  violetSoft:   "rgba(124,58,237,0.16)",
   gold:         "#D4AF37",
   goldDark:     "#A8862B",
   white:        "#FFFFFF",
@@ -13,20 +13,20 @@ export const COMMUNITY_THEME = {
   lavender:     "#EDE7FA",
   black:        "#111111",
 
-  // UI tokens dérivés
-  bg:           "#F8F5F1",       // ivoire (fond page)
-  card:         "#FFFFFF",
-  surface2:     "#F2EDE5",
-  border:       "#E5DECC",
-  borderSoft:   "#EFE9DA",
-  text:         "#111111",
-  textSoft:     "#3A3340",
-  textMuted:    "#857C95",
+  // UI tokens dérivés (sombre immersif)
+  bg:           "#0a0a0a",       // noir immersif (fond page)
+  card:         "#140f1f",
+  surface2:     "#1b1530",
+  border:       "rgba(212,175,55,0.16)",
+  borderSoft:   "rgba(255,255,255,0.07)",
+  text:         "#f5f1e8",
+  textSoft:     "#cbc4d6",
+  textMuted:    "#8a8296",
 
   // Shadows
-  shadowSoft:   "0 2px 12px rgba(91, 33, 182,0.06)",
-  shadowMd:     "0 6px 24px rgba(91, 33, 182,0.10)",
-  shadowGlow:   "0 0 40px rgba(91, 33, 182,0.18)",
+  shadowSoft:   "0 2px 12px rgba(0,0,0,0.40)",
+  shadowMd:     "0 8px 28px rgba(0,0,0,0.50)",
+  shadowGlow:   "0 0 40px rgba(124,58,237,0.22)",
 } as const;
 
 export const COMMUNITY_FONTS = {

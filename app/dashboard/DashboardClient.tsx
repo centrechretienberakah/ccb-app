@@ -63,19 +63,17 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
         .dash-rail > * { scroll-snap-align: start; flex-shrink: 0; }
         @keyframes ccb-bar { from { width: 0; } }
         .dash-bar-fill { animation: ccb-bar .8s ease both; }
-        /* Photo en arrière-plan de TOUTE la page d'accueil (fixe) + voile sombre
-           immersif (flyer « Semblable à Christ ») — l'app est dark-only, donc
-           le voile est toujours sombre, teinté violet/nuit. */
+        /* Fond immersif sombre de TOUTE la page d'accueil (fixe) — sans photo :
+           dégradés violet/nuit + halo or (flyer « Semblable à Christ »). */
         .dash-bg {
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background-color: #0a0a0a;
           background-image:
-            radial-gradient(ellipse 85% 50% at 50% -6%, rgba(90,44,160,0.45) 0%, transparent 62%),
-            linear-gradient(rgba(10,8,18,0.74), rgba(15,10,30,0.86)),
-            url('/hero-accueil.webp');
-          background-size: cover; background-position: center;
+            radial-gradient(ellipse 85% 50% at 50% -6%, rgba(90,44,160,0.40) 0%, transparent 62%),
+            radial-gradient(ellipse 60% 45% at 92% 100%, rgba(212,175,55,0.06) 0%, transparent 60%);
         }
         .dash-content { position: relative; z-index: 1; }
-        /* Titres de sections contrastés (texte clair sur photo sombre) */
+        /* Titres de sections contrastés (texte clair sur fond sombre) */
         .dash-content .dashboard-section-title { text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
       `}</style>
       <div className="dash-bg" aria-hidden="true" />

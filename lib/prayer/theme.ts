@@ -2,32 +2,32 @@
 // Or doux + violet liturgique + bleu paisible sur fond crème
 
 export const PRAYER_THEME = {
-  // Palette principale
-  bg:           "#F8F5F1",       // crème
-  card:         "#FFFFFF",
-  surface2:     "#F2EDE5",
-  border:       "#E5DECC",
-  borderSoft:   "#EFE9DA",
-  text:         "#1F1A33",
-  textSoft:     "#3A3340",
-  textMuted:    "#857C95",
+  // Palette principale — sombre immersif (flyer « Semblable à Christ »)
+  bg:           "#0a0a0a",       // noir immersif
+  card:         "#140f1f",
+  surface2:     "#1b1530",
+  border:       "rgba(212,175,55,0.16)",
+  borderSoft:   "rgba(255,255,255,0.07)",
+  text:         "#f5f1e8",
+  textSoft:     "#cbc4d6",
+  textMuted:    "#8a8296",
 
   // Couleurs symboliques
-  violet:       "#5B21B6",
-  violetDark:   "#4C1D95",
-  violetSoft:   "rgba(91, 33, 182,0.08)",
+  violet:       "#7C3AED",
+  violetDark:   "#5A2CA0",
+  violetSoft:   "rgba(124,58,237,0.16)",
   gold:         "#D4AF37",
   goldDark:     "#A8862B",
-  blue:         "#3A6FB5",       // bleu paisible
-  blueSoft:     "rgba(58,111,181,0.08)",
+  blue:         "#60a5fa",       // bleu paisible (lumineux sur sombre)
+  blueSoft:     "rgba(96,165,250,0.14)",
 
   // Status colors
-  answered:     "#2E9B47",       // vert exaucé
-  pending:      "#857C95",
+  answered:     "#34d058",       // vert exaucé (lumineux sur sombre)
+  pending:      "#8a8296",
 
   // Shadows
-  shadowSoft:   "0 2px 12px rgba(91, 33, 182,0.06)",
-  shadowMd:     "0 6px 24px rgba(91, 33, 182,0.10)",
+  shadowSoft:   "0 2px 12px rgba(0,0,0,0.40)",
+  shadowMd:     "0 8px 28px rgba(0,0,0,0.50)",
   shadowGlow:   "0 0 40px rgba(212,175,55,0.15)",
 } as const;
 

@@ -67,11 +67,13 @@ export default function CommunityClient({
           background: `linear-gradient(90deg, ${T.gold}, transparent)`,
         }} />
         <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center" }}>
+          <span className="section-tag">✦ Famille de foi ✦</span>
           <h1 className="ccb-hero-title" style={{
             fontFamily: F.title, fontWeight: 700,
           }}>
-            COMMUNAUTÉ CCB
+            COMMUNAUTÉ <span className="text-gold">CCB</span>
           </h1>
+          <div className="gold-divider" style={{ margin: "12px auto" }} />
           <p className="ccb-hero-tagline" style={{
             margin: 0, opacity: 0.9, fontStyle: "italic",
             color: T.lavender,
