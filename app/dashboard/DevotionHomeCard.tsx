@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { UnifiedDevotion } from "@/lib/devotion/fetch";
+import ReactorsModal, { type Reactor } from "@/components/ui/ReactorsModal";
 
 const SIGNATURE = "Rév. Elvis NGUIFFO";
 const PUBLIC_URL = "https://centrechretienberakah.com";
@@ -51,6 +52,21 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
   const [expanded, setExpanded] = useState(false);
   const [canSpeak, setCanSpeak] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+
+  // Reçus de lecture : qui a lu cette méditation (RPC devotion_readers, v72)
+  const [readers, setReaders] = useState<Reactor[]>([]);
+  const [showReaders, setShowReaders] = useState(false);
+
+  const loadReaders = useCallback(async () => {
+    if (!devotion.id) return;
+    try {
+      const sb = createClient();
+      const { data } = await sb.rpc("devotion_readers", { p_devotion_id: devotion.id });
+      if (Array.isArray(data)) setReaders(data as Reactor[]);
+    } catch { /* RPC absente tant que la migration v72 n'est pas exécutée */ }
+  }, [devotion.id]);
+
+  useEffect(() => { loadReaders(); }, [loadReaders]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) setCanSpeak(true);
@@ -146,6 +162,7 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
         { user_id: userId, devotion_id: devotionId },
         { onConflict: "user_id,devotion_id" },
       );
+      loadReaders();
     } catch {
       // En cas d'échec on garde quand même l'affichage "lu" (best-effort)
     }
@@ -343,7 +360,22 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
           </button>
         </div>
 
+        {readers.length > 0 && (
+          <button onClick={() => setShowReaders(true)} style={{
+            marginTop: 12, background: "none", border: "none", padding: 0,
+            color: "var(--text-muted)", fontSize: 12.5, fontWeight: 600,
+            cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6,
+          }}>
+            👁️ Lu par {readers.length} {readers.length > 1 ? "personnes" : "personne"} · voir
+          </button>
+        )}
+
       </div>
+
+      {showReaders && (
+        <ReactorsModal title="👁️ Ils ont lu" people={readers} loading={false}
+          onClose={() => setShowReaders(false)} />
+      )}
     </div>
   );
 }
