@@ -66,8 +66,8 @@
   --radius-xl:   24px;
   --radius-full: 9999px;
 
-  /* Typo — design system 2026 : Poppins (titres) + Inter (corps), via les
-     slots --font-cinzel/--font-montserrat alimentés par next/font (cf. layout). */
+  /* Typo — identité du flyer « Semblable à Christ » : Cinzel (titres, serif
+     romain) + Montserrat (corps), via next/font (cf. layout.tsx). */
   --font-title: var(--font-cinzel), "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-body:  var(--font-montserrat), "Segoe UI", system-ui, -apple-system, sans-serif;
 

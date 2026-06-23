@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Cinzel, Montserrat } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 import RegisterSW from "@/components/pwa/RegisterSW";
@@ -9,14 +9,17 @@ import { CallProvider } from "@/lib/meet/CallContext";
 import PersistentCallHost from "@/components/meet/PersistentCallHost";
 import IncomingCallHost from "@/components/meet/IncomingCallHost";
 
-const poppins = Poppins({
+// Typographie du flyer « Semblable à Christ » : Cinzel (titres, serif romain
+// élégant) + Montserrat (corps). Les variables CSS gardent leurs noms pour que
+// tous les composants en héritent sans changement.
+const cinzel = Cinzel({
   variable: "--font-cinzel",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: ["400", "600", "700", "900"],
   display: "swap",
 });
 
-const inter = Inter({
+const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -43,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${poppins.variable} ${inter.variable} h-full`}
+      className={`${cinzel.variable} ${montserrat.variable} h-full`}
       suppressHydrationWarning
     >
       <head>
