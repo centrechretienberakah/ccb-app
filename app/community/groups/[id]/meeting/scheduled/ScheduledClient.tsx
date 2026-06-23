@@ -425,7 +425,7 @@ function CreateMeetingModal({ groupId, groupName, onClose, onCreated }: {
         width: "100%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto",
         border: `1px solid ${T.border}`, boxShadow: T.shadowMd,
       }}>
-        <div style={{ fontFamily: F.title, fontSize: 18, fontWeight: 700, color: T.violet, marginBottom: 16 }}>
+        <div style={{ fontFamily: F.title, fontSize: 18, fontWeight: 700, color: T.gold, marginBottom: 16 }}>
           🗓️ Programmer une réunion
         </div>
 

@@ -130,7 +130,7 @@ export default function AdminModerationClient({ reports: initialReports, posts, 
           <Link href="/community" style={{
             background: T.card, border: `1px solid ${T.border}`,
             borderRadius: 8, padding: "6px 12px",
-            color: T.violet, fontSize: 12, fontWeight: 700,
+            color: T.gold, fontSize: 12, fontWeight: 700,
             textDecoration: "none",
           }}>← Communauté</Link>
         </div>
@@ -246,7 +246,7 @@ export default function AdminModerationClient({ reports: initialReports, posts, 
                       marginBottom: 12,
                     }}>
                       <div style={{
-                        fontSize: 10, fontWeight: 700, color: T.violet,
+                        fontSize: 10, fontWeight: 700, color: T.gold,
                         textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4,
                       }}>
                         📝 Post de {author?.display_name || "Membre"}
@@ -268,7 +268,7 @@ export default function AdminModerationClient({ reports: initialReports, posts, 
                       marginBottom: 12,
                     }}>
                       <div style={{
-                        fontSize: 10, fontWeight: 700, color: T.violet,
+                        fontSize: 10, fontWeight: 700, color: T.gold,
                         textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4,
                       }}>
                         💬 Commentaire de {author?.display_name || "Membre"}

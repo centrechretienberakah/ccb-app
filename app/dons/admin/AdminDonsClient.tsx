@@ -403,7 +403,7 @@ function RecordRow({ record: r, campaign, onConfirm, onCancel, onDelete }: {
             fontSize: 10, fontWeight: 700, letterSpacing: 0.4,
           }}>{recordStatusLabel(r.status)}</span>
           {campaign ? (
-            <span style={{ fontSize: 11, color: T.violet, fontWeight: 600 }}>· 🎯 {campaign.title}</span>
+            <span style={{ fontSize: 11, color: T.gold, fontWeight: 600 }}>· 🎯 {campaign.title}</span>
           ) : null}
         </div>
         <div style={{ fontSize: 11.5, color: T.textMuted, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -411,7 +411,7 @@ function RecordRow({ record: r, campaign, onConfirm, onCancel, onDelete }: {
           {mode ? <span>{mode.emoji} {mode.title}</span> : null}
           {r.reference ? <span style={{ fontFamily: "monospace" }}>{r.reference}</span> : null}
           {r.donor_email ? <span>📧 {r.donor_email}</span> : null}
-          {r.user_id ? <span style={{ color: T.violet }}>👤 user</span> : <span style={{ color: T.textMuted }}>👻 guest</span>}
+          {r.user_id ? <span style={{ color: T.gold }}>👤 user</span> : <span style={{ color: T.textMuted }}>👻 guest</span>}
           {r.is_anonymous ? <span style={{ color: T.gold, fontWeight: 700 }}>🕶️ anonyme</span> : null}
           {r.dedication ? <span style={{ color: T.heart }}>🕊️ {r.dedication}</span> : null}
         </div>
@@ -491,7 +491,7 @@ function CampaignRow({ campaign, onEdit, onAdjust, onDelete }: {
           <div style={{ flex: 1, height: 6, background: T.surface2, borderRadius: 999, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${k.color}, ${T.gold})` }} />
           </div>
-          <span style={{ fontSize: 12, color: T.violet, fontWeight: 800, whiteSpace: "nowrap" }}>{pct}%</span>
+          <span style={{ fontSize: 12, color: T.gold, fontWeight: 800, whiteSpace: "nowrap" }}>{pct}%</span>
         </div>
         <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
           {formatAmount(campaign.current_amount_xaf, "XAF")} / {formatAmount(campaign.target_amount_xaf, "XAF")}
@@ -843,7 +843,7 @@ function AdjustAmountForm({ campaign, onClose, onSaved }: {
       {addAmount !== "" && Number(addAmount) > 0 ? (
         <div style={{
           padding: "10px 14px", background: T.violetSoft, border: `1px solid ${T.violet}`,
-          borderRadius: 10, fontSize: 13, color: T.violetDark,
+          borderRadius: 10, fontSize: 13, color: T.gold,
         }}>
           ＋ Si ajout : nouveau total = <strong>{formatAmount(preview, "XAF")}</strong>
         </div>

@@ -401,7 +401,7 @@ function GroupRow({ group: g, creator, isLast, busy, onArchive, onRestore, onDel
       </div>
 
       <Link href={`/community/groups/${g.id}`} style={{
-        padding: "6px 12px", background: T.violetSoft, color: T.violet,
+        padding: "6px 12px", background: T.violetSoft, color: T.gold,
         border: `1px solid ${T.violet}`,
         borderRadius: 999, fontSize: 11.5, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap",
       }}>↗ Ouvrir</Link>

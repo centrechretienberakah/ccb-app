@@ -159,7 +159,7 @@ export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }
         {counts.admin && (
           <Link href="/community/admin" style={{
             padding: "6px 14px", fontSize: 11,
-            background: T.violetSoft, color: T.violet, fontWeight: 700,
+            background: T.violetSoft, color: T.gold, fontWeight: 700,
             borderRadius: 999, textDecoration: "none", flexShrink: 0,
             border: `1px solid ${T.violet}`,
             alignSelf: "center", marginRight: 10,

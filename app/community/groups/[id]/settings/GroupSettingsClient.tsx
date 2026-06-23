@@ -341,7 +341,7 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCover(f); }} />
                 <label htmlFor="ccb-cover-input" style={{
                   display: "inline-block",
-                  background: T.violetSoft, color: T.violet, border: `1px solid ${T.violet}`,
+                  background: T.violetSoft, color: T.gold, border: `1px solid ${T.violet}`,
                   borderRadius: 10, padding: "8px 14px",
                   cursor: uploading ? "wait" : "pointer", fontSize: 12, fontWeight: 700,
                   fontFamily: F.body,
@@ -429,7 +429,7 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
         <Section title="➕ Ajouter des membres">
           <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 10 }}>
             Recherche un membre du Centre Chrétien Berakah par son nom ou sa ville,
-            puis clique sur <strong style={{ color: T.violet }}>Ajouter</strong>.
+            puis clique sur <strong style={{ color: T.gold }}>Ajouter</strong>.
           </div>
           <div style={{ position: "relative", marginBottom: 10 }}>
             <input
@@ -542,13 +542,13 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
                       display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap",
                     }}>
                       {m.display_name || "Membre"}
-                      {isMe && <span style={{ color: T.violet, fontSize: 10 }}>· VOUS</span>}
+                      {isMe && <span style={{ color: T.gold, fontSize: 10 }}>· VOUS</span>}
                       {m.role === "owner" && <span style={{
                         background: T.gold, color: "#111", padding: "1px 7px",
                         borderRadius: 999, fontSize: 9, fontWeight: 700,
                       }}>👑 Owner</span>}
                       {m.role === "admin" && <span style={{
-                        background: T.violetSoft, color: T.violet, padding: "1px 7px",
+                        background: T.violetSoft, color: T.gold, padding: "1px 7px",
                         borderRadius: 999, fontSize: 9, fontWeight: 700,
                       }}>🛡️ Admin</span>}
                     </div>

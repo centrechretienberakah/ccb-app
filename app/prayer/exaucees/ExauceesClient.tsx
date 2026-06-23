@@ -63,7 +63,7 @@ export default function ExauceesClient({ prayers }: { prayers: AnsweredPrayer[] 
         <Link href="/prayer" style={{
           background: T.card, border: `1px solid ${T.border}`,
           borderRadius: 8, padding: "6px 12px",
-          color: T.violet, fontSize: 12, fontWeight: 700,
+          color: T.gold, fontSize: 12, fontWeight: 700,
           textDecoration: "none", fontFamily: F.body,
           display: "inline-block",
         }}>← Demandes actives</Link>

@@ -269,7 +269,7 @@ function CourseCard({ course }: { course: CourseLite }) {
         <div style={{ padding: 14, flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
           {course.category_name && (
             <div style={{
-              fontSize: 10, fontWeight: 700, color: T.violet,
+              fontSize: 10, fontWeight: 700, color: T.gold,
               textTransform: "uppercase", letterSpacing: "0.06em",
             }}>
               {course.category_name}

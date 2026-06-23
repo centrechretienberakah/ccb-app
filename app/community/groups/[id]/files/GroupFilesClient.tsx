@@ -145,7 +145,7 @@ export default function GroupFilesClient({ group, files }: { group: Group; files
                       {f.type === "pdf" ? "📄" : "📎"}
                     </div>
                     <div style={{
-                      fontSize: 12, fontWeight: 700, color: T.violet,
+                      fontSize: 12, fontWeight: 700, color: T.gold,
                       padding: "0 12px", textAlign: "center",
                     }}>
                       Ouvrir

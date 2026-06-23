@@ -278,7 +278,7 @@ export default function MesDonsClient({ records: initial, recurring: initialRec,
                 }}>
                   <span style={{ fontWeight: 700, color: T.text }}>{year}</span>
                   <span style={{ textAlign: "right" }}>
-                    <span style={{ fontWeight: 800, color: T.violet, display: "block" }}>
+                    <span style={{ fontWeight: 800, color: T.gold, display: "block" }}>
                       {formatAmount(info.total_xaf, "XAF")}
                     </span>
                     <span style={{ fontSize: 11, color: T.textMuted }}>{info.count} don{info.count > 1 ? "s" : ""}</span>
@@ -323,7 +323,7 @@ export default function MesDonsClient({ records: initial, recurring: initialRec,
             border: `1px solid ${T.gold}`,
             borderRadius: 14, fontSize: 13, color: T.text, lineHeight: 1.5,
           }}>
-            <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8, color: T.violetDark }}>
+            <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8, color: T.gold }}>
               📋 Déclaration fiscale
             </div>
             <p style={{ margin: "0 0 12px", color: T.textSoft, fontSize: 12.5 }}>
@@ -405,7 +405,7 @@ function RecordCard({ record: r, campaign, onCancel }: {
             fontSize: 10, fontWeight: 700, letterSpacing: 0.4,
           }}>{statusLabel}</span>
           {campaign ? (
-            <span style={{ fontSize: 11, color: T.violet, fontWeight: 600 }}>
+            <span style={{ fontSize: 11, color: T.gold, fontWeight: 600 }}>
               · 🎯 {campaign.title}
             </span>
           ) : null}

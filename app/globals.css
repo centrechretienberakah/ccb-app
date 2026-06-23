@@ -310,7 +310,7 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   font-family: var(--font-title);
   font-size: 18px;
   font-weight: 700;
-  color: var(--violet);
+  color: var(--gold);
   letter-spacing: 0.05em;
 }
 .sidebar-logo-sub {
@@ -358,13 +358,13 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 }
 .sidebar-link.active {
   background: var(--violet-pale);
-  color: var(--violet);
+  color: var(--gold);
   font-weight: 700;
   box-shadow: inset 3px 0 0 var(--violet);
 }
 [data-theme="dark"] .sidebar-link.active {
   background: rgba(91, 33, 182, 0.2);
-  color: var(--violet-light);
+  color: var(--gold);
 }
 .sidebar-link-icon {
   opacity: 0.75;
@@ -665,8 +665,8 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   border: none;
   font-family: var(--font-body);
 }
-.bottom-nav-item.active { color: var(--violet); }
-[data-theme="dark"] .bottom-nav-item.active { color: var(--violet-light); }
+.bottom-nav-item.active { color: var(--gold); }
+[data-theme="dark"] .bottom-nav-item.active { color: var(--gold); }
 /* Indicateur premium : barre supérieure sur l'onglet actif */
 .bottom-nav-item.active::before {
   content: "";
@@ -784,8 +784,8 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 }
 .bottom-sheet-item:active,
 .bottom-sheet-item:hover { background: var(--surface-2); color: var(--text-primary); }
-.bottom-sheet-item.active { color: var(--violet); background: var(--violet-pale); }
-[data-theme="dark"] .bottom-sheet-item.active { color: var(--violet-light); background: rgba(91, 33, 182,0.18); }
+.bottom-sheet-item.active { color: var(--gold); background: var(--violet-pale); }
+[data-theme="dark"] .bottom-sheet-item.active { color: var(--gold); background: rgba(91, 33, 182,0.18); }
 .bottom-sheet-icon {
   font-size: 24px;
   line-height: 1;
@@ -1357,8 +1357,8 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   font-family: var(--font-title); font-weight: 700; font-size: 13.5px;
   color: var(--text-primary); line-height: 1.25;
 }
-.dashboard-journey-action { font-size: 11.5px; color: var(--violet); font-weight: 600; margin-top: auto; }
-[data-theme="dark"] .dashboard-journey-action { color: var(--violet-light); }
+.dashboard-journey-action { font-size: 11.5px; color: var(--gold); font-weight: 600; margin-top: auto; }
+[data-theme="dark"] .dashboard-journey-action { color: var(--gold); }
 
 /* Mode sombre : ombres claires (les ombres sombres sont invisibles sur fond sombre) */
 [data-theme="dark"] .dashboard-action-card,
@@ -1405,7 +1405,7 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 .dashboard-upcoming-tag {
   font-size: 10px;
   font-weight: 700;
-  color: var(--violet);
+  color: var(--gold);
   background: var(--violet-pale);
   padding: 3px 8px;
   border-radius: var(--radius-full);
@@ -1415,7 +1415,7 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 }
 [data-theme="dark"] .dashboard-upcoming-tag {
   background: rgba(91, 33, 182,0.2);
-  color: var(--violet-light);
+  color: var(--gold);
 }
 
 /* Premium CTA */
@@ -1640,12 +1640,12 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
 }
 .devotion-section-icon {
-  color: var(--violet); font-size: 14px; font-weight: 700;
+  color: var(--gold); font-size: 14px; font-weight: 700;
 }
 .devotion-section-title {
   font-family: var(--font-title);
   font-size: 13px; font-weight: 700;
-  color: var(--violet);
+  color: var(--gold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1656,10 +1656,10 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   margin: 0;
 }
 .devotion-paragraph-highlight {
-  color: var(--violet-dark);
+  color: var(--gold);
   font-weight: 500;
 }
-[data-theme="dark"] .devotion-paragraph-highlight { color: var(--violet-light); }
+[data-theme="dark"] .devotion-paragraph-highlight { color: var(--gold); }
 
 /* Prayer card */
 .devotion-prayer-card {
@@ -1908,12 +1908,12 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
 }
 .auth-forgot {
   font-size: 12px;
-  color: var(--violet);
+  color: var(--gold);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.15s;
 }
-.auth-forgot:hover { color: var(--violet-dark); }
+.auth-forgot:hover { color: var(--gold-dark); }
 .auth-btn {
   width: 100%;
   padding: 13px;
@@ -1973,12 +1973,12 @@ h4, h5, h6 { font-family: var(--font-body); font-weight: 600; line-height: 1.4; 
   color: var(--text-secondary);
 }
 .auth-switch a {
-  color: var(--violet);
+  color: var(--gold);
   font-weight: 700;
   text-decoration: none;
   transition: color 0.15s;
 }
-.auth-switch a:hover { color: var(--violet-dark); }
+.auth-switch a:hover { color: var(--gold-dark); }
 .auth-back {
   display: block;
   text-align: center;
@@ -2115,7 +2115,7 @@ iframe {
 
 /* Helpers couleur du flyer */
 .text-gold   { color: var(--gold); }
-.text-purple { color: var(--violet-light); }
+.text-purple { color: var(--gold); }
 
 /* Carte glassmorphism (violet/or + liseré or supérieur) */
 .glass-card {

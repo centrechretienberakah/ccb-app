@@ -25,7 +25,7 @@ export default function FollowListView({
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "22px 16px" }}>
         <Link href={backHref} style={{
           display: "inline-block", background: T.card, border: `1px solid ${T.border}`,
-          borderRadius: 8, padding: "6px 12px", color: T.violet,
+          borderRadius: 8, padding: "6px 12px", color: T.gold,
           fontSize: 12, fontWeight: 700, textDecoration: "none", marginBottom: 18,
         }}>← Retour au profil</Link>
 
@@ -73,7 +73,7 @@ export default function FollowListView({
                       }}>{m.bio}</div>
                     )}
                   </div>
-                  <span style={{ color: T.violet, fontSize: 13, fontWeight: 700 }}>→</span>
+                  <span style={{ color: T.gold, fontSize: 13, fontWeight: 700 }}>→</span>
                 </Link>
               );
             })}

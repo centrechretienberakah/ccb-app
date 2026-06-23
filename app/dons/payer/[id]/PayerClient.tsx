@@ -181,7 +181,7 @@ export default function PayerClient({
             <div style={{ fontSize: 11, color: T.textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>
               {k.emoji} {k.label}
             </div>
-            <div style={{ fontFamily: F.title, fontSize: 28, fontWeight: 800, color: T.violetDark, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontFamily: F.title, fontSize: 28, fontWeight: 800, color: T.gold, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
               {formatAmount(record.amount_native, record.currency)}
             </div>
             {record.currency !== "XAF" ? (
@@ -199,7 +199,7 @@ export default function PayerClient({
           <div style={{
             padding: "12px 14px", marginBottom: 14,
             background: T.violetSoft, border: `1px solid ${T.violet}`, borderRadius: 10,
-            fontSize: 13, color: T.violetDark, textAlign: "center",
+            fontSize: 13, color: T.gold, textAlign: "center",
           }}>
             ⏳ Vérification du paiement en cours… la page va se rafraîchir automatiquement.
           </div>
@@ -267,7 +267,7 @@ export default function PayerClient({
           borderRadius: 12, fontSize: 12.5, color: T.textSoft, lineHeight: 1.55,
         }}>
           💡 Tu préfères un virement manuel ou une autre méthode ?
-          {" "}<Link href={`/dons/merci?id=${record.id}`} style={{ color: T.violet, fontWeight: 700 }}>
+          {" "}<Link href={`/dons/merci?id=${record.id}`} style={{ color: T.gold, fontWeight: 700 }}>
             Voir les instructions de paiement manuel
           </Link>.
         </section>

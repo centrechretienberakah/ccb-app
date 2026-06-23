@@ -104,7 +104,7 @@ export default function MerciClient({
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14 }}>{data.kindEmoji} {data.kindLabel}</span>
-              <span style={{ fontFamily: F.title, fontSize: 28, fontWeight: 800, color: T.violetDark, fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontFamily: F.title, fontSize: 28, fontWeight: 800, color: T.gold, fontVariantNumeric: "tabular-nums" }}>
                 {formatAmount(data.amount, data.currency)}
               </span>
             </div>
@@ -114,7 +114,7 @@ export default function MerciClient({
               </div>
             ) : null}
             {data.campaignTitle ? (
-              <div style={{ marginTop: 10, fontSize: 13, color: T.violetDark }}>
+              <div style={{ marginTop: 10, fontSize: 13, color: T.gold }}>
                 🎯 Affecté à : <strong>{data.campaignTitle}</strong>
               </div>
             ) : null}
@@ -167,7 +167,7 @@ export default function MerciClient({
             <li>Effectue le transfert vers le numéro / IBAN ci-dessus.</li>
             <li>{data?.reference ? <>Pense à mentionner la référence : <strong>{data.reference}</strong></> : "Mentionne ton nom dans la référence du transfert."}</li>
             <li>L'équipe confirmera la réception sous 24-48h.</li>
-            <li>Tu peux suivre l'historique de tes dons dans <Link href="/dons/mes-dons" style={{ color: T.violet, fontWeight: 700 }}>Mes dons</Link>.</li>
+            <li>Tu peux suivre l'historique de tes dons dans <Link href="/dons/mes-dons" style={{ color: T.gold, fontWeight: 700 }}>Mes dons</Link>.</li>
           </ol>
         </section>
 

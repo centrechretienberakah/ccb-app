@@ -155,13 +155,13 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
             <Link href="/community" style={{
               background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8,
-              padding: "5px 10px", color: T.violet, fontSize: 12, fontWeight: 700, textDecoration: "none",
+              padding: "5px 10px", color: T.gold, fontSize: 12, fontWeight: 700, textDecoration: "none",
             }}>←</Link>
             <h1 style={{ fontFamily: F.title, fontSize: 18, fontWeight: 700, margin: 0, flex: 1 }}>
               👥 Membres <span style={{ color: T.textMuted, fontWeight: 500, fontSize: 14 }}>· {members.length}</span>
             </h1>
             {isAdmin && (
-              <span style={{ fontSize: 10, fontWeight: 700, color: T.violet, background: T.violetSoft, border: `1px solid ${T.violet}`, borderRadius: 999, padding: "3px 9px" }}>🛡️ Admin</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: T.gold, background: T.violetSoft, border: `1px solid ${T.violet}`, borderRadius: 999, padding: "3px 9px" }}>🛡️ Admin</span>
             )}
           </div>
 
@@ -217,18 +217,18 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
           <div style={{ background: T.card, borderTop: `3px solid ${T.violet}`, borderRadius: "20px 20px 0 0", padding: "20px 18px 32px", width: "100%", maxWidth: 520, maxHeight: "80vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
               <div>
-                <div style={{ fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.violet }}>🛡️ Édition membre</div>
+                <div style={{ fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.gold }}>🛡️ Édition membre</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>{adminModal.display_name || "Membre"}</div>
               </div>
               <button onClick={() => setAdminModal(null)} style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 11px", color: T.textMuted, fontSize: 14, cursor: "pointer" }}>✕</button>
             </div>
             <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.violet, marginBottom: 6, letterSpacing: 0.5 }}>GROUPE DE CELLULE</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.gold, marginBottom: 6, letterSpacing: 0.5 }}>GROUPE DE CELLULE</div>
               <input value={modalCellGroup} onChange={(e) => setModalCellGroup(e.target.value)} placeholder="Ex : Cellule Alpha…"
                 style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, fontSize: 13, fontFamily: F.body, outline: "none" }} />
             </div>
             <div style={{ marginBottom: 22 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.violet, marginBottom: 8, letterSpacing: 0.5 }}>JALONS SPIRITUELS</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.gold, marginBottom: 8, letterSpacing: 0.5 }}>JALONS SPIRITUELS</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {MILESTONE_DEFS.map((mm) => {
                   const active = modalMilestones.includes(mm.key);
@@ -236,7 +236,7 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
                     <button key={mm.key} onClick={() => toggleModalMilestone(mm.key)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: active ? T.violetSoft : T.bg, border: `1px solid ${active ? T.violet : T.borderSoft}`, borderRadius: 10, color: active ? T.violet : T.textSoft, fontSize: 13, cursor: "pointer", textAlign: "left", width: "100%", fontFamily: F.body }}>
                       <span style={{ fontSize: 17 }}>{mm.icon}</span>
                       <span style={{ flex: 1, fontWeight: active ? 700 : 500 }}>{mm.label}</span>
-                      {active && <span style={{ color: T.violet }}>✓</span>}
+                      {active && <span style={{ color: T.gold }}>✓</span>}
                     </button>
                   );
                 })}
@@ -353,7 +353,7 @@ function MemberCard({ m, isMe, isAdmin, isOnline, router, onAdminEdit }: {
         </div>
 
         {isAdmin && !isMe && (
-          <button onClick={(e) => { e.stopPropagation(); onAdminEdit(); }} title="Éditer" style={{ background: T.violetSoft, border: `1px solid ${T.violet}66`, borderRadius: 8, padding: "4px 8px", color: T.violet, fontSize: 12, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }}>✏️</button>
+          <button onClick={(e) => { e.stopPropagation(); onAdminEdit(); }} title="Éditer" style={{ background: T.violetSoft, border: `1px solid ${T.violet}66`, borderRadius: 8, padding: "4px 8px", color: T.gold, fontSize: 12, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }}>✏️</button>
         )}
       </div>
 

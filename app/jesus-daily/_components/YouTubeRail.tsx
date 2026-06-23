@@ -78,7 +78,7 @@ export default function YouTubeRail() {
             <span style={{ color: "#FF0000" }}>▶</span> Dernières vidéos YouTube
           </h2>
           <p style={{ margin: "4px 0 0", color: T.textMuted, fontSize: 13 }}>
-            En direct de la chaîne <a href="https://www.youtube.com/channel/UCFwp158Jrg_AKlYm6Wdg4kw" target="_blank" rel="noopener noreferrer" style={{ color: T.violet, textDecoration: "none", fontWeight: 600 }}>@CentreChrétienBerakah ↗</a>
+            En direct de la chaîne <a href="https://www.youtube.com/channel/UCFwp158Jrg_AKlYm6Wdg4kw" target="_blank" rel="noopener noreferrer" style={{ color: T.gold, textDecoration: "none", fontWeight: 600 }}>@CentreChrétienBerakah ↗</a>
           </p>
         </div>
         {status === "ok" && items.length > 1 ? (

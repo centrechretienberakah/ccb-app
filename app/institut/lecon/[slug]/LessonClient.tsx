@@ -159,7 +159,7 @@ export default function LessonClient({
             <div style={{ fontSize: 48, marginBottom: 10 }}>👑</div>
             <h2 style={{
               fontFamily: F.title, fontSize: 22, fontWeight: 700,
-              color: T.violet, margin: "0 0 8px",
+              color: T.gold, margin: "0 0 8px",
             }}>
               Contenu Premium
             </h2>
@@ -183,7 +183,7 @@ export default function LessonClient({
                 👑 Devenir Premium
               </Link>
               <Link href={`/institut/cours/${course.slug}`} style={{
-                background: T.bg, color: T.violet,
+                background: T.bg, color: T.gold,
                 border: `1px solid ${T.violet}`,
                 padding: "11px 22px", borderRadius: 999,
                 fontWeight: 700, fontSize: 13, fontFamily: F.body,
@@ -217,7 +217,7 @@ export default function LessonClient({
           }}>
             <div style={{
               fontFamily: F.title, fontSize: 13, fontWeight: 700,
-              color: T.violet, marginBottom: 8,
+              color: T.gold, marginBottom: 8,
             }}>
               🎵 Écouter
             </div>
@@ -273,7 +273,7 @@ export default function LessonClient({
                     Clique pour ouvrir / télécharger
                   </div>
                 </div>
-                <span style={{ color: T.violet, fontSize: 16 }}>↗</span>
+                <span style={{ color: T.gold, fontSize: 16 }}>↗</span>
               </a>
             )}
             {video && lesson.audio_url && (
@@ -455,7 +455,7 @@ function PlaylistSidebar({ modules, playlist, completedIds, currentSlug, total }
               {g.title && (
                 <div style={{
                   padding: "9px 14px 5px", fontSize: 10.5, fontWeight: 800,
-                  color: T.violet, textTransform: "uppercase", letterSpacing: "0.06em",
+                  color: T.gold, textTransform: "uppercase", letterSpacing: "0.06em",
                   background: T.surface2,
                 }}>
                   {g.title}
@@ -579,7 +579,7 @@ function QuizBlock({ lessonId, courseId, questions, initialScore, initialMax }: 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
         <h2 style={{
           fontFamily: F.title, fontSize: 16, fontWeight: 700,
-          color: T.violet, margin: 0, letterSpacing: 0.04,
+          color: T.gold, margin: 0, letterSpacing: 0.04,
           display: "flex", alignItems: "center", gap: 8,
         }}>
           🧠 Quiz de la leçon
@@ -708,7 +708,7 @@ const breadLink: React.CSSProperties = {
 };
 const sectionTitle: React.CSSProperties = {
   fontFamily: F.title, fontSize: 12, fontWeight: 700,
-  color: T.violet, textTransform: "uppercase",
+  color: T.gold, textTransform: "uppercase",
   letterSpacing: "0.08em", margin: "0 0 12px",
 };
 const resourceCard: React.CSSProperties = {

@@ -266,7 +266,7 @@ export default function DonsAnalyticsClient({
                       {formatAmount(Number(c.current_amount_xaf), "XAF")}
                     </div>
                     <div style={{ fontSize: 11, color: T.textMuted }}>sur {formatAmount(Number(c.target_amount_xaf), "XAF")}</div>
-                    <div style={{ fontSize: 11.5, color: T.violet, fontWeight: 800, marginTop: 2 }}>{c.progress_pct}%</div>
+                    <div style={{ fontSize: 11.5, color: T.gold, fontWeight: 800, marginTop: 2 }}>{c.progress_pct}%</div>
                   </div>
                 </Link>
               );

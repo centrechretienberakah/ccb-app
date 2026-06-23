@@ -513,7 +513,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
       {blocked && (
         <div style={{ flexShrink: 0, padding: "12px 14px calc(12px + env(safe-area-inset-bottom, 0px))", background: T.card, borderTop: `1px solid ${T.borderSoft}`, textAlign: "center", fontSize: 13, color: T.textMuted }}>
           🚫 Vous avez bloqué {name}.{" "}
-          <button onClick={toggleBlock} style={{ background: "none", border: "none", color: T.violet, fontWeight: 700, cursor: "pointer", fontSize: 13, padding: 0 }}>Débloquer</button>
+          <button onClick={toggleBlock} style={{ background: "none", border: "none", color: T.gold, fontWeight: 700, cursor: "pointer", fontSize: 13, padding: 0 }}>Débloquer</button>
         </div>
       )}
 
@@ -607,7 +607,7 @@ function DmMediaModal({ messages, onClose }: { messages: DmMessageRow[]; onClose
         width: "100%", maxWidth: 560, maxHeight: "78vh", overflowY: "auto",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.violet }}>🖼️ Média, docs et liens</div>
+          <div style={{ fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.gold }}>🖼️ Média, docs et liens</div>
           <button onClick={onClose} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 11px", color: T.textMuted, fontSize: 14, cursor: "pointer" }}>✕</button>
         </div>
 
@@ -647,7 +647,7 @@ function DmMediaModal({ messages, onClose }: { messages: DmMessageRow[]; onClose
             <div style={dmMediaSection}>Liens ({links.length})</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {links.map((l, i) => (
-                <a key={i} href={l} target="_blank" rel="noopener noreferrer" style={{ color: T.violet, fontSize: 13, textDecoration: "none", wordBreak: "break-all", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 11px" }}>🔗 {l}</a>
+                <a key={i} href={l} target="_blank" rel="noopener noreferrer" style={{ color: T.gold, fontSize: 13, textDecoration: "none", wordBreak: "break-all", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 11px" }}>🔗 {l}</a>
               ))}
             </div>
           </>

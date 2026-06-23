@@ -40,7 +40,7 @@ export default function ProgressionClient({ chapters, versesSaved, highlightsCou
           <Link href="/bible" style={{
             background: T.surface2, border: `1px solid ${T.border}`,
             borderRadius: 8, padding: "6px 12px",
-            color: T.violet, fontSize: 12, fontWeight: 700,
+            color: T.gold, fontSize: 12, fontWeight: 700,
             textDecoration: "none", fontFamily: F.body,
           }}>← Bible</Link>
           <h1 style={{
@@ -229,7 +229,7 @@ function Row({ label, value, last }: { label: string; value: number; last?: bool
       borderBottom: last ? "none" : `1px solid ${T.borderSoft}`,
     }}>
       <div style={{ fontSize: 13, color: T.textSoft }}>{label}</div>
-      <div style={{ fontFamily: F.title, fontSize: 16, fontWeight: 700, color: T.violet }}>
+      <div style={{ fontFamily: F.title, fontSize: 16, fontWeight: 700, color: T.gold }}>
         {value}
       </div>
     </div>

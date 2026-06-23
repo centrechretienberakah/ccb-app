@@ -98,7 +98,7 @@ export default function NotificationsClient({ notifications: initial, actors }: 
           <Link href="/community" style={{
             background: T.card, border: `1px solid ${T.border}`,
             borderRadius: 8, padding: "6px 12px",
-            color: T.violet, fontSize: 12, fontWeight: 700,
+            color: T.gold, fontSize: 12, fontWeight: 700,
             textDecoration: "none",
           }}>← Communauté</Link>
           {unreadCount > 0 && (
@@ -195,14 +195,14 @@ export default function NotificationsClient({ notifications: initial, actors }: 
                       <span>{timeAgo(n.created_at)}</span>
                       {(n.source_id || n.source_type === "post") && (
                         <Link href={notifUrl(n)} onClick={() => markRead(n.id)}
-                          style={{ color: T.violet, fontWeight: 700, textDecoration: "none" }}>
+                          style={{ color: T.gold, fontWeight: 700, textDecoration: "none" }}>
                           → Voir
                         </Link>
                       )}
                       {isUnread && (
                         <button onClick={() => markRead(n.id)} style={{
                           background: "none", border: "none", cursor: "pointer",
-                          color: T.violet, fontSize: 11, fontWeight: 600, padding: 0,
+                          color: T.gold, fontSize: 11, fontWeight: 600, padding: 0,
                         }}>
                           ✓ Lu
                         </button>

@@ -156,7 +156,7 @@ function PrayerComposer({
     }}>
       <div style={{
         fontFamily: F.title, fontSize: 14, fontWeight: 700,
-        color: T.violet, marginBottom: 12,
+        color: T.gold, marginBottom: 12,
       }}>
         🙏 Nouvelle demande de prière
       </div>
@@ -1004,7 +1004,7 @@ function ViewStatsMenu({ tab, setTab, stats, myLife, isAdmin }: {
               <div style={{ height: 1, background: T.borderSoft, margin: "6px 4px" }} />
               <Link href="/prayer/admin" onClick={() => setOpen(false)} style={{
                 display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", borderRadius: 8,
-                textDecoration: "none", color: T.violet, fontSize: 13, fontWeight: 700, fontFamily: F.body,
+                textDecoration: "none", color: T.gold, fontSize: 13, fontWeight: 700, fontFamily: F.body,
               }}>
                 🛡️ Modération
               </Link>

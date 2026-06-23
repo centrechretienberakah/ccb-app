@@ -434,7 +434,7 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
             boxShadow: "0 -20px 60px rgba(0,0,0,0.18)",
           }}>
             <div style={{
-              fontSize: 12, fontWeight: 700, color: T.violet, marginBottom: 8,
+              fontSize: 12, fontWeight: 700, color: T.gold, marginBottom: 8,
               fontFamily: F.body, letterSpacing: "0.05em",
             }}>
               {bookFr} {chapter}:{selectedVerse.verse} · {currentVersion.shortLabel}
@@ -625,7 +625,7 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
             }} style={{
               background: T.surface2, border: `1px solid ${T.border}`,
               borderRadius: 8, padding: "6px 12px",
-              color: T.violet, fontSize: 12, fontWeight: 700, cursor: "pointer",
+              color: T.gold, fontSize: 12, fontWeight: 700, cursor: "pointer",
               fontFamily: F.body, flexShrink: 0,
             }}>
               ← Retour
@@ -678,7 +678,7 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
           fontWeight: 700, color: T.text, margin: "0 0 14px",
           letterSpacing: "0.02em",
         }}>
-          {bookFr} <span style={{ color: T.violet }}>{chapter}</span>
+          {bookFr} <span style={{ color: T.gold }}>{chapter}</span>
         </h1>
 
         <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
@@ -687,7 +687,7 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
             <button onClick={() => setShowVersionPicker((v) => !v)} style={{
               background: T.violetSoft, border: `1px solid ${T.violet}`,
               borderRadius: 999, padding: "6px 14px",
-              color: T.violet, fontSize: 12, fontWeight: 700,
+              color: T.gold, fontSize: 12, fontWeight: 700,
               cursor: "pointer", fontFamily: F.body,
               display: "flex", alignItems: "center", gap: 6,
             }}>
@@ -811,7 +811,7 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
                 return (
                   <span key={v.verse} onClick={() => setSelectedVerse(v)} style={{ cursor: "pointer", display: "inline" }}>
                     <sup style={{
-                      fontSize: "0.58em", color: T.violet, fontWeight: 700,
+                      fontSize: "0.58em", color: T.gold, fontWeight: 700,
                       marginRight: 3, marginLeft: 8,
                       fontFamily: F.body, verticalAlign: "super",
                     }}>
@@ -856,7 +856,7 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
           <button onClick={() => router.push("/bible")} style={{
             background: T.surface2, border: `1px solid ${T.border}`,
             borderRadius: 12, padding: "13px 16px",
-            color: T.violet, fontSize: 18, cursor: "pointer",
+            color: T.gold, fontSize: 18, cursor: "pointer",
           }} title="Retour à Ma Bible">
             📖
           </button>
@@ -907,7 +907,7 @@ function VersionRow({ version, active, onClick }: {
           <div style={{ fontSize: 11, color: T.textMuted }}>{version.year}</div>
         )}
       </div>
-      {active && <span style={{ color: T.violet, fontSize: 14 }}>✓</span>}
+      {active && <span style={{ color: T.gold, fontSize: 14 }}>✓</span>}
     </button>
   );
 }

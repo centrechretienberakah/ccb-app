@@ -223,7 +223,7 @@ export default function CourseClient({ course, category, modules, totalLessons, 
                 boxShadow: T.shadowSoft,
               }}>
                 <div style={{
-                  fontSize: 12, fontWeight: 700, color: T.violet,
+                  fontSize: 12, fontWeight: 700, color: T.gold,
                   textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8,
                 }}>
                   📊 Ta progression
@@ -323,7 +323,7 @@ export default function CourseClient({ course, category, modules, totalLessons, 
                               {m.lessons.length > 0 && ` · ${modCompleted}/${m.lessons.length} terminée${modCompleted > 1 ? "s" : ""}`}
                             </div>
                           </div>
-                          <span style={{ fontSize: 14, color: T.violet }}>{open ? "▴" : "▾"}</span>
+                          <span style={{ fontSize: 14, color: T.gold }}>{open ? "▴" : "▾"}</span>
                         </button>
 
                         {open && m.lessons.length > 0 && (
@@ -392,6 +392,6 @@ const breadLink: React.CSSProperties = {
 };
 const sectionTitle: React.CSSProperties = {
   fontFamily: F.title, fontSize: 12, fontWeight: 700,
-  color: T.violet, textTransform: "uppercase",
+  color: T.gold, textTransform: "uppercase",
   letterSpacing: "0.08em", margin: "0 0 12px",
 };

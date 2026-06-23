@@ -136,7 +136,7 @@ export default function LiveChat({ videoId, initialMessages, isAuth, currentUser
                 ) : name[0]?.toUpperCase() ?? "?"}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 12, color: T.violet, marginBottom: 1 }}>{name}</div>
+                <div style={{ fontWeight: 700, fontSize: 12, color: T.gold, marginBottom: 1 }}>{name}</div>
                 <div style={{ color: T.textSoft, wordBreak: "break-word" }}>{m.body}</div>
               </div>
               {(isOwner || isStaff) ? (

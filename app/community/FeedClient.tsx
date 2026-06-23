@@ -514,7 +514,7 @@ function ContentWithMentions({ content, members }: { content: string; members: M
         if (s.type === "mention" && s.userId) {
           return (
             <Link key={i} href={`/community/profil/${s.userId}`}
-              style={{ color: "#5B21B6", fontWeight: 700, textDecoration: "none" }}>
+              style={{ color: "#D4AF37", fontWeight: 700, textDecoration: "none" }}>
               {s.content}
             </Link>
           );
@@ -718,7 +718,7 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, hasAmen
               <ContentWithMentions content={post.content} members={members} />
             </div>
             {isLong && (
-              <button onClick={() => setExpanded((v) => !v)} style={{ background: "none", border: "none", color: "#5B21B6", fontWeight: 700, fontSize: 13, cursor: "pointer", padding: "0 0 12px" }}>
+              <button onClick={() => setExpanded((v) => !v)} style={{ background: "none", border: "none", color: "#D4AF37", fontWeight: 700, fontSize: 13, cursor: "pointer", padding: "0 0 12px" }}>
                 {expanded ? "Voir moins ▲" : "Lire la suite ▾"}
               </button>
             )}

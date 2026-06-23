@@ -99,7 +99,7 @@ export default function PersonalNotes({ videoId, isAuth, currentTimeSecs, onJump
 
       {!isAuth ? (
         <p style={{ color: T.textMuted, fontSize: 13, margin: 0 }}>
-          <Link href="/auth/login" style={{ color: T.violet, textDecoration: "none", fontWeight: 600 }}>Connecte-toi</Link> pour prendre des notes privées sur cette vidéo.
+          <Link href="/auth/login" style={{ color: T.gold, textDecoration: "none", fontWeight: 600 }}>Connecte-toi</Link> pour prendre des notes privées sur cette vidéo.
         </p>
       ) : (
         <>

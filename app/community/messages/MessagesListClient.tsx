@@ -176,7 +176,7 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
         {/* Actions groupe (admins) — rapatriées de l'ancienne page Groupes */}
         {canCreate && filter !== "historique" && (
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 12, flexWrap: "wrap" }}>
-            <Link href="/community/groups/admin" style={{ padding: "7px 14px", background: T.violetSoft, color: T.violet, border: `1px solid ${T.violet}`, borderRadius: 999, fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>⚙️ Dashboard admin</Link>
+            <Link href="/community/groups/admin" style={{ padding: "7px 14px", background: T.violetSoft, color: T.gold, border: `1px solid ${T.violet}`, borderRadius: 999, fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>⚙️ Dashboard admin</Link>
             <button onClick={() => setShowCreate(true)} style={{ padding: "7px 16px", background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, color: "#fff", border: "none", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>➕ Créer un groupe</button>
           </div>
         )}
@@ -315,7 +315,7 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
         <div onClick={(e) => { if (e.target === e.currentTarget) setShowCreate(false); }}
           style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(31,26,51,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 14 }}>
           <div style={{ background: T.card, borderRadius: 18, padding: 20, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", border: `1px solid ${T.border}` }}>
-            <div style={{ fontFamily: F.title, fontSize: 17, fontWeight: 700, color: T.violet, marginBottom: 16 }}>➕ Créer un groupe</div>
+            <div style={{ fontFamily: F.title, fontSize: 17, fontWeight: 700, color: T.gold, marginBottom: 16 }}>➕ Créer un groupe</div>
             <div style={{ marginBottom: 10 }}>
               <label style={lbl}>NOM *</label>
               <input value={gName} onChange={(e) => setGName(e.target.value)} placeholder="ex. Intercesseurs CCB, Équipe Louange…" maxLength={80} style={inputStyle} />

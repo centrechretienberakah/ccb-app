@@ -1404,7 +1404,7 @@ export default function GroupDetailClient({
                               padding: "5px 10px", marginBottom: 4,
                               fontSize: 11, maxWidth: "100%",
                             }}>
-                              <div style={{ fontWeight: 700, color: T.violet, marginBottom: 1 }}>
+                              <div style={{ fontWeight: 700, color: T.gold, marginBottom: 1 }}>
                                 ↩ {replyParent.user_profiles?.display_name || "Membre"}
                               </div>
                               <div style={{
@@ -1581,7 +1581,7 @@ export default function GroupDetailClient({
                     borderRadius: "0 10px 10px 0",
                   }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: T.violet, marginBottom: 2 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.gold, marginBottom: 2 }}>
                         ↩ Réponse à {replyTo.user_profiles?.display_name || "Membre"}
                       </div>
                       <div style={{
@@ -1688,7 +1688,7 @@ export default function GroupDetailClient({
                       disabled={uploading} title="Ajouter"
                       style={{
                         width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
-                        background: T.surface2, border: `1px solid ${T.border}`, color: T.violet,
+                        background: T.surface2, border: `1px solid ${T.border}`, color: T.gold,
                         fontSize: 26, lineHeight: 1, cursor: uploading ? "wait" : "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}>
@@ -1817,7 +1817,7 @@ export default function GroupDetailClient({
                 display: "flex", justifyContent: "space-between", alignItems: "center",
                 marginBottom: 14,
               }}>
-                <div style={{ fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.violet }}>
+                <div style={{ fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.gold }}>
                   👥 Membres ({members.length})
                 </div>
                 <button onClick={() => setShowMembers(false)} style={{
@@ -1878,7 +1878,7 @@ function MembersList({ members, currentUserId }: { members: Member[]; currentUse
                   fontSize: 13, fontWeight: 600, color: T.text,
                   whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                 }}>
-                  {m.display_name || "Membre"} {isMe && <span style={{ color: T.violet, fontWeight: 700 }}>· VOUS</span>}
+                  {m.display_name || "Membre"} {isMe && <span style={{ color: T.gold, fontWeight: 700 }}>· VOUS</span>}
                 </div>
                 {m.role !== "member" && (
                   <div style={{ fontSize: 10, color: T.gold, fontWeight: 700, textTransform: "uppercase" }}>
@@ -1998,7 +1998,7 @@ function VersePromptModal({ onShare, onClose }: { onShare: (ref: string, text: s
     }}>
       <div style={{ width: "100%", maxWidth: 420, background: T.card, border: `1px solid ${T.border}`, borderRadius: 18, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontFamily: F.title, fontWeight: 800, fontSize: 15, color: T.violet }}>📖 Partager un verset</span>
+          <span style={{ fontFamily: F.title, fontWeight: 800, fontSize: 15, color: T.gold }}>📖 Partager un verset</span>
           <button onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: T.textMuted }}>✕</button>
         </div>
         <input autoFocus value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Référence — ex : Jean 3:16" style={verseInput} />
@@ -2033,7 +2033,7 @@ function MediaModal({ messages, onClose, onImageClick }: { messages: Message[]; 
     }}>
       <div style={{ width: "100%", maxWidth: 680, maxHeight: "85vh", background: T.card, borderRadius: "20px 20px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${T.border}` }}>
-          <span style={{ fontFamily: F.title, fontWeight: 800, fontSize: 15, color: T.violet }}>📷 Médias du groupe</span>
+          <span style={{ fontFamily: F.title, fontWeight: 800, fontSize: 15, color: T.gold }}>📷 Médias du groupe</span>
           <button onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: T.textMuted }}>✕</button>
         </div>
         <div style={{ display: "flex", gap: 6, padding: "10px 12px", overflowX: "auto", borderBottom: `1px solid ${T.borderSoft}` }}>
@@ -2068,7 +2068,7 @@ function MediaModal({ messages, onClose, onImageClick }: { messages: Message[]; 
                   </div>
                   {tab === "audio"
                     ? <audio src={m.attachment_url!} controls style={{ width: "100%" }} />
-                    : <a href={m.attachment_url!} target="_blank" rel="noopener noreferrer" style={{ color: T.violet, fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}>Ouvrir ↗</a>}
+                    : <a href={m.attachment_url!} target="_blank" rel="noopener noreferrer" style={{ color: T.gold, fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}>Ouvrir ↗</a>}
                 </div>
               ))}
             </div>

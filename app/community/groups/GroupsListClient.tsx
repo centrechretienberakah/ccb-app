@@ -245,7 +245,7 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
           {canCreate && (
             <>
               <Link href="/community/groups/admin" style={{
-                padding: "6px 12px", background: T.violetSoft, color: T.violet,
+                padding: "6px 12px", background: T.violetSoft, color: T.gold,
                 border: `1px solid ${T.violet}`,
                 borderRadius: 999, fontSize: 11, fontWeight: 700,
                 textDecoration: "none", whiteSpace: "nowrap",
@@ -331,7 +331,7 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
           }}>
             <div style={{
               fontFamily: F.title, fontSize: 17, fontWeight: 700,
-              color: T.violet, marginBottom: 16,
+              color: T.gold, marginBottom: 16,
             }}>
               ➕ Créer un groupe
             </div>
@@ -376,7 +376,7 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
             <div style={{
               padding: "10px 12px", background: T.violetSoft,
               border: `1px solid ${T.violet}`, borderRadius: 10,
-              fontSize: 11.5, color: T.violetDark, lineHeight: 1.5, marginBottom: 10,
+              fontSize: 11.5, color: T.gold, lineHeight: 1.5, marginBottom: 10,
             }}>
               💡 Le groupe inclura automatiquement <strong>CCB MEET</strong>
               (visio + audio + partage d&apos;écran) accessible via le bouton

@@ -28,7 +28,7 @@ export default function ThemesListClient({ themes, activeMap }: Props) {
           <Link href="/bible" style={{
             background: T.surface2, border: `1px solid ${T.border}`,
             borderRadius: 8, padding: "6px 12px",
-            color: T.violet, fontSize: 12, fontWeight: 700,
+            color: T.gold, fontSize: 12, fontWeight: 700,
             textDecoration: "none", fontFamily: F.body,
           }}>← Bible</Link>
         </div>
@@ -63,7 +63,7 @@ export default function ThemesListClient({ themes, activeMap }: Props) {
                 }}>
                   <div style={{
                     width: 48, height: 48, borderRadius: 12, flexShrink: 0,
-                    background: T.violetSoft, color: T.violet,
+                    background: T.violetSoft, color: T.gold,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 24,
                   }}>
@@ -93,13 +93,13 @@ export default function ThemesListClient({ themes, activeMap }: Props) {
                             background: T.violet, transition: "width 0.4s",
                           }} />
                         </div>
-                        <div style={{ fontSize: 10, color: T.violet, fontWeight: 700 }}>
+                        <div style={{ fontSize: 10, color: T.gold, fontWeight: 700 }}>
                           {done}/{t.totalDays} jours · {pct}%
                         </div>
                       </>
                     )}
                   </div>
-                  <div style={{ color: T.violet, fontSize: 18, flexShrink: 0 }}>→</div>
+                  <div style={{ color: T.gold, fontSize: 18, flexShrink: 0 }}>→</div>
                 </div>
               </Link>
             );

@@ -95,7 +95,7 @@ export default function ParallelClient({ bookFr, bookEn, bookNumber, chapter, to
           <Link href={`/bible/read/${encodeURIComponent(bookFr)}/${chapter}`} style={{
             background: T.surface2, border: `1px solid ${T.border}`,
             borderRadius: 8, padding: "6px 12px",
-            color: T.violet, fontSize: 12, fontWeight: 700,
+            color: T.gold, fontSize: 12, fontWeight: 700,
             textDecoration: "none", fontFamily: F.body,
           }}>← Lecteur simple</Link>
           <div style={{
@@ -155,7 +155,7 @@ export default function ParallelClient({ bookFr, bookEn, bookNumber, chapter, to
                   alignItems: "flex-start",
                 }}>
                   <div style={{
-                    color: T.violet, fontWeight: 700, fontSize: 13,
+                    color: T.gold, fontWeight: 700, fontSize: 13,
                     paddingTop: 2,
                   }}>
                     {n}
@@ -199,7 +199,7 @@ export default function ParallelClient({ bookFr, bookEn, bookNumber, chapter, to
           <button onClick={() => router.push("/bible")} style={{
             background: T.surface2, border: `1px solid ${T.border}`,
             borderRadius: 12, padding: "12px 16px",
-            color: T.violet, fontSize: 18, cursor: "pointer",
+            color: T.gold, fontSize: 18, cursor: "pointer",
           }}>📖</button>
           <button onClick={() => navigate("next")} disabled={!hasNext} style={{
             flex: 1,
@@ -230,7 +230,7 @@ function VersionSelect({ value, onChange, label }: {
       <select value={value} onChange={(e) => onChange(e.target.value)} style={{
         width: "100%", padding: "9px 12px", borderRadius: 10,
         background: T.card, border: `1px solid ${T.border}`,
-        color: T.violet, fontWeight: 700, fontSize: 13,
+        color: T.gold, fontWeight: 700, fontSize: 13,
         fontFamily: F.body, cursor: "pointer", outline: "none",
       }}>
         {BIBLE_VERSIONS.map((v) => (
@@ -254,7 +254,7 @@ function ColPane({ label, year, loading, error, verses }: {
     }}>
       <div style={{
         fontFamily: F.title, fontSize: 13, fontWeight: 700,
-        color: T.violet, marginBottom: 10, letterSpacing: "0.02em",
+        color: T.gold, marginBottom: 10, letterSpacing: "0.02em",
         borderBottom: `1px solid ${T.borderSoft}`, paddingBottom: 8,
       }}>
         {label} {year && <span style={{ color: T.textMuted, fontWeight: 400 }}>· {year}</span>}
@@ -273,7 +273,7 @@ function ColPane({ label, year, loading, error, verses }: {
         <div style={{ fontFamily: "Georgia, serif", lineHeight: 1.7, fontSize: 13, color: T.textSoft }}>
           {verses.map((v) => (
             <span key={v.verse} style={{ display: "inline" }}>
-              <sup style={{ color: T.violet, fontWeight: 700, fontSize: "0.62em", marginLeft: 6, marginRight: 2 }}>
+              <sup style={{ color: T.gold, fontWeight: 700, fontSize: "0.62em", marginLeft: 6, marginRight: 2 }}>
                 {v.verse}
               </sup>
               {v.text}{" "}

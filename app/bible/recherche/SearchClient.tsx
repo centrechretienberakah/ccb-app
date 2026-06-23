@@ -86,7 +86,7 @@ export default function SearchClient() {
           <Link href="/bible" style={{
             background: T.surface2, border: `1px solid ${T.border}`,
             borderRadius: 8, padding: "6px 12px",
-            color: T.violet, fontSize: 12, fontWeight: 700,
+            color: T.gold, fontSize: 12, fontWeight: 700,
             textDecoration: "none", fontFamily: F.body,
           }}>← Bible</Link>
         </div>
@@ -197,7 +197,7 @@ export default function SearchClient() {
                     padding: "12px 14px",
                   }}>
                     <div style={{
-                      fontSize: 12, fontWeight: 700, color: T.violet,
+                      fontSize: 12, fontWeight: 700, color: T.gold,
                       marginBottom: 5, fontFamily: F.body,
                     }}>
                       {r.book} {r.chapter}:{r.verse}

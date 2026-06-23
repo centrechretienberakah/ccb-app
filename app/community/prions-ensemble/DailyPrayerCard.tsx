@@ -116,7 +116,7 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
           <div style={{ minWidth: 0 }}>
             <div style={{
               fontFamily: F.title, fontSize: 15.5, fontWeight: 800,
-              color: T.violet, letterSpacing: "0.02em", lineHeight: 1.15,
+              color: T.gold, letterSpacing: "0.02em", lineHeight: 1.15,
             }}>
               PRIONS ENSEMBLE
             </div>
@@ -153,7 +153,7 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
               background: "rgba(91, 33, 182,0.06)", borderLeft: `3px solid ${T.violet}`,
               borderRadius: "0 12px 12px 0", padding: "11px 13px", marginBottom: 16,
             }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.violet, marginBottom: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.gold, marginBottom: 4 }}>
                 📖 {prayer.verse_ref}
               </div>
               <div style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.55, fontStyle: "italic" }}>
@@ -200,7 +200,7 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
             {/* Clôture */}
             <div style={{
               textAlign: "center", marginTop: 16, marginBottom: 4,
-              fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.violet,
+              fontFamily: F.title, fontSize: 15, fontWeight: 700, color: T.gold,
             }}>
               Que le Seigneur vous bénisse abondamment.
             </div>
@@ -214,7 +214,7 @@ export default function DailyPrayerCard({ prayer, userId, initialPrayed, initial
         <button onClick={() => setExpanded((v) => !v)} style={{
           width: "100%", background: "transparent", border: `1px dashed ${T.border}`,
           borderRadius: 10, padding: "6px", marginBottom: expanded ? 9 : 0,
-          color: T.violet, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: F.body,
+          color: T.gold, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: F.body,
         }}>
           {expanded ? "Réduire" : "Lire plus"}
         </button>
@@ -257,7 +257,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{
-        fontSize: 11.5, fontWeight: 800, color: T.violet,
+        fontSize: 11.5, fontWeight: 800, color: T.gold,
         letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8,
       }}>
         {label}

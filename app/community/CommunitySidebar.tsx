@@ -126,7 +126,7 @@ export default function CommunitySidebar({ contributors, pinned, members }: Prop
         )}
         <Link href="/community/membres" style={{
           display: "block", marginTop: 8, textAlign: "center",
-          fontSize: 11, color: T.violet, fontWeight: 700,
+          fontSize: 11, color: T.gold, fontWeight: 700,
           textDecoration: "none",
         }}>
           Voir tout le classement →
@@ -145,7 +145,7 @@ export default function CommunitySidebar({ contributors, pinned, members }: Prop
                 borderRadius: "0 8px 8px 0",
               }}>
                 <div style={{
-                  fontSize: 11, fontWeight: 700, color: T.violet,
+                  fontSize: 11, fontWeight: 700, color: T.gold,
                   marginBottom: 3,
                 }}>
                   {p.display_name || "Membre"}

@@ -108,7 +108,7 @@ export default function ThemePlanClient({ plan, active: initialActive, userId, d
           <Link href="/bible" style={{
             background: T.surface2, border: `1px solid ${T.border}`,
             borderRadius: 8, padding: "6px 12px",
-            color: T.violet, fontSize: 12, fontWeight: 700,
+            color: T.gold, fontSize: 12, fontWeight: 700,
             textDecoration: "none", fontFamily: F.body,
           }}>← Bible</Link>
           <Link href="/bible/theme" style={{
@@ -213,7 +213,7 @@ export default function ThemePlanClient({ plan, active: initialActive, userId, d
                       « {d.verseText.slice(0, 60)}{d.verseText.length > 60 ? "…" : ""} »
                     </div>
                   </div>
-                  <div style={{ color: T.violet, fontSize: 14, flexShrink: 0 }}>
+                  <div style={{ color: T.gold, fontSize: 14, flexShrink: 0 }}>
                     {isOpen ? "▴" : "▾"}
                   </div>
                 </button>
@@ -235,7 +235,7 @@ export default function ThemePlanClient({ plan, active: initialActive, userId, d
                       }}>
                         « {d.verseText} »
                       </p>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: T.violet }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.gold }}>
                         — {d.reference}
                       </div>
                     </div>

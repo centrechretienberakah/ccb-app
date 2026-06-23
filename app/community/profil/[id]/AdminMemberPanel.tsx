@@ -251,7 +251,7 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
         </div>
 
         <button onClick={resetPassword} disabled={busy}
-          style={{ marginTop: 10, width: "100%", background: T.bg, color: T.violet, border: `1px solid ${T.violet}`, borderRadius: 10, padding: "9px", fontWeight: 700, fontSize: 12.5, cursor: busy ? "wait" : "pointer" }}>
+          style={{ marginTop: 10, width: "100%", background: T.bg, color: T.gold, border: `1px solid ${T.violet}`, borderRadius: 10, padding: "9px", fontWeight: 700, fontSize: 12.5, cursor: busy ? "wait" : "pointer" }}>
           🔑 Réinitialiser le mot de passe
         </button>
       </Card>
@@ -265,7 +265,7 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
               <circle cx="37" cy="37" r="32" fill="none" stroke={T.gold} strokeWidth="7" strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 32}`} strokeDashoffset={`${2 * Math.PI * 32 * (1 - eng.score / 100)}`} />
             </svg>
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: F.title, fontWeight: 800, fontSize: 18, color: T.violet }}>{eng.score}%</div>
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: F.title, fontWeight: 800, fontSize: 18, color: T.gold }}>{eng.score}%</div>
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, color: T.text }}>{eng.label}</div>
@@ -308,7 +308,7 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
                   <span style={{ color: T.textSoft, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {c.completed >= c.total && c.total > 0 ? "🏆 " : ""}{c.title}
                   </span>
-                  <span style={{ color: T.violet, fontWeight: 700, flexShrink: 0 }}>{c.completed}/{c.total} · {c.pct}%</span>
+                  <span style={{ color: T.gold, fontWeight: 700, flexShrink: 0 }}>{c.completed}/{c.total} · {c.pct}%</span>
                 </div>
                 <div style={{ height: 6, background: T.surface2, borderRadius: 999, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${c.pct}%`, background: `linear-gradient(90deg, ${T.violet}, ${T.gold})`, borderRadius: 999 }} />
@@ -425,7 +425,7 @@ function labelAction(action: string, details: Record<string, unknown>): string {
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 14 }}>
-      <div style={{ fontSize: 11.5, fontWeight: 700, color: T.violet, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>{title}</div>
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: T.gold, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>{title}</div>
       {children}
     </div>
   );

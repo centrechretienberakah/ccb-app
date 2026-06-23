@@ -458,7 +458,7 @@ function Section({ title, actionLabel, onAction, children }: {
       }}>
         <h2 style={{
           fontFamily: F.title, fontSize: 13, fontWeight: 700,
-          color: T.violet, textTransform: "uppercase",
+          color: T.gold, textTransform: "uppercase",
           letterSpacing: "0.08em", margin: 0,
         }}>
           {title}
@@ -610,7 +610,7 @@ function EditorModal({ target, subcategories, onClose, onSave }: {
       }}>
         <div style={{
           fontFamily: F.title, fontSize: 17, fontWeight: 700,
-          color: T.violet, marginBottom: 16,
+          color: T.gold, marginBottom: 16,
         }}>
           {titleMap[target.kind]}
         </div>
@@ -946,7 +946,7 @@ function LessonForm({ row, onSave, onCancel }: {
       </Field>
       <Field label="PDF (upload)">
         {pdfUrl && (
-          <a href={pdfUrl} target="_blank" rel="noopener" style={{ display: "inline-block", color: T.violet, fontSize: 12, marginBottom: 6 }}>📄 Voir le PDF actuel</a>
+          <a href={pdfUrl} target="_blank" rel="noopener" style={{ display: "inline-block", color: T.gold, fontSize: 12, marginBottom: 6 }}>📄 Voir le PDF actuel</a>
         )}
         <input type="file" accept="application/pdf" onChange={(e) => e.target.files?.[0] && handlePdfUpload(e.target.files[0])} style={{ fontSize: 12 }} disabled={uploadingPdf} />
         {uploadingPdf && <div style={{ fontSize: 11, color: T.textMuted, marginTop: 4 }}>Upload PDF...</div>}

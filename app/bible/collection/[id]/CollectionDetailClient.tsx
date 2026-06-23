@@ -113,7 +113,7 @@ export default function CollectionDetailClient({ collection, verses: initialVers
           <Link href="/bible" style={{
             background: T.surface2, border: `1px solid ${T.border}`,
             borderRadius: 8, padding: "6px 12px",
-            color: T.violet, fontSize: 12, fontWeight: 700,
+            color: T.gold, fontSize: 12, fontWeight: 700,
             textDecoration: "none", fontFamily: F.body,
           }}>← Bible</Link>
         </div>
@@ -202,7 +202,7 @@ export default function CollectionDetailClient({ collection, verses: initialVers
                   <Link
                     href={`/bible/read/${encodeURIComponent(v.book_name)}/${v.chapter}`}
                     style={{
-                      fontSize: 13, fontWeight: 700, color: T.violet,
+                      fontSize: 13, fontWeight: 700, color: T.gold,
                       textDecoration: "none", fontFamily: F.body,
                     }}
                   >

@@ -246,7 +246,7 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
         <div style={{ maxWidth: 1000, margin: "16px auto 0", padding: "0 16px" }}>
           <Link href="/dons/admin" style={{
             display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px",
-            background: T.violetSoft, border: `1px solid ${T.violet}`, color: T.violetDark,
+            background: T.violetSoft, border: `1px solid ${T.violet}`, color: T.gold,
             borderRadius: 999, fontWeight: 700, fontSize: 12.5, textDecoration: "none",
           }}>⚙️ Gérer les campagnes</Link>
         </div>
@@ -459,11 +459,11 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
               <div style={{
                 marginBottom: 10, padding: "10px 14px",
                 background: T.violetSoft, border: `1px solid ${T.violet}`, borderRadius: 10,
-                fontSize: 12.5, color: T.violetDark, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+                fontSize: 12.5, color: T.gold, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
               }}>
                 <span>🎯 Affecté à la campagne <strong>{selectedCampaign.title}</strong></span>
                 <button onClick={() => setSelectedCampaign(null)} style={{
-                  background: "transparent", color: T.violetDark, border: "none",
+                  background: "transparent", color: T.gold, border: "none",
                   cursor: "pointer", fontWeight: 700, fontSize: 12,
                 }}>× retirer</button>
               </div>
@@ -692,7 +692,7 @@ function CampaignCard({ campaign, onSelect }: {
             display: "flex", justifyContent: "space-between", marginTop: 4,
             fontSize: 11, color: T.textMuted, fontWeight: 600,
           }}>
-            <span style={{ color: T.violet, fontWeight: 800 }}>{pct} % collectés</span>
+            <span style={{ color: T.gold, fontWeight: 800 }}>{pct} % collectés</span>
             <span>{campaign.donors_count} donateur{campaign.donors_count > 1 ? "s" : ""}</span>
           </div>
         </div>

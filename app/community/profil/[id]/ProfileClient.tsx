@@ -145,7 +145,7 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "12px 14px" }}>
         {/* Back */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <Link href="/community/membres" style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 11px", color: T.violet, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>← Membres</Link>
+          <Link href="/community/membres" style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 11px", color: T.gold, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>← Membres</Link>
           {isMe && <Link href="/profile" style={{ background: T.violet, border: "none", borderRadius: 8, padding: "5px 11px", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>✏️ Modifier</Link>}
         </div>
 
@@ -163,7 +163,7 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
                 <h1 style={{ fontFamily: F.title, fontSize: 20, fontWeight: 700, margin: 0, color: T.text }}>{profile.display_name || "Membre"}</h1>
-                {roleBadge && <span style={{ fontSize: 11, fontWeight: 700, color: T.violet, background: T.violetSoft, border: `1px solid ${T.violet}55`, borderRadius: 999, padding: "2px 8px" }}>{roleBadge.emoji} {roleBadge.label}</span>}
+                {roleBadge && <span style={{ fontSize: 11, fontWeight: 700, color: T.gold, background: T.violetSoft, border: `1px solid ${T.violet}55`, borderRadius: 999, padding: "2px 8px" }}>{roleBadge.emoji} {roleBadge.label}</span>}
                 {premium && !roleBadge && <span style={{ fontSize: 11 }}>💎</span>}
               </div>
               <div style={{ fontSize: 12, color: T.textMuted, marginTop: 1 }}>{handleOf(profile.display_name)}</div>
@@ -224,7 +224,7 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
             <div style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>À propos</div>
             {profile.bio && <p style={{ margin: "0 0 10px", fontSize: 13.5, color: T.textSoft, lineHeight: 1.6 }}>{profile.bio}</p>}
             {profile.cell_group && (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: T.violetSoft, color: T.violet, border: `1px solid ${T.violet}33`, borderRadius: 999, padding: "3px 10px", fontSize: 11.5, fontWeight: 700, marginBottom: profile.testimony ? 10 : 0 }}>👥 {profile.cell_group}</div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: T.violetSoft, color: T.gold, border: `1px solid ${T.violet}33`, borderRadius: 999, padding: "3px 10px", fontSize: 11.5, fontWeight: 700, marginBottom: profile.testimony ? 10 : 0 }}>👥 {profile.cell_group}</div>
             )}
             {profile.testimony && (
               <div style={{ borderLeft: `3px solid ${T.gold}`, paddingLeft: 10, marginTop: profile.cell_group ? 4 : 0 }}>
@@ -320,7 +320,7 @@ function PrieresTab({ userId }: { userId: string }) {
       {rows.map((p) => (
         <div key={p.id} style={{ background: T.card, border: `1px solid ${T.borderSoft}`, borderRadius: 12, padding: "11px 14px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, fontSize: 11 }}>
-            <span style={{ color: T.violet, fontWeight: 700 }}>🙏 Prière</span>
+            <span style={{ color: T.gold, fontWeight: 700 }}>🙏 Prière</span>
             <span style={{ color: T.textMuted }}>· {timeAgo(p.created_at)}</span>
             {p.is_answered && <span style={{ color: "#2E9B47", fontWeight: 700 }}>· ✅ Exaucée</span>}
           </div>
@@ -360,7 +360,7 @@ function GroupesTab({ userId }: { userId: string }) {
             <div style={{ fontWeight: 700, fontSize: 14 }}>{g.name}</div>
             <div style={{ fontSize: 11, color: T.textMuted }}>{g.role === "owner" ? "👑 Propriétaire" : g.role === "admin" ? "🛡️ Admin" : "Membre"} · depuis {new Date(g.joined_at).toLocaleDateString("fr-FR", { month: "short", year: "numeric" })}</div>
           </div>
-          <span style={{ color: T.violet }}>→</span>
+          <span style={{ color: T.gold }}>→</span>
         </Link>
       ))}
     </div>
@@ -438,7 +438,7 @@ function RealisationsTab({ badges, milestones, rank }: { badges: ReturnType<type
 function SocialStat({ label, value, href, onClick }: { label: string; value: number; href?: string; onClick?: () => void }) {
   const inner = (
     <div style={{ flexShrink: 0, textAlign: "center", background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "8px 14px", minWidth: 72, cursor: (href || onClick) ? "pointer" : "default" }}>
-      <div style={{ fontFamily: F.title, fontWeight: 800, fontSize: 17, color: T.violet }}>{value}</div>
+      <div style={{ fontFamily: F.title, fontWeight: 800, fontSize: 17, color: T.gold }}>{value}</div>
       <div style={{ fontSize: 10, color: T.textMuted, fontWeight: 600 }}>{label}</div>
     </div>
   );
