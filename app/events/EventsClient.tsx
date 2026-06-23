@@ -103,7 +103,7 @@ function EventCard({ event, userRsvp, goingCount, maybeCount, currentUserId, onR
       opacity: date.past ? 0.7 : 1,
     }}>
       {/* Top accent bar */}
-      <div style={{ height: 4, background: `linear-gradient(90deg, ${meta.color}, transparent)` }} />
+      <div style={{ height: 4, background: `linear-gradient(90deg, ${meta.color}, var(--gold))` }} />
 
       <div style={{ padding: "16px 18px" }}>
         {/* Header: date badge + info */}
@@ -142,7 +142,7 @@ function EventCard({ event, userRsvp, goingCount, maybeCount, currentUserId, onR
                 </span>
               )}
             </div>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-title)", lineHeight: 1.3 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--gold-light)", fontFamily: "var(--font-title)", lineHeight: 1.3 }}>
               {event.title}
             </h3>
           </div>

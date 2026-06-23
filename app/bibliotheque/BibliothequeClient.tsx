@@ -70,7 +70,7 @@ export default function BibliothequeClient({ resources, isPremium }: { resources
                   {r.is_premium && <span style={{ position: "absolute", top: 8, left: 8, background: "var(--gold)", color: "#000", borderRadius: "var(--radius-full)", padding: "2px 8px", fontSize: 10, fontWeight: 800 }}>👑 Premium</span>}
                 </div>
                 <div style={{ padding: "14px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.3 }}>{r.title}</h3>
+                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "var(--gold-light)", fontFamily: "var(--font-title)", lineHeight: 1.3 }}>{r.title}</h3>
                   {r.description && <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", lineHeight: 1.4 }}>{r.description}</p>}
                   <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: "auto" }}>
                     {fmtDate(r.created_at)} · ⬇️ {r.download_count ?? 0}

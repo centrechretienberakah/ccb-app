@@ -88,7 +88,7 @@ export default function BibleQuizHub() {
     const inner = (
       <>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <p style={{ fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontSize: 14 }}>{q.title}</p>
+          <p style={{ fontWeight: 700, color: 'var(--gold-light)', fontFamily: 'var(--font-title)', margin: 0, fontSize: 14 }}>{q.title}</p>
           {locked ? <span style={{ fontSize: 12 }}>🔒</span>
             : q.is_active ? <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--success)', textTransform: 'uppercase' }}>● En cours</span> : null}
         </div>
@@ -115,7 +115,7 @@ export default function BibleQuizHub() {
         <h1 style={{ fontSize: 'clamp(22px, 6vw, 28px)', fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontFamily: 'var(--font-title)' }}>🏆 Bible Quiz Championship</h1>
         {isAdmin && (
           <Link href="/admin/quiz-control"
-            style={{ display: 'inline-block', marginTop: 12, background: 'var(--violet)', color: '#fff', fontWeight: 800, fontSize: 13, padding: '9px 18px', borderRadius: 'var(--radius-full)', textDecoration: 'none' }}>
+            style={{ display: 'inline-block', marginTop: 12, background: 'linear-gradient(135deg, var(--gold), var(--gold-dark))', color: '#1a1206', fontWeight: 800, fontSize: 13, padding: '9px 18px', borderRadius: 'var(--radius-full)', textDecoration: 'none' }}>
             ⚙️ Administration du championnat
           </Link>
         )}
@@ -124,7 +124,7 @@ export default function BibleQuizHub() {
       {/* Mes stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 26 }}>
         {stat('Score', String(stats?.total_score ?? 0), 'var(--gold-dark)')}
-        {stat('Niveau', LEVEL_LABEL[stats?.level ?? 'debutant'] ?? 'Débutant', 'var(--violet)')}
+        {stat('Niveau', LEVEL_LABEL[stats?.level ?? 'debutant'] ?? 'Débutant', 'var(--gold-light)')}
         {stat('Équipe', teamName ?? '—', 'var(--text-primary)')}
       </div>
 

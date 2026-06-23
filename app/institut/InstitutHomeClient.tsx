@@ -279,7 +279,7 @@ function CourseCard({ course }: { course: CourseLite }) {
           )}
           <h3 style={{
             fontFamily: F.title, fontSize: 15, fontWeight: 700,
-            color: T.text, margin: 0, lineHeight: 1.35,
+            color: "#f0d060", margin: 0, lineHeight: 1.35,
             overflow: "hidden", display: "-webkit-box",
             WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const,
           }}>
