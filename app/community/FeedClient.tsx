@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { POST_KINDS, getPostKindDef, notifyCommunityStaff, type PostKind } from "@/lib/community/theme";
 import { getMentionedUserIds, renderSegments, type MemberLookup } from "@/lib/community/mentions";
 import MentionTextarea from "@/components/community/MentionTextarea";
+import ReactorsModal, { type Reactor } from "@/components/ui/ReactorsModal";
 import Link from "next/link";
 
 // ─── Cache window (client uniquement) ───────────────────────────────────────
@@ -591,6 +592,32 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, hasAmen
   const [localVote, setLocalVote] = useState<number | undefined>(userVote);
   const [localVoteResults, setLocalVoteResults] = useState<number[]>(post.voteResults || []);
 
+  // Modale « qui a réagi » (j'aime / Amen / 🔥)
+  const [showReactors, setShowReactors] = useState(false);
+  const [reactorsTitle, setReactorsTitle] = useState("");
+  const [reactors, setReactors] = useState<Reactor[]>([]);
+  const [reactorsLoading, setReactorsLoading] = useState(false);
+
+  async function openReactors(kind: "like" | "amen" | "fire") {
+    setReactorsTitle(kind === "like" ? "❤️ Ils ont aimé" : kind === "amen" ? "🙏 Amen" : "🔥 Réactions");
+    setShowReactors(true); setReactorsLoading(true);
+    try {
+      const sb = createClient();
+      let ids: string[] = [];
+      if (kind === "like") {
+        const { data } = await sb.from("post_likes").select("user_id").eq("post_id", post.id);
+        ids = (data ?? []).map((r) => (r as { user_id: string }).user_id);
+      } else {
+        const { data } = await sb.from("post_reactions").select("user_id").eq("post_id", post.id).eq("reaction", kind);
+        ids = (data ?? []).map((r) => (r as { user_id: string }).user_id);
+      }
+      if (ids.length === 0) { setReactors([]); return; }
+      const { data: profs } = await sb.from("user_profiles").select("user_id, display_name, avatar_url").in("user_id", ids);
+      setReactors((profs ?? []) as Reactor[]);
+    } catch { setReactors([]); }
+    finally { setReactorsLoading(false); }
+  }
+
   // Édition inline
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(post.title ?? "");
@@ -827,15 +854,15 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, hasAmen
         <div className="ccb-actionbar" style={{ display: "flex", alignItems: "center", gap: 1, paddingTop: 8, paddingBottom: 10, borderTop: "1px solid var(--border-subtle)" }}>
           <button onClick={handleLike} title="J'aime" className="ccb-react" style={{ color: localLike ? "#E0245E" : "var(--text-muted)", background: localLike ? "rgba(224,36,94,0.09)" : "transparent" }}>
             <span style={{ fontSize: 17 }}>{localLike ? "❤️" : "🤍"}</span>
-            {localLikeCount > 0 && <span style={{ fontWeight: localLike ? 800 : 600 }}>{localLikeCount}</span>}
+            {localLikeCount > 0 && <span onClick={(e) => { e.stopPropagation(); openReactors("like"); }} title="Voir qui a aimé" style={{ fontWeight: localLike ? 800 : 600, cursor: "pointer" }}>{localLikeCount}</span>}
           </button>
           <button onClick={onAmen} title="Amen" className="ccb-react" style={{ color: hasAmen ? "#5B21B6" : "var(--text-muted)", background: hasAmen ? "rgba(91,33,182,0.10)" : "transparent" }}>
             <span style={{ fontSize: 17, filter: hasAmen ? "none" : "grayscale(0.5) opacity(0.85)" }}>🙏</span>
-            {(post.amenCount ?? 0) > 0 && <span style={{ fontWeight: hasAmen ? 800 : 600 }}>{post.amenCount}</span>}
+            {(post.amenCount ?? 0) > 0 && <span onClick={(e) => { e.stopPropagation(); openReactors("amen"); }} title="Voir qui a dit Amen" style={{ fontWeight: hasAmen ? 800 : 600, cursor: "pointer" }}>{post.amenCount}</span>}
           </button>
           <button onClick={onFire} title="Encouragé" className="ccb-react" style={{ color: hasFire ? "#E8590C" : "var(--text-muted)", background: hasFire ? "rgba(232,89,12,0.10)" : "transparent" }}>
             <span style={{ fontSize: 17, filter: hasFire ? "none" : "grayscale(0.5) opacity(0.85)" }}>🔥</span>
-            {(post.fireCount ?? 0) > 0 && <span style={{ fontWeight: hasFire ? 800 : 600 }}>{post.fireCount}</span>}
+            {(post.fireCount ?? 0) > 0 && <span onClick={(e) => { e.stopPropagation(); openReactors("fire"); }} title="Voir qui a réagi" style={{ fontWeight: hasFire ? 800 : 600, cursor: "pointer" }}>{post.fireCount}</span>}
           </button>
           <button onClick={() => setShowComments((v) => !v)} title="Commenter" className="ccb-react" style={{ color: showComments ? "#5B21B6" : "var(--text-muted)" }}>
             <span style={{ fontSize: 16 }}>💬</span>
@@ -851,6 +878,11 @@ function PostCard({ post, currentUserId, isAdmin, isLiked, isBookmarked, hasAmen
           )}
         </div>
       </div>
+
+      {showReactors && (
+        <ReactorsModal title={reactorsTitle} people={reactors} loading={reactorsLoading}
+          onClose={() => setShowReactors(false)} />
+      )}
 
       {/* Commentaires (arborescence à 1 niveau de réponses) */}
       {showComments && (

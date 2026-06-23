@@ -12,6 +12,7 @@ import {
 import { sharePrayer } from "@/lib/prayer/share";
 import Link from "next/link";
 import HeroParticles from "@/components/ui/HeroParticles";
+import ReactorsModal, { type Reactor } from "@/components/ui/ReactorsModal";
 
 interface Profile { user_id: string; display_name: string | null; avatar_url: string | null }
 interface PrayerComment {
@@ -249,6 +250,22 @@ function PrayerCard({
   const [replyText, setReplyText] = useState("");
   const [busy, setBusy] = useState(false);
   const [intercessing, setIntercessing] = useState(false);
+  const [showInts, setShowInts] = useState(false);
+  const [ints, setInts] = useState<Reactor[]>([]);
+  const [intsLoading, setIntsLoading] = useState(false);
+
+  async function openIntercessors() {
+    setShowInts(true); setIntsLoading(true);
+    try {
+      const sb = createClient();
+      const { data: rows } = await sb.from("prayer_intercessions").select("user_id").eq("prayer_id", prayer.id);
+      const ids = (rows ?? []).map((r) => (r as { user_id: string }).user_id);
+      if (ids.length === 0) { setInts([]); return; }
+      const { data: profs } = await sb.from("user_profiles").select("user_id, display_name, avatar_url").in("user_id", ids);
+      setInts((profs ?? []) as Reactor[]);
+    } catch { setInts([]); }
+    finally { setIntsLoading(false); }
+  }
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [answerText, setAnswerText] = useState("");
 
@@ -402,8 +419,19 @@ function PrayerCard({
             opacity: intercessing ? 0.6 : 1,
           }}>
             <span style={{ fontSize: 16 }}>🙏</span>
-            <span>J&apos;intercède{prayer.intercessionsCount > 0 ? ` · ${prayer.intercessionsCount}` : ""}</span>
+            <span>J&apos;intercède</span>
+            {prayer.intercessionsCount > 0 && (
+              <span onClick={(e) => { e.stopPropagation(); openIntercessors(); }}
+                title="Voir qui intercède"
+                style={{ marginLeft: 2, textDecoration: "underline", textUnderlineOffset: 2, cursor: "pointer" }}>
+                · {prayer.intercessionsCount}
+              </span>
+            )}
           </button>
+          {showInts && (
+            <ReactorsModal title="🙏 Ils intercèdent" people={ints} loading={intsLoading}
+              onClose={() => setShowInts(false)} />
+          )}
 
           <button onClick={() => setShowComments(!showComments)} style={{
             background: "none", border: "none",
