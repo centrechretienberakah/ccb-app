@@ -154,7 +154,7 @@ export default function NotificationsClient({ notifications: initial, actors }: 
               return (
                 <div key={n.id} style={{
                   background: isUnread ? T.violetSoft : T.card,
-                  border: `1px solid ${isUnread ? T.violet : T.border}`,
+                  border: `1px solid ${isUnread ? T.gold : T.border}`,
                   borderRadius: 12, padding: "12px 14px",
                   display: "flex", gap: 12,
                 }}>

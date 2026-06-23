@@ -146,7 +146,7 @@ export default function ProfileClient({ profile, stats, xp, milestones, recentPo
         {/* Back */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <Link href="/community/membres" style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 11px", color: T.gold, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>← Membres</Link>
-          {isMe && <Link href="/profile" style={{ background: T.violet, border: "none", borderRadius: 8, padding: "5px 11px", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>✏️ Modifier</Link>}
+          {isMe && <Link href="/profile" style={{ background: T.gold, border: "none", borderRadius: 8, padding: "5px 11px", color: "#1a1206", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>✏️ Modifier</Link>}
         </div>
 
         {/* ─── Section 1 : Header compact premium ─── */}
@@ -384,7 +384,7 @@ function ActiviteTab({ posts, stats }: { posts: RecentPost[]; stats: MemberStats
             const k = getPostKindDef(p.post_kind);
             return (
               <div key={p.id} style={{ position: "relative", marginBottom: 14 }}>
-                <span style={{ position: "absolute", left: -17, top: 3, width: 10, height: 10, borderRadius: "50%", background: T.violet, border: `2px solid ${T.bg}` }} />
+                <span style={{ position: "absolute", left: -17, top: 3, width: 10, height: 10, borderRadius: "50%", background: T.gold, border: `2px solid ${T.bg}` }} />
                 <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 2 }}>{k.emoji} {k.label} · {timeAgo(p.created_at)}</div>
                 <div style={{ fontSize: 13, color: T.textSoft, lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.content}</div>
               </div>

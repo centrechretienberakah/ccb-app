@@ -121,8 +121,8 @@ export default function CommunityTabs({ memberCount, unreadNotifCount, isAdmin }
               textDecoration: "none",
               fontFamily: F.body,
               fontWeight: active ? 700 : 500,
-              color: active ? T.violet : T.textMuted,
-              borderBottom: `2px solid ${active ? T.violet : "transparent"}`,
+              color: active ? T.gold : T.textMuted,
+              borderBottom: `2px solid ${active ? T.gold : "transparent"}`,
               whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 6,
               transition: "color .15s, border-color .15s",
             }}>

@@ -273,7 +273,7 @@ function CommentCard({
       display: "flex", gap: 12,
       padding: compact ? 10 : 14,
       background: comment.is_pinned ? `linear-gradient(135deg, ${T.violetSoft}, transparent)` : T.card,
-      border: `1px solid ${comment.is_pinned ? T.violet : T.border}`, borderRadius: 12,
+      border: `1px solid ${comment.is_pinned ? T.gold : T.border}`, borderRadius: 12,
     }}>
       <div style={{
         flex: "0 0 36px", width: 36, height: 36, borderRadius: 999,

@@ -212,7 +212,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
       padding: "12px 20px", background: "transparent", border: "none",
       color: active ? T.text : T.textMuted, fontWeight: active ? 700 : 500,
       cursor: "pointer", fontSize: 14,
-      borderBottom: `2px solid ${active ? T.violet : "transparent"}`,
+      borderBottom: `2px solid ${active ? T.gold : "transparent"}`,
       marginBottom: -1,
     }}>{children}</button>
   );

@@ -142,9 +142,9 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
             return (
               <button key={key} onClick={() => setFilter(key)} style={{
                 flex: 1, minWidth: 0, padding: "8px 6px", borderRadius: 999,
-                border: `1px solid ${active ? T.violet : T.border}`,
-                background: active ? T.violet : "transparent",
-                color: active ? "#fff" : T.textMuted,
+                border: `1px solid ${active ? T.gold : T.border}`,
+                background: active ? T.gold : "transparent",
+                color: active ? "#1a1206" : T.textMuted,
                 fontWeight: active ? 800 : 600,
                 fontSize: "clamp(11px, 3vw, 13px)",
                 cursor: "pointer", fontFamily: F.body, whiteSpace: "nowrap",
@@ -160,7 +160,7 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
             );
           })}
           <button onClick={() => setFilter("historique")} aria-label="Journal des appels" title="Journal des appels"
-            style={{ flexShrink: 0, width: 42, padding: "8px 0", borderRadius: 999, border: `1px solid ${filter === "historique" ? T.violet : T.border}`, background: filter === "historique" ? T.violet : "transparent", color: filter === "historique" ? "#fff" : T.textMuted, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>📞</button>
+            style={{ flexShrink: 0, width: 42, padding: "8px 0", borderRadius: 999, border: `1px solid ${filter === "historique" ? T.gold : T.border}`, background: filter === "historique" ? T.gold : "transparent", color: filter === "historique" ? "#1a1206" : T.textMuted, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>📞</button>
           <button onClick={openNew} aria-label="Nouvelle conversation" title="Nouvelle conversation"
             style={{ flexShrink: 0, width: 42, padding: "8px 0", borderRadius: 999, border: "none", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", fontSize: 22, fontWeight: 700, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>＋</button>
         </div>
@@ -263,7 +263,7 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
                     {d.unreadCount > 0 ? (
                       <span style={{ flexShrink: 0, alignSelf: "center", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", fontSize: 11, fontWeight: 800, borderRadius: 999, padding: "2px 7px", minWidth: 20, textAlign: "center" }}>{d.unreadCount > 99 ? "99+" : d.unreadCount}</span>
                     ) : d.unread ? (
-                      <span style={{ width: 10, height: 10, borderRadius: "50%", background: T.violet, flexShrink: 0, alignSelf: "center" }} />
+                      <span style={{ width: 10, height: 10, borderRadius: "50%", background: T.gold, flexShrink: 0, alignSelf: "center" }} />
                     ) : null}
                   </Link>
                   {d.source === "conversation" && (

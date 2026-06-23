@@ -109,8 +109,8 @@ export default function ProgressionClient({ chapters, versesSaved, highlightsCou
                   aspectRatio: "1", display: "flex", alignItems: "center",
                   justifyContent: "center", fontSize: 12, fontWeight: read ? 700 : 500,
                   borderRadius: 8,
-                  background: read ? T.violet : (isToday ? T.violetSoft : T.surface2),
-                  color: read ? "#fff" : (isToday ? T.violet : T.textSoft),
+                  background: read ? T.gold : (isToday ? T.violetSoft : T.surface2),
+                  color: read ? "#1a1206" : (isToday ? T.gold : T.textSoft),
                   border: isToday && !read ? `1.5px solid ${T.violet}` : "none",
                 }}>
                   {day}

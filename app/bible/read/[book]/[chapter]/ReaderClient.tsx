@@ -652,9 +652,9 @@ export default function ReaderClient({ bookFr, bookEn, bookNumber, chapter, tota
               <button onClick={toggleAudio} title={isPlaying ? "Arrêter" : "Écouter le chapitre"} style={{
                 ...fontBtn,
                 width: 32,
-                background: isPlaying ? T.violet : T.surface2,
+                background: isPlaying ? T.gold : T.surface2,
                 color: isPlaying ? "#fff" : T.textSoft,
-                borderColor: isPlaying ? T.violet : T.border,
+                borderColor: isPlaying ? T.gold : T.border,
               }}>
                 {isPlaying ? "⏸" : "🔊"}
               </button>
@@ -893,14 +893,14 @@ function VersionRow({ version, active, onClick }: {
     }}>
       <span style={{
         minWidth: 50, fontSize: 11, fontWeight: 700,
-        color: active ? T.violet : T.textMuted,
+        color: active ? T.gold : T.textMuted,
         background: active ? T.violetSoft : T.surface2,
         borderRadius: 6, padding: "2px 6px", textAlign: "center",
       }}>
         {version.shortLabel}
       </span>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, color: active ? T.violet : T.text, fontWeight: active ? 700 : 500 }}>
+        <div style={{ fontSize: 13, color: active ? T.gold : T.text, fontWeight: active ? 700 : 500 }}>
           {version.label}
         </div>
         {version.year && (

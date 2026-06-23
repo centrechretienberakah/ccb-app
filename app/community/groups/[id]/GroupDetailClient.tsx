@@ -1378,7 +1378,7 @@ export default function GroupDetailClient({
                         }}>
                           {!grouped && (
                             <div style={{
-                              fontSize: 11, fontWeight: 700, color: isMine ? T.violet : T.textSoft,
+                              fontSize: 11, fontWeight: 700, color: isMine ? T.gold : T.textSoft,
                               marginBottom: 2, padding: "0 4px",
                               display: "flex", gap: 6, alignItems: "center",
                               flexDirection: isMine ? "row-reverse" : "row",
@@ -1457,11 +1457,11 @@ export default function GroupDetailClient({
                               {Object.entries(m.reactions).map(([emoji, r]) => (
                                 <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} style={{
                                   background: r.mine ? T.violetSoft : T.card,
-                                  border: `1px solid ${r.mine ? T.violet : T.border}`,
+                                  border: `1px solid ${r.mine ? T.gold : T.border}`,
                                   borderRadius: 999, padding: "1px 8px",
                                   fontSize: 11, cursor: "pointer",
                                   fontWeight: r.mine ? 700 : 500,
-                                  color: r.mine ? T.violet : T.textMuted,
+                                  color: r.mine ? T.gold : T.textMuted,
                                   display: "inline-flex", alignItems: "center", gap: 3,
                                   fontFamily: F.body,
                                 }}>
@@ -1482,7 +1482,7 @@ export default function GroupDetailClient({
                               <div style={{
                                 marginTop: 2, padding: "0 4px",
                                 display: "flex", justifyContent: "flex-end",
-                                fontSize: 10.5, color: allRead ? T.violet : T.textMuted, fontWeight: 600,
+                                fontSize: 10.5, color: allRead ? T.gold : T.textMuted, fontWeight: 600,
                                 letterSpacing: 0.3,
                               }}
                                 title={allRead
@@ -1898,7 +1898,7 @@ function typingDot(delayMs: number): React.CSSProperties {
   return {
     display: "inline-block",
     width: 5, height: 5, borderRadius: "50%",
-    background: T.violet,
+    background: T.gold,
     animation: `ccb-typing-dot 1.2s ease-in-out infinite`,
     animationDelay: `${delayMs}ms`,
   };
@@ -2040,7 +2040,7 @@ function MediaModal({ messages, onClose, onImageClick }: { messages: Message[]; 
           {tabs.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
               flexShrink: 0, padding: "6px 12px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: tab === t.key ? 700 : 500,
-              background: tab === t.key ? T.violet : T.bg, color: tab === t.key ? "#fff" : T.textMuted, border: `1px solid ${tab === t.key ? T.violet : T.border}`,
+              background: tab === t.key ? T.gold : T.bg, color: tab === t.key ? "#1a1206" : T.textMuted, border: `1px solid ${tab === t.key ? T.gold : T.border}`,
             }}>{t.label} · {t.list.length}</button>
           ))}
         </div>

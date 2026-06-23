@@ -443,7 +443,7 @@ function actionBtn(active: boolean): React.CSSProperties {
     padding: "10px 18px",
     background: active ? T.violet : "rgba(255,255,255,0.08)",
     color: "#fff",
-    border: `1px solid ${active ? T.violet : "rgba(255,255,255,0.18)"}`,
+    border: `1px solid ${active ? T.gold : "rgba(255,255,255,0.18)"}`,
     borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer",
   };
 }

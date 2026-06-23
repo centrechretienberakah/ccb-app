@@ -80,7 +80,7 @@ export default function ReactionsBar({
               padding: "8px 14px",
               background: active ? T.violetSoft : "rgba(255,255,255,0.04)",
               color: T.text,
-              border: `1px solid ${active ? T.violet : T.border}`,
+              border: `1px solid ${active ? T.gold : T.border}`,
               borderRadius: 999, fontSize: 14, fontWeight: 600,
               cursor: busy === null ? "pointer" : "wait",
               transition: "transform 120ms ease",

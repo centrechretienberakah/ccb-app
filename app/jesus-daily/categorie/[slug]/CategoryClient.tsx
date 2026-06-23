@@ -147,7 +147,7 @@ function FilterChip({ active, onClick, children }: {
       padding: "7px 13px",
       background: active ? T.violet : "rgba(255,255,255,0.06)",
       color: active ? "#fff" : T.textSoft,
-      border: `1px solid ${active ? T.violet : T.border}`,
+      border: `1px solid ${active ? T.gold : T.border}`,
       borderRadius: 999, fontWeight: 600, fontSize: 12.5, cursor: "pointer",
       whiteSpace: "nowrap",
     }}>{children}</button>

@@ -239,7 +239,7 @@ export default function AdminGroupsClient({
                     display: "flex", flexDirection: "column-reverse",
                     gap: 1, height: "100%",
                   }}>
-                  <div style={{ height: `${(d.messages / maxActivity) * 100}%`, background: T.violet, minHeight: d.messages > 0 ? 1 : 0, borderRadius: "2px 2px 0 0" }} />
+                  <div style={{ height: `${(d.messages / maxActivity) * 100}%`, background: T.gold, minHeight: d.messages > 0 ? 1 : 0, borderRadius: "2px 2px 0 0" }} />
                   <div style={{ height: `${(d.new_members / maxActivity) * 100}%`, background: T.gold, minHeight: d.new_members > 0 ? 1 : 0 }} />
                   <div style={{ height: `${(d.new_groups / maxActivity) * 100}%`, background: "#2E9B47", minHeight: d.new_groups > 0 ? 1 : 0 }} />
                 </div>
@@ -378,7 +378,7 @@ function GroupRow({ group: g, creator, isLast, busy, onArchive, onRestore, onDel
             textDecoration: "none",
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 360,
           }}>{g.name}</Link>
-          <Tag color={g.type === "public" ? T.violet : T.gold}>
+          <Tag color={g.type === "public" ? T.gold : T.gold}>
             {g.type === "public" ? "🌍 Public" : "🔒 Privé"}
           </Tag>
           <Tag color={T.textMuted}>{catDef.emoji} {catDef.label}</Tag>
@@ -442,8 +442,8 @@ function chip(active: boolean): React.CSSProperties {
   return {
     padding: "6px 12px",
     background: active ? T.violetSoft : T.card,
-    border: `1px solid ${active ? T.violet : T.border}`,
-    color: active ? T.violet : T.textMuted,
+    border: `1px solid ${active ? T.gold : T.border}`,
+    color: active ? T.gold : T.textMuted,
     fontSize: 11.5, fontWeight: active ? 700 : 500,
     borderRadius: 999, cursor: "pointer", fontFamily: F.body, whiteSpace: "nowrap",
   };

@@ -985,11 +985,11 @@ function ViewStatsMenu({ tab, setTab, stats, myLife, isAdmin }: {
             <button key={v.id} onClick={() => { setTab(v.id); setOpen(false); }} style={{
               display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left",
               background: tab === v.id ? T.violetSoft : "none", border: "none", cursor: "pointer",
-              color: tab === v.id ? T.violet : T.text, fontSize: 13, fontWeight: tab === v.id ? 700 : 500,
+              color: tab === v.id ? T.gold : T.text, fontSize: 13, fontWeight: tab === v.id ? 700 : 500,
               fontFamily: F.body, padding: "9px 10px", borderRadius: 8,
             }}>
               <span style={{ flex: 1 }}>{v.label}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: tab === v.id ? T.violet : T.textMuted }}>{v.count}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: tab === v.id ? T.gold : T.textMuted }}>{v.count}</span>
             </button>
           ))}
 
@@ -1052,14 +1052,14 @@ function FilterMenu({ filterCat, setFilterCat }: {
       <button onClick={() => setOpen((v) => !v)} title="Filtrer par catégorie" aria-label="Filtrer" style={{
         width: 36, height: 36, borderRadius: 999, flexShrink: 0,
         background: active ? T.violetSoft : T.card,
-        border: `1px solid ${active ? T.violet : T.border}`,
-        color: active ? T.violet : T.textMuted,
+        border: `1px solid ${active ? T.gold : T.border}`,
+        color: active ? T.gold : T.textMuted,
         cursor: "pointer", fontSize: 18, fontWeight: 700,
         display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
         boxShadow: T.shadowSoft,
       }}>
         ⋮
-        {active && <span style={{ position: "absolute", top: 5, right: 6, width: 6, height: 6, borderRadius: "50%", background: T.violet }} />}
+        {active && <span style={{ position: "absolute", top: 5, right: 6, width: 6, height: 6, borderRadius: "50%", background: T.gold }} />}
       </button>
       {open && (
         <div role="menu" style={{

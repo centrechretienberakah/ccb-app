@@ -273,7 +273,7 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
                   style={{
                     textAlign: "left", padding: "14px 14px",
                     background: kind === k.id ? T.violetSoft : T.card,
-                    border: `1.5px solid ${kind === k.id ? T.violet : T.border}`,
+                    border: `1.5px solid ${kind === k.id ? T.gold : T.border}`,
                     borderRadius: 12, cursor: "pointer", fontFamily: F.body,
                     transition: "transform 120ms ease, border-color 120ms ease",
                   }}>
@@ -292,9 +292,9 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
                 <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); setCustomAmount(""); }}
                   style={{
                     padding: "8px 14px", borderRadius: 999,
-                    background: currency === c.code ? T.violet : T.card,
-                    color: currency === c.code ? "#fff" : T.textSoft,
-                    border: `1px solid ${currency === c.code ? T.violet : T.border}`,
+                    background: currency === c.code ? T.gold : T.card,
+                    color: currency === c.code ? "#1a1206" : T.textSoft,
+                    border: `1px solid ${currency === c.code ? T.gold : T.border}`,
                     fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: F.body,
                   }}>
                   {c.flag} {c.code}
@@ -346,9 +346,9 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
                 <button key={r} onClick={() => setRegion(r)}
                   style={{
                     padding: "8px 14px", borderRadius: 999,
-                    background: region === r ? T.violet : T.card,
-                    color: region === r ? "#fff" : T.textSoft,
-                    border: `1px solid ${region === r ? T.violet : T.border}`,
+                    background: region === r ? T.gold : T.card,
+                    color: region === r ? "#1a1206" : T.textSoft,
+                    border: `1px solid ${region === r ? T.gold : T.border}`,
                     fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: F.body,
                   }}>
                   {REGION_LABELS[r].emoji} {REGION_LABELS[r].label}
@@ -383,7 +383,7 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
                 display: "flex", alignItems: "flex-start", gap: 10,
                 padding: "12px 14px",
                 background: isAnonymous ? T.violetSoft : T.card,
-                border: `1.5px solid ${isAnonymous ? T.violet : T.border}`,
+                border: `1.5px solid ${isAnonymous ? T.gold : T.border}`,
                 borderRadius: 10, cursor: "pointer", fontFamily: F.body,
               }}>
                 <input type="checkbox" checked={isAnonymous}
@@ -403,7 +403,7 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
                 display: "flex", alignItems: "flex-start", gap: 10,
                 padding: "12px 14px",
                 background: isRecurring ? T.violetSoft : T.card,
-                border: `1.5px solid ${isRecurring ? T.violet : T.border}`,
+                border: `1.5px solid ${isRecurring ? T.gold : T.border}`,
                 borderRadius: 10, cursor: "pointer", fontFamily: F.body,
               }}>
                 <input type="checkbox" checked={isRecurring}

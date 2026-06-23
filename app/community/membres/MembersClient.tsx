@@ -161,7 +161,7 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
               👥 Membres <span style={{ color: T.textMuted, fontWeight: 500, fontSize: 14 }}>· {members.length}</span>
             </h1>
             {isAdmin && (
-              <span style={{ fontSize: 10, fontWeight: 700, color: T.gold, background: T.violetSoft, border: `1px solid ${T.violet}`, borderRadius: 999, padding: "3px 9px" }}>🛡️ Admin</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: T.gold, background: "rgba(212,175,55,0.14)", border: `1px solid ${T.gold}`, borderRadius: 999, padding: "3px 9px" }}>🛡️ Admin</span>
             )}
           </div>
 
@@ -181,9 +181,9 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
               return (
                 <button key={f.key} onClick={() => setFilter(f.key)} style={{
                   flexShrink: 0, padding: "6px 12px", borderRadius: 999,
-                  background: active ? T.violet : T.bg,
-                  border: `1px solid ${active ? T.violet : T.border}`,
-                  color: active ? "#fff" : T.textMuted,
+                  background: active ? T.gold : T.bg,
+                  border: `1px solid ${active ? T.gold : T.border}`,
+                  color: active ? "#1a1206" : T.textMuted,
                   fontSize: 12, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: F.body, whiteSpace: "nowrap",
                 }}>{f.label}</button>
               );
@@ -233,7 +233,7 @@ export default function MembersClient({ members: initialMembers, currentUserId, 
                 {MILESTONE_DEFS.map((mm) => {
                   const active = modalMilestones.includes(mm.key);
                   return (
-                    <button key={mm.key} onClick={() => toggleModalMilestone(mm.key)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: active ? T.violetSoft : T.bg, border: `1px solid ${active ? T.violet : T.borderSoft}`, borderRadius: 10, color: active ? T.violet : T.textSoft, fontSize: 13, cursor: "pointer", textAlign: "left", width: "100%", fontFamily: F.body }}>
+                    <button key={mm.key} onClick={() => toggleModalMilestone(mm.key)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: active ? T.violetSoft : T.bg, border: `1px solid ${active ? T.gold : T.borderSoft}`, borderRadius: 10, color: active ? T.gold : T.textSoft, fontSize: 13, cursor: "pointer", textAlign: "left", width: "100%", fontFamily: F.body }}>
                       <span style={{ fontSize: 17 }}>{mm.icon}</span>
                       <span style={{ flex: 1, fontWeight: active ? 700 : 500 }}>{mm.label}</span>
                       {active && <span style={{ color: T.gold }}>✓</span>}
@@ -303,7 +303,7 @@ function MemberCard({ m, isMe, isAdmin, isOnline, router, onAdminEdit }: {
 
   return (
     <div className="ccb-mb-card" onClick={openProfile} style={{
-      background: T.card, border: `1px solid ${isMe ? T.violet : T.border}`,
+      background: T.card, border: `1px solid ${isMe ? T.gold : T.border}`,
       borderRadius: 14, padding: "11px 12px", cursor: "pointer", position: "relative",
     }}>
       <div style={{ display: "flex", gap: 11 }}>

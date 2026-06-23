@@ -466,7 +466,7 @@ function GroupRow({ group: g, onJoin, onRequestJoin, requestStatus, isLast }: {
             )}
           </div>
           <span style={{
-            fontSize: 11, color: hasUnread ? T.violet : T.textMuted,
+            fontSize: 11, color: hasUnread ? T.gold : T.textMuted,
             fontWeight: hasUnread ? 700 : 500, whiteSpace: "nowrap",
           }}>
             {formatChatTime(g.last_message_at)}
@@ -588,8 +588,8 @@ function chip(active: boolean): React.CSSProperties {
   return {
     padding: "6px 8px",
     background: active ? T.violetSoft : T.card,
-    border: `1px solid ${active ? T.violet : T.border}`,
-    color: active ? T.violet : T.textMuted,
+    border: `1px solid ${active ? T.gold : T.border}`,
+    color: active ? T.gold : T.textMuted,
     fontSize: 11, fontWeight: active ? 700 : 500,
     borderRadius: 999, cursor: "pointer", fontFamily: F.body,
     whiteSpace: "nowrap", textAlign: "center",

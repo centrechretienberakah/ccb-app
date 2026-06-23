@@ -256,7 +256,7 @@ function ScheduledCard({ row: s, creator, canCancel, onJoin, onCancel }: {
   const statusColor =
     s.status === "started" || s.is_now ? "#2E9B47" :
     s.status === "completed" ? T.textMuted :
-    s.is_upcoming ? T.violet : T.textMuted;
+    s.is_upcoming ? T.gold : T.textMuted;
 
   return (
     <div style={{

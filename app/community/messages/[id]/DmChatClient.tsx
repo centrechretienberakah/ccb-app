@@ -376,7 +376,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
               <button onClick={toggleMute} style={dmMenuItem}><span style={dmMenuIco}>{muted ? "🔔" : "🔕"}</span> {muted ? "Réactiver le son" : "Mode silencieux"}</button>
               <div style={{ height: 1, background: T.borderSoft, margin: "4px 0" }} />
               <button onClick={reportUser} style={dmMenuItem}><span style={dmMenuIco}>🚩</span> Signaler</button>
-              <button onClick={toggleBlock} style={{ ...dmMenuItem, color: blocked ? T.violet : "#C24B7A" }}><span style={dmMenuIco}>{blocked ? "✅" : "🚫"}</span> {blocked ? "Débloquer" : "Bloquer"}</button>
+              <button onClick={toggleBlock} style={{ ...dmMenuItem, color: blocked ? T.gold : "#C24B7A" }}><span style={dmMenuIco}>{blocked ? "✅" : "🚫"}</span> {blocked ? "Débloquer" : "Bloquer"}</button>
               <button onClick={clearChat} style={{ ...dmMenuItem, color: "#C24B7A" }}><span style={dmMenuIco}>🗑️</span> Effacer la discussion</button>
             </div>
           )}

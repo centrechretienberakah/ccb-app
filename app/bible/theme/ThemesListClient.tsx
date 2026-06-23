@@ -90,7 +90,7 @@ export default function ThemesListClient({ themes, activeMap }: Props) {
                         }}>
                           <div style={{
                             height: "100%", width: `${pct}%`,
-                            background: T.violet, transition: "width 0.4s",
+                            background: T.gold, transition: "width 0.4s",
                           }} />
                         </div>
                         <div style={{ fontSize: 10, color: T.gold, fontWeight: 700 }}>

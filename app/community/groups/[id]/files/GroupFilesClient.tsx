@@ -206,8 +206,8 @@ function chip(active: boolean): React.CSSProperties {
   return {
     padding: "6px 12px",
     background: active ? T.violetSoft : T.card,
-    border: `1px solid ${active ? T.violet : T.border}`,
-    color: active ? T.violet : T.textMuted,
+    border: `1px solid ${active ? T.gold : T.border}`,
+    color: active ? T.gold : T.textMuted,
     fontSize: 11, fontWeight: active ? 700 : 500,
     borderRadius: 999, cursor: "pointer", fontFamily: F.body,
   };

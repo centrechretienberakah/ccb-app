@@ -162,8 +162,8 @@ export default function HistoryClient({ group, sessions, participants, profiles,
             <button key={id} onClick={() => setFilter(id as Filter)} style={{
               padding: "7px 13px",
               background: filter === id ? T.violetSoft : T.card,
-              color: filter === id ? T.violet : T.textSoft,
-              border: `1px solid ${filter === id ? T.violet : T.border}`,
+              color: filter === id ? T.gold : T.textSoft,
+              border: `1px solid ${filter === id ? T.gold : T.border}`,
               borderRadius: 999, fontSize: 12, fontWeight: filter === id ? 700 : 500,
               cursor: "pointer", fontFamily: F.body, whiteSpace: "nowrap",
             }}>{label}</button>

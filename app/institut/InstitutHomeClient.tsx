@@ -175,8 +175,8 @@ export default function InstitutHomeClient({
           ] as const).map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               padding: "10px 16px", background: "none", border: "none",
-              borderBottom: `2px solid ${tab === t.id ? T.violet : "transparent"}`,
-              color: tab === t.id ? T.violet : T.textMuted,
+              borderBottom: `2px solid ${tab === t.id ? T.gold : "transparent"}`,
+              color: tab === t.id ? T.gold : T.textMuted,
               fontWeight: tab === t.id ? 700 : 500, fontSize: 13,
               cursor: "pointer", whiteSpace: "nowrap", fontFamily: F.body,
             }}>

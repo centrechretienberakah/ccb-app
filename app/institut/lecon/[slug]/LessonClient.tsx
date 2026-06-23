@@ -476,7 +476,7 @@ function PlaylistSidebar({ modules, playlist, completedIds, currentSlug, total }
                       width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
                       display: "inline-flex", alignItems: "center", justifyContent: "center",
                       fontSize: 11, fontWeight: 700,
-                      background: isDone ? T.completed : isCurrent ? T.violet : T.surface2,
+                      background: isDone ? T.completed : isCurrent ? T.gold : T.surface2,
                       color: isDone || isCurrent ? "#fff" : T.textMuted,
                       border: isDone || isCurrent ? "none" : `1px solid ${T.border}`,
                     }}>
@@ -485,7 +485,7 @@ function PlaylistSidebar({ modules, playlist, completedIds, currentSlug, total }
                     <span style={{
                       flex: 1, minWidth: 0, fontSize: 12.5,
                       fontWeight: isCurrent ? 700 : 500,
-                      color: isCurrent ? T.violet : T.text,
+                      color: isCurrent ? T.gold : T.text,
                       lineHeight: 1.35,
                       display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden",
                     }}>

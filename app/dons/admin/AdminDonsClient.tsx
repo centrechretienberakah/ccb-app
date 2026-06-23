@@ -284,7 +284,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
       padding: "12px 18px", background: "transparent", border: "none",
       color: active ? T.text : T.textMuted, fontWeight: active ? 700 : 500,
       cursor: "pointer", fontSize: 14, fontFamily: "inherit",
-      borderBottom: `2px solid ${active ? T.violet : "transparent"}`,
+      borderBottom: `2px solid ${active ? T.gold : "transparent"}`,
       marginBottom: -1, display: "inline-flex", alignItems: "center", gap: 4,
     }}>{children}</button>
   );
@@ -329,9 +329,9 @@ function RecordsTab({
         {(["pending","confirmed","cancelled","all"] as Filter[]).map((s) => (
           <button key={s} onClick={() => setFilter(s)} style={{
             padding: "6px 12px", borderRadius: 999,
-            background: filter === s ? T.violet : T.card,
-            color: filter === s ? "#fff" : T.textSoft,
-            border: `1px solid ${filter === s ? T.violet : T.border}`,
+            background: filter === s ? T.gold : T.card,
+            color: filter === s ? "#1a1206" : T.textSoft,
+            border: `1px solid ${filter === s ? T.gold : T.border}`,
             fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
           }}>{recordStatusLabel(s)} {records.filter((r) => s === "all" || r.status === s).length}</button>
         ))}
