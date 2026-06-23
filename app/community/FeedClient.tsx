@@ -189,6 +189,45 @@ async function createMentionNotifications(args: {
   } catch { /* noop */ }
 }
 
+// ─── Helper : notifie l'auteur d'un post (j'aime / réaction) — NOMINATIF ──
+// L'acteur est toujours nommé (in-app + push). Les types 'reaction_amen' /
+// 'reaction_fire' nécessitent la migration v71 (extension du CHECK) ; en son
+// absence l'insert in-app échoue silencieusement mais le push part quand même.
+async function notifyPostAuthor(args: {
+  authorId: string | null | undefined;
+  actorId: string;
+  actorName: string;
+  type: "like_post" | "reaction_amen" | "reaction_fire";
+  postId: string;
+  pushTitle: string;
+}) {
+  if (!args.authorId || args.authorId === args.actorId) return; // pas d'auto-notif
+  const supabase = createClient();
+  try {
+    await supabase.from("user_notifications").insert({
+      user_id: args.authorId,
+      actor_id: args.actorId,
+      type: args.type,
+      source_type: "post",
+      source_id: args.postId,
+      payload: { actor_name: args.actorName },
+    });
+  } catch { /* type non autorisé tant que la migration v71 n'est pas exécutée */ }
+  try {
+    await fetch("/api/notifications/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: args.pushTitle,
+        body: "Communauté CCB",
+        url: "/community/notifications",
+        audience: "user_ids",
+        userIds: [args.authorId],
+      }),
+    });
+  } catch { /* noop */ }
+}
+
 // ─── PostCreator ─────────────────────────────────────────────
 function PostCreator({ categories, currentUserProfile, currentUserId, members, onPostCreated }: {
   categories: Category[]; currentUserProfile: CurrentUserProfile | null; currentUserId: string;
@@ -1267,6 +1306,12 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
     } else {
       await supabase.from("post_likes").insert({ post_id: postId, user_id: currentUserId });
       setLikedIds((s) => new Set([...s, postId]));
+      const nm = currentUserProfile?.display_name || "Un membre";
+      notifyPostAuthor({
+        authorId: posts.find((p) => p.id === postId)?.user_id,
+        actorId: currentUserId, actorName: nm, type: "like_post", postId,
+        pushTitle: `❤️ ${nm} a aimé ton post`,
+      });
     }
   }
 
@@ -1288,6 +1333,13 @@ export default function FeedClient({ posts: initialPosts, categories: initialCat
       await supabase.from("post_reactions").delete().eq("post_id", postId).eq("user_id", currentUserId).eq("reaction", reaction);
     } else {
       await supabase.from("post_reactions").upsert({ post_id: postId, user_id: currentUserId, reaction }, { onConflict: "post_id,user_id,reaction" });
+      const nm = currentUserProfile?.display_name || "Un membre";
+      notifyPostAuthor({
+        authorId: posts.find((p) => p.id === postId)?.user_id,
+        actorId: currentUserId, actorName: nm,
+        type: reaction === "amen" ? "reaction_amen" : "reaction_fire", postId,
+        pushTitle: reaction === "amen" ? `🙏 ${nm} a dit Amen à ton post` : `🔥 ${nm} a réagi 🔥 à ton post`,
+      });
     }
   }
 

@@ -33,6 +33,8 @@ const TYPE_LABEL: Record<string, { icon: string; label: string }> = {
   mention_comment:  { icon: "🔔", label: "t'a mentionné dans un commentaire" },
   reply_to_comment: { icon: "💬", label: "a répondu à ton commentaire" },
   like_post:        { icon: "❤️", label: "a aimé ton post" },
+  reaction_amen:    { icon: "🙏", label: "a dit Amen à ton post" },
+  reaction_fire:    { icon: "🔥", label: "a réagi 🔥 à ton post" },
   admin_announce:   { icon: "📣", label: "Annonce officielle" },
   system:           { icon: "ℹ️", label: "Information" },
 };

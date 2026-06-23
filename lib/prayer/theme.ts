@@ -103,9 +103,9 @@ export async function notifyPrayerAuthor(args: {
 
   const supabase = createClient();
   const typeMap = {
-    intercession:    { dbType: "system",            title: "🙏 Quelqu'un intercède pour toi" },
-    comment:         { dbType: "reply_to_comment",  title: "💬 Nouvel encouragement sur ta prière" },
-    comment_reply:   { dbType: "reply_to_comment",  title: "💬 Quelqu'un t'a répondu" },
+    intercession:    { dbType: "system",            title: `🙏 ${args.actorName} intercède pour toi` },
+    comment:         { dbType: "reply_to_comment",  title: `💬 ${args.actorName} a encouragé ta prière` },
+    comment_reply:   { dbType: "reply_to_comment",  title: `💬 ${args.actorName} t'a répondu` },
   };
   const def = typeMap[args.type];
   const body = args.excerpt
