@@ -54,6 +54,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
   const [muted, setMuted] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [clearedAt, setClearedAt] = useState(0); // ms — masque (localement) les messages antérieurs
+  const [otherLastRead, setOtherLastRead] = useState<number | null>(null); // accusé de lecture du correspondant
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -101,6 +102,31 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
       .update({ last_read_at: new Date().toISOString() })
       .eq("conversation_id", conversationId).eq("user_id", currentUserId);
   }, [conversationId, currentUserId, messages.length]);
+
+  // Accusé de lecture : dernière lecture du correspondant (pour afficher « Lu »).
+  // Rafraîchi à l'ouverture, à chaque nouveau message, et au retour sur l'onglet.
+  const loadOtherRead = useCallback(async () => {
+    if (!other.user_id) return;
+    try {
+      const sb = createClient();
+      const { data } = await sb.from("conversation_members")
+        .select("last_read_at")
+        .eq("conversation_id", conversationId).eq("user_id", other.user_id).maybeSingle();
+      const v = (data as { last_read_at: string | null } | null)?.last_read_at;
+      setOtherLastRead(v ? new Date(v).getTime() : null);
+    } catch { /* noop */ }
+  }, [conversationId, other.user_id]);
+
+  useEffect(() => {
+    void loadOtherRead();
+    const onFocus = () => void loadOtherRead();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [loadOtherRead, messages.length]);
 
   // Charge les réactions initiales
   const loadReactions = useCallback(async () => {
@@ -292,6 +318,9 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
     return true;
   });
 
+  // Dernier message que J'AI envoyé (porte l'accusé « Lu » / « Envoyé »).
+  const lastMineId = [...visibleMessages].reverse().find((m) => m.sender_id === currentUserId && !m.is_deleted)?.id;
+
   async function toggleReaction(messageId: string, emoji: string) {
     setReactPickerFor(null); setMenuFor(null);
     const sb = createClient();
@@ -446,6 +475,11 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
                     )}
                     <div style={{ fontSize: 10, textAlign: "right", marginTop: 2, color: mine ? "rgba(255,255,255,0.7)" : T.textMuted }}>
                       {fmtTime(m.created_at)}{m.is_edited && !m.is_deleted ? " · modifié" : ""}
+                      {mine && m.id === lastMineId && !m.is_deleted && (
+                        otherLastRead != null && otherLastRead >= new Date(m.created_at).getTime()
+                          ? " · ✓✓ Lu"
+                          : " · ✓ Envoyé"
+                      )}
                     </div>
                   </div>
 
