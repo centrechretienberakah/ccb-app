@@ -11,6 +11,7 @@ import {
 } from "@/lib/prayer/theme";
 import { sharePrayer } from "@/lib/prayer/share";
 import Link from "next/link";
+import HeroParticles from "@/components/ui/HeroParticles";
 
 interface Profile { user_id: string; display_name: string | null; avatar_url: string | null }
 interface PrayerComment {
@@ -844,11 +845,13 @@ export default function PrayerClient({
         color: "#fff", position: "relative", overflow: "hidden",
         boxShadow: T.shadowGlow,
       }}>
+        <HeroParticles />
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, height: 3,
           background: `linear-gradient(90deg, ${T.gold}, transparent)`,
+          zIndex: 1,
         }} />
-        <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative", textAlign: "center", padding: "0 44px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative", zIndex: 1, textAlign: "center", padding: "0 44px" }}>
           <span className="section-tag">✦ Intercession ✦</span>
           <h1 className="ccb-prayer-title" style={{
             fontFamily: F.title, fontWeight: 700, margin: "0 0 2px",

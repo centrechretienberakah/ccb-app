@@ -2160,3 +2160,34 @@ iframe {
   90%  { opacity: .1; }
   100% { opacity: 0;  transform: translateY(-10vh) scale(1.2); }
 }
+
+/* ── Particules dorées + halos, version « en-tête de module » ──
+   Hauteur réduite : les particules montent sur ~90px (clippées par
+   overflow:hidden de l'en-tête). Couche purement décorative, derrière
+   le contenu (qui doit porter position:relative; z-index:1). */
+.ccb-heroparts { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.ccb-heroparts-halo { position: absolute; border-radius: 50%; }
+.ccb-heroparts-halo-1 {
+  width: 240px; height: 240px; top: -130px; right: -70px;
+  background: radial-gradient(circle, rgba(212,175,55,0.18) 0%, transparent 65%);
+}
+.ccb-heroparts-halo-2 {
+  width: 210px; height: 210px; bottom: -120px; left: -60px;
+  background: radial-gradient(circle, rgba(124,58,237,0.26) 0%, transparent 65%);
+}
+.ccb-heroparts-dot {
+  position: absolute; bottom: -6px; border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px rgba(212,175,55,0.6);
+  opacity: 0;
+  animation: ccb-headfloat var(--d, 7s) var(--delay, 0s) ease-in infinite;
+}
+@keyframes ccb-headfloat {
+  0%   { opacity: 0;    transform: translateY(0) scale(0.4); }
+  15%  { opacity: 0.6;  }
+  80%  { opacity: 0.12; }
+  100% { opacity: 0;    transform: translateY(-90px) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ccb-heroparts-dot { animation: none; opacity: 0.25; }
+}

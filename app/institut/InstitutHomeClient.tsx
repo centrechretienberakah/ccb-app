@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { INSTITUT_THEME as T, INSTITUT_FONTS as F, formatDuration, getLevelDef, type Category, type Course } from "@/lib/institut/theme";
+import HeroParticles from "@/components/ui/HeroParticles";
 
 interface CourseLite extends Course {
   category_slug: string;
@@ -57,11 +58,13 @@ export default function InstitutHomeClient({
         color: "#fff", position: "relative", overflow: "hidden",
         boxShadow: T.shadowGlow,
       }}>
+        <HeroParticles />
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, height: 3,
           background: `linear-gradient(90deg, ${T.gold}, transparent)`,
+          zIndex: 1,
         }} />
-        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center", position: "relative" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
           {isAdmin && (
             <Link href="/institut/admin" style={{
               position: "absolute", top: 0, right: 0,

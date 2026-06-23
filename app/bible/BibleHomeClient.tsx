@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HeroParticles from "@/components/ui/HeroParticles";
 
 interface Props {
   chaptersRead: number;
@@ -38,8 +39,9 @@ export default function BibleHomeClient({ chaptersRead, notesCount, versesCount 
         paddingTop: "calc(16px + env(safe-area-inset-top, 0px))",
         position: "relative", overflow: "hidden",
       }}>
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, var(--gold), transparent)" }} />
-        <div style={{ maxWidth: 960, margin: "0 auto", textAlign: "center" }}>
+        <HeroParticles />
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, var(--gold), transparent)", zIndex: 1 }} />
+        <div style={{ maxWidth: 960, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
           <span className="section-tag">✦ Parole de Dieu ✦</span>
           <h1 style={{ fontFamily: "var(--font-title)", fontWeight: 700, margin: 0, fontSize: "clamp(1.2rem, 4.5vw, 1.6rem)", letterSpacing: "0.04em" }}>
             📖 MA <span className="text-gold">BIBLE</span>

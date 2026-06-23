@@ -4,6 +4,7 @@ import FeedClient, { Post, Category } from "./FeedClient";
 import CommunitySidebar from "./CommunitySidebar";
 import CommunityTabs from "./CommunityTabs";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
+import HeroParticles from "@/components/ui/HeroParticles";
 
 interface Member {
   user_id: string; display_name: string | null; avatar_url: string | null;
@@ -62,11 +63,13 @@ export default function CommunityClient({
         position: "relative", overflow: "hidden",
         boxShadow: T.shadowGlow,
       }}>
+        <HeroParticles />
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, height: 3,
           background: `linear-gradient(90deg, ${T.gold}, transparent)`,
+          zIndex: 1,
         }} />
-        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
           <span className="section-tag">✦ Famille de foi ✦</span>
           <h1 className="ccb-hero-title" style={{
             fontFamily: F.title, fontWeight: 700,
