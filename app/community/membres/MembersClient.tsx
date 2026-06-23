@@ -321,7 +321,7 @@ function MemberCard({ m, isMe, isAdmin, isOnline, router, onAdminEdit }: {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontFamily: F.title, fontSize: 14.5, fontWeight: 700, color: T.text }}>{m.display_name || "Membre"}</span>
-            {isMe && <span style={{ background: T.violet, color: "#fff", fontSize: 8.5, fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>VOUS</span>}
+            {isMe && <span style={{ background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", fontSize: 8.5, fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>VOUS</span>}
             {isAdminRole(m.role) && <span style={{ fontSize: 11 }} title="Admin">👑</span>}
             {isPremium(m.role) && <span style={{ fontSize: 11 }} title="Premium">💎</span>}
           </div>

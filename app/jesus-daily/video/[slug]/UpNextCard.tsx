@@ -81,7 +81,7 @@ export default function UpNextCard({ nextVideo, onCancel, countdownSecs = 10 }: 
         <button
           onClick={() => router.push(`/jesus-daily/video/${nextVideo.slug}`)}
           style={{
-            flex: 1, padding: "10px 16px", background: T.violet, color: "#fff",
+            flex: 1, padding: "10px 16px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
             border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer",
           }}>
           ▶ Regarder maintenant

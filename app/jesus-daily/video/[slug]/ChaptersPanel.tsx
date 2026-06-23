@@ -36,7 +36,7 @@ export default function ChaptersPanel({ chapters, onJump }: Props) {
           >
             <span style={{
               padding: "2px 8px", borderRadius: 4,
-              background: T.violet, color: "#fff",
+              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
               fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums",
             }}>{formatVideoDuration(c.time_secs)}</span>
             <span style={{ fontWeight: 600 }}>{c.title}</span>

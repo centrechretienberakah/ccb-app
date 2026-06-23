@@ -268,7 +268,7 @@ const center: React.CSSProperties = {
   alignItems: "center", justifyContent: "center", color: "#fff", padding: "0 20px",
 };
 const btn: React.CSSProperties = {
-  marginTop: 16, background: T.violet, color: "#fff", border: "none",
+  marginTop: 16, background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
   borderRadius: 12, padding: "11px 20px", fontWeight: 700, fontSize: 13.5,
   cursor: "pointer", fontFamily: F.body, textDecoration: "none",
 };

@@ -255,7 +255,7 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
-          background: T.violet, color: "#fff", padding: "10px 20px",
+          background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", padding: "10px 20px",
           borderRadius: 999, fontSize: 13, fontWeight: 700,
           zIndex: 9999, boxShadow: T.shadowMd,
         }}>{toast}</div>
@@ -406,7 +406,7 @@ export default function GroupSettingsClient({ group, members: initialMembers, my
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
                       <button onClick={() => approveRequest(r)} disabled={isBusy} style={{
-                        padding: "6px 12px", background: T.violet, color: "#fff",
+                        padding: "6px 12px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
                         border: "none", borderRadius: 999,
                         fontSize: 11.5, fontWeight: 700,
                         cursor: isBusy ? "wait" : "pointer", fontFamily: F.body,

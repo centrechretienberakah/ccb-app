@@ -579,7 +579,7 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
               </p>
               <Link href="/contact" style={{
                 display: "inline-block", padding: "10px 24px",
-                background: T.violet, color: "#fff", borderRadius: 999,
+                background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", borderRadius: 999,
                 fontWeight: 700, fontSize: 13, textDecoration: "none",
               }}>📬 Écrire à l'équipe</Link>
             </div>

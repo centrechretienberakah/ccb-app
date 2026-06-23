@@ -196,7 +196,7 @@ export default function CommentsSection({
           {isAuth ? (
             <button onClick={postComment} disabled={busy || !body.trim()}
               style={{
-                padding: "8px 18px", background: T.violet, color: "#fff", border: "none",
+                padding: "8px 18px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
                 borderRadius: 8, fontWeight: 700, fontSize: 13,
                 cursor: busy || !body.trim() ? "not-allowed" : "pointer",
                 opacity: busy || !body.trim() ? 0.5 : 1,
@@ -205,7 +205,7 @@ export default function CommentsSection({
             </button>
           ) : (
             <Link href="/auth/login" style={{
-              padding: "8px 18px", background: T.violet, color: "#fff",
+              padding: "8px 18px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
               borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: "none",
             }}>Se connecter</Link>
           )}
@@ -277,7 +277,7 @@ function CommentCard({
     }}>
       <div style={{
         flex: "0 0 36px", width: 36, height: 36, borderRadius: 999,
-        background: T.violet, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+        background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", display: "flex", alignItems: "center", justifyContent: "center",
         fontWeight: 700, fontSize: 13, overflow: "hidden",
       }}>
         {comment.user_avatar_url ? (
@@ -292,7 +292,7 @@ function CommentCard({
           {comment.is_pinned ? (
             <span style={{
               fontSize: 10, padding: "1px 6px", borderRadius: 4,
-              background: T.violet, color: "#fff", fontWeight: 700,
+              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", fontWeight: 700,
             }}>📌 Épinglé</span>
           ) : null}
         </div>

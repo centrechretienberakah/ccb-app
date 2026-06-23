@@ -401,12 +401,12 @@ function PrayerCard({
           borderTop: `1px solid ${T.borderSoft}`, alignItems: "center", flexWrap: "wrap",
         }}>
           <button onClick={handleIntercede} disabled={intercessing} title="J'intercède" style={{
-            background: hasIntercessed ? T.violetSoft : "transparent",
-            border: `1px solid ${hasIntercessed ? T.violet : T.border}`,
+            background: hasIntercessed ? "rgba(212,175,55,0.16)" : "transparent",
+            border: `1px solid ${hasIntercessed ? T.gold : T.border}`,
             borderRadius: 999, padding: "7px 14px",
             display: "flex", alignItems: "center", gap: 6,
             cursor: intercessing ? "wait" : "pointer", fontFamily: F.body,
-            color: hasIntercessed ? T.violet : T.textSoft,
+            color: hasIntercessed ? T.gold : T.textSoft,
             fontWeight: hasIntercessed ? 700 : 600, fontSize: 13,
             transition: "all 0.15s",
             opacity: intercessing ? 0.6 : 1,
@@ -590,7 +590,7 @@ function PrayerCard({
                           }}
                         />
                         <button onClick={handleSubmitReply} disabled={busy || !replyText.trim()} style={{
-                          background: T.violet, color: "#fff", border: "none",
+                          background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
                           borderRadius: 999, padding: "6px 12px", cursor: busy ? "wait" : "pointer",
                           fontWeight: 700, fontSize: 12,
                         }}>➤</button>
@@ -613,7 +613,7 @@ function PrayerCard({
               }}
             />
             <button onClick={handleSubmitComment} disabled={busy || !commentText.trim()} style={{
-              background: T.violet, color: "#fff", border: "none",
+              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
               borderRadius: 999, padding: "8px 14px", cursor: busy ? "wait" : "pointer",
               fontWeight: 700, fontSize: 13,
             }}>➤</button>

@@ -97,7 +97,7 @@ export default function CollectionDetailClient({ collection, verses: initialVers
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
-          background: T.violet, color: "#fff", padding: "10px 20px",
+          background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", padding: "10px 20px",
           borderRadius: 999, fontSize: 13, fontWeight: 700,
           zIndex: 9999, boxShadow: "0 8px 30px rgba(91, 33, 182,0.35)",
           fontFamily: F.body,
@@ -230,7 +230,7 @@ export default function CollectionDetailClient({ collection, verses: initialVers
 }
 
 const btnViolet: React.CSSProperties = {
-  background: T.violet, color: "#fff", border: "none",
+  background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
   borderRadius: 10, padding: "10px 16px",
   fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: F.body,
 };

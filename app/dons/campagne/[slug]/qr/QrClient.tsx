@@ -46,7 +46,7 @@ export default function QrClient({ campaign, targetUrl }: Props) {
           <button
             onClick={() => typeof window !== "undefined" && window.print()}
             style={{
-              padding: "8px 16px", background: T.violet, color: "#fff",
+              padding: "8px 16px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
               border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer",
             }}>🖨️ Imprimer A4</button>
         </div>

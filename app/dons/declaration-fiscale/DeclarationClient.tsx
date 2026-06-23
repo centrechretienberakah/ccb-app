@@ -65,7 +65,7 @@ export default function DeclarationClient({
           <button
             onClick={() => typeof window !== "undefined" && window.print()}
             style={{
-              padding: "8px 16px", background: T.violet, color: "#fff",
+              padding: "8px 16px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
               border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer",
             }}>🖨️ Imprimer / PDF</button>
         </div>
@@ -143,7 +143,7 @@ export default function DeclarationClient({
             <div style={{ textAlign: "right" }}>
               <div style={{
                 display: "inline-block", padding: "4px 11px",
-                background: T.violet, color: "#fff",
+                background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
                 borderRadius: 6, fontWeight: 800, fontSize: 11, letterSpacing: 0.6,
               }}>{records.length} DON{records.length > 1 ? "S" : ""}</div>
             </div>

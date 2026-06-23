@@ -203,7 +203,7 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {msg && <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: T.violet, color: "#fff", padding: "9px 18px", borderRadius: 999, fontSize: 13, fontWeight: 700, zIndex: 999, boxShadow: T.shadowMd }}>{msg}</div>}
+      {msg && <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", padding: "9px 18px", borderRadius: 999, fontSize: 13, fontWeight: 700, zIndex: 999, boxShadow: T.shadowMd }}>{msg}</div>}
 
       {/* Bandeau admin */}
       <div style={{ background: `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, color: "#fff", borderRadius: 14, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
@@ -359,7 +359,7 @@ export default function AdminMemberPanel({ userId, displayName, role, stats, xp,
           <input value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Ajouter une note pastorale…"
             onKeyDown={(e) => { if (e.key === "Enter") addNote(); }}
             style={{ flex: 1, padding: "9px 12px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, fontSize: 13, fontFamily: F.body, outline: "none" }} />
-          <button onClick={addNote} disabled={busy || !noteText.trim()} style={{ background: T.violet, color: "#fff", border: "none", borderRadius: 10, padding: "9px 14px", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: !noteText.trim() ? 0.5 : 1 }}>Ajouter</button>
+          <button onClick={addNote} disabled={busy || !noteText.trim()} style={{ background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none", borderRadius: 10, padding: "9px 14px", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: !noteText.trim() ? 0.5 : 1 }}>Ajouter</button>
         </div>
         {notes.length === 0 ? (
           <div style={{ fontSize: 12.5, color: T.textMuted, fontStyle: "italic" }}>Aucune note pour le moment.</div>

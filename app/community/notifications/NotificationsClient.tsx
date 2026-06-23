@@ -103,7 +103,7 @@ export default function NotificationsClient({ notifications: initial, actors }: 
           }}>← Communauté</Link>
           {unreadCount > 0 && (
             <button onClick={markAllRead} disabled={busy} style={{
-              background: T.violet, color: "#fff", border: "none",
+              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
               borderRadius: 8, padding: "6px 12px",
               fontSize: 12, fontWeight: 700, cursor: busy ? "wait" : "pointer",
               marginLeft: "auto",

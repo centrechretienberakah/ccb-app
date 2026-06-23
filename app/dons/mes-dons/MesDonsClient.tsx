@@ -200,7 +200,7 @@ export default function MesDonsClient({ records: initial, recurring: initialRec,
                         <div style={{ display: "flex", gap: 4 }}>
                           {!paidThisMonth ? (
                             <button onClick={() => payMonth(rec)} disabled={busyRec === rec.id} style={{
-                              padding: "5px 10px", background: T.violet, color: "#fff", border: "none",
+                              padding: "5px 10px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
                               borderRadius: 6, fontWeight: 700, fontSize: 11,
                               cursor: busyRec === rec.id ? "wait" : "pointer", fontFamily: "inherit",
                             }}>{busyRec === rec.id ? "..." : "💝 Don du mois"}</button>
@@ -246,7 +246,7 @@ export default function MesDonsClient({ records: initial, recurring: initialRec,
                   : "Aucun don ne correspond à ce filtre."}
               </p>
               <Link href="/dons" style={{
-                padding: "10px 22px", background: T.violet, color: "#fff",
+                padding: "10px 22px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
                 borderRadius: 999, fontWeight: 700, fontSize: 13, textDecoration: "none",
                 display: "inline-block",
               }}>+ Faire un don</Link>
@@ -331,7 +331,7 @@ export default function MesDonsClient({ records: initial, recurring: initialRec,
             </p>
             <Link href="/dons/declaration-fiscale" style={{
               display: "inline-block", padding: "9px 16px",
-              background: T.violet, color: "#fff",
+              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
               borderRadius: 999, fontWeight: 700, fontSize: 12.5, textDecoration: "none",
             }}>📋 Voir / Télécharger</Link>
           </section>

@@ -226,7 +226,7 @@ export default function GroupsListClient({ initialGroups, currentUserId, userRol
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
-          background: T.violet, color: "#fff", padding: "10px 20px",
+          background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", padding: "10px 20px",
           borderRadius: 999, fontSize: 13, fontWeight: 700,
           zIndex: 9999, boxShadow: T.shadowMd,
         }}>{toast}</div>
@@ -486,7 +486,7 @@ function GroupRow({ group: g, onJoin, onRequestJoin, requestStatus, isLast }: {
               flex: "0 0 auto",
               minWidth: 20, height: 20, padding: "0 6px",
               borderRadius: 999,
-              background: T.violet, color: "#fff",
+              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
               fontSize: 11, fontWeight: 800,
               display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
@@ -509,7 +509,7 @@ function GroupRow({ group: g, onJoin, onRequestJoin, requestStatus, isLast }: {
         g.type === "public" ? (
           <button onClick={() => onJoin(g.id)} style={{
             flex: "0 0 auto", padding: "6px 12px",
-            background: T.violet, color: "#fff", border: "none",
+            background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
             borderRadius: 999, fontSize: 11.5, fontWeight: 700,
             cursor: "pointer", fontFamily: F.body,
           }}>

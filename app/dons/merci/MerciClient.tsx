@@ -188,7 +188,7 @@ export default function MerciClient({
         {/* CTAs */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
           <Link href="/dons" style={{
-            padding: "11px 22px", background: T.violet, color: "#fff",
+            padding: "11px 22px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
             borderRadius: 999, fontWeight: 700, fontSize: 13, textDecoration: "none",
           }}>← Retour aux dons</Link>
           <Link href="/dons/mes-dons" style={{

@@ -185,7 +185,7 @@ export default function HistoryClient({ group, sessions, participants, profiles,
             </div>
             <Link href={`/community/groups/${group.id}`} style={{
               display: "inline-block", padding: "9px 18px",
-              background: T.violet, color: "#fff",
+              background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
               borderRadius: 999, fontSize: 12.5, fontWeight: 700,
               textDecoration: "none",
             }}>← Retour au groupe</Link>

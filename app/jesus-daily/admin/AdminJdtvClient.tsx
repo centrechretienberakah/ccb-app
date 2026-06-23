@@ -219,7 +219,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 }
 
 const primaryBtn: React.CSSProperties = {
-  padding: "10px 18px", background: T.violet, color: "#fff", border: "none",
+  padding: "10px 18px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
   borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: "pointer",
 };
 const secondaryBtn: React.CSSProperties = {

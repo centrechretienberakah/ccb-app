@@ -299,8 +299,8 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
               flex: "1 1 140px",
               background: read
                 ? "rgba(74,222,128,0.15)"
-                : "linear-gradient(135deg, var(--violet), var(--violet-dark))",
-              color: read ? "#16a34a" : "#fff",
+                : "linear-gradient(135deg, var(--gold), var(--gold-dark))",
+              color: read ? "#16a34a" : "#1a1206",
               border: read ? "1px solid rgba(74,222,128,0.4)" : "none",
               borderRadius: 999, padding: "11px 16px",
               fontWeight: 700, fontSize: 13.5,

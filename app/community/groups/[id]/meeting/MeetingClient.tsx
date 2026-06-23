@@ -183,7 +183,7 @@ const loadCenterStyle: React.CSSProperties = {
   color: "#fff", padding: "0 20px", textAlign: "center",
 };
 const primaryBtnStyle: React.CSSProperties = {
-  background: T.violet, color: "#fff",
+  background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
   border: "none", borderRadius: 12,
   padding: "12px 22px", fontWeight: 700, fontSize: 13.5,
   cursor: "pointer", fontFamily: F.body,

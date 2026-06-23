@@ -121,7 +121,7 @@ export default function PersonalNotes({ videoId, isAuth, currentTimeSecs, onJump
               <span>📍 Marquer au timestamp courant {currentTimeSecs != null ? `(${formatVideoDuration(Math.round(currentTimeSecs))})` : ""}</span>
             </label>
             <button onClick={addNote} disabled={busy || !body.trim()} style={{
-              padding: "7px 14px", background: T.violet, color: "#fff", border: "none",
+              padding: "7px 14px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
               borderRadius: 8, fontWeight: 700, fontSize: 12.5,
               cursor: busy || !body.trim() ? "not-allowed" : "pointer",
               opacity: busy || !body.trim() ? 0.5 : 1,
@@ -163,7 +163,7 @@ export default function PersonalNotes({ videoId, isAuth, currentTimeSecs, onJump
                         {n.time_secs != null ? (
                           <button onClick={() => onJump?.(n.time_secs!)} style={{
                             padding: "1px 7px", borderRadius: 4,
-                            background: T.violet, color: "#fff",
+                            background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
                             fontSize: 10.5, fontWeight: 700, fontVariantNumeric: "tabular-nums",
                             border: "none", cursor: onJump ? "pointer" : "default",
                           }}>📍 {formatVideoDuration(n.time_secs)}</button>
@@ -187,7 +187,7 @@ export default function PersonalNotes({ videoId, isAuth, currentTimeSecs, onJump
 }
 
 const primaryBtn: React.CSSProperties = {
-  padding: "5px 10px", background: T.violet, color: "#fff", border: "none",
+  padding: "5px 10px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
   borderRadius: 6, fontWeight: 700, fontSize: 11.5, cursor: "pointer",
 };
 const lightBtn: React.CSSProperties = {

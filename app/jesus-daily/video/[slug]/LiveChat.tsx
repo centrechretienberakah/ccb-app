@@ -126,7 +126,7 @@ export default function LiveChat({ videoId, initialMessages, isAuth, currentUser
             }}>
               <div style={{
                 flex: "0 0 28px", width: 28, height: 28, borderRadius: 999,
-                background: T.violet, color: "#fff",
+                background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 11, fontWeight: 700, overflow: "hidden",
               }}>
@@ -169,7 +169,7 @@ export default function LiveChat({ videoId, initialMessages, isAuth, currentUser
             />
             <button onClick={send} disabled={busy || !text.trim()}
               style={{
-                padding: "8px 16px", background: T.violet, color: "#fff", border: "none",
+                padding: "8px 16px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none",
                 borderRadius: 999, fontWeight: 700, fontSize: 13,
                 cursor: busy || !text.trim() ? "not-allowed" : "pointer",
                 opacity: busy || !text.trim() ? 0.5 : 1,
@@ -178,7 +178,7 @@ export default function LiveChat({ videoId, initialMessages, isAuth, currentUser
         ) : (
           <Link href="/auth/login" style={{
             flex: 1, textAlign: "center", padding: "8px 16px",
-            background: T.violet, color: "#fff", borderRadius: 999,
+            background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", borderRadius: 999,
             fontWeight: 700, fontSize: 13, textDecoration: "none",
           }}>Se connecter pour participer</Link>
         )}

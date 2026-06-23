@@ -19,6 +19,7 @@ export const JDTV_THEME = {
   violetDark:   "#5B21B6",
   violetSoft:   "rgba(124,58,237,0.16)",
   gold:         "#D4AF37",
+  goldDark:     "#A8862B",
   goldSoft:     "rgba(212,175,55,0.18)",
 
   // Live / accent

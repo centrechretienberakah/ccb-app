@@ -890,7 +890,7 @@ export default function GroupDetailClient({
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
-          background: T.violet, color: "#fff", padding: "10px 20px",
+          background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", padding: "10px 20px",
           borderRadius: 999, fontSize: 13, fontWeight: 700,
           zIndex: 9999, boxShadow: T.shadowMd,
         }}>{toast}</div>
@@ -2004,7 +2004,7 @@ function VersePromptModal({ onShare, onClose }: { onShare: (ref: string, text: s
         <input autoFocus value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Référence — ex : Jean 3:16" style={verseInput} />
         <textarea value={vtext} onChange={(e) => setVtext(e.target.value)} rows={3} placeholder="Texte du verset (optionnel)" style={{ ...verseInput, resize: "none" }} />
         <button disabled={!ref.trim()} onClick={() => onShare(ref.trim(), vtext)} style={{
-          background: T.violet, color: "#fff", border: "none", borderRadius: 12, padding: "11px",
+          background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none", borderRadius: 12, padding: "11px",
           fontWeight: 800, fontSize: 14, cursor: ref.trim() ? "pointer" : "default", opacity: ref.trim() ? 1 : 0.5,
         }}>Insérer dans le message</button>
       </div>
