@@ -34,6 +34,22 @@ const inp: React.CSSProperties = {
 };
 const btnGold: React.CSSProperties = { background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 13, padding: '9px 18px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' };
 
+// ─── Export CSV (séparateur ';' + BOM → compatible Excel français) ────
+function csvCell(v: unknown): string {
+  const s = String(v ?? '');
+  return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function downloadCsv(name: string, header: string[], rows: (string | number)[][]) {
+  const lines = [header, ...rows].map((r) => r.map(csvCell).join(';'));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export default function QuizControlClient() {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
@@ -96,9 +112,76 @@ export default function QuizControlClient() {
     try {
       const { error } = await supabase.from('quiz_phases').update({ is_open: !isOpen }).eq('key', key);
       if (error) throw error;
-      setPhases((prev) => prev.map((p) => (p.key === key ? { ...p, is_open: !isOpen } : p)));
+      const willOpen = !isOpen;
+      setPhases((prev) => prev.map((p) => (p.key === key ? { ...p, is_open: willOpen } : p)));
+      // À l'ouverture d'une phase, proposer de notifier les joueurs (push).
+      if (willOpen) {
+        const label = phases.find((p) => p.key === key)?.label ?? 'Une phase';
+        if (confirm(`Notifier tous les abonnés que « ${label} » est ouverte ?`)) {
+          await notifyPhaseOpen(label);
+        }
+      }
     } catch { alert("Erreur lors du changement d'état de la phase."); }
     finally { setActionLoading(null); }
+  };
+
+  // Notif push d'ouverture de phase (audience "all" — réservé modérateur+, ce
+  // que l'admin est déjà). Best-effort, retourne un retour sur le nb d'envois.
+  const notifyPhaseOpen = async (label: string) => {
+    try {
+      const res = await fetch('/api/notifications/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `🏆 ${label} — c'est ouvert !`,
+          body: `La phase « ${label} » du Bible Quiz est ouverte. Connecte-toi pour jouer !`,
+          url: '/bible-quiz',
+          audience: 'all',
+        }),
+      });
+      const data = await res.json().catch(() => ({} as { sent?: number; error?: string }));
+      if (res.ok) alert(`🔔 Notification envoyée${typeof data.sent === 'number' ? ` à ${data.sent} abonné(s)` : ''}.`);
+      else alert(`Notification non envoyée : ${data.error ?? res.status}`);
+    } catch {
+      alert('Notification non envoyée (réseau).');
+    }
+  };
+
+  // Export CSV de toutes les réponses (joueur, équipe, manche, question,
+  // réponse, correct, points, date). Lecture autorisée par la RLS modérateur+.
+  const exportAnswers = async () => {
+    setActionLoading('export');
+    try {
+      const [{ data: answers, error: aErr }, { data: questions, error: qErr }] = await Promise.all([
+        supabase.from('quiz_answers')
+          .select('user_id, team_id, quiz_id, question_id, selected_option, selected_free_answer, is_correct, points, answered_at')
+          .order('answered_at', { ascending: true }).limit(10000),
+        supabase.from('quiz_questions').select('id, text'),
+      ]);
+      if (aErr) throw aErr;
+      if (qErr) throw qErr;
+      if (!answers || answers.length === 0) { alert('Aucune réponse à exporter.'); return; }
+
+      const qTitle = new Map(quizzes.map((q) => [q.id, q.title]));
+      const pName = new Map(players.map((p) => [p.id, p.name || 'Joueur']));
+      const tName = new Map(teams.map((t) => [t.id, t.name]));
+      const questText = new Map((questions ?? []).map((q) => [q.id as string, q.text as string]));
+
+      const header = ['Joueur', 'Équipe', 'Manche', 'Question', 'Réponse', 'Correct', 'Points', 'Date'];
+      const rows = answers.map((a) => [
+        pName.get(a.user_id) ?? a.user_id,
+        a.team_id ? (tName.get(a.team_id) ?? '') : '',
+        qTitle.get(a.quiz_id) ?? '',
+        questText.get(a.question_id) ?? '',
+        (a.selected_free_answer || a.selected_option || '') as string,
+        a.is_correct ? 'Oui' : 'Non',
+        a.points ?? 0,
+        new Date(a.answered_at).toLocaleString('fr-FR'),
+      ] as (string | number)[]);
+
+      downloadCsv('bible-quiz-reponses', header, rows);
+    } catch (e) {
+      alert('Export impossible : ' + (e instanceof Error ? e.message : 'erreur'));
+    } finally { setActionLoading(null); }
   };
 
   const toggleQuizStatus = async (id: string, currentStatus: boolean) => {
@@ -233,6 +316,14 @@ export default function QuizControlClient() {
           </div>
         </div>
       )}
+
+      {/* Outils admin : export des réponses */}
+      <div style={{ marginBottom: 24 }}>
+        <button onClick={exportAnswers} disabled={actionLoading === 'export'}
+          style={{ ...btnGold, opacity: actionLoading === 'export' ? 0.6 : 1 }}>
+          {actionLoading === 'export' ? 'Export…' : '📤 Exporter les réponses (CSV)'}
+        </button>
+      </div>
 
       {/* Phases du championnat */}
       {phases.length > 0 && (
