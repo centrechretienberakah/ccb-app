@@ -50,7 +50,6 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
   const [selectedCampaign, setSelectedCampaign] = useState<DonationCampaign | null>(null);
   const [selectedMode, setSelectedMode] = useState<PaymentMode | null>(null);
   const [busyConfirm, setBusyConfirm] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [dedication, setDedication] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDay, setRecurringDay] = useState(1);
@@ -115,7 +114,7 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
       payment_mode: selectedMode?.id ?? null,
       reference: ref,
       status: "pending" as const,
-      is_anonymous: isAnonymous,
+      is_anonymous: false,
       dedication: dedication.trim() || null,
     };
 
@@ -379,25 +378,6 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
           {/* 3b. Options */}
           <Section title="Options (facultatif)" hint="Personnalise ton don selon ta convenance.">
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }} className="dons-options-grid">
-              <label style={{
-                display: "flex", alignItems: "flex-start", gap: 10,
-                padding: "12px 14px",
-                background: isAnonymous ? T.violetSoft : T.card,
-                border: `1.5px solid ${isAnonymous ? T.gold : T.border}`,
-                borderRadius: 10, cursor: "pointer", fontFamily: F.body,
-              }}>
-                <input type="checkbox" checked={isAnonymous}
-                  onChange={(e) => setIsAnonymous(e.target.checked)}
-                  style={{ marginTop: 3, accentColor: T.violet }} />
-                <span>
-                  <span style={{ fontWeight: 700, fontSize: 13, color: T.text, display: "block" }}>
-                    👤 Donner anonymement
-                  </span>
-                  <span style={{ fontSize: 11.5, color: T.textMuted }}>
-                    Ton nom ne sera mentionné nulle part publiquement.
-                  </span>
-                </span>
-              </label>
 
               <label style={{
                 display: "flex", alignItems: "flex-start", gap: 10,
@@ -468,13 +448,12 @@ export default function DonsClient({ heroTitle, heroIntro, campaigns, isAdmin, p
                 }}>× retirer</button>
               </div>
             ) : null}
-            {(isAnonymous || isRecurring || dedication) ? (
+            {(isRecurring || dedication) ? (
               <div style={{
                 marginBottom: 10, padding: "10px 14px",
                 background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 10,
                 fontSize: 12, color: T.textSoft, display: "flex", gap: 16, flexWrap: "wrap",
               }}>
-                {isAnonymous ? <span>👤 <strong>Anonyme</strong></span> : null}
                 {isRecurring ? <span>🔄 <strong>Mensuel</strong> (jour {recurringDay})</span> : null}
                 {dedication ? <span>🕊️ <strong>{dedication}</strong></span> : null}
               </div>

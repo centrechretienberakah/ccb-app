@@ -95,7 +95,6 @@ function PrayerComposer({
   const [content, setContent] = useState("");
   const [category, setCategory] = useState<PrayerCategory>("autre");
   const [visibility, setVisibility] = useState<PrayerVisibility>("members");
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -108,25 +107,25 @@ function PrayerComposer({
       title: title.trim() || null,
       content: content.trim(),
       category, visibility,
-      is_anonymous: isAnonymous,
+      is_anonymous: false,
     }).select("id, user_id, title, content, category, visibility, is_anonymous, is_answered, answered_at, answered_with, created_at").single();
     if (e) { setError(e.message); setSaving(false); return; }
     const row = data as Prayer;
     onCreated({
       ...row,
       intercessionsCount: 0,
-      user_profiles: isAnonymous ? null : currentUserProfile,
+      user_profiles: currentUserProfile,
       comments: [],
     });
     const cat = getPrayerCategoryDef(category);
-    const author = isAnonymous ? "Un membre (anonyme)" : (currentUserProfile?.display_name || "Un membre");
+    const author = currentUserProfile?.display_name || "Un membre";
     notifyPrayerStaff(
       `${cat.emoji} ${author} a une nouvelle demande : ${cat.label}`,
       (title.trim() || content).slice(0, 140),
       "/prayer",
     );
     setOpen(false); setTitle(""); setContent(""); setCategory("autre");
-    setVisibility("members"); setIsAnonymous(false); setSaving(false);
+    setVisibility("members"); setSaving(false);
   }
 
   if (!open) return (
@@ -208,15 +207,6 @@ function PrayerComposer({
           fontFamily: F.body, outline: "none", resize: "vertical",
         }}
       />
-
-      <label style={{
-        display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
-        cursor: "pointer", fontSize: 13, color: T.textSoft, fontFamily: F.body,
-      }}>
-        <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)}
-          style={{ accentColor: T.violet, width: 16, height: 16, cursor: "pointer" }} />
-        🤫 Publier anonymement
-      </label>
 
       {error && (
         <div style={{ color: "#C24B7A", fontSize: 12, marginBottom: 10 }}>{error}</div>
