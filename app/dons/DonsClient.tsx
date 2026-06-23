@@ -738,7 +738,9 @@ function ModeCard({ mode, amount, currency, kind, selected, onSelect }: {
       borderRadius: 14, cursor: "pointer",
       display: "flex", flexDirection: "column", gap: 8,
       transition: "border-color 120ms ease, background 120ms ease",
+      position: "relative", overflow: "hidden",
     }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${mode.color}, ${T.gold})` }} />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{
           width: 38, height: 38, borderRadius: 10,
@@ -747,7 +749,7 @@ function ModeCard({ mode, amount, currency, kind, selected, onSelect }: {
           fontSize: 20,
         }}>{mode.emoji}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>{mode.title}</div>
+          <div style={{ fontFamily: F.title, fontWeight: 800, fontSize: 14, color: "#f0d060" }}>{mode.title}</div>
           <div style={{ fontSize: 11.5, color: T.textMuted }}>{mode.detail}</div>
         </div>
         {selected ? (

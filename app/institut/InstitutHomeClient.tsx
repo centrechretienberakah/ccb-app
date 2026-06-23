@@ -138,10 +138,12 @@ export default function InstitutHomeClient({
                   transition: "transform 0.15s, box-shadow 0.15s",
                   height: "100%",
                   display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 6,
+                  position: "relative", overflow: "hidden",
                 }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = T.shadowMd; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = T.shadowSoft; }}
                 >
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${T.violet}, ${T.gold})` }} />
                   <div style={{ fontSize: 32, marginBottom: 2 }}>{c.icon ?? "📚"}</div>
                   <div style={{
                     fontFamily: F.title, fontSize: 14, fontWeight: 700,
