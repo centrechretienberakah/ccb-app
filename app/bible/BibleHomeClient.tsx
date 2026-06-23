@@ -29,6 +29,7 @@ export default function BibleHomeClient({ chaptersRead, notesCount, versesCount 
         @media (min-width: 600px) { .biblehome-grid { grid-template-columns: 1fr 1fr; } }
         @media (min-width: 1024px) { .biblehome-grid { grid-template-columns: 1fr 1fr 1fr; } }
         .biblehome-card { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+        .biblehome-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--violet), var(--gold)); }
         .biblehome-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--gold); }
       `}</style>
 
@@ -61,7 +62,7 @@ export default function BibleHomeClient({ chaptersRead, notesCount, versesCount 
               background: "var(--card-bg)", border: "1px solid var(--border)",
               borderRadius: "var(--radius-xl, 18px)", padding: "18px 16px",
               textDecoration: "none", color: "var(--text-primary)",
-              boxShadow: "var(--shadow-sm)", position: "relative", minHeight: 112,
+              boxShadow: "var(--shadow-sm)", position: "relative", minHeight: 112, overflow: "hidden",
             }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{
@@ -77,7 +78,7 @@ export default function BibleHomeClient({ chaptersRead, notesCount, versesCount 
                   }}>{c.badge}</span>
                 )}
               </div>
-              <div style={{ fontFamily: "var(--font-title)", fontSize: 16, fontWeight: 700, marginTop: 4 }}>
+              <div style={{ fontFamily: "var(--font-title)", fontSize: 16, fontWeight: 700, marginTop: 4, color: "var(--gold-light)" }}>
                 {c.title}
               </div>
               <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.45 }}>

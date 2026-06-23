@@ -145,7 +145,7 @@ export default function InstitutHomeClient({
                   <div style={{ fontSize: 32, marginBottom: 2 }}>{c.icon ?? "📚"}</div>
                   <div style={{
                     fontFamily: F.title, fontSize: 14, fontWeight: 700,
-                    color: T.text,
+                    color: "#f0d060",
                   }}>
                     {c.name}
                   </div>
