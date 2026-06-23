@@ -81,6 +81,15 @@ function Hero() {
       <div className="ccb-orb ccb-orb-1" />
       <div className="ccb-orb ccb-orb-2" />
       <div className="ccb-grain" />
+      {/* Particules dorées montantes plein hero (signature du flyer) */}
+      <div className="ccb-hero-particles" aria-hidden>
+        {HERO_PARTICLES.map((p, i) => (
+          <span key={i} className="ccb-hp" style={{
+            left: p.l, width: p.s, height: p.s,
+            animationDuration: p.d, animationDelay: p.delay,
+          }} />
+        ))}
+      </div>
 
       <div className="ccb-container ccb-hero-inner">
         <Reveal delay={40}>
@@ -130,6 +139,19 @@ function Hero() {
     </header>
   );
 }
+
+/* Particules dorées du hero — positions déterministes (SSR-safe) */
+const HERO_PARTICLES: { l: string; s: number; d: string; delay: string }[] = [
+  { l: "4%",  s: 4, d: "9s",  delay: "0s"   }, { l: "11%", s: 3, d: "11s", delay: "2.4s" },
+  { l: "18%", s: 5, d: "8.5s",delay: "1.1s" }, { l: "26%", s: 3, d: "10s", delay: "3.6s" },
+  { l: "33%", s: 4, d: "9.5s",delay: "0.6s" }, { l: "41%", s: 3, d: "12s", delay: "2.0s" },
+  { l: "48%", s: 5, d: "8.8s",delay: "4.2s" }, { l: "55%", s: 3, d: "10.5s",delay:"1.6s" },
+  { l: "62%", s: 4, d: "9.2s",delay: "3.0s" }, { l: "69%", s: 3, d: "11.5s",delay:"0.3s" },
+  { l: "76%", s: 5, d: "8.6s",delay: "2.8s" }, { l: "83%", s: 3, d: "10.2s",delay:"4.6s" },
+  { l: "90%", s: 4, d: "9.8s",delay: "1.4s" }, { l: "96%", s: 3, d: "11.8s",delay:"3.2s" },
+  { l: "22%", s: 3, d: "13s", delay: "5.2s" }, { l: "58%", s: 4, d: "12.5s",delay:"6s"   },
+  { l: "37%", s: 3, d: "10.8s",delay:"5.8s" }, { l: "80%", s: 4, d: "13.5s",delay:"4.9s" },
+];
 
 /* ─────────────────────── CHIFFRES / FEATURES ─────────────────────── */
 const STATS = [
@@ -712,7 +734,7 @@ function LandingStyles() {
       .ccb-land *{box-sizing:border-box;}
       .ccb-container{width:100%;max-width:1160px;margin:0 auto;padding:0 22px;}
       .ccb-h2{font-family:'Cinzel',var(--font-cinzel),serif;font-weight:800;
-        font-size:clamp(1.6rem,4.2vw,2.6rem);line-height:1.18;color:var(--text);
+        font-size:clamp(1.6rem,4.2vw,2.6rem);line-height:1.18;color:#fff;
         margin:0 0 14px;letter-spacing:0.01em;}
       .ccb-h2-light{color:#fff;}
       .ccb-lead{font-size:clamp(0.98rem,2.2vw,1.18rem);line-height:1.65;color:var(--text-soft);margin:0 0 22px;max-width:60ch;}
@@ -729,18 +751,22 @@ function LandingStyles() {
       [data-theme="dark"] .ccb-gold-text{color:var(--gold);}
 
       /* Buttons */
+      /* Boutons — pilule OR à glow (primaire) + contour OR (secondaire),
+         exactement comme le flyer « Semblable à Christ ». */
       .ccb-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
-        background:var(--v);color:#fff;font-weight:700;font-size:0.9rem;letter-spacing:0.02em;
-        padding:13px 26px;border-radius:999px;text-decoration:none;border:none;cursor:pointer;
-        box-shadow:0 8px 24px rgba(91, 33, 182,0.28);transition:transform .2s,box-shadow .2s,background .2s;}
-      .ccb-btn:hover{background:var(--v-light);transform:translateY(-2px);box-shadow:0 12px 32px rgba(91, 33, 182,0.36);}
-      .ccb-btn-lg{padding:16px 34px;font-size:0.96rem;}
-      .ccb-btn-sm{padding:9px 18px;font-size:0.82rem;}
-      .ccb-btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#1a1206;box-shadow:0 8px 24px rgba(212,175,55,0.36);}
+        background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%);color:#1a1206;
+        font-weight:800;font-size:0.9rem;letter-spacing:0.04em;text-transform:uppercase;
+        padding:13px 28px;border-radius:999px;text-decoration:none;border:none;cursor:pointer;
+        box-shadow:0 0 28px rgba(212,175,55,0.4);transition:transform .2s,box-shadow .2s,background .2s;}
+      .ccb-btn:hover{background:linear-gradient(135deg,#e6c14e 0%,var(--gold) 100%);
+        transform:translateY(-2px);box-shadow:0 0 48px rgba(212,175,55,0.62);}
+      .ccb-btn-lg{padding:16px 36px;font-size:0.96rem;}
+      .ccb-btn-sm{padding:9px 18px;font-size:0.78rem;}
+      .ccb-btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#1a1206;box-shadow:0 0 28px rgba(212,175,55,0.4);}
       .ccb-btn-gold:hover{background:linear-gradient(135deg,#e6c14e,var(--gold));}
-      .ccb-btn-ghost{background:transparent;color:#D4AF37;border:1.5px solid var(--v);box-shadow:none;}
-      .ccb-btn-ghost:hover{background:rgba(91, 33, 182,0.07);}
-      [data-theme="dark"] .ccb-btn-ghost{color:#D4AF37;border-color:#7C3AED;}
+      .ccb-btn-ghost{background:transparent;color:var(--gold);border:1.5px solid var(--gold);box-shadow:none;}
+      .ccb-btn-ghost:hover{background:rgba(212,175,55,0.08);transform:translateY(-2px);}
+      [data-theme="dark"] .ccb-btn-ghost{color:var(--gold);border-color:var(--gold);}
       .ccb-btn-ghost-light{background:rgba(255,255,255,0.1);color:#fff;border:1.5px solid rgba(255,255,255,0.35);box-shadow:none;}
       .ccb-btn-ghost-light:hover{background:rgba(255,255,255,0.18);}
 
@@ -770,6 +796,13 @@ function LandingStyles() {
       .ccb-orb-2{width:440px;height:440px;bottom:-120px;right:-90px;background:rgba(212,175,55,0.14);animation:ccb-glow 9s ease-in-out infinite;}
       .ccb-grain{position:absolute;inset:0;z-index:0;opacity:.4;pointer-events:none;
         background-image:radial-gradient(rgba(91, 33, 182,0.05) 1px,transparent 1px);background-size:22px 22px;}
+      .ccb-hero-particles{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+      .ccb-hp{position:absolute;bottom:-12px;border-radius:50%;background:var(--gold);
+        box-shadow:0 0 8px rgba(212,175,55,0.7);opacity:0;
+        animation-name:ccb-floatUp;animation-timing-function:ease-in;animation-iteration-count:infinite;}
+      @keyframes ccb-floatUp{0%{opacity:0;transform:translateY(0) scale(0);}
+        10%{opacity:.55;}90%{opacity:.12;}100%{opacity:0;transform:translateY(-100vh) scale(1.25);}}
+      @media(prefers-reduced-motion:reduce){.ccb-hp{display:none;}}
       .ccb-hero-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:18px;max-width:780px;}
       .ccb-hero-logo{position:relative;display:inline-flex;align-items:center;justify-content:center;
         width:140px;height:140px;animation:ccb-float 5s ease-in-out infinite;}
@@ -783,7 +816,8 @@ function LandingStyles() {
       /* TITRE — 1 ligne par défaut (desktop + tablette), nowrap auto-fit */
       .ccb-hero-title{font-family:'Cinzel',serif;font-weight:900;margin:4px 0 0;
         font-size:clamp(1.9rem,5.6vw,3.6rem);line-height:1.04;letter-spacing:0.04em;
-        color:var(--text);text-transform:uppercase;white-space:nowrap;}
+        color:#fff;text-transform:uppercase;white-space:nowrap;
+        text-shadow:0 0 40px rgba(212,175,55,0.35),0 0 80px rgba(90,44,160,0.55);}
       .ccb-title-main{color:var(--text);}
       .ccb-title-accent{display:inline;}
       /* TAGLINE — flex colonne ; 1er segment toujours sur une ligne */
