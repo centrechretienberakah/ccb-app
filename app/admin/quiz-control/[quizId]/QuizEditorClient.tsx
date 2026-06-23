@@ -126,7 +126,7 @@ export default function QuizEditorClient({ quizId }: { quizId: string }) {
 
   return (
     <div>
-      <Link href="/admin/quiz-control" style={{ fontSize: 13, color: 'var(--violet)', textDecoration: 'none', fontWeight: 600 }}>← Contrôle du championnat</Link>
+      <Link href="/admin/quiz-control" style={{ fontSize: 13, color: 'var(--gold)', textDecoration: 'none', fontWeight: 600 }}>← Contrôle du championnat</Link>
 
       {toast && <div style={{ ...card, padding: '10px 14px', textAlign: 'center', fontSize: 13, fontWeight: 600, margin: '12px 0' }}>{toast}</div>}
 

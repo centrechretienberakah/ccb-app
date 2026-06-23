@@ -53,12 +53,12 @@ export type PostKind =
   | "encouragement";
 
 export const POST_KINDS: PostKindDef[] = [
-  { id: "discussion",    emoji: "💬", label: "Discussion",   description: "Échange libre",                       color: "#5B21B6" },
+  { id: "discussion",    emoji: "💬", label: "Discussion",   description: "Échange libre",                       color: "#D4AF37" },
   { id: "testimony",     emoji: "✨", label: "Témoignage",   description: "Partage ce que Dieu a fait pour toi", color: "#D4AF37" },
-  { id: "prayer",        emoji: "🙏", label: "Prière",       description: "Demande de prière",                    color: "#5B21B6" },
+  { id: "prayer",        emoji: "🙏", label: "Prière",       description: "Demande de prière",                    color: "#D4AF37" },
   { id: "announcement",  emoji: "📣", label: "Annonce",      description: "Information importante",               color: "#D4AF37" },
-  { id: "teaching",      emoji: "📖", label: "Enseignement", description: "Partage d'enseignement biblique",      color: "#5B21B6" },
-  { id: "question",      emoji: "❓", label: "Question",     description: "Question / Q&R",                       color: "#5B21B6" },
+  { id: "teaching",      emoji: "📖", label: "Enseignement", description: "Partage d'enseignement biblique",      color: "#D4AF37" },
+  { id: "question",      emoji: "❓", label: "Question",     description: "Question / Q&R",                       color: "#D4AF37" },
   { id: "encouragement", emoji: "💝", label: "Encouragement",description: "Mots d'encouragement",                 color: "#D4AF37" },
 ];
 

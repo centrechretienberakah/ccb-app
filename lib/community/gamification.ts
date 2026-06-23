@@ -12,9 +12,9 @@ export interface Rank {
 
 export const RANKS: Rank[] = [
   { id: "debutant",    label: "Disciple Débutant",     emoji: "🌱", minXp: 0,    color: "#857C95" },
-  { id: "serviteur",   label: "Serviteur",             emoji: "✋", minXp: 100,  color: "#5B21B6" },
+  { id: "serviteur",   label: "Serviteur",             emoji: "✋", minXp: 100,  color: "#D4AF37" },
   { id: "leader",      label: "Leader",                emoji: "👑", minXp: 500,  color: "#D4AF37" },
-  { id: "mentor",      label: "Mentor",                emoji: "📿", minXp: 1500, color: "#4C1D95" },
+  { id: "mentor",      label: "Mentor",                emoji: "📿", minXp: 1500, color: "#D4AF37" },
   { id: "ambassadeur", label: "Ambassadeur Berakah",   emoji: "✨", minXp: 5000, color: "#A8862B" },
 ];
 

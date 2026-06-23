@@ -25,7 +25,7 @@ export interface CCBEvent {
 }
 
 const TYPE_META: Record<string, { icon: string; label: string; color: string }> = {
-  culte:    { icon: "🙏", label: "Culte",          color: "var(--violet-light)" },
+  culte:    { icon: "🙏", label: "Culte",          color: "var(--gold)" },
   bootcamp: { icon: "🎓", label: "Bootcamp",        color: "var(--gold)" },
   etude:    { icon: "📖", label: "Étude biblique",  color: "#60a5fa" },
   louange:  { icon: "🎵", label: "Louange",         color: "#f472b6" },
@@ -164,7 +164,7 @@ function EventCard({ event, userRsvp, goingCount, maybeCount, currentUserId, onR
             </div>
             <button onClick={() => setShowTz((v) => !v)} style={{
               background: "none", border: "none", cursor: "pointer", padding: 0,
-              fontSize: 11.5, color: "var(--violet)", fontWeight: 600,
+              fontSize: 11.5, color: "var(--gold)", fontWeight: 600,
               display: "inline-flex", alignItems: "center", gap: 3, fontFamily: "inherit",
             }}>
               📍 Heure locale{event.timezone ? (showTz ? " ▲" : " ▼") : ""}

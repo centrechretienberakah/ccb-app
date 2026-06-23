@@ -5,7 +5,7 @@ interface Resource { id: string; title: string; description?: string; type: stri
 
 const TYPE_INFO: Record<string, { emoji: string; label: string; color: string }> = {
   pdf: { emoji: "📄", label: "PDF", color: "#ef4444" },
-  audio: { emoji: "🎧", label: "Audio", color: "#8b5cf6" },
+  audio: { emoji: "🎧", label: "Audio", color: "#D4AF37" },
   video: { emoji: "🎬", label: "Vidéo", color: "#3b82f6" },
   ebook: { emoji: "📚", label: "Livre", color: "#10b981" },
   default: { emoji: "📁", label: "Fichier", color: "#94a3b8" },

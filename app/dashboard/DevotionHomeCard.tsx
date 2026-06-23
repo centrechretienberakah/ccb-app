@@ -180,7 +180,7 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
           <div style={{ minWidth: 0 }}>
             <div style={{
               fontFamily: "var(--font-title)", fontSize: 16, fontWeight: 800,
-              color: "var(--violet)", letterSpacing: "0.03em", lineHeight: 1.1,
+              color: "var(--gold)", letterSpacing: "0.03em", lineHeight: 1.1,
             }}>
               MÉDITONS ENSEMBLE
             </div>
@@ -206,7 +206,7 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
           padding: "12px 14px", marginBottom: 16,
         }}>
           <div style={{
-            fontSize: 12, fontWeight: 700, color: "var(--violet)",
+            fontSize: 12, fontWeight: 700, color: "var(--gold)",
             marginBottom: 4, letterSpacing: "0.04em",
           }}>
             📖 {devotion.verse_ref}
@@ -284,7 +284,7 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
           <button onClick={() => setExpanded((v) => !v)} style={{
             width: "100%", background: "transparent", border: "1px dashed var(--border)",
             borderRadius: 12, padding: "9px", marginBottom: 14,
-            color: "var(--violet)", fontWeight: 700, fontSize: 12.5, cursor: "pointer",
+            color: "var(--gold)", fontWeight: 700, fontSize: 12.5, cursor: "pointer",
           }}>
             {expanded ? "▲ Réduire" : "▼ Lire la méditation complète"}
           </button>
@@ -351,7 +351,7 @@ export default function DevotionHomeCard({ devotion, userId, initialRead }: Prop
 function SectionLabel({ children, center }: { children: React.ReactNode; center?: boolean }) {
   return (
     <div style={{
-      fontSize: 11.5, fontWeight: 800, color: "var(--violet)",
+      fontSize: 11.5, fontWeight: 800, color: "var(--gold)",
       letterSpacing: "0.06em", textTransform: "uppercase",
       marginBottom: 6, textAlign: center ? "center" : "left",
     }}>

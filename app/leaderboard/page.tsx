@@ -95,7 +95,7 @@ export default function LeaderboardPage() {
                       <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '1px 0 0' }}>{s.team_name} · {LEVEL_LABEL[s.level] ?? 'Débutant'}</p>
                     </div>
                   </div>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--violet)', whiteSpace: 'nowrap' }}>{s.total_score} pts</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--gold)', whiteSpace: 'nowrap' }}>{s.total_score} pts</span>
                 </div>
               ))}
             </div>

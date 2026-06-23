@@ -187,7 +187,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
         <div style={{
           background: "var(--violet-pale)", borderBottom: "1px solid var(--border)",
           padding: "6px 16px", textAlign: "center",
-          fontSize: 11, color: "var(--violet)", fontWeight: 700, letterSpacing: "0.1em",
+          fontSize: 11, color: "var(--gold)", fontWeight: 700, letterSpacing: "0.1em",
         }}>
           🛡️ MODE ADMINISTRATEUR — Vous pouvez gérer les cellules et jalons
         </div>
@@ -342,7 +342,7 @@ export default function ProfileClient({ user, profile, milestones, stats, isAdmi
             borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 16,
           }}>
             <div style={{
-              fontSize: 11, color: "var(--violet-light)", fontWeight: 700,
+              fontSize: 11, color: "var(--gold)", fontWeight: 700,
               marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.1em",
             }}>🛡️ Groupe de cellule (Admin)</div>
             <input value={form.cell_group}

@@ -125,7 +125,7 @@ export default function DataAdminTab() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
                     <span style={{ fontSize: "0.85rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
-                    <span style={{ fontSize: "0.8rem", color: "var(--violet, #7c3aed)", fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>{fmt(t.network)}</span>
+                    <span style={{ fontSize: "0.8rem", color: "var(--gold)", fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>{fmt(t.network)}</span>
                   </div>
                   <div style={{ height: 6, borderRadius: 3, background: "var(--surface)", overflow: "hidden" }}>
                     <div style={{ width: `${Math.round((t.network / maxTop) * 100)}%`, height: "100%", background: "var(--violet, #7c3aed)" }} />

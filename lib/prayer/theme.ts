@@ -52,11 +52,11 @@ export interface PrayerCategoryDef {
 export const PRAYER_CATEGORIES: PrayerCategoryDef[] = [
   { id: "sante",       label: "Santé",                emoji: "❤️‍🩹", color: "#D4AF37", description: "Guérison physique ou mentale" },
   { id: "finances",    label: "Finances",             emoji: "💰",   color: "#2E9B47", description: "Provision, bénédiction financière" },
-  { id: "famille",     label: "Famille",              emoji: "👨‍👩‍👧", color: "#5B21B6", description: "Couple, enfants, parents" },
+  { id: "famille",     label: "Famille",              emoji: "👨‍👩‍👧", color: "#D4AF37", description: "Couple, enfants, parents" },
   { id: "salut",       label: "Salut",                emoji: "✝️",   color: "#D4AF37", description: "Conversion d'un proche" },
   { id: "travail",     label: "Travail",              emoji: "💼",   color: "#3A6FB5", description: "Emploi, carrière, projets" },
-  { id: "delivrance",  label: "Délivrance",           emoji: "🔥",   color: "#5B21B6", description: "Combat spirituel, oppression" },
-  { id: "spirituel",   label: "Croissance spirituelle", emoji: "📖", color: "#5B21B6", description: "Foi, marche chrétienne" },
+  { id: "delivrance",  label: "Délivrance",           emoji: "🔥",   color: "#D4AF37", description: "Combat spirituel, oppression" },
+  { id: "spirituel",   label: "Croissance spirituelle", emoji: "📖", color: "#D4AF37", description: "Foi, marche chrétienne" },
   { id: "autre",       label: "Autre",                emoji: "🙏",   color: "#857C95", description: "Autre sujet de prière" },
 ];
 

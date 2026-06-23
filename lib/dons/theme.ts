@@ -80,7 +80,7 @@ export interface DonationKindDef {
 
 export const DONATION_KINDS: DonationKindDef[] = [
   { id: "tithe",    label: "Dîme",                   emoji: "✝️",  description: "Mes 10 % pour le Seigneur", color: "#D4AF37" },
-  { id: "offering", label: "Offrande libre",         emoji: "🤲",  description: "Un don du cœur",            color: "#5B21B6" },
+  { id: "offering", label: "Offrande libre",         emoji: "🤲",  description: "Un don du cœur",            color: "#D4AF37" },
   { id: "missions", label: "Missions",               emoji: "🌍",  description: "Évangélisation & terrain",  color: "#2E9B47" },
   { id: "project",  label: "Projet de l'église",     emoji: "🏗️",  description: "Construction & équipement",  color: "#0EA5E9" },
   { id: "social",   label: "Action sociale",         emoji: "❤️",  description: "Aider une famille",          color: "#E11D48" },

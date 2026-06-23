@@ -109,7 +109,7 @@ function Testament({ title, emoji, books, onSelect }: {
         background: "var(--violet-soft, rgba(91,33,182,0.10))",
         borderBottom: "1px solid var(--border)",
         padding: "9px 12px", fontFamily: "var(--font-title)", fontWeight: 800,
-        fontSize: 12.5, color: "var(--violet, #5B21B6)",
+        fontSize: 12.5, color: "var(--gold)",
         display: "flex", alignItems: "center", gap: 6,
       }}>
         <span>{emoji}</span><span>{title}</span>

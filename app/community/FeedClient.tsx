@@ -93,8 +93,8 @@ function Avatar({ profile, size = 40 }: { profile?: { display_name?: string | nu
 const ROLE_BADGES: Record<string, { label: string; bg: string; color: string; icon: string }> = {
   owner:          { label: "Pasteur",     bg: "linear-gradient(135deg,#D4AF37,#A8862B)", color: "#1a0a00", icon: "👑" },
   admin:          { label: "Responsable", bg: "linear-gradient(135deg,#5B21B6,#4C1D95)", color: "#fff",    icon: "⭐" },
-  leader:         { label: "Leader",      bg: "rgba(91,33,182,0.12)",                    color: "#5B21B6", icon: "🕊️" },
-  moderator:      { label: "Modérateur",  bg: "rgba(91,33,182,0.12)",                    color: "#5B21B6", icon: "🛡️" },
+  leader:         { label: "Leader",      bg: "rgba(91,33,182,0.12)",                    color: "#D4AF37", icon: "🕊️" },
+  moderator:      { label: "Modérateur",  bg: "rgba(91,33,182,0.12)",                    color: "#D4AF37", icon: "🛡️" },
   premium_member: { label: "Mentor",      bg: "rgba(212,175,55,0.16)",                   color: "#A8862B", icon: "✦" },
 };
 function RoleBadge({ role }: { role?: string | null }) {
@@ -926,7 +926,7 @@ function AdminCategoryManager({ categories, onCategoriesChange }: { categories: 
   }
 
   if (!open) return (
-    <button onClick={() => setOpen(true)} style={{ background: "rgba(91, 33, 182,0.1)", border: "1px solid rgba(91, 33, 182,0.3)", borderRadius: "var(--radius-md)", padding: "8px 14px", color: "var(--violet-light)", fontSize: 12, cursor: "pointer", marginBottom: 16 }}>
+    <button onClick={() => setOpen(true)} style={{ background: "rgba(91, 33, 182,0.1)", border: "1px solid rgba(91, 33, 182,0.3)", borderRadius: "var(--radius-md)", padding: "8px 14px", color: "var(--gold)", fontSize: 12, cursor: "pointer", marginBottom: 16 }}>
       🛡️ Gérer les catégories
     </button>
   );
@@ -934,7 +934,7 @@ function AdminCategoryManager({ categories, onCategoriesChange }: { categories: 
   return (
     <div style={{ background: "var(--card-bg)", border: "1px solid rgba(91, 33, 182,0.3)", borderRadius: "var(--radius-lg)", padding: 16, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--violet-light)" }}>🛡️ Gestion des catégories</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gold)" }}>🛡️ Gestion des catégories</div>
         <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16 }}>✕</button>
       </div>
       {categories.map((c) => (

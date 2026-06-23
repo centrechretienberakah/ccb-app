@@ -138,7 +138,7 @@ export default function AiAdminTab() {
           automatiquement chaque jour ; tu peux aussi le forcer maintenant.
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-          <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--violet, #7c3aed)", lineHeight: 1 }}>{count ?? "—"}</div>
+          <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--gold)", lineHeight: 1 }}>{count ?? "—"}</div>
           <div style={{ fontSize: ".8rem", color: "var(--text-muted)" }}>document(s) indexé(s)</div>
           <button onClick={reindex} disabled={loading}
             style={{ marginLeft: "auto", padding: ".6rem 1.2rem", borderRadius: "9999px", border: "none", background: "var(--gold)", color: "#1a0a00", fontWeight: 700, fontSize: ".85rem", cursor: loading ? "wait" : "pointer", opacity: loading ? 0.7 : 1 }}>

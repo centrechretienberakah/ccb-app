@@ -97,8 +97,8 @@ export const ROLE_LABEL: Record<Role, string> = {
 export const ROLE_BADGE: Record<Role, { bg: string; color: string }> = {
   owner:          { bg: "rgba(212,175,55,0.20)",  color: "#d4af37" },
   admin:          { bg: "rgba(212,175,55,0.12)",  color: "#d4af37" },
-  moderator:      { bg: "rgba(124,58,237,0.15)",  color: "#a78bfa" },
-  leader:         { bg: "rgba(124,58,237,0.15)",  color: "#a78bfa" },
+  moderator:      { bg: "rgba(124,58,237,0.15)",  color: "#D4AF37" },
+  leader:         { bg: "rgba(124,58,237,0.15)",  color: "#D4AF37" },
   premium_member: { bg: "rgba(34,197,94,0.12)",   color: "#22c55e" },
   member:         { bg: "rgba(255,255,255,0.06)", color: "#94a3b8" },
 };

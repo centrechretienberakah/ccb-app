@@ -45,7 +45,7 @@ export interface LevelDef {
 export const LEVELS: LevelDef[] = [
   { id: "beginner",     label: "Débutant",    emoji: "🌱", color: "#2E9B47" },
   { id: "intermediate", label: "Intermédiaire", emoji: "📘", color: "#D4AF37" },
-  { id: "advanced",     label: "Avancé",      emoji: "🎓", color: "#5B21B6" },
+  { id: "advanced",     label: "Avancé",      emoji: "🎓", color: "#D4AF37" },
 ];
 
 export function getLevelDef(id: string | null | undefined): LevelDef {
