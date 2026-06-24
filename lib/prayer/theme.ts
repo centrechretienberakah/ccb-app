@@ -3,21 +3,21 @@
 
 export const PRAYER_THEME = {
   // Palette principale — sombre immersif (flyer « Semblable à Christ »)
-  bg:           "#0a0a0a",       // noir immersif
-  card:         "#140f1f",
-  surface2:     "#1b1530",
-  border:       "rgba(212,175,55,0.16)",
-  borderSoft:   "rgba(255,255,255,0.07)",
-  text:         "#f5f1e8",
-  textSoft:     "#cbc4d6",
-  textMuted:    "#8a8296",
+  bg:           "var(--page-bg)",       // noir immersif
+  card:         "var(--card-bg)",
+  surface2:     "var(--surface-2)",
+  border:       "var(--border)",
+  borderSoft:   "var(--border-subtle)",
+  text:         "var(--text-primary)",
+  textSoft:     "var(--text-secondary)",
+  textMuted:    "var(--text-muted)",
 
   // Couleurs symboliques
   violet:       "#7C3AED",
   violetDark:   "#5A2CA0",
   violetSoft:   "rgba(124,58,237,0.16)",
-  gold:         "#D4AF37",
-  goldDark:     "#A8862B",
+  gold:         "var(--gold)",
+  goldDark:     "var(--gold-dark)",
   blue:         "#60a5fa",       // bleu paisible (lumineux sur sombre)
   blueSoft:     "rgba(96,165,250,0.14)",
 
@@ -26,9 +26,9 @@ export const PRAYER_THEME = {
   pending:      "#8a8296",
 
   // Shadows
-  shadowSoft:   "0 2px 12px rgba(0,0,0,0.40)",
-  shadowMd:     "0 8px 28px rgba(0,0,0,0.50)",
-  shadowGlow:   "0 0 40px rgba(212,175,55,0.15)",
+  shadowSoft:   "var(--shadow-sm)",
+  shadowMd:     "var(--shadow-md)",
+  shadowGlow:   "var(--shadow-lg)",
 } as const;
 
 export const PRAYER_FONTS = {

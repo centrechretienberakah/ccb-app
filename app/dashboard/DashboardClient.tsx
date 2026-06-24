@@ -67,7 +67,7 @@ export default function DashboardClient({ displayName, devotion, devotionRead, u
            dégradés violet/nuit + halo or (flyer « Semblable à Christ »). */
         .dash-bg {
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
-          background-color: #0a0a0a;
+          background-color: var(--page-bg);
           background-image:
             radial-gradient(ellipse 85% 50% at 50% -6%, rgba(90,44,160,0.40) 0%, transparent 62%),
             radial-gradient(ellipse 60% 45% at 92% 100%, rgba(212,175,55,0.06) 0%, transparent 60%);

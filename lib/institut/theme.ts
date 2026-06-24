@@ -2,30 +2,30 @@
 // Violet royal + or + lavande sur fond ivoire
 
 export const INSTITUT_THEME = {
-  bg:           "#0a0a0a",       // noir immersif (page)
-  card:         "#140f1f",
-  surface2:     "#1b1530",
-  border:       "rgba(212,175,55,0.16)",
-  borderSoft:   "rgba(255,255,255,0.07)",
-  text:         "#f5f1e8",
-  textSoft:     "#cbc4d6",
-  textMuted:    "#8a8296",
+  bg:           "var(--page-bg)",       // noir immersif (page)
+  card:         "var(--card-bg)",
+  surface2:     "var(--surface-2)",
+  border:       "var(--border)",
+  borderSoft:   "var(--border-subtle)",
+  text:         "var(--text-primary)",
+  textSoft:     "var(--text-secondary)",
+  textMuted:    "var(--text-muted)",
 
   violet:       "#7C3AED",
   violetDark:   "#5A2CA0",
   violetSoft:   "rgba(124,58,237,0.16)",
   lavender:     "#EDE7FA",
-  gold:         "#D4AF37",
-  goldDark:     "#A8862B",
+  gold:         "var(--gold)",
+  goldDark:     "var(--gold-dark)",
 
   // Status
   completed:    "#34d058",
   inProgress:   "#D4AF37",
 
   // Shadows
-  shadowSoft:   "0 2px 12px rgba(0,0,0,0.40)",
-  shadowMd:     "0 8px 28px rgba(0,0,0,0.50)",
-  shadowGlow:   "0 0 40px rgba(124,58,237,0.22)",
+  shadowSoft:   "var(--shadow-sm)",
+  shadowMd:     "var(--shadow-md)",
+  shadowGlow:   "var(--shadow-lg)",
 } as const;
 
 export const INSTITUT_FONTS = {
