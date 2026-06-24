@@ -30,6 +30,16 @@ interface Verdict {
   reference: string | null;
 }
 
+interface AnswerResult {
+  q: PublicQuestion;
+  selected: string | null;   // lettre choisie (QCM) — null si manquée
+  free: string;              // texte saisi (question ouverte)
+  verdict: Verdict;
+  missed: boolean;           // aucune réponse (timeout ou vide)
+}
+
+const QUESTION_SECONDS = 10;
+
 const card: React.CSSProperties = {
   background: 'var(--card-bg)', border: '1px solid var(--border)',
   borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-md)',
@@ -42,28 +52,31 @@ const pill = (bg: string, color: string): React.CSSProperties => ({
 const RING_R = 26;
 const RING_C = 2 * Math.PI * RING_R;
 
+const isFreeQuestion = (q: PublicQuestion) =>
+  !q.option_a && !q.option_b && !q.option_c && !q.option_d;
+const optionText = (q: PublicQuestion, letter: string | null) =>
+  letter ? (q[`option_${letter.toLowerCase()}` as keyof PublicQuestion] as string | null) ?? null : null;
+
 export default function PlayQuizClient({ quizId }: { quizId: string }) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
+  const [locked, setLocked] = useState(false);
   const [quizTitle, setQuizTitle] = useState('');
   const [questions, setQuestions] = useState<PublicQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [freeAnswer, setFreeAnswer] = useState('');
-  const [isAnswered, setIsAnswered] = useState(false);
-  const [verdict, setVerdict] = useState<Verdict | null>(null);
-  const [timedOut, setTimedOut] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(QUESTION_SECONDS);
   const [score, setScore] = useState(0);
-  const [stats, setStats] = useState({ correct: 0, wrong: 0, missed: 0 });
   const [finalScore, setFinalScore] = useState<number | null>(null);
+  const [results, setResults] = useState<AnswerResult[]>([]);
   const [quizFinished, setQuizFinished] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(10);
-  const [locked, setLocked] = useState(false);
-  const [started, setStarted] = useState(false);
-  const timeLeftRef = useRef(10);
+
+  const timeLeftRef = useRef(QUESTION_SECONDS);
+  const freeAnswerRef = useRef('');
+  const answeredRef = useRef<string | null>(null); // id de la question déjà traitée
   const audioRef = useRef<AudioContext | null>(null);
+  useEffect(() => { freeAnswerRef.current = freeAnswer; }, [freeAnswer]);
 
   // Petit bip via Web Audio (pas de fichier à charger).
   const beep = useCallback((freq: number, dur: number, vol: number) => {
@@ -84,6 +97,7 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
     } catch { /* audio indisponible */ }
   }, []);
 
+  // ── Chargement ───────────────────────────────────────────────────────
   useEffect(() => {
     async function loadQuizData() {
       try {
@@ -95,7 +109,6 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
           .from('quiz_quizzes').select('title, phase').eq('id', quizId).single();
         if (quiz) setQuizTitle(quiz.title);
 
-        // Verrouillage par phase (le serveur applique la même règle).
         const phase = (quiz as { phase?: string } | null)?.phase;
         if (phase && phase !== 'libre') {
           const { data: ph, error: phErr } = await supabase
@@ -117,101 +130,74 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
   }, [quizId, router]);
 
   const currentQuestion = questions[currentIndex];
-  const currentQuestionId = currentQuestion?.id;
-  const isFreeInput = !!currentQuestion
-    && !currentQuestion.option_a && !currentQuestion.option_b
-    && !currentQuestion.option_c && !currentQuestion.option_d;
 
-  const handleSelectOption = (letter: string) => {
-    if (isAnswered) return;
-    setSelectedAnswer(letter);
-  };
+  // ── Réponse + passage automatique à la suivante ──────────────────────
+  const handleAnswer = useCallback(async (selected: string | null) => {
+    const q = questions[currentIndex];
+    if (!q || answeredRef.current === q.id) return;
+    answeredRef.current = q.id;
 
-  // Validation côté serveur. viaTimeout = déclenché par le chrono à 0.
-  const submitAnswer = useCallback(async (viaTimeout = false) => {
-    if (isAnswered || submitting || !currentQuestion) return;
-    setSubmitting(true);
-    setIsAnswered(true);
-    const noInput = isFreeInput ? freeAnswer.trim() === '' : selectedAnswer === null;
+    const free = isFreeQuestion(q) ? freeAnswerRef.current.trim() : '';
+    const noInput = isFreeQuestion(q) ? free === '' : selected === null;
+
     let v: Verdict;
     try {
       const { data, error } = await supabase.rpc('quiz_submit_answer', {
         p_quiz_id: quizId,
-        p_question_id: currentQuestion.id,
-        p_selected: selectedAnswer,
-        p_free: isFreeInput ? freeAnswer : null,
-        p_time_taken: 10 - timeLeftRef.current,
+        p_question_id: q.id,
+        p_selected: selected,
+        p_free: isFreeQuestion(q) ? free : null,
+        p_time_taken: QUESTION_SECONDS - timeLeftRef.current,
       });
       if (error) throw error;
       v = data as Verdict;
     } catch (err) {
       console.error("Erreur d'enregistrement de la réponse :", err);
-      v = { is_correct: false, points: 0, correct_option: null, free_answer: null, reference: currentQuestion.reference ?? null };
+      v = { is_correct: false, points: 0, correct_option: null, free_answer: null, reference: q.reference ?? null };
     }
-    const missed = viaTimeout && noInput;
-    setVerdict(v);
-    setTimedOut(missed);
-    if (v.points) setScore((prev) => prev + v.points);
-    setStats((s) => ({
-      correct: s.correct + (v.is_correct ? 1 : 0),
-      wrong: s.wrong + (!v.is_correct && !missed ? 1 : 0),
-      missed: s.missed + (missed ? 1 : 0),
-    }));
-    setSubmitting(false);
-  }, [isAnswered, submitting, currentQuestion, selectedAnswer, freeAnswer, isFreeInput, quizId]);
 
-  // Ref vers la dernière version de submitAnswer (sans en faire une dépendance
-  // du timer, sinon l'intervalle se relancerait à chaque frappe/clic).
-  const submitRef = useRef(submitAnswer);
-  useEffect(() => { submitRef.current = submitAnswer; }, [submitAnswer]);
+    if (v.points) setScore((p) => p + v.points);
+    setResults((prev) => [...prev, { q, selected: noInput ? null : selected, free, verdict: v, missed: noInput }]);
 
-  // Minuterie 10s — démarre après « Démarrer ». Bip sur les 3 dernières
-  // secondes + bip plus grave à 0.
+    if (currentIndex + 1 < questions.length) {
+      setFreeAnswer('');
+      freeAnswerRef.current = '';
+      setCurrentIndex((p) => p + 1);
+    } else {
+      try {
+        const { data } = await supabase.rpc('quiz_finish_attempt', { p_quiz_id: quizId });
+        setFinalScore((data as { score?: number } | null)?.score ?? null);
+      } catch (err) {
+        console.error('Impossible de clôturer la manche :', err);
+      }
+      setQuizFinished(true);
+    }
+  }, [questions, currentIndex, quizId]);
+
+  const handleRef = useRef(handleAnswer);
+  useEffect(() => { handleRef.current = handleAnswer; }, [handleAnswer]);
+
+  // ── Chrono 10 s par question — DÉMARRE AUTOMATIQUEMENT, se relance à
+  //    chaque question, et passe à la suivante (manquée) à 0. ───────────
   useEffect(() => {
-    if (loading || !currentQuestionId || quizFinished || isAnswered || !started) return;
+    if (loading || locked || quizFinished || !currentQuestion) return;
+    // Tente de réveiller l'audio (sera effectif dès la 1re interaction).
+    try { audioRef.current?.resume(); } catch { /* noop */ }
+    setTimeLeft(QUESTION_SECONDS);
+    timeLeftRef.current = QUESTION_SECONDS;
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         const next = prev <= 1 ? 0 : prev - 1;
         timeLeftRef.current = next;
         if (next >= 1 && next <= 3) beep(880, 0.1, 0.18);
-        if (next === 0) { beep(440, 0.35, 0.22); clearInterval(interval); submitRef.current(true); }
+        if (next === 0) { beep(440, 0.35, 0.22); clearInterval(interval); handleRef.current(null); }
         return next;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [loading, currentQuestionId, quizFinished, isAnswered, started, beep]);
+  }, [currentIndex, loading, locked, quizFinished, currentQuestion, beep]);
 
-  const startTimer = () => {
-    try { if (!audioRef.current) audioRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)(); audioRef.current?.resume(); } catch { /* noop */ }
-    timeLeftRef.current = 10;
-    setTimeLeft(10);
-    setStarted(true);
-  };
-
-  const handleNext = async () => {
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex((prev) => prev + 1);
-      setSelectedAnswer(null);
-      setFreeAnswer('');
-      setIsAnswered(false);
-      setVerdict(null);
-      setTimedOut(false);
-      setStarted(false);
-      setTimeLeft(10);
-      timeLeftRef.current = 10;
-    } else {
-      try {
-        const { data } = await supabase.rpc('quiz_finish_attempt', { p_quiz_id: quizId });
-        const res = data as { score?: number } | null;
-        setFinalScore(res?.score ?? score);
-      } catch (err) {
-        console.error('Impossible de clôturer la manche :', err);
-        setFinalScore(score);
-      }
-      setQuizFinished(true);
-    }
-  };
-
+  // ── États de bord ────────────────────────────────────────────────────
   if (loading) {
     return (
       <div style={{ minHeight: '50vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
@@ -246,9 +232,12 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
     );
   }
 
-  if (!currentQuestion) return null;
-
+  // ── RÉCAP FINAL ──────────────────────────────────────────────────────
   if (quizFinished) {
+    const correct = results.filter((r) => r.verdict.is_correct).length;
+    const missed = results.filter((r) => r.missed).length;
+    const wrong = results.length - correct - missed;
+
     const statCard = (emoji: string, label: string, value: number, color: string) => (
       <div style={{ background: 'var(--surface-2)', borderRadius: 'var(--radius-lg)', padding: '14px 8px', textAlign: 'center' }}>
         <div style={{ fontSize: 22 }}>{emoji}</div>
@@ -256,37 +245,90 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</div>
       </div>
     );
+
     return (
-      <div style={{ ...card, padding: '32px clamp(16px, 5vw, 24px)', textAlign: 'center' }}>
-        <span style={{ fontSize: 52 }}>🏆</span>
-        <h1 style={{ fontSize: 'clamp(21px, 6vw, 26px)', fontWeight: 800, margin: '12px 0 4px', color: 'var(--text-primary)', fontFamily: 'var(--font-title)' }}>Manche terminée !</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>Vos points ont été ajoutés au classement.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Bilan */}
+        <div style={{ ...card, padding: '32px clamp(16px, 5vw, 24px)', textAlign: 'center' }}>
+          <span style={{ fontSize: 52 }}>🏆</span>
+          <h1 style={{ fontSize: 'clamp(21px, 6vw, 26px)', fontWeight: 800, margin: '12px 0 4px', color: 'var(--text-primary)', fontFamily: 'var(--font-title)' }}>Manche terminée !</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>Vos points ont été ajoutés au classement.</p>
 
-        <div style={{ margin: '22px auto 18px', maxWidth: 240, background: 'var(--gold-pale)', border: '1px solid var(--gold)', borderRadius: 'var(--radius-lg)', padding: '14px 0' }}>
-          <span style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--gold-dark)' }}>Points marqués</span>
-          <span style={{ fontSize: 38, fontWeight: 800, color: 'var(--gold-dark)', display: 'block', marginTop: 2 }}>+{finalScore ?? score} pts</span>
+          <div style={{ margin: '22px auto 18px', maxWidth: 240, background: 'var(--gold-pale)', border: '1px solid var(--gold)', borderRadius: 'var(--radius-lg)', padding: '14px 0' }}>
+            <span style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--gold-dark)' }}>Points marqués</span>
+            <span style={{ fontSize: 38, fontWeight: 800, color: 'var(--gold-dark)', display: 'block', marginTop: 2 }}>+{finalScore ?? score} pts</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, maxWidth: 360, margin: '0 auto 8px' }}>
+            {statCard('✅', 'Bonnes', correct, 'var(--success)')}
+            {statCard('❌', 'Ratées', wrong, 'var(--error)')}
+            {statCard('⏱️', 'Manquées', missed, 'var(--text-secondary)')}
+          </div>
+          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>
+            {correct} / {questions.length} bonnes réponses
+          </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, maxWidth: 360, margin: '0 auto 8px' }}>
-          {statCard('✅', 'Bonnes', stats.correct, 'var(--success)')}
-          {statCard('❌', 'Ratées', stats.wrong, 'var(--error)')}
-          {statCard('⏱️', 'Manquées', stats.missed, 'var(--text-secondary)')}
-        </div>
-        <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 22px' }}>
-          {stats.correct} / {questions.length} bonnes réponses
-        </p>
+        {/* Correction question par question */}
+        <div style={{ ...card, padding: '20px clamp(14px, 4vw, 20px)' }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)', margin: '0 0 14px' }}>📝 Correction</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {results.map((r, i) => {
+              const good = r.verdict.is_correct;
+              const yourMcq = optionText(r.q, r.selected);
+              const correctMcq = optionText(r.q, r.verdict.correct_option);
+              const accent = good ? 'var(--success)' : r.missed ? 'var(--text-muted)' : 'var(--error)';
+              return (
+                <div key={r.q.id} style={{ background: 'var(--surface-2)', border: `1px solid ${good ? 'rgba(34,197,94,0.35)' : r.missed ? 'var(--border)' : 'rgba(239,68,68,0.30)'}`, borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 8 }}>
+                    <span style={{ fontSize: 16, lineHeight: 1 }}>{good ? '✅' : r.missed ? '⏱️' : '❌'}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                      <span style={{ color: 'var(--text-muted)', fontWeight: 600, marginRight: 6 }}>Q{i + 1}.</span>{r.q.text}
+                    </span>
+                  </div>
 
-        <button onClick={() => router.push('/bible-quiz')}
-          style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '12px 28px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-gold)' }}>
-          Retour au championnat
-        </button>
+                  <div style={{ fontSize: 13, color: accent, fontWeight: 600, marginLeft: 24 }}>
+                    {r.missed
+                      ? 'Aucune réponse (temps écoulé)'
+                      : isFreeQuestion(r.q)
+                        ? <>Votre réponse : « {r.free} »</>
+                        : <>Votre réponse : <b>{r.selected}.</b> {yourMcq}</>}
+                  </div>
+
+                  {!good && (
+                    <div style={{ fontSize: 13, color: 'var(--success)', fontWeight: 600, marginLeft: 24, marginTop: 3 }}>
+                      Bonne réponse : {isFreeQuestion(r.q)
+                        ? <b>{r.verdict.free_answer ?? '—'}</b>
+                        : <><b>{r.verdict.correct_option}.</b> {correctMcq ?? '—'}</>}
+                    </div>
+                  )}
+
+                  {r.verdict.reference && (
+                    <div style={{ fontSize: 12, color: 'var(--gold-dark)', fontWeight: 600, marginLeft: 24, marginTop: 4 }}>
+                      📖 {r.verdict.reference}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <button onClick={() => router.push('/bible-quiz')}
+            style={{ marginTop: 18, width: '100%', background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '12px 0', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-gold)' }}>
+            Retour au championnat
+          </button>
+        </div>
       </div>
     );
   }
 
-  const timerCritical = timeLeft <= 3 && started;
+  if (!currentQuestion) return null;
+
+  // ── ÉCRAN DE JEU ─────────────────────────────────────────────────────
+  const isFree = isFreeQuestion(currentQuestion);
+  const timerCritical = timeLeft <= 3;
   const ringColor = timerCritical ? 'var(--error)' : 'var(--gold)';
-  const frac = Math.max(0, Math.min(1, timeLeft / 10));
+  const frac = Math.max(0, Math.min(1, timeLeft / QUESTION_SECONDS));
 
   return (
     <div style={{ ...card, padding: '22px clamp(14px, 4vw, 20px)' }}>
@@ -308,8 +350,11 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
       </div>
 
       {/* Barre de progression */}
-      <div style={{ width: '100%', height: 6, background: 'var(--surface-2)', borderRadius: 'var(--radius-full)', overflow: 'hidden', marginBottom: 22 }}>
+      <div style={{ width: '100%', height: 6, background: 'var(--surface-2)', borderRadius: 'var(--radius-full)', overflow: 'hidden', marginBottom: 8 }}>
         <div style={{ height: '100%', width: `${((currentIndex + 1) / questions.length) * 100}%`, background: 'var(--gold)', transition: 'width 0.3s' }} />
+      </div>
+      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', fontWeight: 600, textAlign: 'right', marginBottom: 18 }}>
+        Question {currentIndex + 1} / {questions.length}
       </div>
 
       <h2 style={{ fontSize: 'clamp(15.5px, 4.5vw, 18px)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.4, margin: '0 0 20px' }}>
@@ -317,78 +362,41 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         {currentQuestion.text}
       </h2>
 
-      {isFreeInput ? (
+      {isFree ? (
         <div>
-          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 6 }}>Votre réponse (texte court)</label>
-          <input
-            type="text" disabled={isAnswered || !started} value={freeAnswer}
-            onChange={(e) => setFreeAnswer(e.target.value)}
-            placeholder="Écrivez votre réponse ici…"
-            style={{ width: '100%', boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', fontSize: 14, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)', opacity: (!started && !isAnswered) ? 0.5 : 1 }}
-          />
-          {isAnswered && verdict && (
-            <div style={{ marginTop: 10, fontSize: 14, fontWeight: 700, color: verdict.is_correct ? 'var(--success)' : 'var(--error)' }}>
-              {verdict.is_correct ? '✅ Bonne réponse !' : `❌ Réponse attendue : ${verdict.free_answer ?? '—'}`}
-            </div>
-          )}
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 6 }}>Votre réponse (Entrée pour valider)</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text" autoFocus value={freeAnswer}
+              onChange={(e) => setFreeAnswer(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && freeAnswer.trim() !== '') handleAnswer(null); }}
+              placeholder="Écrivez votre réponse ici…"
+              style={{ flex: 1, minWidth: 0, boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', fontSize: 14, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
+            />
+            <button
+              disabled={freeAnswer.trim() === ''}
+              onClick={() => handleAnswer(null)}
+              style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '0 20px', borderRadius: 'var(--radius-md)', border: 'none', cursor: freeAnswer.trim() === '' ? 'default' : 'pointer', opacity: freeAnswer.trim() === '' ? 0.4 : 1, flexShrink: 0 }}>
+              →
+            </button>
+          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {['A', 'B', 'C', 'D'].map((letter) => {
-            const optionText = currentQuestion[`option_${letter.toLowerCase()}` as keyof PublicQuestion] as string | null;
-            if (!optionText) return null;
-
-            let bg = 'var(--surface-2)', border = 'var(--border)', color = 'var(--text-primary)', opacity = 1;
-            if (!isAnswered && selectedAnswer === letter) { bg = 'var(--gold-pale)'; border = 'var(--gold)'; color = 'var(--gold-dark)'; }
-            else if (isAnswered && verdict) {
-              if (letter === verdict.correct_option?.toUpperCase().trim()) { bg = 'rgba(34,197,94,0.12)'; border = 'var(--success)'; color = 'var(--success)'; }
-              else if (selectedAnswer === letter) { bg = 'rgba(239,68,68,0.10)'; border = 'var(--error)'; color = 'var(--error)'; }
-              else { opacity = 0.5; }
-            }
-            if (!started && !isAnswered) opacity = 0.5;
-
+            const opt = optionText(currentQuestion, letter);
+            if (!opt) return null;
             return (
-              <button key={letter} disabled={isAnswered || !started} onClick={() => handleSelectOption(letter)}
-                style={{ width: '100%', textAlign: 'left', padding: '13px 16px', borderRadius: 'var(--radius-md)', border: `1px solid ${border}`, background: bg, color, opacity, fontSize: 14, fontWeight: 600, cursor: (isAnswered || !started) ? 'default' : 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.12s' }}>
-                <span style={{ fontWeight: 800, marginRight: 8 }}>{letter}.</span>{optionText}
+              <button key={letter} onClick={() => handleAnswer(letter)}
+                style={{ width: '100%', textAlign: 'left', padding: '13px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.12s' }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.background = 'var(--gold-pale)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface-2)'; }}>
+                <span style={{ fontWeight: 800, marginRight: 8 }}>{letter}.</span>{opt}
               </button>
             );
           })}
         </div>
       )}
-
-      {isAnswered && timedOut && (
-        <div style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(239,68,68,0.10)', border: '1px solid var(--error)', borderRadius: 'var(--radius-md)', fontSize: 13, color: 'var(--error)', fontWeight: 700 }}>
-          ⏱️ Temps écoulé — question manquée
-        </div>
-      )}
-
-      {isAnswered && verdict?.reference && (
-        <div style={{ marginTop: 14, padding: '10px 14px', background: 'var(--gold-pale)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 12.5, color: 'var(--gold-dark)', fontWeight: 600 }}>
-          📖 Écriture : {verdict.reference}
-        </div>
-      )}
-
-      <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: (isAnswered || started) ? 'flex-end' : 'center' }}>
-        {isAnswered ? (
-          <button onClick={handleNext}
-            style={{ background: 'var(--violet)', color: '#fff', fontWeight: 800, fontSize: 14, padding: '11px 26px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer' }}>
-            {currentIndex + 1 === questions.length ? 'Voir mes résultats →' : 'Question suivante →'}
-          </button>
-        ) : !started ? (
-          <button onClick={startTimer}
-            style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 15, padding: '13px 32px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-gold)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            ▶️ Démarrer le chrono
-          </button>
-        ) : (
-          <button
-            disabled={submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')}
-            onClick={() => submitAnswer(false)}
-            style={{ background: 'var(--gold)', color: '#1a0a00', fontWeight: 800, fontSize: 14, padding: '11px 26px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', opacity: (submitting || (!isFreeInput && selectedAnswer === null) || (isFreeInput && freeAnswer.trim() === '')) ? 0.4 : 1 }}>
-            {submitting ? '…' : 'Valider'}
-          </button>
-        )}
-      </div>
     </div>
   );
 }
