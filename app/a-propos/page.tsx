@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import type { ReactNode } from "react";
 import { getSiteContents } from "@/lib/site-content";
+import Expandable from "@/components/ui/Expandable";
 import {
   DEFAULT_INTRO, DEFAULT_VISION, DEFAULT_MISSION,
   DEFAULT_VALUES_MD, DEFAULT_TEAM_MD, DEFAULT_CTA_TITLE, DEFAULT_CTA_BODY, DEFAULT_CONFESSION_MD,
@@ -155,7 +156,9 @@ export default async function AProposPage() {
               <div style={{ fontSize: 12.5, color: "var(--gold)", fontWeight: 600 }}>Pasteur · Enseignant · Mentor · Fondateur du CCB</div>
             </div>
           </div>
-          {renderMd(founder)}
+          <Expandable collapsedHeight={300}>
+            {renderMd(founder)}
+          </Expandable>
         </div>
       </div>
 
@@ -190,7 +193,9 @@ export default async function AProposPage() {
           <span>✝️</span> Notre Profession de Foi
         </h2>
         <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "24px 28px" }}>
-          {renderMd(confessionMd)}
+          <Expandable collapsedHeight={300}>
+            {renderMd(confessionMd)}
+          </Expandable>
         </div>
       </div>
 
