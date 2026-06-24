@@ -10,7 +10,7 @@ import BackButton from '@/components/quiz/BackButton';
 const supabase = createClient();
 
 interface Quiz { id: string; title: string; description: string | null; phase: string | null; is_active: boolean; }
-interface Phase { key: string; label: string; is_open: boolean; sort_order: number; }
+interface Phase { key: string; label: string; is_open: boolean; sort_order: number; unlocked: boolean; score_pct: number; }
 interface MyStats { total_score: number; level: string; team_id: string | null; }
 interface Attempt { score: number; completed_at: string; quiz_quizzes: { title?: string } | null; }
 
@@ -57,7 +57,7 @@ export default function BibleQuizHub() {
 
       const [{ data: list }, { data: phaseRows }, { data: attempts }] = await Promise.all([
         supabase.from('quiz_quizzes').select('id, title, description, phase, is_active').order('sort_order', { ascending: true }),
-        supabase.from('quiz_phases').select('key, label, is_open, sort_order').order('sort_order', { ascending: true }),
+        supabase.rpc('quiz_my_phases'),
         supabase.from('quiz_attempts').select('score, completed_at, quiz_quizzes(title)').eq('user_id', user.id).order('completed_at', { ascending: false }).limit(8),
       ]);
       setQuizzes((list as Quiz[]) ?? []);
@@ -128,22 +128,31 @@ export default function BibleQuizHub() {
         {stat('Équipe', teamName ?? '—', 'var(--text-primary)')}
       </div>
 
-      {/* Phases du championnat */}
-      {phases.map((ph) => {
+      {/* Phases du championnat — progression auto par joueur (≥90%) */}
+      {phases.map((ph, idx) => {
         const phaseQuizzes = quizzes.filter((q) => q.phase === ph.key);
         if (phaseQuizzes.length === 0) return null;
+        const isFirst = idx === 0;
+        const prev = phases[idx - 1];
         return (
           <div key={ph.key} style={{ marginBottom: 22 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
               <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{ph.label}</h2>
               <span style={{
                 fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', borderRadius: 'var(--radius-full)', padding: '3px 10px',
-                background: ph.is_open ? 'rgba(34,197,94,0.14)' : 'var(--surface-2)',
-                color: ph.is_open ? 'var(--success)' : 'var(--text-muted)',
-              }}>{ph.is_open ? 'Ouverte' : '🔒 Fermée'}</span>
+                background: ph.unlocked ? 'rgba(34,197,94,0.14)' : 'var(--surface-2)',
+                color: ph.unlocked ? 'var(--success)' : 'var(--text-muted)',
+              }}>{ph.unlocked ? (isFirst ? 'Ouverte' : '✓ Débloquée') : '🔒 90% requis'}</span>
             </div>
+            {!ph.unlocked && (
+              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 12px' }}>
+                {isFirst || !prev
+                  ? 'Phase fermée par l’organisation.'
+                  : <>Atteins <b style={{ color: 'var(--gold-dark)' }}>90%</b> à « {prev.label} » pour débloquer — ton score actuel : <b>{prev.score_pct}%</b>.</>}
+              </p>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-              {phaseQuizzes.map((q) => quizCard(q, !ph.is_open))}
+              {phaseQuizzes.map((q) => quizCard(q, !ph.unlocked))}
             </div>
           </div>
         );

@@ -111,9 +111,10 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
 
         const phase = (quiz as { phase?: string } | null)?.phase;
         if (phase && phase !== 'libre') {
-          const { data: ph, error: phErr } = await supabase
-            .from('quiz_phases').select('is_open').eq('key', phase).maybeSingle();
-          if (!phErr && ph && ph.is_open === false) { setLocked(true); return; }
+          // Verrou par progression : 1re phase = ouverture admin ; suivantes =
+          // ≥90% à la phase précédente (le serveur applique la même règle).
+          const { data: unlocked } = await supabase.rpc('quiz_phase_unlocked', { p_phase: phase });
+          if (unlocked === false) { setLocked(true); return; }
         }
 
         const { data: questionsData } = await supabase
