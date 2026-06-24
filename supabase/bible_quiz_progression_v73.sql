@@ -7,8 +7,9 @@
 --   (L'admin peut toujours forcer l'ouverture d'une phase pour tous via
 --   is_open = TRUE — override.)
 --
---   Mesure : bonnes réponses du joueur / total des questions de la phase
---   (toutes les manches de la phase confondues).
+--   Mesure : 90 % PAR MANCHE — chaque manche de la phase est évaluée
+--   séparément (bonnes réponses / questions de la manche). Une phase est
+--   franchie quand TOUTES ses manches sont réussies à ≥ 90 %.
 --
 -- Idempotent. À exécuter dans Supabase SQL Editor. Dépend de v66 + v67.
 -- =====================================================================
@@ -26,8 +27,8 @@ DECLARE
   v_is_open BOOLEAN;
   v_min     INTEGER;
   v_prev    TEXT;
-  v_total   INTEGER;
-  v_correct INTEGER;
+  v_nb      INTEGER;
+  v_passed  INTEGER;
 BEGIN
   IF auth.uid() IS NULL THEN RETURN FALSE; END IF;
   IF p_phase IS NULL OR p_phase = 'libre' THEN RETURN TRUE; END IF;
@@ -46,22 +47,33 @@ BEGIN
   -- Override admin : phase forcée ouverte pour tous
   IF COALESCE(v_is_open, FALSE) THEN RETURN TRUE; END IF;
 
-  -- Sinon : ≥ 90 % sur la phase immédiatement précédente
+  -- Sinon : ≥ 90 % à CHAQUE manche de la phase immédiatement précédente
   SELECT key INTO v_prev
     FROM public.quiz_phases WHERE sort_order < v_sort
     ORDER BY sort_order DESC LIMIT 1;
   IF v_prev IS NULL THEN RETURN FALSE; END IF;
 
-  SELECT count(qq.id),
-         count(qa.id) FILTER (WHERE qa.is_correct)
-    INTO v_total, v_correct
-    FROM public.quiz_questions qq
-    JOIN public.quiz_quizzes qz ON qz.id = qq.quiz_id AND qz.phase = v_prev
-    LEFT JOIN public.quiz_answers qa
-           ON qa.question_id = qq.id AND qa.user_id = auth.uid();
+  -- Manches (ayant des questions) de la phase précédente
+  SELECT count(*) INTO v_nb
+    FROM public.quiz_quizzes qz
+   WHERE qz.phase = v_prev
+     AND EXISTS (SELECT 1 FROM public.quiz_questions q WHERE q.quiz_id = qz.id);
+  IF COALESCE(v_nb, 0) = 0 THEN RETURN FALSE; END IF;
 
-  IF COALESCE(v_total, 0) = 0 THEN RETURN FALSE; END IF;
-  RETURN (v_correct::numeric / v_total) >= 0.90;
+  -- Manches réussies à ≥ 90 % (chaque manche évaluée séparément)
+  SELECT count(*) INTO v_passed
+    FROM public.quiz_quizzes qz
+   WHERE qz.phase = v_prev
+     AND EXISTS (SELECT 1 FROM public.quiz_questions q WHERE q.quiz_id = qz.id)
+     AND (
+       SELECT (count(qa.id) FILTER (WHERE qa.is_correct))::numeric / NULLIF(count(qq.id), 0)
+         FROM public.quiz_questions qq
+         LEFT JOIN public.quiz_answers qa ON qa.question_id = qq.id AND qa.user_id = auth.uid()
+        WHERE qq.quiz_id = qz.id
+     ) >= 0.90;
+
+  -- Débloqué si TOUTES les manches de la phase sont réussies (≥ 90 % chacune)
+  RETURN v_passed = v_nb;
 END $$;
 GRANT EXECUTE ON FUNCTION public.quiz_phase_unlocked(TEXT) TO authenticated;
 
@@ -74,13 +86,18 @@ BEGIN
   RETURN QUERY
   SELECT p.key, p.label, p.is_open, p.sort_order,
          public.quiz_phase_unlocked(p.key) AS unlocked,
+         -- score de la manche la PLUS FAIBLE de la phase (celle qui bloque)
          COALESCE((
-           SELECT round( (count(qa.id) FILTER (WHERE qa.is_correct))::numeric
-                         / NULLIF(count(qq.id), 0) * 100 )::int
-           FROM public.quiz_questions qq
-           JOIN public.quiz_quizzes qz ON qz.id = qq.quiz_id AND qz.phase = p.key
-           LEFT JOIN public.quiz_answers qa
-                  ON qa.question_id = qq.id AND qa.user_id = auth.uid()
+           SELECT min(pct) FROM (
+             SELECT round( (count(qa.id) FILTER (WHERE qa.is_correct))::numeric
+                           / NULLIF(count(qq.id), 0) * 100 )::int AS pct
+             FROM public.quiz_quizzes qz
+             JOIN public.quiz_questions qq ON qq.quiz_id = qz.id
+             LEFT JOIN public.quiz_answers qa
+                    ON qa.question_id = qq.id AND qa.user_id = auth.uid()
+             WHERE qz.phase = p.key
+             GROUP BY qz.id
+           ) s
          ), 0) AS score_pct
   FROM public.quiz_phases p
   ORDER BY p.sort_order;
