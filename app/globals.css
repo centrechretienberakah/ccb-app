@@ -81,7 +81,6 @@
    (système, data-theme="dark", data-theme="light") résolvent vers la même
    palette sombre. `:root` est déjà sombre ; on aligne juste les variantes
    explicites pour que public/theme.js ne rebascule jamais en clair. */
-[data-theme="light"],
 [data-theme="dark"] {
   --background:    #0a0a0a;
   --page-bg:       #0a0a0a;
@@ -111,6 +110,39 @@
   --shadow-gold: 0 0 30px rgba(212,175,55,0.45);
 
   --header-gradient: linear-gradient(135deg,#3d1a72 0%,#5A2CA0 55%,#7B4FC4 100%);
+}
+
+/* ── MODE CLAIR (prototype) ───────────────────────────────────────────
+   Palette claire chaude (ivoire) ; brand violet conservé (lisible sur clair
+   comme sur sombre) ; OR assombri pour rester lisible en TEXTE sur fond clair
+   (les aplats/boutons restent dorés). Bannières héros restent violettes. */
+[data-theme="light"] {
+  --background:    #f6f3ee;
+  --page-bg:       #f6f3ee;
+  --foreground:    #1a1226;
+  --surface:       #fffdf9;
+  --surface-2:     #efe9f5;
+  --card-bg:       #ffffff;
+  --border:        rgba(90,44,160,0.16);
+  --border-subtle: rgba(26,18,38,0.08);
+  --input-bg:      #ffffff;
+  --input-border:  rgba(26,18,38,0.15);
+  --nav-bg:        rgba(255,253,249,0.85);
+
+  --text-primary:   #1a1226;
+  --text-secondary: rgba(26,18,38,0.72);
+  --text-muted:     rgba(26,18,38,0.48);
+  --text-inverse:   #ffffff;
+
+  --gold:        #a8862b;
+  --gold-light:  #b8860b;
+  --gold-dark:   #8a6d1f;
+  --gold-pale:   rgba(168,134,43,0.12);
+
+  --shadow-sm:   0 1px 3px rgba(26,18,38,0.08);
+  --shadow-md:   0 8px 28px rgba(26,18,38,0.12);
+  --shadow-lg:   0 20px 60px rgba(90,44,160,0.18);
+  --shadow-gold: 0 0 24px rgba(212,175,55,0.30);
 }
 
 /* ============================================================

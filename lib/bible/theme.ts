@@ -2,22 +2,24 @@
 // Beige doux, violet royal, or subtil. Cinzel pour les titres, Montserrat pour le texte.
 
 export const BIBLE_THEME = {
-  // Palette sombre immersive (flyer « Semblable à Christ »)
-  bg:          "#0a0a0a",
-  card:        "#140f1f",
-  surface2:    "#1b1530",
-  border:      "rgba(212,175,55,0.16)",
-  borderSoft:  "rgba(255,255,255,0.07)",
-  text:        "#f5f1e8",
-  textSoft:    "#cbc4d6",
-  textMuted:   "#8a8296",
+  // Theme-réactif (prototype clair/sombre) : les tokens structurels suivent
+  // les variables CSS globales (clair OU sombre). Le violet reste littéral
+  // (lisible sur les deux fonds) ; l'or suit --gold (assombri en mode clair).
+  bg:          "var(--page-bg)",
+  card:        "var(--card-bg)",
+  surface2:    "var(--surface-2)",
+  border:      "var(--border)",
+  borderSoft:  "var(--border-subtle)",
+  text:        "var(--text-primary)",
+  textSoft:    "var(--text-secondary)",
+  textMuted:   "var(--text-muted)",
   violet:      "#7C3AED",
   violetDark:  "#5A2CA0",
   violetSoft:  "rgba(124,58,237,0.16)",
-  gold:        "#D4AF37",
-  goldDark:    "#A8862B",
+  gold:        "var(--gold)",
+  goldDark:    "var(--gold-dark)",
 
-  // Couleurs de surlignage — teintes translucides lisibles sous texte clair
+  // Couleurs de surlignage — teintes translucides lisibles sur les deux fonds
   hlYellow: "rgba(212,175,55,0.30)",
   hlGreen:  "rgba(52,208,88,0.26)",
   hlBlue:   "rgba(96,165,250,0.28)",
