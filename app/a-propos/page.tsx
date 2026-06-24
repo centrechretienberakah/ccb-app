@@ -4,6 +4,7 @@ import { getSiteContents } from "@/lib/site-content";
 import {
   DEFAULT_INTRO, DEFAULT_VISION, DEFAULT_MISSION,
   DEFAULT_VALUES_MD, DEFAULT_TEAM_MD, DEFAULT_CTA_TITLE, DEFAULT_CTA_BODY, DEFAULT_CONFESSION_MD,
+  DEFAULT_FOUNDER_MD,
 } from "@/lib/about-defaults";
 
 export const metadata: Metadata = { title: "À Propos — Centre Chrétien Berakah" };
@@ -56,7 +57,18 @@ function renderMd(md: string): ReactNode[] {
     } else if (line.startsWith("## ")) {
       out.push(<div key={k} style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1, margin: "0 0 4px" }}>{line.slice(3)}</div>);
     } else if (line.startsWith("# ")) {
-      out.push(<h2 key={k} style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>{line.slice(2)}</h2>);
+      out.push(<h2 key={k} style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", margin: "18px 0 8px" }}>{line.slice(2)}</h2>);
+    } else if (line.startsWith("> ")) {
+      out.push(
+        <blockquote key={k} style={{ margin: "4px 0 14px", padding: "10px 16px", borderLeft: "3px solid var(--gold)", background: "rgba(212,175,55,0.06)", borderRadius: "0 8px 8px 0", color: "var(--text-primary)", fontStyle: "italic", fontSize: 14.5, lineHeight: 1.6 }}>{parseBold(line.slice(2), k)}</blockquote>,
+      );
+    } else if (line.startsWith("- ")) {
+      out.push(
+        <div key={k} style={{ display: "flex", gap: 9, margin: "0 0 6px", fontSize: 14.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+          <span style={{ color: "var(--gold)", flexShrink: 0 }}>✦</span>
+          <span>{parseBold(line.slice(2), k)}</span>
+        </div>,
+      );
     } else {
       out.push(<p key={k} style={{ fontSize: 14.5, color: "var(--text-secondary)", lineHeight: 1.75, margin: "0 0 12px" }}>{parseBold(line, k)}</p>);
     }
@@ -67,13 +79,14 @@ function renderMd(md: string): ReactNode[] {
 export default async function AProposPage() {
   const c = await getSiteContents([
     "a-propos", "a-propos-vision", "a-propos-mission",
-    "a-propos-valeurs", "a-propos-equipe", "a-propos-cta", "confession-foi",
+    "a-propos-valeurs", "a-propos-fondateur", "a-propos-equipe", "a-propos-cta", "confession-foi",
   ]);
   const heroTitle = c["a-propos"]?.title || "Centre Chrétien Berakah";
   const heroIntro = c["a-propos"]?.body_md || DEFAULT_INTRO;
   const vision = c["a-propos-vision"]?.body_md || DEFAULT_VISION;
   const mission = c["a-propos-mission"]?.body_md || DEFAULT_MISSION;
   const values = parseValues(c["a-propos-valeurs"]?.body_md || DEFAULT_VALUES_MD);
+  const founder = c["a-propos-fondateur"]?.body_md || DEFAULT_FOUNDER_MD;
   const team = parseTeam(c["a-propos-equipe"]?.body_md || DEFAULT_TEAM_MD);
   const ctaTitle = c["a-propos-cta"]?.title || DEFAULT_CTA_TITLE;
   const ctaBody = c["a-propos-cta"]?.body_md || DEFAULT_CTA_BODY;
@@ -126,6 +139,23 @@ export default async function AProposPage() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Le Fondateur — biographie complète */}
+      <div style={{ marginBottom: 48 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+          <span>✦</span> Le Fondateur
+        </h2>
+        <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "24px 28px" }}>
+          <div style={{ display: "flex", gap: 18, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
+            <img src="/rev-elvis-v2.jpg" alt="Rév. Elvis NGUIFFO" decoding="async" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(212,175,55,0.45)", flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 17, color: "var(--text-primary)" }}>Rév. Elvis NGUIFFO</div>
+              <div style={{ fontSize: 12.5, color: "var(--gold)", fontWeight: 600 }}>Pasteur · Enseignant · Mentor · Fondateur du CCB</div>
+            </div>
+          </div>
+          {renderMd(founder)}
         </div>
       </div>
 

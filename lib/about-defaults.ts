@@ -23,11 +23,99 @@ export const DEFAULT_VALUES_MD = `📖 | Parole de Dieu | Toute doctrine et prat
 🌍 | Mission | L'évangélisation et l'envoi de disciples sont au cœur de notre appel.
 🎓 | Formation | Nous investissons dans la formation spirituelle, théologique et pratique des membres.`;
 
-export const DEFAULT_TEAM_MD = `Rév. Elvis NGUIFFO | Pasteur Principal & Fondateur | /rev-elvis-v2.jpg
-Consacré au service du Seigneur depuis plus de 15 ans, le Révérend Elvis NGUIFFO a reçu l'appel pastoral avec la vision de bâtir une église locale forte, enracinée dans la Parole et animée par le Saint-Esprit. Diplômé en théologie et en leadership chrétien, il est aussi époux et père de famille, modèle de la foi vécue au quotidien.
----
-L'Équipe Pastorale | Anciens & Responsables |
+export const DEFAULT_TEAM_MD = `L'Équipe Pastorale | Anciens & Responsables |
 L'église est gouvernée par un collège d'anciens formés et dédiés, chacun responsable d'un département : jeunesse, femmes, hommes, intercession, louange, et évangélisation.`;
+
+/* Biographie officielle du fondateur — rendue par renderMd (a-propos). */
+export const DEFAULT_FOUNDER_MD = `### Présentation
+Le Révérend Elvis NGUIFFO est un serviteur de Dieu, enseignant de la Parole, mentor, formateur de disciples et leader chrétien engagé dans la transformation des vies par l'Évangile de Jésus-Christ.
+Reconnu pour son ministère d'enseignement, de formation et d'accompagnement spirituel, il consacre sa vie à former des disciples matures, à développer des leaders selon le cœur de Dieu et à équiper les croyants pour l'accomplissement de leur destinée divine.
+Marié et père de cinq enfants (une fille et quatre garçons), il considère sa famille comme son premier champ de ministère et un témoignage vivant des principes bibliques qu'il enseigne.
+Avec plus de vingt ans d'expérience dans le ministère chrétien, il poursuit une vision claire : conduire les hommes et les femmes à devenir semblables à Jésus-Christ afin qu'ils puissent influencer leur génération pour la gloire de Dieu.
+---
+# Formation Théologique et Ministérielle
+Animé dès son jeune âge par un profond désir de servir Dieu, il s'est engagé dans un parcours rigoureux de formation biblique et missionnaire.
+### Diplôme de Formation Biblique
+Diplômé des **Centres de Formation Biblique du Cameroun (CFBC)**, promotion :
+> « Soldat Missionnaire de la Ligne de Front » (2003 – 2005)
+
+Cette formation lui a permis d'acquérir de solides fondements bibliques, doctrinaux et ministériels qui constituent encore aujourd'hui le socle de son ministère.
+### Diplôme de Formation Missionnaire
+En 2006, il obtient également son diplôme du **Centre de Formation Missionnaire du Cameroun (CFMC)**, ce qui a renforcé sa passion pour l'évangélisation, le discipulat et l'accomplissement de la Grande Mission.
+### Ordination Pastorale
+Après plusieurs années de service fidèle, il est officiellement **ordonné Pasteur en 2016** — une consécration qui confirme l'appel pastoral que Dieu a placé sur sa vie.
+### Licence Ministérielle Internationale
+Il est titulaire d'une **Licence Ministérielle Internationale délivrée par l'International Circle of Faith (ICOF), USA**, attestant de son engagement et de son adhésion aux standards bibliques et éthiques du leadership chrétien.
+---
+# Appel et Ministère
+Très tôt dans son parcours chrétien, il a reçu un appel particulier pour :
+- L'enseignement de la Parole de Dieu.
+- La formation des disciples.
+- Le développement du leadership chrétien.
+- Le mentorat et l'accompagnement spirituel.
+- La restauration des vies.
+- L'équipement des croyants pour le service.
+Son ministère repose sur une conviction fondamentale :
+> La mission de l'Église ne consiste pas seulement à faire des convertis, mais à former des disciples qui ressemblent à Jésus-Christ.
+---
+# Fondateur du Centre Chrétien Berakah
+Il est le visionnaire et fondateur du **Centre Chrétien Berakah (CCB)**, anciennement **Life Changing Ministries (LCM)** — une communauté chrétienne de formation et de discipulat dont la mission est :
+> Former des disciples, Transformer des vies, Manifester la bénédiction.
+À travers cette vision, le CCB s'engage à :
+- Former des disciples enracinés dans la Parole de Dieu.
+- Développer des leaders spirituels intègres.
+- Équiper les croyants pour leur appel.
+- Impacter les familles et les communautés.
+- Préparer une génération capable d'influencer les nations.
+---
+# Enseignant de la Parole de Dieu
+Reconnu pour ses enseignements bibliques profonds, pratiques et transformationnels, ses principaux domaines comprennent :
+### Fondements de la foi
+- Le salut, la nouvelle naissance, l'assurance du salut et la vie chrétienne.
+### Croissance spirituelle
+- La prière, le jeûne, l'étude de la Parole et la communion avec le Saint-Esprit.
+### Leadership chrétien
+- Le leadership serviteur, le développement du potentiel, l'excellence et l'intégrité.
+### Transformation du caractère
+- Le fruit de l'Esprit, l'identité en Christ, la maturité chrétienne et la ressemblance à Christ.
+---
+# Formateur de Disciples et de Leaders
+Il développe des parcours de formation pour accompagner les croyants dans leur croissance, parmi lesquels :
+- Les écoles de disciples.
+- Les séminaires de leadership.
+- Les retraites spirituelles et bootcamps annuels.
+- Les programmes de mentorat.
+- Les formations en ligne.
+Le parcours du CCB commence notamment par le niveau **Fondations Chrétiennes**, destiné à établir solidement les croyants dans les vérités fondamentales de la foi.
+---
+# Ressources Spirituelles
+### MÉDITONS ENSEMBLE
+Une série de méditations bibliques quotidiennes pour encourager la croissance spirituelle et l'intimité avec Dieu.
+### PRIONS ENSEMBLE
+Un programme de prière quotidienne structuré autour de thématiques spirituelles.
+### JESUS DAILY
+Une plateforme d'enseignement et d'évangélisation pour rendre les vérités bibliques accessibles au plus grand nombre.
+### JESUS DAILY TV
+Une vision médiatique pour diffuser l'Évangile, former des disciples et impacter les nations.
+---
+# Philosophie de Ministère
+> Le but ultime du chrétien n'est pas simplement d'aller au ciel, mais de devenir semblable à Jésus-Christ.
+Son ministère met l'accent sur la centralité de Christ, l'autorité de la Parole, la puissance du Saint-Esprit, le discipulat intentionnel, le leadership transformationnel, l'excellence, l'intégrité et l'impact générationnel.
+---
+# Profil Résumé
+**Pasteur · Enseignant de la Bible · Mentor · Formateur de disciples · Leader chrétien**
+### Situation familiale
+- Marié, père de cinq enfants (1 fille et 4 garçons).
+### Formation
+- Diplômé des Centres de Formation Biblique du Cameroun (2003-2005) — « Soldat Missionnaire de la Ligne de Front ».
+- Diplômé du Centre de Formation Missionnaire du Cameroun (2006).
+### Reconnaissances
+- Ordonné Pasteur en 2016.
+- Licence Ministérielle Internationale — International Circle of Faith (ICOF), USA.
+### Devise
+> Former des disciples, Transformer des vies, Manifester la bénédiction.
+### Vision de vie
+> Être semblable à Christ et conduire les autres à Lui ressembler.`;
 
 export const DEFAULT_CTA_TITLE = "Rejoignez la Famille Berakah";
 export const DEFAULT_CTA_BODY = "Vous cherchez une église, une communauté spirituelle, ou vous avez des questions ?\nNous serions heureux de vous accueillir.";

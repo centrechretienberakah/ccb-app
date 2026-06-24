@@ -527,23 +527,22 @@ function Visionnaire() {
         </Reveal>
 
         <Reveal delay={140} className="ccb-split-text">
-          <SectionKicker>Le visionnaire</SectionKicker>
+          <SectionKicker>Le fondateur</SectionKicker>
           <h2 className="ccb-h2">Rév. Elvis NGUIFFO</h2>
           <p className="ccb-lead" style={{ marginBottom: 12 }}>
-            Visionnaire du Centre Chrétien Berakah.
+            Pasteur, enseignant de la Parole, mentor et fondateur du Centre Chrétien Berakah.
           </p>
           <p className="ccb-text">
-            Serviteur de Dieu passionné par le discipulat et la formation, le Rév. Elvis
-            NGUIFFO porte une vision claire : <b>former des disciples solides, transformer
-            des vies par la Parole et manifester la bénédiction</b> de Dieu dans toutes les
-            sphères de la société.
+            Serviteur de Dieu engagé dans la transformation des vies par l&apos;Évangile, il
+            consacre son ministère à <b>former des disciples matures</b>, développer des
+            leaders selon le cœur de Dieu et équiper les croyants pour leur destinée.
           </p>
           <p className="ccb-text">
-            À travers le CCB, il bâtit un ministère du 21ᵉ siècle qui allie profondeur
-            spirituelle et excellence, pour équiper une génération à impacter le monde
-            pour le Royaume.
+            Marié et père de cinq enfants, fort de plus de vingt ans de ministère, il poursuit
+            une vision claire : <b>conduire les hommes et les femmes à devenir semblables à
+            Jésus-Christ</b> afin d&apos;influencer leur génération pour la gloire de Dieu.
           </p>
-          <Link href="/a-propos" className="ccb-btn ccb-btn-ghost">Découvrir le visionnaire</Link>
+          <Link href="/a-propos" className="ccb-btn ccb-btn-ghost">Lire la biographie complète</Link>
         </Reveal>
       </div>
     </section>

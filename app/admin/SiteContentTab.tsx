@@ -22,6 +22,7 @@ const PAGES: { key: string; label: string; icon: string; hint?: string }[] = [
   { key: "a-propos-vision",   label: "À propos · Vision",   icon: "🔭", hint: "Texte de la vision (champ Contenu)." },
   { key: "a-propos-mission",  label: "À propos · Mission",  icon: "🎯", hint: "Texte de la mission (champ Contenu)." },
   { key: "a-propos-valeurs",  label: "À propos · Valeurs",  icon: "💎", hint: "Une ligne par valeur : emoji | titre | description." },
+  { key: "a-propos-fondateur", label: "À propos · Le Fondateur", icon: "✦", hint: "Biographie du fondateur (markdown) : # section, ### sous-titre, > citation, - liste, --- séparateur, **gras**. Laisse vide pour le texte par défaut." },
   { key: "a-propos-equipe",   label: "À propos · Équipe",   icon: "👥", hint: "Par membre : 1re ligne « nom | rôle | /photo.jpg » puis la description ; séparer les membres par une ligne contenant ---." },
   { key: "a-propos-cta",      label: "À propos · Appel",    icon: "🤝", hint: "Encart final : Titre + texte (champ Contenu)." },
   { key: "confession-foi", label: "Profession de foi", icon: "✝️", hint: "Confession de foi du CCB. Champ « Contenu (markdown) » : ### pour un article, --- pour séparer, **gras**. Laisse vide pour revenir au texte par défaut." },
