@@ -2,7 +2,7 @@
 -- CCB — BIBLE QUIZ : nettoyage des questions en double  v74
 --
 -- Supprime les questions DUPLIQUÉES (même texte dans la même manche) en
--- gardant la 1re occurrence (par sort_order, puis date de création).
+-- gardant la 1re occurrence (par sort_order, puis id).
 -- Renumérote sort_order proprement, puis pose un index UNIQUE pour
 -- empêcher tout futur doublon. Concerne TOUTES les manches — dont
 -- « La vie de Jésus » et « Les héros de la foi » (créées via l'admin).
@@ -32,7 +32,7 @@ WITH ranked AS (
   SELECT id,
          row_number() OVER (
            PARTITION BY quiz_id, lower(btrim(text))
-           ORDER BY sort_order, created_at, id
+           ORDER BY sort_order, id
          ) AS rn
     FROM public.quiz_questions
 )
