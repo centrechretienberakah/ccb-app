@@ -293,7 +293,12 @@ export default function QuizControlClient() {
   return (
     <div>
       <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 20, marginBottom: 24 }}>
-        <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', background: 'var(--gold-pale)', color: 'var(--gold-dark)', borderRadius: 'var(--radius-full)', padding: '4px 12px' }}>Espace Admin</span>
+        <Link href="/bible-quiz" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--gold)', fontWeight: 700, fontSize: 13.5, textDecoration: 'none', marginBottom: 12 }}>
+          ← Bible Quiz
+        </Link>
+        <div>
+          <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', background: 'var(--gold-pale)', color: 'var(--gold-dark)', borderRadius: 'var(--radius-full)', padding: '4px 12px' }}>Espace Admin</span>
+        </div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', margin: '12px 0 0', fontFamily: 'var(--font-title)' }}>Contrôle du championnat</h1>
       </div>
 
