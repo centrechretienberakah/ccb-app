@@ -120,7 +120,7 @@ export default function BibleQuizHub() {
   const available = quizzes.filter((q) => !(q.phase && q.phase !== 'libre' && phaseKeys.has(q.phase)));
   const parcoursDone = parcours.filter(levelCompleted);
   const modeCard: React.CSSProperties = {
-    ...card, padding: '24px 18px', textAlign: 'center', cursor: 'pointer', display: 'block',
+    ...card, padding: 'clamp(12px, 3.2vw, 24px) clamp(10px, 2.5vw, 18px)', textAlign: 'center', cursor: 'pointer', display: 'block',
     border: '1px solid var(--gold)', background: 'var(--gold-pale)', width: '100%',
   };
 
@@ -151,16 +151,16 @@ export default function BibleQuizHub() {
           </div>
 
           {/* Deux modes */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'clamp(10px, 2.5vw, 14px)', marginBottom: 24 }}>
             <button onClick={() => setView('bootcamp')} style={modeCard}>
-              <div style={{ fontSize: 40 }}>🏆</div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)', marginTop: 6 }}>Bootcamp Quiz</div>
-              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>Le championnat : qualifications, quarts, demi, grande finale.</p>
+              <div style={{ fontSize: 'clamp(26px, 7vw, 40px)' }}>🏆</div>
+              <div style={{ fontSize: 'clamp(14px, 4vw, 17px)', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)', marginTop: 6 }}>Bootcamp Quiz</div>
+              <p style={{ fontSize: 'clamp(11px, 3vw, 12.5px)', color: 'var(--text-muted)', margin: '6px 0 0' }}>Le championnat : qualifications, quarts, demi, grande finale.</p>
             </button>
             <button onClick={() => setView('parcours')} style={modeCard}>
-              <div style={{ fontSize: 40 }}>📿</div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)', marginTop: 6 }}>Parcours de discipolat</div>
-              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>
+              <div style={{ fontSize: 'clamp(26px, 7vw, 40px)' }}>📿</div>
+              <div style={{ fontSize: 'clamp(14px, 4vw, 17px)', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)', marginTop: 6 }}>Parcours de discipolat</div>
+              <p style={{ fontSize: 'clamp(11px, 3vw, 12.5px)', color: 'var(--text-muted)', margin: '6px 0 0' }}>
                 9 niveaux · progression 80% · badges &amp; XP{parcours.length ? ` · ${parcoursDone.length}/${parcours.length} ✓` : ''}
               </p>
             </button>
