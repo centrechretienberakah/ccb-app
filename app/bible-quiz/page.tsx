@@ -45,6 +45,7 @@ export default function BibleQuizHub() {
   const [history, setHistory] = useState<Attempt[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [parcours, setParcours] = useState<ParcoursLevel[]>([]);
+  const [view, setView] = useState<'home' | 'bootcamp' | 'parcours'>('home');
 
   useEffect(() => {
     async function load() {
@@ -114,43 +115,139 @@ export default function BibleQuizHub() {
     );
   };
 
-  // "Disponibles" = quiz 'libre' + tout quiz dont la phase n'est pas (encore)
-  // gérée dans quiz_phases → robuste si la migration v67 n'est pas appliquée.
+  // "Toujours ouverts" = quiz 'libre' (ni championnat, ni parcours).
   const phaseKeys = new Set(phases.map((p) => p.key));
   const available = quizzes.filter((q) => !(q.phase && q.phase !== 'libre' && phaseKeys.has(q.phase)));
+  const parcoursDone = parcours.filter(levelCompleted);
+  const modeCard: React.CSSProperties = {
+    ...card, padding: '24px 18px', textAlign: 'center', cursor: 'pointer', display: 'block',
+    border: '1px solid var(--gold)', background: 'var(--gold-pale)', width: '100%',
+  };
 
   return (
     <div style={{ maxWidth: 820, margin: '0 auto', padding: '24px 16px 96px' }}>
       <BackButton />
-      {/* Hero */}
-      <div style={{ marginBottom: 22 }}>
-        <h1 style={{ fontSize: 'clamp(22px, 6vw, 28px)', fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontFamily: 'var(--font-title)' }}>🏆 Bible Quiz Championship</h1>
-        {isAdmin && (
-          <Link href="/admin/quiz-control"
-            style={{ display: 'inline-block', marginTop: 12, background: 'linear-gradient(135deg, var(--gold), var(--gold-dark))', color: '#1a1206', fontWeight: 800, fontSize: 13, padding: '9px 18px', borderRadius: 'var(--radius-full)', textDecoration: 'none' }}>
-            ⚙️ Administration du championnat
-          </Link>
+
+      {/* En-tête (retour sur les sous-vues) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        {view !== 'home' && (
+          <button onClick={() => setView('home')} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--gold)', borderRadius: 'var(--radius-full)', padding: '6px 14px', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>← Bible Quiz</button>
+        )}
+        <h1 style={{ fontSize: 'clamp(20px, 5.5vw, 26px)', fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontFamily: 'var(--font-title)' }}>
+          {view === 'home' ? '🏆 Bible Quiz' : view === 'bootcamp' ? '🏆 Bootcamp Quiz' : '📿 Parcours de discipolat'}
+        </h1>
+        {isAdmin && view !== 'parcours' && (
+          <Link href="/admin/quiz-control" style={{ marginLeft: 'auto', background: 'linear-gradient(135deg, var(--gold), var(--gold-dark))', color: '#1a1206', fontWeight: 800, fontSize: 12.5, padding: '8px 14px', borderRadius: 'var(--radius-full)', textDecoration: 'none', whiteSpace: 'nowrap' }}>⚙️ Admin</Link>
         )}
       </div>
 
-      {/* Mes stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 26 }}>
-        {stat('Score', String(stats?.total_score ?? 0), 'var(--gold-dark)')}
-        {stat('Niveau', LEVEL_LABEL[stats?.level ?? 'debutant'] ?? 'Débutant', 'var(--gold-light)')}
-        {stat('Équipe', teamName ?? '—', 'var(--text-primary)')}
-      </div>
+      {/* ============ ACCUEIL ============ */}
+      {view === 'home' && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 22 }}>
+            {stat('Score', String(stats?.total_score ?? 0), 'var(--gold-dark)')}
+            {stat('Niveau', LEVEL_LABEL[stats?.level ?? 'debutant'] ?? 'Débutant', 'var(--gold-light)')}
+            {stat('Équipe', teamName ?? '—', 'var(--text-primary)')}
+          </div>
 
-      {/* PARCOURS DE DISCIPOLAT — déblocage linéaire à 80% par étape */}
-      {parcours.length > 0 && (() => {
-        const done = parcours.filter(levelCompleted);
-        const earnedXP = done.reduce((s, l) => s + l.xp, 0);
-        const currentTitle = done.length ? done[done.length - 1].title : '—';
-        return (
-          <div style={{ marginBottom: 28 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)', margin: '0 0 4px' }}>📿 Parcours de discipolat</h2>
+          {/* Deux modes */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 24 }}>
+            <button onClick={() => setView('bootcamp')} style={modeCard}>
+              <div style={{ fontSize: 40 }}>🏆</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)', marginTop: 6 }}>Bootcamp Quiz</div>
+              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>Le championnat : qualifications, quarts, demi, grande finale.</p>
+            </button>
+            <button onClick={() => setView('parcours')} style={modeCard}>
+              <div style={{ fontSize: 40 }}>📿</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)', marginTop: 6 }}>Parcours de discipolat</div>
+              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>
+                9 niveaux · progression 80% · badges &amp; XP{parcours.length ? ` · ${parcoursDone.length}/${parcours.length} ✓` : ''}
+              </p>
+            </button>
+          </div>
+
+          {/* Jeux toujours ouverts (sans compétition) */}
+          {available.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Jeux toujours ouverts (sans compétition)</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+                {available.map((q) => quizCard(q, false))}
+              </div>
+            </div>
+          )}
+
+          {/* Mon historique */}
+          {history.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Mon historique</h2>
+              <div style={{ ...card, overflow: 'hidden' }}>
+                {history.map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '11px 16px', borderBottom: i === history.length - 1 ? 'none' : '1px solid var(--border-subtle)' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.quiz_quizzes?.title ?? 'Manche'}</p>
+                      <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: '1px 0 0' }}>{fmtDate(a.completed_at)}</p>
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--gold-dark)', whiteSpace: 'nowrap' }}>+{a.score} pts</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nav rapide */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Link href="/leaderboard" style={{ ...card, padding: '18px', textAlign: 'center', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700, fontSize: 14 }}>🏆 Voir le classement</Link>
+            <Link href="/team" style={{ ...card, padding: '18px', textAlign: 'center', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700, fontSize: 14 }}>👥 Gérer mon équipe</Link>
+          </div>
+        </>
+      )}
+
+      {/* ============ BOOTCAMP QUIZ (championnat) ============ */}
+      {view === 'bootcamp' && (
+        <>
+          {!phases.some((ph) => quizzes.some((q) => q.phase === ph.key)) && (
+            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Aucune manche de championnat pour l&apos;instant.</p>
+          )}
+          {phases.map((ph, idx) => {
+            const phaseQuizzes = quizzes.filter((q) => q.phase === ph.key);
+            if (phaseQuizzes.length === 0) return null;
+            const isFirst = idx === 0;
+            const prev = phases[idx - 1];
+            return (
+              <div key={ph.key} style={{ marginBottom: 22 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{ph.label}</h2>
+                  <span style={{
+                    fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', borderRadius: 'var(--radius-full)', padding: '3px 10px',
+                    background: ph.unlocked ? 'rgba(34,197,94,0.14)' : 'var(--surface-2)',
+                    color: ph.unlocked ? 'var(--success)' : 'var(--text-muted)',
+                  }}>{ph.unlocked ? (isFirst ? 'Ouverte' : '✓ Débloquée') : '🔒 90% requis'}</span>
+                </div>
+                {!ph.unlocked && (
+                  <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 12px' }}>
+                    {isFirst || !prev
+                      ? 'Phase fermée par l’organisation.'
+                      : <>Atteins <b style={{ color: 'var(--gold-dark)' }}>90%</b> à « {prev.label} » pour débloquer — ton score actuel : <b>{prev.score_pct}%</b>.</>}
+                  </p>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+                  {phaseQuizzes.map((q) => quizCard(q, !ph.unlocked))}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {/* ============ PARCOURS DE DISCIPOLAT ============ */}
+      {view === 'parcours' && (
+        parcours.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Parcours en préparation.</p>
+        ) : (
+          <>
             <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 14px' }}>
               Avance étape par étape — <b style={{ color: 'var(--gold-dark)' }}>{PASS_PCT}%</b> pour débloquer la suivante.
-              {' '}Titre : <b>{currentTitle}</b> · <b>{earnedXP}</b> XP · {done.length}/{parcours.length} niveaux {done.map((l) => l.badge_emoji).join('')}
+              {' '}Titre : <b>{parcoursDone.length ? parcoursDone[parcoursDone.length - 1].title : '—'}</b> · <b>{parcoursDone.reduce((s, l) => s + l.xp, 0)}</b> XP · {parcoursDone.length}/{parcours.length} niveaux {parcoursDone.map((l) => l.badge_emoji).join('')}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {parcours.map((lvl) => {
@@ -201,73 +298,9 @@ export default function BibleQuizHub() {
                 );
               })}
             </div>
-          </div>
-        );
-      })()}
-
-      {/* Phases du championnat — progression auto par joueur (≥90%) */}
-      {phases.map((ph, idx) => {
-        const phaseQuizzes = quizzes.filter((q) => q.phase === ph.key);
-        if (phaseQuizzes.length === 0) return null;
-        const isFirst = idx === 0;
-        const prev = phases[idx - 1];
-        return (
-          <div key={ph.key} style={{ marginBottom: 22 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{ph.label}</h2>
-              <span style={{
-                fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', borderRadius: 'var(--radius-full)', padding: '3px 10px',
-                background: ph.unlocked ? 'rgba(34,197,94,0.14)' : 'var(--surface-2)',
-                color: ph.unlocked ? 'var(--success)' : 'var(--text-muted)',
-              }}>{ph.unlocked ? (isFirst ? 'Ouverte' : '✓ Débloquée') : '🔒 90% requis'}</span>
-            </div>
-            {!ph.unlocked && (
-              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 12px' }}>
-                {isFirst || !prev
-                  ? 'Phase fermée par l’organisation.'
-                  : <>Atteins <b style={{ color: 'var(--gold-dark)' }}>90%</b> à « {prev.label} » pour débloquer — ton score actuel : <b>{prev.score_pct}%</b>.</>}
-              </p>
-            )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-              {phaseQuizzes.map((q) => quizCard(q, !ph.unlocked))}
-            </div>
-          </div>
-        );
-      })}
-
-      {/* Toujours disponible */}
-      {available.length > 0 && (
-        <div style={{ marginBottom: 22 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Toujours disponible</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-            {available.map((q) => quizCard(q, false))}
-          </div>
-        </div>
+          </>
+        )
       )}
-
-      {/* Mon historique */}
-      {history.length > 0 && (
-        <div style={{ marginBottom: 22 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Mon historique</h2>
-          <div style={{ ...card, overflow: 'hidden' }}>
-            {history.map((a, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '11px 16px', borderBottom: i === history.length - 1 ? 'none' : '1px solid var(--border-subtle)' }}>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.quiz_quizzes?.title ?? 'Manche'}</p>
-                  <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: '1px 0 0' }}>{fmtDate(a.completed_at)}</p>
-                </div>
-                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--gold-dark)', whiteSpace: 'nowrap' }}>+{a.score} pts</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Nav rapide */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Link href="/leaderboard" style={{ ...card, padding: '18px', textAlign: 'center', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700, fontSize: 14 }}>🏆 Voir le classement</Link>
-        <Link href="/team" style={{ ...card, padding: '18px', textAlign: 'center', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700, fontSize: 14 }}>👥 Gérer mon équipe</Link>
-      </div>
     </div>
   );
 }
