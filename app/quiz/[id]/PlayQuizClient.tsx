@@ -38,7 +38,7 @@ interface AnswerResult {
   missed: boolean;           // aucune réponse (timeout ou vide)
 }
 
-const QUESTION_SECONDS = 10;
+const QUESTION_SECONDS = 30;
 
 const card: React.CSSProperties = {
   background: 'var(--card-bg)', border: '1px solid var(--border)',
