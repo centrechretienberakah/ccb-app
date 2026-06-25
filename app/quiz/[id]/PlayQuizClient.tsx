@@ -106,13 +106,18 @@ export default function PlayQuizClient({ quizId }: { quizId: string }) {
         await supabase.rpc('quiz_ensure_profile');
 
         const { data: quiz } = await supabase
-          .from('quiz_quizzes').select('title, phase').eq('id', quizId).single();
+          .from('quiz_quizzes').select('title, phase, track').eq('id', quizId).single();
         if (quiz) setQuizTitle(quiz.title);
 
+        const track = (quiz as { track?: string } | null)?.track;
         const phase = (quiz as { phase?: string } | null)?.phase;
-        if (phase && phase !== 'libre') {
-          // Verrou par progression : 1re phase = ouverture admin ; suivantes =
-          // ≥90% à la phase précédente (le serveur applique la même règle).
+        if (track === 'parcours') {
+          // Parcours : étape débloquée si l'étape précédente est à ≥80%.
+          const { data: unlocked } = await supabase.rpc('parcours_etape_unlocked', { p_quiz_id: quizId });
+          if (unlocked === false) { setLocked(true); return; }
+        } else if (phase && phase !== 'libre') {
+          // Championnat : 1re phase = ouverture admin ; suivantes = ≥90% à la
+          // phase précédente (le serveur applique la même règle).
           const { data: unlocked } = await supabase.rpc('quiz_phase_unlocked', { p_phase: phase });
           if (unlocked === false) { setLocked(true); return; }
         }

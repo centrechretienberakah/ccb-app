@@ -9,8 +9,16 @@ import BackButton from '@/components/quiz/BackButton';
 
 const supabase = createClient();
 
-interface Quiz { id: string; title: string; description: string | null; phase: string | null; is_active: boolean; }
+interface Quiz { id: string; title: string; description: string | null; phase: string | null; is_active: boolean; track?: string | null; level?: number | null; }
 interface Phase { key: string; label: string; is_open: boolean; sort_order: number; unlocked: boolean; score_pct: number; }
+interface ParcoursEtape { id: string; title: string; sort_order: number; nb_questions: number; unlocked: boolean; score_pct: number; }
+interface ParcoursLevel { level: number; label: string; badge_emoji: string; badge_label: string; xp: number; title: string; etapes: ParcoursEtape[]; }
+const PASS_PCT = 80;
+const etapePassed = (e: ParcoursEtape) => e.nb_questions > 0 && e.score_pct >= PASS_PCT;
+const levelCompleted = (l: ParcoursLevel) => {
+  const withQ = l.etapes.filter((e) => e.nb_questions > 0);
+  return withQ.length > 0 && withQ.every(etapePassed);
+};
 interface MyStats { total_score: number; level: string; team_id: string | null; }
 interface Attempt { score: number; completed_at: string; quiz_quizzes: { title?: string } | null; }
 
@@ -36,6 +44,7 @@ export default function BibleQuizHub() {
   const [teamName, setTeamName] = useState<string | null>(null);
   const [history, setHistory] = useState<Attempt[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [parcours, setParcours] = useState<ParcoursLevel[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -55,13 +64,16 @@ export default function BibleQuizHub() {
         }
       }
 
-      const [{ data: list }, { data: phaseRows }, { data: attempts }] = await Promise.all([
-        supabase.from('quiz_quizzes').select('id, title, description, phase, is_active').order('sort_order', { ascending: true }),
+      const [{ data: list }, { data: phaseRows }, { data: attempts }, { data: parcoursData }] = await Promise.all([
+        supabase.from('quiz_quizzes').select('id, title, description, phase, is_active, track, level').order('sort_order', { ascending: true }),
         supabase.rpc('quiz_my_phases'),
         supabase.from('quiz_attempts').select('score, completed_at, quiz_quizzes(title)').eq('user_id', user.id).order('completed_at', { ascending: false }).limit(8),
+        supabase.rpc('quiz_my_parcours'),
       ]);
-      setQuizzes((list as Quiz[]) ?? []);
+      // Le championnat exclut les étapes du parcours (track='parcours').
+      setQuizzes(((list as Quiz[]) ?? []).filter((q) => q.track !== 'parcours'));
       setPhases((phaseRows as Phase[]) ?? []);
+      setParcours((parcoursData as ParcoursLevel[]) ?? []);
       setHistory((attempts as unknown as Attempt[]) ?? []);
       setLoading(false);
     }
@@ -127,6 +139,71 @@ export default function BibleQuizHub() {
         {stat('Niveau', LEVEL_LABEL[stats?.level ?? 'debutant'] ?? 'Débutant', 'var(--gold-light)')}
         {stat('Équipe', teamName ?? '—', 'var(--text-primary)')}
       </div>
+
+      {/* PARCOURS DE DISCIPOLAT — déblocage linéaire à 80% par étape */}
+      {parcours.length > 0 && (() => {
+        const done = parcours.filter(levelCompleted);
+        const earnedXP = done.reduce((s, l) => s + l.xp, 0);
+        const currentTitle = done.length ? done[done.length - 1].title : '—';
+        return (
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)', margin: '0 0 4px' }}>📿 Parcours de discipolat</h2>
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 14px' }}>
+              Avance étape par étape — <b style={{ color: 'var(--gold-dark)' }}>{PASS_PCT}%</b> pour débloquer la suivante.
+              {' '}Titre : <b>{currentTitle}</b> · <b>{earnedXP}</b> XP · {done.length}/{parcours.length} niveaux {done.map((l) => l.badge_emoji).join('')}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {parcours.map((lvl) => {
+                const completed = levelCompleted(lvl);
+                const hasQ = lvl.etapes.some((e) => e.nb_questions > 0);
+                return (
+                  <div key={lvl.level} style={{ ...card, padding: '16px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 22 }}>{lvl.badge_emoji}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-title)' }}>Niveau {lvl.level} · {lvl.label}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{lvl.badge_label} · {lvl.xp} XP · titre « {lvl.title} »</div>
+                      </div>
+                      <span style={{
+                        marginLeft: 'auto', fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
+                        borderRadius: 'var(--radius-full)', padding: '3px 10px',
+                        background: completed ? 'rgba(34,197,94,0.14)' : 'var(--surface-2)',
+                        color: completed ? 'var(--success)' : 'var(--text-muted)',
+                      }}>{completed ? '✓ Badge obtenu' : hasQ ? 'En cours' : 'À venir'}</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+                      {lvl.etapes.map((e) => {
+                        const empty = e.nb_questions === 0;
+                        const passed = etapePassed(e);
+                        const locked = !e.unlocked || empty;
+                        const st: React.CSSProperties = {
+                          padding: '10px 12px', borderRadius: 'var(--radius-md)', display: 'block', textDecoration: 'none',
+                          border: `1px solid ${passed ? 'rgba(34,197,94,0.4)' : 'var(--border)'}`,
+                          background: passed ? 'rgba(34,197,94,0.08)' : 'var(--surface-2)',
+                          opacity: locked ? 0.6 : 1,
+                        };
+                        const inner = (
+                          <>
+                            <div style={{ fontSize: 12.5, fontWeight: 700, color: locked ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                              {!e.unlocked && !empty ? '🔒 ' : ''}{e.title.replace(/^N\d+ · É\d+ — /, '')}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                              {empty ? 'À venir' : passed ? `✓ ${e.score_pct}%` : (e.score_pct > 0 ? `${e.score_pct}%` : `${e.nb_questions} questions`)}
+                            </div>
+                          </>
+                        );
+                        return locked
+                          ? <div key={e.id} style={st}>{inner}</div>
+                          : <Link key={e.id} href={`/quiz/${e.id}`} style={st}>{inner}</Link>;
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Phases du championnat — progression auto par joueur (≥90%) */}
       {phases.map((ph, idx) => {
