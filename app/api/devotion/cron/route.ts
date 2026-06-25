@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
-import { getParisDateString, getParisDayIndex, STATIC_DEVOTIONS } from "@/app/devotion/devotions-data";
+import { getParisDateString, getParisDayIndex } from "@/app/devotion/devotions-data";
 import { ensureDevotionInDb } from "@/lib/devotion/ensure";
+import { resolveDailyDevotionInput } from "@/lib/devotion/resolveDaily";
 
 export const runtime = "nodejs";
 
@@ -50,19 +51,11 @@ export async function GET(req: NextRequest) {
 
   const date = getParisDateString();
   const dayIndex = getParisDayIndex();
-  const dev = STATIC_DEVOTIONS[dayIndex];
 
-  const result = await ensureDevotionInDb(admin, {
-    date,
-    title: dev.title,
-    verse_ref: dev.verse_ref,
-    verse_text: dev.verse_text,
-    content: dev.content,
-    application: dev.application,
-    prayer: dev.prayer,
-    declaration: dev.declaration,
-    author: dev.author,
-  });
+  // SOURCE : calendrier éditorial (thème+verset) + rédaction IA si défini,
+  // sinon rotation statique (repli inchangé).
+  const { input: devInput, source } = await resolveDailyDevotionInput(admin, date, dayIndex);
+  const result = await ensureDevotionInDb(admin, devInput);
 
   if (result.id) {
     return NextResponse.json({
@@ -70,7 +63,8 @@ export async function GET(req: NextRequest) {
       date,
       id: result.id,
       created: result.created,
-      title: dev.title,
+      source,
+      title: devInput.title,
     });
   }
 

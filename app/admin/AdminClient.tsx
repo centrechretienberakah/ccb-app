@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineUsers } from "@/lib/presence";
 import ResourceTab, { ColumnDef } from "./ResourceTab";
@@ -662,9 +663,14 @@ export default function AdminClient({
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}>
               <p style={{ ...sectionTitle, margin: 0 }}>{devotions.length} dévotion(s)</p>
-              <button onClick={() => { setShowDevotionForm(v => !v); setDevMsg(null); }} style={{ padding: "0.55rem 1.25rem", borderRadius: "9999px", border: "none", background: showDevotionForm ? "var(--surface)" : "var(--gold)", color: showDevotionForm ? "var(--text-primary)" : "#1a0a00", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
-                {showDevotionForm ? "✕ Annuler" : "+ Nouvelle dévotion"}
-              </button>
+              <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+                <Link href="/admin/devotion-calendar" style={{ padding: "0.55rem 1.25rem", borderRadius: "9999px", border: "1px solid var(--gold)", background: "var(--gold-pale)", color: "var(--gold-dark)", fontWeight: 700, fontSize: "0.82rem", textDecoration: "none", whiteSpace: "nowrap" }}>
+                  📅 Calendrier éditorial
+                </Link>
+                <button onClick={() => { setShowDevotionForm(v => !v); setDevMsg(null); }} style={{ padding: "0.55rem 1.25rem", borderRadius: "9999px", border: "none", background: showDevotionForm ? "var(--surface)" : "var(--gold)", color: showDevotionForm ? "var(--text-primary)" : "#1a0a00", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+                  {showDevotionForm ? "✕ Annuler" : "+ Nouvelle dévotion"}
+                </button>
+              </div>
             </div>
             {showDevotionForm && (
               <div style={{ ...card, marginBottom: "1.5rem", borderTop: "3px solid var(--gold)" }}>

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
-import { getParisDateString, getParisDayIndex, STATIC_DEVOTIONS } from "@/app/devotion/devotions-data";
+import { getParisDateString, getParisDayIndex } from "@/app/devotion/devotions-data";
 import { STATIC_PRAYERS, buildPrayerContent } from "@/app/community/prions-ensemble/daily-prayers-data";
 import { ensureDevotionInDb } from "@/lib/devotion/ensure";
+import { resolveDailyDevotionInput } from "@/lib/devotion/resolveDaily";
 import { ensureDailyPrayerInDb } from "@/lib/prayer/dailyEnsure";
 import { reindexAiKnowledge } from "@/lib/ai/reindex";
 
@@ -46,13 +47,10 @@ export async function GET(req: NextRequest) {
   const date = getParisDateString();
   const dayIndex = getParisDayIndex();
 
-  // 1) Méditation du jour
-  const dev = STATIC_DEVOTIONS[dayIndex];
-  const devotion = await ensureDevotionInDb(admin, {
-    date, title: dev.title, verse_ref: dev.verse_ref, verse_text: dev.verse_text,
-    content: dev.content, application: dev.application, prayer: dev.prayer,
-    declaration: dev.declaration, author: dev.author,
-  });
+  // 1) Méditation du jour — SOURCE : calendrier éditorial (thème+verset) +
+  //    rédaction IA si défini, sinon rotation statique (repli inchangé).
+  const { input: devInput, source: devSource } = await resolveDailyDevotionInput(admin, date, dayIndex);
+  const devotion = await ensureDevotionInDb(admin, devInput);
 
   // 2) Prière du jour
   const pr = STATIC_PRAYERS[dayIndex];
@@ -71,7 +69,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     date,
-    devotion: devotion.id ? { id: devotion.id, created: devotion.created } : { error: devotion.error },
+    devotion: devotion.id ? { id: devotion.id, created: devotion.created, source: devSource } : { error: devotion.error, source: devSource },
     prayer: prayer.id ? { id: prayer.id, created: prayer.created } : { error: prayer.error },
     rag,
   });

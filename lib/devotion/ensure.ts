@@ -20,6 +20,28 @@ export interface DevotionEnsureResult {
 }
 
 /**
+ * Renvoie l'UUID de la méditation déjà enregistrée pour une date (ou null).
+ * Tolère les deux noms de colonne possibles (`devotion_date` / `date`).
+ * Utile pour éviter une génération IA inutile quand le jour est déjà publié.
+ */
+export async function findDevotionId(
+  admin: SupabaseClient,
+  date: string,
+): Promise<string | null> {
+  try {
+    const { data } = await admin
+      .from("devotions").select("id").eq("devotion_date", date).maybeSingle();
+    if (data?.id) return data.id as string;
+  } catch { /* colonne devotion_date peut ne pas exister */ }
+  try {
+    const { data } = await admin
+      .from("devotions").select("id").eq("date", date).maybeSingle();
+    if (data?.id) return data.id as string;
+  } catch { /* noop */ }
+  return null;
+}
+
+/**
  * Garantit qu'une méditation existe dans la table `devotions` et renvoie
  * son UUID. Insert ADAPTATIF : retire dynamiquement toute colonne signalée
  * inexistante / générée par PostgREST, gère NOT NULL et race duplicate key.
