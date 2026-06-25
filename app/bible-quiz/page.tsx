@@ -166,16 +166,6 @@ export default function BibleQuizHub() {
             </button>
           </div>
 
-          {/* Jeux toujours ouverts (sans compétition) */}
-          {available.length > 0 && (
-            <div style={{ marginBottom: 22 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Jeux toujours ouverts (sans compétition)</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-                {available.map((q) => quizCard(q, false))}
-              </div>
-            </div>
-          )}
-
           {/* Mon historique */}
           {history.length > 0 && (
             <div style={{ marginBottom: 22 }}>
@@ -236,6 +226,16 @@ export default function BibleQuizHub() {
               </div>
             );
           })}
+
+          {/* Jeux toujours ouverts (sans compétition) */}
+          {available.length > 0 && (
+            <div style={{ marginTop: 28, marginBottom: 22 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Jeux toujours ouverts (sans compétition)</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+                {available.map((q) => quizCard(q, false))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
