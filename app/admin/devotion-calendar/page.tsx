@@ -13,6 +13,13 @@ const MONTHS_FR = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
 
+/** Date du jour (YYYY-MM-DD) en fuseau Europe/Paris. */
+function parisToday(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+}
+
 interface Month { id: string; year: number; month: number; label: string; theme: string; main_verse: string }
 interface Week { id: string; month_id: string; week_no: number; theme: string }
 interface Day { id: string; month_id: string; cal_date: string; day_no: number; week_no: number; day_theme: string; day_verse: string }
@@ -41,6 +48,7 @@ export default function DevotionCalendarPage() {
   const [allowed, setAllowed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [notifiedToday, setNotifiedToday] = useState<number | null>(null);
 
   const [months, setMonths] = useState<Month[]>([]);
   const [selId, setSelId] = useState<string | null>(null);
@@ -72,6 +80,10 @@ export default function DevotionCalendarPage() {
       if (!isModerator(roleRow?.role || "member")) { router.replace("/dashboard"); return; }
       setAllowed(true);
       await loadMonths();
+      try {
+        const { data } = await sb.rpc("devotion_push_count", { p_date: parisToday() });
+        if (typeof data === "number") setNotifiedToday(data);
+      } catch { /* RPC absente tant que v79 n'est pas exécutée */ }
       setLoading(false);
     })().catch(() => setLoading(false));
   }, [router, loadMonths]);
@@ -176,6 +188,11 @@ export default function DevotionCalendarPage() {
         <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
           Définis le thème + le verset de chaque jour. À minuit, l&apos;IA rédige la méditation au format habituel à partir de ces données. Sans thème défini, la rotation actuelle est conservée.
         </p>
+        {notifiedToday !== null && (
+          <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 700, color: "var(--gold-dark)", background: "var(--gold-pale)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "5px 12px" }}>
+            🔔 {notifiedToday} membre{notifiedToday > 1 ? "s" : ""} notifié{notifiedToday > 1 ? "s" : ""} aujourd&apos;hui
+          </div>
+        )}
       </div>
 
       {msg && (

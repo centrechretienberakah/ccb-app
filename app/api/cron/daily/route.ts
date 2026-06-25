@@ -4,6 +4,7 @@ import { getParisDateString, getParisDayIndex } from "@/app/devotion/devotions-d
 import { STATIC_PRAYERS, buildPrayerContent } from "@/app/community/prions-ensemble/daily-prayers-data";
 import { ensureDevotionInDb } from "@/lib/devotion/ensure";
 import { resolveDailyDevotionInput } from "@/lib/devotion/resolveDaily";
+import { notifyDevotionForParisDate } from "@/lib/devotion/notifyAll";
 import { ensureDailyPrayerInDb } from "@/lib/prayer/dailyEnsure";
 import { reindexAiKnowledge } from "@/lib/ai/reindex";
 
@@ -52,6 +53,13 @@ export async function GET(req: NextRequest) {
   const { input: devInput, source: devSource } = await resolveDailyDevotionInput(admin, date, dayIndex);
   const devotion = await ensureDevotionInDb(admin, devInput);
 
+  // 1-bis) Notif push « méditation du jour » à TOUS (heure de Paris, 1×/jour).
+  let push: { sent: number; failed: number; skipped: number } = { sent: 0, failed: 0, skipped: 0 };
+  try {
+    const r = await notifyDevotionForParisDate(admin);
+    push = { sent: r.sent ?? 0, failed: r.failed ?? 0, skipped: r.skipped ?? 0 };
+  } catch { /* push best-effort, ne bloque pas le cron */ }
+
   // 2) Prière du jour
   const pr = STATIC_PRAYERS[dayIndex];
   const prayer = await ensureDailyPrayerInDb(admin, {
@@ -70,6 +78,7 @@ export async function GET(req: NextRequest) {
     ok: true,
     date,
     devotion: devotion.id ? { id: devotion.id, created: devotion.created, source: devSource } : { error: devotion.error, source: devSource },
+    push,
     prayer: prayer.id ? { id: prayer.id, created: prayer.created } : { error: prayer.error },
     rag,
   });
