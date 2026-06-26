@@ -69,8 +69,9 @@ interface MeetStats { start: number; peak: number; shares: number; talk: Record<
 interface Verse { ref: string; text: string; by: string }
 interface Prayer { topic: string; endsAt: number; by: string }
 interface Rec { active: boolean; by: string }
+interface Spotlight { id: string; name: string; by: string }
 interface Signal {
-  t: "verse" | "verse-clear" | "prayer-start" | "prayer-stop" | "hand" | "rec";
+  t: "verse" | "verse-clear" | "prayer-start" | "prayer-stop" | "hand" | "rec" | "spotlight";
   ref?: string; text?: string; by?: string;
   topic?: string; endsAt?: number;
   id?: string; name?: string; raised?: boolean;
@@ -108,6 +109,9 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   const [recording, setRecording] = useState<Rec | null>(null);
   const recEgressRef = useRef<string | null>(null);
   const [toast, setToast] = useState("");
+  const [spotlight, setSpotlight] = useState<Spotlight | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // Notes (persistées dans un ref pour survivre à l'ouverture/fermeture du panneau)
   const notesRef = useRef("");
@@ -145,6 +149,7 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         });
       }
       else if (d.t === "rec") setRecording(d.active ? { active: true, by: d.by || "" } : null);
+      else if (d.t === "spotlight") setSpotlight(d.id ? { id: d.id, name: d.name || "Participant", by: d.by || "" } : null);
     } catch { /* noop */ }
   });
   function broadcast(obj: Signal) {
@@ -161,6 +166,11 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
     onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
+  }, []);
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
   useEffect(() => {
     let cancelled = false;
@@ -226,6 +236,25 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   }
   function stopPrayer() { setPrayer(null); broadcast({ t: "prayer-stop" }); }
 
+  // ── Épingler un participant POUR TOUS (spotlight, synchronisé) ──
+  function spotlightParticipant(id: string, name: string) {
+    const s = { id, name, by: myName };
+    setSpotlight(s);
+    broadcast({ t: "spotlight", id, name, by: myName });
+  }
+  function clearSpotlight() { setSpotlight(null); broadcast({ t: "spotlight" }); }
+
+  // ── Plein écran (mode présentateur) ──
+  function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) {
+        void document.exitFullscreen?.();
+      } else {
+        void rootRef.current?.requestFullscreen?.();
+      }
+    } catch { /* non supporté (ex. iOS) → l'écran reste déjà en plein cadre */ }
+  }
+
   function flash(m: string) { setToast(m); setTimeout(() => setToast(""), 3200); }
 
   async function moderate(targetIdentity: string, action: "mute-mic" | "mute-cam" | "remove") {
@@ -276,6 +305,10 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   const handsCount = Object.keys(hands).length;
   const isDmOneToOne =
     !!state.conversationId && !state.groupId && !isAudio && !screenShare && cameraTracks.length === 2;
+  // Participant épinglé pour tous (si présent et pas de partage d'écran en cours)
+  const spotlightTrack = spotlight
+    ? cameraTracks.find((t) => t.participant?.identity === spotlight.id)
+    : undefined;
 
   // ── Auto-masquage des contrôles (façon lecteur vidéo) ──
   // En-tête + barre (micro/caméra/raccrocher) disparaissent après 4 s d'inactivité
@@ -299,6 +332,7 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
 
   return (
     <div
+      ref={rootRef}
       onPointerDown={pokeControls}
       onPointerMove={pokeControls}
       style={{ position: "fixed", inset: 0, background: "#121212", display: "flex", flexDirection: "column", zIndex: 200, color: "#fff" }}
@@ -332,6 +366,7 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
       {/* ── Bannières verset / prière / enregistrement ── */}
       <div style={{ position: "absolute", top: "calc(58px + env(safe-area-inset-top, 0px))", left: 0, right: 0, zIndex: 4, display: "flex", flexDirection: "column", gap: 8, padding: "0 12px", pointerEvents: "none" }}>
         {recording && <RecBanner by={recording.by} />}
+        {spotlight && <SpotlightBanner spotlight={spotlight} canClear={canModerate || spotlight.by === myName} onClear={clearSpotlight} />}
         {verse && <VerseBanner verse={verse} canClear={verse.by === myName} onClear={clearVerse} />}
         {prayer && <PrayerBanner prayer={prayer} canStop={prayer.by === myName} onStop={stopPrayer} onEnd={() => setPrayer(null)} />}
       </div>
@@ -350,7 +385,14 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         transition: "margin-right .25s ease",
       }}>
         {screenShare ? (
-          <Presentation screen={screenShare} cams={cameraTracks} isMobile={isMobile} />
+          <Presentation screen={screenShare} cams={cameraTracks} isMobile={isMobile} label="🖥️ Présentation" />
+        ) : spotlightTrack ? (
+          <Presentation
+            screen={spotlightTrack}
+            cams={cameraTracks.filter((t) => t.participant?.identity !== spotlight!.id)}
+            isMobile={isMobile}
+            label={`📌 ${spotlight!.name}`}
+          />
         ) : isDmOneToOne ? (
           <PipLayout cams={cameraTracks} localIdentity={myId} />
         ) : (
@@ -363,7 +405,8 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         <ChatPanel messages={chatMessages} onSend={(t) => sendChat(t)} onClose={() => setPanel("none")} myId={myId} />
       )}
       {panel === "people" && (
-        <PeoplePanel participants={participants} hands={hands} myId={myId} isAudio={isAudio} canModerate={canModerate} onModerate={moderate} onClose={() => setPanel("none")} />
+        <PeoplePanel participants={participants} hands={hands} myId={myId} isAudio={isAudio} canModerate={canModerate} onModerate={moderate}
+          spotlightId={spotlight?.id ?? null} onSpotlight={spotlightParticipant} onClearSpotlight={clearSpotlight} onClose={() => setPanel("none")} />
       )}
       {panel === "settings" && (
         <SettingsPanel room={room} isAudio={isAudio} onClose={() => setPanel("none")} />
@@ -409,6 +452,8 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         canRecord={canModerate}
         recording={!!recording}
         onRecord={toggleRecording}
+        onFullscreen={toggleFullscreen}
+        isFullscreen={isFullscreen}
         onLeave={handleLeave}
       />
     </div>
@@ -550,12 +595,12 @@ function AdaptiveGrid({ tracks, count, isMobile }: { tracks: TrackReferenceOrPla
 }
 
 /* ─────────────── Mode présentation ─────────────── */
-function Presentation({ screen, cams, isMobile }: { screen: TrackReferenceOrPlaceholder; cams: TrackReferenceOrPlaceholder[]; isMobile: boolean }) {
+function Presentation({ screen, cams, isMobile, label = "🖥️ Présentation" }: { screen: TrackReferenceOrPlaceholder; cams: TrackReferenceOrPlaceholder[]; isMobile: boolean; label?: string }) {
   return (
     <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", height: "100%", gap: 6, padding: 6 }}>
       <div style={{ flex: 1, minHeight: 0, minWidth: 0, borderRadius: 14, overflow: "hidden", background: "#000", position: "relative" }}>
         <CcbTile trackRef={screen} />
-        <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.6)", color: GOLD, fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999 }}>🖥️ Présentation</div>
+        <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.6)", color: GOLD, fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999 }}>{label}</div>
       </div>
       <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", gap: 6, overflowX: isMobile ? "auto" : "visible", overflowY: isMobile ? "visible" : "auto", flexShrink: 0, width: isMobile ? "100%" : 168, maxHeight: isMobile ? 100 : "100%" }}>
         {cams.map((t, i) => (
@@ -672,9 +717,10 @@ function ChatPanel({ messages, onSend, onClose }: { messages: ChatMsg[]; onSend:
 }
 
 /* ─────────────── Panneau Participants (+ modération) ─────────────── */
-function PeoplePanel({ participants, hands, myId, isAudio, canModerate, onModerate, onClose }: {
+function PeoplePanel({ participants, hands, myId, isAudio, canModerate, onModerate, spotlightId, onSpotlight, onClearSpotlight, onClose }: {
   participants: ReturnType<typeof useParticipants>; hands: Record<string, string>; myId: string;
-  isAudio: boolean; canModerate: boolean; onModerate: (id: string, a: "mute-mic" | "mute-cam" | "remove") => void; onClose: () => void;
+  isAudio: boolean; canModerate: boolean; onModerate: (id: string, a: "mute-mic" | "mute-cam" | "remove") => void;
+  spotlightId: string | null; onSpotlight: (id: string, name: string) => void; onClearSpotlight: () => void; onClose: () => void;
 }) {
   const sorted = useMemo(() => {
     return [...participants].sort((a, b) => {
@@ -688,7 +734,7 @@ function PeoplePanel({ participants, hands, myId, isAudio, canModerate, onModera
         {sorted.map((p) => {
           const raised = !!hands[p.identity];
           const me = p.identity === myId;
-          const showMod = canModerate && !me;
+          const pinned = spotlightId === p.identity;
           return (
             <div key={p.identity} style={{ padding: "9px 10px", borderRadius: 10, background: raised ? "rgba(212,175,55,0.10)" : "transparent" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
@@ -707,11 +753,14 @@ function PeoplePanel({ participants, hands, myId, isAudio, canModerate, onModera
                   {!isAudio && <span title={p.isCameraEnabled ? "Caméra active" : "Caméra coupée"} style={{ opacity: p.isCameraEnabled ? 1 : 0.4 }}>{p.isCameraEnabled ? "📹" : "📷"}</span>}
                 </div>
               </div>
-              {showMod && (
-                <div style={{ display: "flex", gap: 6, marginTop: 7, paddingLeft: 49 }}>
-                  <ModBtn label="🔇 Couper micro" onClick={() => onModerate(p.identity, "mute-mic")} />
-                  {!isAudio && <ModBtn label="📷 Couper caméra" onClick={() => onModerate(p.identity, "mute-cam")} />}
-                  <ModBtn danger label="🚫 Retirer" onClick={() => onModerate(p.identity, "remove")} />
+              {canModerate && (
+                <div style={{ display: "flex", gap: 6, marginTop: 7, paddingLeft: 49, flexWrap: "wrap" }}>
+                  {pinned
+                    ? <ModBtn label="📌 Détacher" onClick={onClearSpotlight} />
+                    : <ModBtn label="📌 Épingler pour tous" onClick={() => onSpotlight(p.identity, p.name || "Participant")} />}
+                  {!me && <ModBtn label="🔇 Couper micro" onClick={() => onModerate(p.identity, "mute-mic")} />}
+                  {!me && !isAudio && <ModBtn label="📷 Couper caméra" onClick={() => onModerate(p.identity, "mute-cam")} />}
+                  {!me && <ModBtn danger label="🚫 Retirer" onClick={() => onModerate(p.identity, "remove")} />}
                 </div>
               )}
             </div>
@@ -734,6 +783,18 @@ function RecBanner({ by }: { by: string }) {
       <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#fff", animation: "ccb-rec-blink 1.1s ease-in-out infinite" }} />
       <style>{`@keyframes ccb-rec-blink{0%,100%{opacity:1;}50%{opacity:.25;}}`}</style>
       <span style={{ fontWeight: 800, fontSize: 12.5, color: "#fff", letterSpacing: "0.06em" }}>REC · Enregistrement en cours{by ? ` · ${by}` : ""}</span>
+    </div>
+  );
+}
+
+/* ─────────────── Bannière épinglage (spotlight) ─────────────── */
+function SpotlightBanner({ spotlight, canClear, onClear }: { spotlight: Spotlight; canClear: boolean; onClear: () => void }) {
+  return (
+    <div style={{ pointerEvents: "auto", maxWidth: 560, margin: "0 auto", width: "100%", background: "rgba(30,30,30,0.96)", border: `1px solid ${GOLD}55`, borderLeft: `3px solid ${GOLD}`, borderRadius: 12, padding: "9px 13px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+      <span style={{ fontSize: 12.5, color: "#fff", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ color: GOLD }}>📌 {spotlight.name}</span> est à l&apos;honneur{spotlight.by ? ` · par ${spotlight.by}` : ""}
+      </span>
+      {canClear && <button onClick={onClear} style={{ flexShrink: 0, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "4px 10px" }}>Détacher</button>}
     </div>
   );
 }
@@ -1003,12 +1064,12 @@ function downloadBlob(blob: Blob, filename: string) {
 function ControlBar({
   visible, isAudio, handRaised, unreadChat, panel, prayerActive,
   onHand, onChat, onPeople, onVerse, onPrayer, onSettings, onNotes, onStats, onInvite,
-  canRecord, recording, onRecord, onLeave,
+  canRecord, recording, onRecord, onFullscreen, isFullscreen, onLeave,
 }: {
   visible: boolean; isAudio: boolean; handRaised: boolean; unreadChat: number; peopleCount: number; panel: Panel; prayerActive: boolean;
   onHand: () => void; onChat: () => void; onPeople: () => void; onVerse: () => void; onPrayer: () => void; onSettings: () => void;
   onNotes: () => void; onStats: () => void; onInvite?: () => void;
-  canRecord: boolean; recording: boolean; onRecord: () => void; onLeave: () => void;
+  canRecord: boolean; recording: boolean; onRecord: () => void; onFullscreen: () => void; isFullscreen: boolean; onLeave: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const run = (fn: () => void) => () => { setMoreOpen(false); fn(); };
@@ -1026,10 +1087,11 @@ function ControlBar({
             <style>{`@keyframes ccb-more-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}`}</style>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
               {!isAudio && (
-                <TrackToggle source={Track.Source.ScreenShare} showIcon onClick={() => setMoreOpen(false)} style={menuTileStyle(false)}>
-                  <span style={{ fontSize: 21 }}>🖥️</span><span style={menuTileLabel}>Écran</span>
+                <TrackToggle source={Track.Source.ScreenShare} showIcon captureOptions={{ audio: true, selfBrowserSurface: "include" }} onClick={() => setMoreOpen(false)} style={menuTileStyle(false)}>
+                  <span style={{ fontSize: 21 }}>🖥️</span><span style={menuTileLabel}>Écran + audio</span>
                 </TrackToggle>
               )}
+              <MenuTile emoji={isFullscreen ? "🗗" : "⛶"} label={isFullscreen ? "Quitter" : "Plein écran"} active={isFullscreen} onClick={run(onFullscreen)} />
               <MenuTile emoji="✋" label="Main levée" active={handRaised} onClick={run(onHand)} />
               <MenuTile emoji="💬" label="Chat" badge={unreadChat} active={panel === "chat"} onClick={run(onChat)} />
               <MenuTile emoji="👥" label="Membres" active={panel === "people"} onClick={run(onPeople)} />
