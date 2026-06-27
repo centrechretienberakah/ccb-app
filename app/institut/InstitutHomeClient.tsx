@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
 import { INSTITUT_THEME as T, INSTITUT_FONTS as F, formatDuration, getLevelDef, type Category, type Course } from "@/lib/institut/theme";
 import HeroParticles from "@/components/ui/HeroParticles";
 
@@ -24,17 +23,8 @@ interface Props {
 }
 
 export default function InstitutHomeClient({
-  categories, popularCourses, myCourses,
-  continueWatching = [], favorites = [],
-  isAdmin = false,
+  categories, continueWatching = [], isAdmin = false,
 }: Props) {
-  const [tab, setTab] = useState<"discover" | "mine">("discover");
-
-  const filtered = useMemo(
-    () => (tab === "mine" ? myCourses : popularCourses),
-    [popularCourses, myCourses, tab]
-  );
-
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: F.body, paddingBottom: 60 }}>
       {/* Hero */}
@@ -105,16 +95,6 @@ export default function InstitutHomeClient({
           </div>
         )}
 
-        {/* Favoris */}
-        {favorites.length > 0 && (
-          <div style={{ marginBottom: 28 }}>
-            <h2 style={sectionTitle}>❤️ Mes favoris</h2>
-            <div className="institut-grid">
-              {favorites.map((c) => <CourseCard key={c.id} course={c} />)}
-            </div>
-          </div>
-        )}
-
         {/* Facultés */}
         <h2 style={sectionTitle}>📚 Explore par faculté</h2>
         {categories.length === 0 ? (
@@ -163,43 +143,6 @@ export default function InstitutHomeClient({
                 </div>
               </Link>
             ))}
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div style={{
-          display: "flex", gap: 0, borderBottom: `1px solid ${T.border}`,
-          marginBottom: 16, marginTop: 8,
-        }}>
-          {([
-            { id: "discover", label: "🌟 Découvrir", count: popularCourses.length },
-            { id: "mine",     label: "🎯 Mes formations", count: myCourses.length },
-          ] as const).map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
-              padding: "10px 16px", background: "none", border: "none",
-              borderBottom: `2px solid ${tab === t.id ? T.gold : "transparent"}`,
-              color: tab === t.id ? T.gold : T.textMuted,
-              fontWeight: tab === t.id ? 700 : 500, fontSize: 13,
-              cursor: "pointer", whiteSpace: "nowrap", fontFamily: F.body,
-            }}>
-              {t.label} · {t.count}
-            </button>
-          ))}
-        </div>
-
-        {/* Liste cours */}
-        {filtered.length === 0 ? (
-          <div style={emptyState}>
-            <div style={{ fontSize: 44, marginBottom: 8 }}>🎓</div>
-            <div style={{ color: T.textMuted, fontSize: 14 }}>
-              {tab === "mine"
-                ? "Tu n'as pas encore démarré de formation."
-                : "Aucune formation pour l'instant. Reviens bientôt !"}
-            </div>
-          </div>
-        ) : (
-          <div className="institut-grid">
-            {filtered.map((c) => <CourseCard key={c.id} course={c} />)}
           </div>
         )}
       </div>
