@@ -14,10 +14,19 @@ const BOOTCAMP_DATE = "2026-06-26T08:00:00+01:00";
 const BOOTCAMP_URL = "https://bootcamp.centrechretienberakah.com";
 
 export default function LandingClient() {
-  // App dark-only immersif : on force le thème sombre sur la landing.
+  // La landing s'affiche en sombre immersif, MAIS sans écraser la préférence
+  // de thème de l'utilisateur (sinon son choix « clair » est perdu au passage
+  // sur l'accueil). On force juste l'affichage le temps de la page, puis on
+  // restaure son thème réel en quittant.
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", "dark");
-    try { localStorage.setItem("ccb-theme", "dark"); } catch { /* noop */ }
+    return () => {
+      try {
+        const saved = localStorage.getItem("ccb-theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute("data-theme", saved || (prefersDark ? "dark" : "light"));
+      } catch { /* noop */ }
+    };
   }, []);
 
   return (
