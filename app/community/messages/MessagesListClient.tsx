@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import MessagingTabs from "./MessagingTabs";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
-import { canCreateGroup, GROUP_CATEGORIES } from "@/lib/groups/theme";
+import { canCreateGroup, GROUP_CATEGORIES, getGroupCategoryDef } from "@/lib/groups/theme";
 import { notifyGroupsStaff } from "@/lib/groups/theme";
-import type { Discussion, CallLogItem } from "./page";
+import type { Discussion, CallLogItem, DiscoverGroup } from "./page";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "";
@@ -26,9 +26,11 @@ function initialsOf(name: string) {
 
 type Filter = "tous" | "prives" | "groupes" | "nonlus" | "historique";
 
-export default function MessagesListClient({ discussions, currentUserId, callLog, userRole }: { discussions: Discussion[]; currentUserId: string; callLog: CallLogItem[]; userRole: string | null }) {
+export default function MessagesListClient({ discussions, discoverGroups, currentUserId, callLog, userRole }: { discussions: Discussion[]; discoverGroups: DiscoverGroup[]; currentUserId: string; callLog: CallLogItem[]; userRole: string | null }) {
   const router = useRouter();
   const [items, setItems] = useState<Discussion[]>(discussions);
+  const [discover, setDiscover] = useState<DiscoverGroup[]>(discoverGroups);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("tous");
   const [showNew, setShowNew] = useState(false);
@@ -108,6 +110,19 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
     try {
       notifyGroupsStaff(`🧑‍🤝‍🧑 Nouveau groupe : ${g.name}`, gType === "public" ? "Public" : "Privé", `/community/groups/${g.id}`);
     } catch { /* noop */ }
+    router.push(`/community/groups/${g.id}`);
+  }
+
+  async function joinGroup(g: DiscoverGroup) {
+    if (joiningId) return;
+    setJoiningId(g.id);
+    const supabase = createClient();
+    const { error } = await supabase.from("group_members").insert({
+      group_id: g.id, user_id: currentUserId, role: "member",
+    });
+    setJoiningId(null);
+    if (error) { alert("Impossible de rejoindre : " + error.message); return; }
+    setDiscover((arr) => arr.filter((x) => x.id !== g.id));
     router.push(`/community/groups/${g.id}`);
   }
 
@@ -274,6 +289,37 @@ export default function MessagesListClient({ discussions, currentUserId, callLog
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Groupes publics à découvrir — visibles par TOUS les membres */}
+        {(filter === "tous" || filter === "groupes") && discover.length > 0 && (
+          <div style={{ marginTop: items.length === 0 ? 0 : 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px", paddingLeft: 2 }}>
+              🧭 Groupes à découvrir
+            </div>
+            <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
+              {discover.map((g, i) => {
+                const cat = getGroupCategoryDef(g.category);
+                return (
+                  <div key={g.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderTop: i === 0 ? "none" : `1px solid ${T.borderSoft}` }}>
+                    <Link href={`/community/groups/${g.id}`} style={{ flexShrink: 0, width: 48, height: 48, borderRadius: "50%", background: g.cover_url ? `url(${g.cover_url}) center/cover` : `linear-gradient(135deg, ${T.violet}, ${T.violetDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 18, textDecoration: "none", textTransform: "uppercase" }}>
+                      {!g.cover_url && (g.name?.[0] ?? "?")}
+                    </Link>
+                    <Link href={`/community/groups/${g.id}`} style={{ flex: 1, minWidth: 0, textDecoration: "none", color: T.text }}>
+                      <div style={{ fontWeight: 700, fontSize: 14.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.name}</div>
+                      <div style={{ fontSize: 12.5, color: T.textMuted, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {cat.emoji} {cat.label} · {g.member_count} membre{g.member_count > 1 ? "s" : ""}
+                      </div>
+                    </Link>
+                    <button onClick={() => joinGroup(g)} disabled={joiningId === g.id}
+                      style={{ flexShrink: 0, padding: "7px 14px", background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`, color: "#1a1206", border: "none", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: joiningId === g.id ? "wait" : "pointer" }}>
+                      {joiningId === g.id ? "…" : "＋ Rejoindre"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

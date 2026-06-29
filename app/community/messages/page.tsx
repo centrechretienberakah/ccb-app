@@ -19,6 +19,17 @@ export interface Discussion {
   unreadCount: number;
 }
 
+/** Groupe public que l'utilisateur n'a pas encore rejoint (annuaire « à découvrir »). */
+export interface DiscoverGroup {
+  id: string;
+  name: string;
+  cover_url: string | null;
+  type: "public" | "private";
+  category: string | null;
+  description: string | null;
+  member_count: number;
+}
+
 export interface CallLogItem {
   id: string;
   otherName: string;
@@ -47,6 +58,7 @@ export default async function DiscussionsPage() {
   } catch { /* noop */ }
 
   const discussions: Discussion[] = [];
+  const joinedGroupIds = new Set<string>();
 
   // ─── 1. Conversations privées / mini-groupes (système DM) ───────────
   try {
@@ -122,6 +134,7 @@ export default async function DiscussionsPage() {
     const { data: gm } = await supabase
       .from("group_members").select("group_id").eq("user_id", user.id);
     const gids = [...new Set(((gm ?? []) as Array<{ group_id: string }>).map((r) => r.group_id))];
+    gids.forEach((id) => joinedGroupIds.add(id));
     if (gids.length > 0) {
       type GRow = { id: string; name: string; cover_url: string | null; last_message_content: string | null; last_message_attachment_type: string | null; last_message_at: string | null };
       let grows: GRow[] = [];
@@ -159,6 +172,31 @@ export default async function DiscussionsPage() {
       }
     }
   } catch { /* tables groupes non migrées → pas de groupes */ }
+
+  // ─── 2-bis. Groupes PUBLICS à découvrir (non encore rejoints) ───────
+  //   Visibles par TOUS les membres pour qu'ils puissent les rejoindre.
+  //   group_summary contourne la RLS et exclut déjà les archivés (v84).
+  let discoverGroups: DiscoverGroup[] = [];
+  try {
+    const { data } = await supabase
+      .from("group_summary")
+      .select("id, name, cover_url, type, category, description, member_count")
+      .eq("type", "public")
+      .order("member_count", { ascending: false })
+      .limit(100);
+    discoverGroups = ((data ?? []) as DiscoverGroup[]).filter((g) => !joinedGroupIds.has(g.id));
+  } catch {
+    // Repli : table groups (RLS → publics non archivés uniquement)
+    try {
+      const { data } = await supabase
+        .from("groups")
+        .select("id, name, cover_url, type, category, description")
+        .eq("type", "public").eq("is_archived", false).limit(100);
+      discoverGroups = ((data ?? []) as Array<Omit<DiscoverGroup, "member_count">>)
+        .map((g) => ({ ...g, member_count: 0 }))
+        .filter((g) => !joinedGroupIds.has(g.id));
+    } catch { /* pas d'annuaire */ }
+  }
 
   // ─── 3. Fusion + tri par dernier message (récent → ancien) ──────────
   discussions.sort((a, b) => tsOf(b.lastMessageAt) - tsOf(a.lastMessageAt));
@@ -220,5 +258,5 @@ export default async function DiscussionsPage() {
     });
   } catch { /* table calls absente → journal vide */ }
 
-  return <MessagesListClient discussions={discussions} currentUserId={user.id} callLog={callLog} userRole={userRole} />;
+  return <MessagesListClient discussions={discussions} discoverGroups={discoverGroups} currentUserId={user.id} callLog={callLog} userRole={userRole} />;
 }
