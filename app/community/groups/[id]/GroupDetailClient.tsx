@@ -9,7 +9,7 @@ import { GROUPS_THEME as T, GROUPS_FONTS as F, getGroupCategoryDef, notifyGroups
 import { notifyGroupMention, notifyGroupMeeting, notifyNewMember, notifyGroupMessage } from "@/lib/groups/notify";
 import { ringCall } from "@/lib/meet/calls";
 import { getMentionedUserIds, renderSegments, type MemberLookup } from "@/lib/community/mentions";
-import { linkify } from "@/lib/community/linkify";
+import { formatInline } from "@/lib/community/richText";
 import MentionTextarea from "@/components/community/MentionTextarea";
 import VoiceComposerButton from "@/components/community/VoiceComposerButton";
 
@@ -1717,7 +1717,10 @@ export default function GroupDetailClient({
                         members={memberLookup}
                         placeholder={pendingAttachment ? "Légende (optionnel)…" : "Message"}
                         multiline
-                        rows={1}
+                        rows={3}
+                        toolbar
+                        autoGrow
+                        maxHeight={180}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
@@ -1731,6 +1734,7 @@ export default function GroupDetailClient({
                           color: T.text, fontSize: 15,
                           fontFamily: F.body, outline: "none",
                           resize: "none",
+                          minHeight: 66, maxHeight: 180, overflowY: "auto",
                         } as React.CSSProperties}
                       />
                     </div>
@@ -2143,7 +2147,7 @@ function MenuItem({ icon, label, onClick, href, danger = false }: {
 }
 
 function ContentWithMentions({ content, members }: { content: string; members: MemberLookup[] }) {
-  if (members.length === 0) return <>{linkify(content)}</>;
+  if (members.length === 0) return <>{formatInline(content)}</>;
   const segments = renderSegments(content, members);
   return (
     <>
@@ -2156,8 +2160,8 @@ function ContentWithMentions({ content, members }: { content: string; members: M
             </Link>
           );
         }
-        // Texte normal : on rend les URL cliquables.
-        return <span key={i}>{linkify(s.content)}</span>;
+        // Texte normal : mise en forme (gras/italique/barré) + URL cliquables.
+        return <span key={i}>{formatInline(s.content)}</span>;
       })}
     </>
   );

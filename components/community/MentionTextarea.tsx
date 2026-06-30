@@ -13,13 +13,46 @@ interface Props {
   style?: React.CSSProperties;
   onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => void;
   autoFocus?: boolean;
+  /** Affiche la barre de mise en forme (gras / italique / barré). */
+  toolbar?: boolean;
+  /** Le champ s'agrandit automatiquement avec le contenu (jusqu'à maxHeight). */
+  autoGrow?: boolean;
+  /** Hauteur maxi en px quand autoGrow est actif (puis défilement). */
+  maxHeight?: number;
 }
 
 export default function MentionTextarea({
   value, onChange, members, placeholder, rows = 3,
   multiline = true, style, onKeyDown, autoFocus,
+  toolbar = false, autoGrow = false, maxHeight = 180,
 }: Props) {
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
+
+  // Auto-agrandissement : la hauteur suit le contenu (jusqu'à maxHeight).
+  useEffect(() => {
+    if (!autoGrow || !multiline) return;
+    const el = inputRef.current as HTMLTextAreaElement | null;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, maxHeight) + "px";
+  }, [value, autoGrow, multiline, maxHeight]);
+
+  // Entoure la sélection avec un marqueur (*gras*, _italique_, ~barré~).
+  function wrapSelection(mark: string) {
+    const el = inputRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? value.length;
+    const end = el.selectionEnd ?? value.length;
+    const sel = value.slice(start, end);
+    const chunk = sel || "texte";
+    const next = value.slice(0, start) + mark + chunk + mark + value.slice(end);
+    onChange(next);
+    setTimeout(() => {
+      el.focus();
+      if (sel) el.setSelectionRange(start + mark.length, end + mark.length);
+      else el.setSelectionRange(start + mark.length, start + mark.length + chunk.length);
+    }, 0);
+  }
   const [suggestions, setSuggestions] = useState<MemberLookup[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -123,6 +156,13 @@ export default function MentionTextarea({
 
   return (
     <div style={{ position: "relative" }}>
+      {toolbar && multiline && (
+        <div style={{ display: "flex", gap: 4, marginBottom: 5 }}>
+          <FmtBtn title="Gras (*texte*)" onClick={() => wrapSelection("*")} textStyle={{ fontWeight: 800 }}>B</FmtBtn>
+          <FmtBtn title="Italique (_texte_)" onClick={() => wrapSelection("_")} textStyle={{ fontStyle: "italic" }}>I</FmtBtn>
+          <FmtBtn title="Barré (~texte~)" onClick={() => wrapSelection("~")} textStyle={{ textDecoration: "line-through" }}>S</FmtBtn>
+        </div>
+      )}
       <InputEl
         ref={inputRef as React.RefObject<HTMLTextAreaElement & HTMLInputElement>}
         value={value}
@@ -134,6 +174,7 @@ export default function MentionTextarea({
         style={style}
       />
 
+      {/* placeholder pour conserver la structure (suggestions ci-dessous) */}
       {showSuggestions && suggestions.length > 0 && (
         <div style={{
           position: "absolute", top: "100%", left: 0, marginTop: 4,
@@ -186,5 +227,36 @@ export default function MentionTextarea({
         </div>
       )}
     </div>
+  );
+}
+
+// Bouton de la barre de mise en forme. onMouseDown + preventDefault pour ne pas
+// perdre la sélection du textarea au clic.
+function FmtBtn({
+  children, title, onClick, textStyle,
+}: {
+  children: React.ReactNode;
+  title: string;
+  onClick: () => void;
+  textStyle?: React.CSSProperties;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+      style={{
+        minWidth: 30, height: 26, padding: "0 8px",
+        borderRadius: 7, cursor: "pointer",
+        background: "var(--surface-2, rgba(255,255,255,0.06))",
+        border: "1px solid var(--border, rgba(255,255,255,0.14))",
+        color: "var(--text-secondary, #ccc)", fontSize: 13,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        ...textStyle,
+      }}
+    >
+      {children}
+    </button>
   );
 }

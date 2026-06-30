@@ -6,7 +6,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
 import VoiceComposerButton from "@/components/community/VoiceComposerButton";
-import { linkify } from "@/lib/community/linkify";
+import MentionTextarea from "@/components/community/MentionTextarea";
+import { formatInline } from "@/lib/community/richText";
 import type { DmMessageRow, DmOther } from "./page";
 
 const COMPOSER_EMOJIS = ["😀","😂","😍","🥰","😅","😊","🙏","🔥","❤️","👍","🙌","🎉","✨","🕊️","💪","😢","😮","🤔","🙇","🥳","😇","👏","🤝","📖"];
@@ -471,7 +472,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
                     {/* Text */}
                     {(m.content || m.is_deleted) && (
                       <div style={{ fontSize: 14.5, lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word", fontStyle: m.is_deleted ? "italic" : "normal", opacity: m.is_deleted ? 0.7 : 1, marginTop: m.attachment_url ? 6 : 0 }}>
-                        {m.is_deleted ? "Message supprimé" : linkify(m.content || "")}
+                        {m.is_deleted ? "Message supprimé" : formatInline(m.content || "")}
                       </div>
                     )}
                     <div style={{ fontSize: 10, textAlign: "right", marginTop: 2, color: mine ? "rgba(255,255,255,0.7)" : T.textMuted }}>
@@ -575,14 +576,21 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
           {/* Pill : emoji + texte + joindre + photo */}
           <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-end", gap: 2, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 22, padding: "2px 6px 2px 4px" }}>
             <button onClick={() => setShowEmoji((v) => !v)} title="Emoji" style={pillIcon}>😊</button>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={editing ? "Modifier le message…" : "Message"}
-              rows={1}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-              style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: "9px 4px", background: "transparent", border: "none", color: T.text, fontSize: 15, fontFamily: F.body, outline: "none", resize: "none", maxHeight: 120, lineHeight: 1.4 }}
-            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <MentionTextarea
+                value={text}
+                onChange={setText}
+                members={[]}
+                placeholder={editing ? "Modifier le message…" : "Message"}
+                multiline
+                rows={3}
+                toolbar
+                autoGrow
+                maxHeight={180}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                style={{ width: "100%", boxSizing: "border-box", padding: "9px 4px", background: "transparent", border: "none", color: T.text, fontSize: 15, fontFamily: F.body, outline: "none", resize: "none", minHeight: 66, maxHeight: 180, overflowY: "auto", lineHeight: 1.4 } as React.CSSProperties}
+              />
+            </div>
             {!editing && <button onClick={() => fileRef.current?.click()} disabled={uploading} title="Joindre un fichier" style={pillIcon}>{uploading ? "⏳" : "📎"}</button>}
             {!editing && <button onClick={() => camRef.current?.click()} title="Appareil photo" style={pillIcon}>📷</button>}
           </div>
