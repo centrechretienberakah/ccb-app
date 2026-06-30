@@ -4,6 +4,7 @@ import { Cinzel, Montserrat } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 import RegisterSW from "@/components/pwa/RegisterSW";
+import NativePushRegistrar from "@/components/native/NativePushRegistrar";
 import BuildCheck from "@/components/pwa/BuildCheck";
 import ChunkErrorReload from "@/components/pwa/ChunkErrorReload";
 import { CallProvider } from "@/lib/meet/CallContext";
@@ -83,6 +84,7 @@ export default async function RootLayout({
           <IncomingCallHost />
         </CallProvider>
         <RegisterSW />
+        <NativePushRegistrar />
       </body>
     </html>
   );

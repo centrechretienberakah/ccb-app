@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { createClient as createSupabaseAdmin, type SupabaseClient } from "@supabase/supabase-js";
 import webpush from "web-push";
+import { sendNativePush } from "@/lib/native/sendNative";
 
 export const runtime = "nodejs"; // web-push utilise des modules Node
 
@@ -53,6 +54,45 @@ interface PushSubscriptionRow {
   enabled: boolean;
 }
 
+/**
+ * Résout la liste des user_ids cibles pour l'envoi NATIF (FCM), selon la même
+ * sémantique d'audience que le web-push. `null` = tous les appareils.
+ */
+async function resolveNativeTargets(
+  admin: SupabaseClient,
+  opts: { audience?: string; userIds?: unknown; groupId?: unknown; conversationId?: unknown; excludeMuted?: boolean; selfId: string },
+): Promise<string[] | null> {
+  const { audience, userIds, groupId, conversationId, excludeMuted, selfId } = opts;
+  try {
+    if (audience === "admins") {
+      const { data } = await admin.from("user_roles").select("user_id").in("role", ["owner", "admin", "leader", "moderator"]);
+      return ((data ?? []) as Array<{ user_id: string }>).map((r) => r.user_id).filter((id) => id !== selfId);
+    }
+    if (audience === "user_ids" && Array.isArray(userIds)) {
+      return (userIds as string[]).filter((id) => typeof id === "string");
+    }
+    if (audience === "group_members" && typeof groupId === "string") {
+      const { data } = await admin.from("group_members").select("user_id").eq("group_id", groupId).neq("user_id", selfId);
+      let ids = ((data ?? []) as Array<{ user_id: string }>).map((r) => r.user_id);
+      if (excludeMuted !== false && ids.length > 0) {
+        try {
+          const { data: muted } = await admin.from("group_user_state").select("user_id, muted_until").eq("group_id", groupId).in("user_id", ids);
+          const nowIso = new Date().toISOString();
+          const mset = new Set(((muted ?? []) as Array<{ user_id: string; muted_until: string | null }>)
+            .filter((m) => m.muted_until && m.muted_until > nowIso).map((m) => m.user_id));
+          ids = ids.filter((id) => !mset.has(id));
+        } catch { /* table v39 absente */ }
+      }
+      return ids;
+    }
+    if (audience === "conversation_members" && typeof conversationId === "string") {
+      const { data } = await admin.from("conversation_members").select("user_id").eq("conversation_id", conversationId).neq("user_id", selfId);
+      return ((data ?? []) as Array<{ user_id: string }>).map((r) => r.user_id);
+    }
+  } catch { /* best-effort */ }
+  return null; // audience "all" / défaut
+}
+
 // POST /api/notifications/send
 // Body : { title, body, url?, audience?: "all" | "admins" | "user_ids" | "group_members", userIds?: string[], groupId?: string }
 //
@@ -83,6 +123,15 @@ export async function POST(req: NextRequest) {
   if (!admin) {
     return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY non configurée" }, { status: 500 });
   }
+
+  // ── Notifications NATIVES (FCM) — en PLUS du web-push (Phase 2) ──
+  // Best-effort : ne bloque jamais l'envoi web. No-op si FIREBASE_SERVICE_ACCOUNT
+  // absent ou aucun token natif. Couvre aussi les appareils sans web-push.
+  const nativeTargets = await resolveNativeTargets(admin, {
+    audience, userIds, groupId, conversationId, excludeMuted, selfId: auth.userId,
+  });
+  const native = await sendNativePush(admin, nativeTargets, { title, body, url, type, tag })
+    .catch(() => ({ sent: 0, failed: 0 }));
 
   // Récupère les subscriptions cibles
   let query = admin.from("push_subscriptions")
@@ -253,5 +302,5 @@ export async function POST(req: NextRequest) {
     });
   } catch { /* noop */ }
 
-  return NextResponse.json({ sent, failed, invalidated: invalidEndpoints.length });
+  return NextResponse.json({ sent, failed, invalidated: invalidEndpoints.length, native });
 }
