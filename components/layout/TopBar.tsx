@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { IconSearch, IconBell, IconMoon, IconSun, IconMenu, IconUsers } from "@/components/icons";
 import GlobalSearch from "./GlobalSearch";
+import { applyThemeEverywhere } from "@/lib/theme/theme";
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":     "Accueil",
@@ -93,8 +94,7 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
   function toggleTheme() {
     const next = !dark;
     setDark(next);
-    document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
-    localStorage.setItem("ccb-theme", next ? "dark" : "light");
+    applyThemeEverywhere(next ? "dark" : "light");
   }
 
   const title = Object.entries(PAGE_TITLES).find(([key]) =>

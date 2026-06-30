@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { applyThemeEverywhere } from "@/lib/theme/theme";
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
@@ -19,9 +20,7 @@ export default function ThemeToggle() {
   function toggle() {
     const next = !dark;
     setDark(next);
-    const theme = next ? "dark" : "light";
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("ccb-theme", theme);
+    applyThemeEverywhere(next ? "dark" : "light");
   }
 
   if (!mounted) return null;

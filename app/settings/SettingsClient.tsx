@@ -8,6 +8,7 @@ import { userTimeZone, setUserTimeZoneLocal, COMMON_TIMEZONES } from "@/lib/time
 import { isDataSaverEnabled, setDataSaver, isPreloadEnabled, setPreload } from "@/lib/net/dataSaver";
 import DataUsageCard from "@/components/system/DataUsageCard";
 import InstallAppButton from "@/components/pwa/InstallAppButton";
+import { applyThemeEverywhere } from "@/lib/theme/theme";
 
 // ─── Types ────────────────────────────────────────────────────
 interface Profile {
@@ -98,8 +99,7 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
 
   function applyTheme(dark: boolean) {
     setIsDark(dark);
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-    localStorage.setItem("ccb-theme", dark ? "dark" : "light");
+    applyThemeEverywhere(dark ? "dark" : "light");
   }
 
   // ── Notifications prefs (local only — stored in localStorage) ──
