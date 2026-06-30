@@ -39,16 +39,29 @@ export default function RegisterSW() {
       window.location.reload();
     });
 
-    // Prompt d'installation PWA
+    // Prompt d'installation PWA — on PARTAGE l'événement (window + custom event)
+    // pour que le bouton permanent des Réglages puisse le réutiliser.
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      (window as unknown as { __ccbInstallPrompt?: Event }).__ccbInstallPrompt = e;
+      window.dispatchEvent(new Event("ccb:installable"));
       if (!window.matchMedia("(display-mode: standalone)").matches) {
         setTimeout(() => setShowInstall(true), 4000);
       }
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+    // Quand l'app est installée : on nettoie l'invite partagée.
+    const onInstalled = () => {
+      (window as unknown as { __ccbInstallPrompt?: Event }).__ccbInstallPrompt = undefined;
+      window.dispatchEvent(new Event("ccb:installed"));
+      setShowInstall(false);
+    };
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
   }, []);
 
   async function handleInstall() {
@@ -57,6 +70,7 @@ export default function RegisterSW() {
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") setShowInstall(false);
     setDeferredPrompt(null);
+    (window as unknown as { __ccbInstallPrompt?: Event }).__ccbInstallPrompt = undefined;
   }
 
   if (!showInstall) return null;

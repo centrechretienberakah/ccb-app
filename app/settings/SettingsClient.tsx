@@ -7,6 +7,7 @@ import { usePushNotifications } from "@/lib/push-notifications";
 import { userTimeZone, setUserTimeZoneLocal, COMMON_TIMEZONES } from "@/lib/time/tz";
 import { isDataSaverEnabled, setDataSaver, isPreloadEnabled, setPreload } from "@/lib/net/dataSaver";
 import DataUsageCard from "@/components/system/DataUsageCard";
+import InstallAppButton from "@/components/pwa/InstallAppButton";
 
 // ─── Types ────────────────────────────────────────────────────
 interface Profile {
@@ -381,6 +382,11 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
             ))}
           </div>
         </div>
+      </SectionCard>
+
+      {/* ── Section Application (installation PWA) ── */}
+      <SectionCard title="Application" icon="📱">
+        <InstallAppButton />
       </SectionCard>
 
       {/* ── Section Notifications PUSH (navigateur/PWA) ── */}
