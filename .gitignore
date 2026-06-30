@@ -40,3 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .claude/
+
+# Android / Capacitor — secrets de signature et config Firebase (NE PAS versionner)
+keystore.properties
+android/keystore.properties
+*.jks
+*.keystore
+android/app/google-services.json

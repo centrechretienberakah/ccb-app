@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Famille Berakah</title>
+  <style>
+    :root { --violet:#5A2CA0; --violet-dark:#3d1a72; --gold:#D4AF37; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: radial-gradient(120% 120% at 50% 0%, var(--violet) 0%, var(--violet-dark) 70%, #0f0a1e 100%);
+      color: #fff;
+      font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 24px; -webkit-tap-highlight-color: transparent;
+    }
+    .logo {
+      width: 96px; height: 96px; border-radius: 22px; object-fit: cover;
+      box-shadow: 0 10px 40px rgba(0,0,0,.45); border: 2px solid rgba(212,175,55,.5);
+      background: #fff;
+    }
+    h1 { font-size: 20px; font-weight: 800; letter-spacing: .04em; margin: 18px 0 2px; }
+    .gold { color: var(--gold); }
+    p { font-size: 13px; opacity: .8; margin: 6px 0 0; max-width: 280px; line-height: 1.5; }
+    .spinner {
+      margin-top: 22px; width: 30px; height: 30px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,.18); border-top-color: var(--gold);
+      animation: spin .9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .retry {
+      display: none; margin-top: 22px; background: var(--gold); color: #1a1206;
+      border: none; border-radius: 999px; padding: 11px 22px; font-size: 14px; font-weight: 800; cursor: pointer;
+    }
+    .offline .spinner { display: none; }
+    .offline .retry { display: inline-block; }
+    .offline .status { display: block; }
+    .status { display: none; margin-top: 14px; font-size: 13px; color: #ffd; }
+  </style>
+</head>
+<body>
+  <img class="logo" src="./icon-512x512.png" alt="Famille Berakah" onerror="this.style.display='none'" />
+  <h1>Famille <span class="gold">Berakah</span></h1>
+  <p>Centre Chrétien Berakah</p>
+  <div class="spinner" id="spinner"></div>
+  <div class="status">Connexion indisponible. Vérifie ta connexion Internet.</div>
+  <button class="retry" onclick="location.reload()">Réessayer</button>
+
+  <script>
+    // Cette page n'est qu'un écran de secours embarqué. Le contenu réel de
+    // l'application est chargé depuis le serveur (server.url). Si l'appareil est
+    // hors-ligne au démarrage, on affiche un message + bouton « Réessayer ».
+    function check() {
+      if (!navigator.onLine) document.body.classList.add('offline');
+      else document.body.classList.remove('offline');
+    }
+    window.addEventListener('online', check);
+    window.addEventListener('offline', check);
+    check();
+  </script>
+</body>
+</html>
