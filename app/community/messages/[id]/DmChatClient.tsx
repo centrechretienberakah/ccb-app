@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { COMMUNITY_THEME as T, COMMUNITY_FONTS as F } from "@/lib/community/theme";
 import VoiceComposerButton from "@/components/community/VoiceComposerButton";
+import { linkify } from "@/lib/community/linkify";
 import type { DmMessageRow, DmOther } from "./page";
 
 const COMPOSER_EMOJIS = ["😀","😂","😍","🥰","😅","😊","🙏","🔥","❤️","👍","🙌","🎉","✨","🕊️","💪","😢","😮","🤔","🙇","🥳","😇","👏","🤝","📖"];
@@ -470,7 +471,7 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
                     {/* Text */}
                     {(m.content || m.is_deleted) && (
                       <div style={{ fontSize: 14.5, lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word", fontStyle: m.is_deleted ? "italic" : "normal", opacity: m.is_deleted ? 0.7 : 1, marginTop: m.attachment_url ? 6 : 0 }}>
-                        {m.is_deleted ? "Message supprimé" : m.content}
+                        {m.is_deleted ? "Message supprimé" : linkify(m.content || "")}
                       </div>
                     )}
                     <div style={{ fontSize: 10, textAlign: "right", marginTop: 2, color: mine ? "rgba(255,255,255,0.7)" : T.textMuted }}>

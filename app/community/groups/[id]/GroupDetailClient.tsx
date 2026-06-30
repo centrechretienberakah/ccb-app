@@ -9,6 +9,7 @@ import { GROUPS_THEME as T, GROUPS_FONTS as F, getGroupCategoryDef, notifyGroups
 import { notifyGroupMention, notifyGroupMeeting, notifyNewMember, notifyGroupMessage } from "@/lib/groups/notify";
 import { ringCall } from "@/lib/meet/calls";
 import { getMentionedUserIds, renderSegments, type MemberLookup } from "@/lib/community/mentions";
+import { linkify } from "@/lib/community/linkify";
 import MentionTextarea from "@/components/community/MentionTextarea";
 import VoiceComposerButton from "@/components/community/VoiceComposerButton";
 
@@ -2142,7 +2143,7 @@ function MenuItem({ icon, label, onClick, href, danger = false }: {
 }
 
 function ContentWithMentions({ content, members }: { content: string; members: MemberLookup[] }) {
-  if (members.length === 0) return <>{content}</>;
+  if (members.length === 0) return <>{linkify(content)}</>;
   const segments = renderSegments(content, members);
   return (
     <>
@@ -2155,7 +2156,8 @@ function ContentWithMentions({ content, members }: { content: string; members: M
             </Link>
           );
         }
-        return <span key={i}>{s.content}</span>;
+        // Texte normal : on rend les URL cliquables.
+        return <span key={i}>{linkify(s.content)}</span>;
       })}
     </>
   );
