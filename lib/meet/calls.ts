@@ -108,6 +108,20 @@ export async function pushCallNotification(opts: {
       const data = await res.json();
       if (typeof window !== "undefined") console.log("[CCB call] push appel →", res.status, data);
     } catch { /* noop */ }
+
+    // Écran d'appel NATIF (plein format, façon WhatsApp) — Phase 2 étape 2.
+    // Message FCM data-only : ne fait rien sur web/PWA ; sur l'app Android,
+    // déclenche l'écran d'appel entrant même app fermée/verrouillée.
+    void fetch("/api/native/call-invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: opts.type,
+        conversationId: opts.conversationId ?? undefined,
+        groupId: opts.groupId ?? undefined,
+        groupName: opts.groupName ?? undefined,
+      }),
+    }).catch(() => { /* best-effort */ });
   } catch (e) {
     if (typeof window !== "undefined") console.warn("[CCB call] pushCallNotification erreur réseau :", e);
   }

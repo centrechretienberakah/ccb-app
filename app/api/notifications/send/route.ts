@@ -127,7 +127,9 @@ export async function POST(req: NextRequest) {
   // ── Notifications NATIVES (FCM) — en PLUS du web-push (Phase 2) ──
   // Best-effort : ne bloque jamais l'envoi web. No-op si FIREBASE_SERVICE_ACCOUNT
   // absent ou aucun token natif. Couvre aussi les appareils sans web-push.
-  const nativeTargets = await resolveNativeTargets(admin, {
+  // Les appels (type "call") passent par l'écran plein format natif
+  // (/api/native/call-invite, message data-only) → pas de notif FCM classique ici.
+  const nativeTargets = type === "call" ? [] : await resolveNativeTargets(admin, {
     audience, userIds, groupId, conversationId, excludeMuted, selfId: auth.userId,
   });
   const native = await sendNativePush(admin, nativeTargets, { title, body, url, type, tag })

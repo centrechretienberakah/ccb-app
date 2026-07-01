@@ -82,6 +82,8 @@ export interface FcmMessage {
   data?: Record<string, string>;
   channelId?: string;
   priority?: "high" | "normal";
+  /** Durée de vie du message (s). Utile pour les appels (~45 s). */
+  ttlSeconds?: number;
 }
 
 export interface FcmResult {
@@ -109,13 +111,19 @@ export async function sendFcm(tokens: string[], msg: FcmMessage): Promise<FcmRes
     const message: Record<string, unknown> = { token };
     if (msg.title || msg.body) message.notification = { title: msg.title ?? "", body: msg.body ?? "" };
     if (msg.data) message.data = msg.data;
-    message.android = {
+    const android: Record<string, unknown> = {
       priority: msg.priority === "normal" ? "NORMAL" : "HIGH",
-      notification: {
+    };
+    if (msg.ttlSeconds) android.ttl = `${msg.ttlSeconds}s`;
+    // Bloc "notification" seulement pour les messages d'AFFICHAGE (title/body).
+    // Les messages data-only (appels) le laissent vide → le natif gère l'UI.
+    if (msg.title || msg.body) {
+      android.notification = {
         ...(msg.channelId ? { channel_id: msg.channelId } : {}),
         default_sound: true,
-      },
-    };
+      };
+    }
+    message.android = android;
     try {
       const res = await fetch(url, {
         method: "POST",

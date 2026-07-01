@@ -1,5 +1,28 @@
 # 📞 Phase 2 · Étape 2 — Appels entrants façon WhatsApp (blueprint)
 
+> ## ✅ ÉTAT : IMPLÉMENTÉ (Option A) — à compiler & tester dans Android Studio
+> **Côté serveur (vérifié : tsc + build OK)** :
+> - `lib/native/callInvite.ts` + `POST /api/native/call-invite` (message FCM data-only,
+>   haute priorité, TTL 45 s) ; `lib/meet/calls.ts` (`pushCallNotification`) l'appelle
+>   automatiquement quand un appel sonne ; `/api/notifications/send` n'envoie plus de
+>   notif FCM classique pour `type:"call"` (évite le doublon).
+>
+> **Côté natif (Java, à tester sur appareil)** :
+> - `android/app/src/main/java/com/centrechretienberakah/app/CallMessagingService.java`
+> - `…/IncomingCallActivity.java` (écran plein format, sonnerie, vibration, Accepter/Refuser)
+> - `…/MainActivity.java` (ouvre l'URL d'appel dans la WebView à l'acceptation)
+> - `AndroidManifest.xml` : service FCM + IncomingCallActivity + `USE_FULL_SCREEN_INTENT`.
+>
+> **⚠️ À surveiller au 1er test (voir §6)** : notre `CallMessagingService` et celui du
+> plugin `@capacitor/push-notifications` déclarent tous deux le même service FCM. Le
+> token reste OK (le plugin utilise `getToken()` côté JS). Mais si les **notifs normales**
+> ne s'affichent plus, il faudra ajuster (faire de notre service l'unique et y ré-afficher
+> les notifs simples). **Prérequis** : Firebase activé (`GUIDE_FIREBASE_DEBUTANT.md`) +
+> `npx cap sync android` + rebuild. Envoie-moi les erreurs/logs, on itère.
+
+---
+
+
 > ⚠️ **À lire d'abord.** Cette étape est du **code natif Android (Kotlin)** qui doit
 > être **compilé et testé sur un vrai téléphone dans Android Studio**. Il ne peut pas
 > être vérifié depuis l'environnement de génération du code. Ce document est le
