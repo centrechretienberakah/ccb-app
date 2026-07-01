@@ -57,6 +57,10 @@
             android:excludeFromRecents="true"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme.NoActionBarLaunch" />
+
+        <receiver
+            android:name=".CallActionReceiver"
+            android:exported="false" />
     </application>
 
     <!-- ─── Permissions ─────────────────────────────────────────────── -->

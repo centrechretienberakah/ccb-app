@@ -85,6 +85,17 @@ public class CallMessagingService extends FirebaseMessagingService {
                 : (callerName != null ? callerName : "Appel entrant");
         String text = "video".equals(data.get("callType")) ? "Appel vidéo entrant" : "Appel audio entrant";
 
+        // Action « Refuser » (broadcast → ferme notif + écran)
+        Intent declineIntent = new Intent(this, CallActionReceiver.class);
+        declineIntent.setAction(CallActionReceiver.ACTION_DECLINE);
+        PendingIntent declinePI = PendingIntent.getBroadcast(this, CALL_NOTIF_ID + 1, declineIntent, piFlags);
+
+        // Action « Accepter » → ouvre l'app sur la page d'appel (rejoint LiveKit)
+        Intent acceptIntent = new Intent(this, MainActivity.class);
+        acceptIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        acceptIntent.putExtra("openUrl", data.get("roomUrl"));
+        PendingIntent acceptPI = PendingIntent.getActivity(this, CALL_NOTIF_ID + 2, acceptIntent, piFlags);
+
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CALLS_CHANNEL)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
@@ -95,7 +106,10 @@ public class CallMessagingService extends FirebaseMessagingService {
                 .setAutoCancel(true)
                 .setTimeoutAfter(40_000L)
                 .setContentIntent(fullPI)
-                .setFullScreenIntent(fullPI, true);
+                .setFullScreenIntent(fullPI, true)
+                // Boutons fiables (surtout Xiaomi/MIUI où le plein écran est bloqué)
+                .addAction(0, "Refuser", declinePI)
+                .addAction(0, "Accepter", acceptPI);
 
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(CALL_NOTIF_ID, b.build());

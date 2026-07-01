@@ -1,5 +1,7 @@
 package com.centrechretienberakah.app;
 
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -38,15 +40,29 @@ public class MainActivity extends BridgeActivity {
         if (openUrl == null || openUrl.isEmpty()) return;
         final String full = openUrl.startsWith("http") ? openUrl : (PROD_URL + openUrl);
 
-        // Laisse le bridge/WebView s'initialiser puis navigue vers la page d'appel.
+        // On a accepté depuis la notification → on ferme la notif d'appel.
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) nm.cancel(CallMessagingService.CALL_NOTIF_ID);
+        } catch (Exception ignored) { }
+
+        // Charge la page d'appel dès que la WebView est prête (réessaie si besoin,
+        // pour couvrir le démarrage à froid où le bridge n'est pas encore initialisé).
+        loadWhenReady(full, 0);
+    }
+
+    private void loadWhenReady(final String url, final int attempt) {
+        if (attempt > 20) return; // ~6 s max
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override public void run() {
                 try {
                     if (getBridge() != null && getBridge().getWebView() != null) {
-                        getBridge().getWebView().loadUrl(full);
+                        getBridge().getWebView().loadUrl(url);
+                        return;
                     }
                 } catch (Exception ignored) { }
+                loadWhenReady(url, attempt + 1);
             }
-        }, 400);
+        }, 300);
     }
 }
