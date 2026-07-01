@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
-import { ringCall, setCallStatus, pushCallNotification, pushCancelCall, type CallRow } from "@/lib/meet/calls";
+import { ringCall, setCallStatus, pushCallNotification, pushCancelCall, acceptRingingCall, type CallRow } from "@/lib/meet/calls";
 import { startRingtone, stopRingtone } from "@/lib/meet/ringtone";
 import { GROUPS_THEME as T, GROUPS_FONTS as F } from "@/lib/groups/theme";
 
@@ -44,8 +44,9 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
   }, [conversationId, title, mode, myName, backUrl, startCall]);
 
   useEffect(() => {
-    // Accepteur → rejoint directement
-    if (join) { doStartCall(); return; }
+    // Accepteur → rejoint directement + signale « accepté » à l'appelant
+    // (indispensable quand on a décroché via la notification NATIVE).
+    if (join) { doStartCall(); void acceptRingingCall(conversationId); return; }
 
     // Appelant → sonnerie + attente de réponse
     let cancelled = false;

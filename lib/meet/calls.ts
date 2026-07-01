@@ -56,6 +56,43 @@ export async function ringCall(opts: {
   }
 }
 
+/**
+ * Marque comme « accepté » l'appel entrant en cours d'une conversation — appelé
+ * par l'ACCEPTEUR quand il rejoint la page d'appel (que ce soit via l'écran web
+ * ou via la notification NATIVE). Sans ça, l'appelant n'est jamais prévenu et
+ * continue de sonner puis abandonne.
+ *
+ * IMPORTANT (app native) : quand on décroche depuis la notification, la WebView
+ * peut démarrer À FROID → la session Supabase n'est pas encore restaurée au
+ * moment où cette fonction s'exécute (`getUser()` renvoie null). On RÉESSAIE
+ * donc quelques secondes jusqu'à ce que la session soit prête ET qu'un appel
+ * « ringing » soit trouvé, sinon l'appelant n'est jamais prévenu.
+ */
+export async function acceptRingingCall(conversationId: string): Promise<void> {
+  const sb = createClient();
+  for (let attempt = 0; attempt < 12; attempt++) {
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) {
+        const { data } = await sb
+          .from("calls")
+          .select("id, caller_id, status")
+          .eq("conversation_id", conversationId)
+          .eq("status", "ringing")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const call = data as { id: string; caller_id: string } | null;
+        if (call && call.caller_id !== user.id) {
+          await setCallStatus(call.id, "accepted");
+          return; // signalé : l'appelant va rejoindre.
+        }
+      }
+    } catch { /* on réessaie */ }
+    await new Promise((r) => setTimeout(r, 700));
+  }
+}
+
 /** Met à jour le statut d'un appel (accepté / refusé / manqué / terminé). */
 export async function setCallStatus(callId: string, status: CallStatus): Promise<void> {
   try {
