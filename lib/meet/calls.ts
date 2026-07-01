@@ -66,6 +66,28 @@ export async function setCallStatus(callId: string, status: CallStatus): Promise
   }
 }
 
+/**
+ * Annule l'écran d'appel NATIF chez le(s) destinataire(s) — appelé quand
+ * l'appelant raccroche ou que l'appel n'a pas abouti. No-op côté web/PWA.
+ */
+export async function pushCancelCall(opts: {
+  conversationId?: string | null;
+  groupId?: string | null;
+}): Promise<void> {
+  try {
+    if (!opts.conversationId && !opts.groupId) return;
+    await fetch("/api/native/call-invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cancel: true,
+        conversationId: opts.conversationId ?? undefined,
+        groupId: opts.groupId ?? undefined,
+      }),
+    });
+  } catch { /* best-effort */ }
+}
+
 /** Envoie une notification push d'appel (best-effort, pour membres hors-ligne). */
 export async function pushCallNotification(opts: {
   type: CallType;

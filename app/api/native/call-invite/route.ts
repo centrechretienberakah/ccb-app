@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
-import { sendCallInvite } from "@/lib/native/callInvite";
+import { sendCallInvite, sendCallCancel } from "@/lib/native/callInvite";
 
 export const runtime = "nodejs";
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
-  let body: { type?: "audio" | "video"; conversationId?: string; groupId?: string; groupName?: string; callId?: string } = {};
+  let body: { type?: "audio" | "video"; conversationId?: string; groupId?: string; groupName?: string; callId?: string; cancel?: boolean } = {};
   try { body = await req.json(); } catch { /* noop */ }
   const type = body.type === "video" ? "video" : "audio";
   const conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
@@ -63,6 +63,12 @@ export async function POST(req: NextRequest) {
     }
   } catch { /* best-effort */ }
   if (calleeUserIds.length === 0) return NextResponse.json({ sent: 0, failed: 0, reason: "aucun destinataire" });
+
+  // Annulation (l'appelant a raccroché / pas de réponse) → ferme l'écran chez les destinataires.
+  if (body.cancel === true) {
+    const res = await sendCallCancel(admin, calleeUserIds);
+    return NextResponse.json({ cancelled: true, ...res });
+  }
 
   // Appelant : nom + avatar
   let callerName = user.email?.split("@")[0] || "Un membre";

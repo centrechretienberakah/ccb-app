@@ -1717,10 +1717,10 @@ export default function GroupDetailClient({
                         members={memberLookup}
                         placeholder={pendingAttachment ? "Légende (optionnel)…" : "Message"}
                         multiline
-                        rows={3}
+                        rows={1}
                         toolbar
                         autoGrow
-                        maxHeight={180}
+                        maxHeight={140}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
@@ -1734,7 +1734,7 @@ export default function GroupDetailClient({
                           color: T.text, fontSize: 15,
                           fontFamily: F.body, outline: "none",
                           resize: "none",
-                          minHeight: 66, maxHeight: 180, overflowY: "auto",
+                          maxHeight: 140, overflowY: "auto",
                         } as React.CSSProperties}
                       />
                     </div>

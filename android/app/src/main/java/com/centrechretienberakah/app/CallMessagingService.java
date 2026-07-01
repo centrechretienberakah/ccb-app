@@ -17,23 +17,28 @@ import java.util.Map;
 /**
  * Réception des messages FCM (Phase 2 · Étape 2).
  *
- * - Message "data" type=call  → écran d'appel PLEIN FORMAT (même app tuée/verrouillée),
+ * - "data" type=call        → écran d'appel PLEIN FORMAT (même app tuée/verrouillée),
  *   via un fullScreenIntent sur le canal "calls" (importance URGENT).
- * - Autres messages (notifications classiques avec bloc "notification") : affichés
- *   par le système Android quand l'app est en arrière-plan → rien à faire ici.
+ * - "data" type=call-cancel → l'appelant a raccroché : on ferme l'écran + la notif.
+ * - Autres messages (notifications classiques) : affichés par le système Android.
  *
- * Le token FCM reste enregistré par le plugin Capacitor (getToken côté JS, Étape 1) ;
- * ce service n'a donc pas besoin de gérer onNewToken.
+ * Le token FCM reste enregistré par le plugin Capacitor (getToken côté JS, Étape 1).
  */
 public class CallMessagingService extends FirebaseMessagingService {
 
     private static final String CALLS_CHANNEL = "calls";
+    // ID FIXE : un seul appel entrant à la fois → facile à annuler.
+    public static final int CALL_NOTIF_ID = 424242;
 
     @Override
     public void onMessageReceived(RemoteMessage message) {
         Map<String, String> data = message.getData();
-        if (data != null && "call".equals(data.get("type"))) {
+        if (data == null) return;
+        String type = data.get("type");
+        if ("call".equals(type)) {
             showIncomingCall(data);
+        } else if ("call-cancel".equals(type)) {
+            cancelIncomingCall();
         }
     }
 
@@ -50,11 +55,16 @@ public class CallMessagingService extends FirebaseMessagingService {
         }
     }
 
+    private void cancelIncomingCall() {
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) nm.cancel(CALL_NOTIF_ID);
+        } catch (Exception ignored) { }
+        IncomingCallActivity.cancelCurrent();
+    }
+
     private void showIncomingCall(Map<String, String> data) {
         ensureCallsChannel();
-
-        String callId = data.get("callId");
-        int id = callId != null ? callId.hashCode() : (int) System.currentTimeMillis();
 
         Intent full = new Intent(this, IncomingCallActivity.class);
         full.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -66,7 +76,7 @@ public class CallMessagingService extends FirebaseMessagingService {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             piFlags |= PendingIntent.FLAG_IMMUTABLE;
         }
-        PendingIntent fullPI = PendingIntent.getActivity(this, id, full, piFlags);
+        PendingIntent fullPI = PendingIntent.getActivity(this, CALL_NOTIF_ID, full, piFlags);
 
         String groupName = data.get("groupName");
         String callerName = data.get("callerName");
@@ -83,10 +93,11 @@ public class CallMessagingService extends FirebaseMessagingService {
                 .setCategory(NotificationCompat.CATEGORY_CALL)
                 .setOngoing(true)
                 .setAutoCancel(true)
+                .setTimeoutAfter(40_000L)
                 .setContentIntent(fullPI)
                 .setFullScreenIntent(fullPI, true);
 
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm != null) nm.notify(id, b.build());
+        if (nm != null) nm.notify(CALL_NOTIF_ID, b.build());
     }
 }

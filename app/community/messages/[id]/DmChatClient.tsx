@@ -583,12 +583,12 @@ export default function DmChatClient({ conversationId, currentUserId, other, myD
                 members={[]}
                 placeholder={editing ? "Modifier le message…" : "Message"}
                 multiline
-                rows={3}
+                rows={1}
                 toolbar
                 autoGrow
-                maxHeight={180}
+                maxHeight={140}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                style={{ width: "100%", boxSizing: "border-box", padding: "9px 4px", background: "transparent", border: "none", color: T.text, fontSize: 15, fontFamily: F.body, outline: "none", resize: "none", minHeight: 66, maxHeight: 180, overflowY: "auto", lineHeight: 1.4 } as React.CSSProperties}
+                style={{ width: "100%", boxSizing: "border-box", padding: "9px 4px", background: "transparent", border: "none", color: T.text, fontSize: 15, fontFamily: F.body, outline: "none", resize: "none", maxHeight: 140, overflowY: "auto", lineHeight: 1.4 } as React.CSSProperties}
               />
             </div>
             {!editing && <button onClick={() => fileRef.current?.click()} disabled={uploading} title="Joindre un fichier" style={pillIcon}>{uploading ? "⏳" : "📎"}</button>}

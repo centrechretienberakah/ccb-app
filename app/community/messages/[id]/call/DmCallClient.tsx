@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
-import { ringCall, setCallStatus, pushCallNotification, type CallRow } from "@/lib/meet/calls";
+import { ringCall, setCallStatus, pushCallNotification, pushCancelCall, type CallRow } from "@/lib/meet/calls";
 import { startRingtone, stopRingtone } from "@/lib/meet/ringtone";
 import { GROUPS_THEME as T, GROUPS_FONTS as F } from "@/lib/groups/theme";
 
@@ -72,6 +72,7 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
       timeout = setTimeout(() => {
         if (cancelled) return;
         void setCallStatus(call.id, "missed");
+        void pushCancelCall({ conversationId });   // stoppe l'écran d'appel natif chez le destinataire
         stopRingtone();
         setPhase("missed");
         setTimeout(() => router.replace(backUrl), 2600);
@@ -109,6 +110,7 @@ export default function DmCallClient({ conversationId, title, mode, myName, join
   function cancelCall() {
     const id = callIdRef.current;
     if (id) void setCallStatus(id, "ended");
+    void pushCancelCall({ conversationId });   // stoppe l'écran d'appel natif chez le destinataire
     stopRingtone();
     router.replace(backUrl);
   }
