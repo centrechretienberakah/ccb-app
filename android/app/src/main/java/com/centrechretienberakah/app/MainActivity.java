@@ -84,7 +84,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         // Réaffirme les icônes de barre d'état en clair (le plugin StatusBar peut
         // les remettre en foncé selon sa config à la reprise → illisibles sur violet).
