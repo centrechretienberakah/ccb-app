@@ -1,13 +1,16 @@
 package com.centrechretienberakah.app;
 
+import android.app.KeyguardManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.PowerManager;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.Person;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
@@ -90,11 +93,21 @@ public class CallMessagingService extends FirebaseMessagingService {
         declineIntent.setAction(CallActionReceiver.ACTION_DECLINE);
         PendingIntent declinePI = PendingIntent.getBroadcast(this, CALL_NOTIF_ID + 1, declineIntent, piFlags);
 
-        // Action « Accepter » → ouvre l'app sur la page d'appel (rejoint LiveKit)
+        // Action « Accepter » → ouvre l'app sur la page d'appel (rejoint LiveKit
+        // + signale « accepté » à l'appelant via la page ?join=1).
         Intent acceptIntent = new Intent(this, MainActivity.class);
         acceptIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         acceptIntent.putExtra("openUrl", data.get("roomUrl"));
         PendingIntent acceptPI = PendingIntent.getActivity(this, CALL_NOTIF_ID + 2, acceptIntent, piFlags);
+
+        // CallStyle = motif d'appel entrant OFFICIEL Android. Avantages vs de
+        // simples boutons addAction (qui, sur MIUI, faisaient afficher une carte
+        // à la place du plein écran → régression) :
+        //  - conserve le fullScreenIntent (Android 14+ n'autorise le plein écran
+        //    QUE pour ce style sans réglage manuel — cf. targetSdk 36) ;
+        //  - boutons Répondre/Refuser rendus par le système (respectés par MIUI) ;
+        //  - n'empêche PAS le déclenchement de l'écran plein format.
+        Person caller = new Person.Builder().setName(title).build();
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CALLS_CHANNEL)
                 .setSmallIcon(R.mipmap.ic_launcher)
@@ -103,15 +116,27 @@ public class CallMessagingService extends FirebaseMessagingService {
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_CALL)
                 .setOngoing(true)
-                .setAutoCancel(true)
                 .setTimeoutAfter(40_000L)
-                .setContentIntent(fullPI)
                 .setFullScreenIntent(fullPI, true)
-                // Boutons fiables (surtout Xiaomi/MIUI où le plein écran est bloqué)
-                .addAction(0, "Refuser", declinePI)
-                .addAction(0, "Accepter", acceptPI);
+                .setStyle(NotificationCompat.CallStyle.forIncomingCall(caller, declinePI, acceptPI));
 
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(CALL_NOTIF_ID, b.build());
+
+        // Xiaomi/MIUI ignore souvent le fullScreenIntent en arrière-plan. Si
+        // l'écran est verrouillé ou éteint, on tente d'ouvrir DIRECTEMENT l'écran
+        // d'appel (autorisé quand « Afficher les fenêtres pop-up en arrière-plan »
+        // est accordé — ce que demandent WhatsApp & co). Sur Android standard ce
+        // lancement en arrière-plan est bloqué → le fullScreenIntent prend le
+        // relais. Pas de double écran : IncomingCallActivity est en singleTop.
+        try {
+            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            boolean locked = km != null && km.isKeyguardLocked();
+            boolean screenOff = pm != null && !pm.isInteractive();
+            if (locked || screenOff) {
+                startActivity(full);
+            }
+        } catch (Exception ignored) { }
     }
 }
