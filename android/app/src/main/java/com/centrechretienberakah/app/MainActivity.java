@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.view.Window;
+import android.webkit.JavascriptInterface;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -35,8 +36,30 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        installCallBridge();
         applySystemBarInsets();
         handleOpenUrl(getIntent());
+    }
+
+    /**
+     * Expose window.CcbCall.start()/stop() au web → démarre/arrête le service
+     * premier plan qui garde l'appel actif écran verrouillé (cf.
+     * CallForegroundService). No-op sur web/PWA (l'objet n'existe pas).
+     */
+    private void installCallBridge() {
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().addJavascriptInterface(new CallServiceBridge(this), "CcbCall");
+            }
+        } catch (Exception ignored) { }
+    }
+
+    /** Pont JS → service premier plan d'appel. */
+    public static class CallServiceBridge {
+        private final android.content.Context appCtx;
+        CallServiceBridge(android.content.Context c) { this.appCtx = c.getApplicationContext(); }
+        @JavascriptInterface public void start() { CallForegroundService.start(appCtx); }
+        @JavascriptInterface public void stop() { CallForegroundService.stop(appCtx); }
     }
 
     /**

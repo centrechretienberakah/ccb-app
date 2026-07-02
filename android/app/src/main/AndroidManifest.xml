@@ -61,6 +61,14 @@
         <receiver
             android:name=".CallActionReceiver"
             android:exported="false" />
+
+        <!-- Service premier plan : garde l'appel actif quand l'écran se verrouille
+             (le micro et le son ne se coupent plus). Type « microphone » requis
+             sur Android 14+. Piloté par le web via window.CcbCall. -->
+        <service
+            android:name=".CallForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
     </application>
 
     <!-- ─── Permissions ─────────────────────────────────────────────── -->
@@ -79,6 +87,9 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Écran d'appel plein format (Phase 2) -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Service premier plan « appel en cours » (audio écran verrouillé). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 
     <!-- Caméra/micro non obligatoires : ne pas exclure les appareils sans. -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />

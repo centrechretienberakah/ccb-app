@@ -61,6 +61,8 @@ export default function PersistentCallHost() {
       data-lk-theme="ccb"
     >
       <RoomAudioRenderer />
+      {/* Garde l'appel actif écran verrouillé (service premier plan natif). */}
+      <CallKeepAlive />
       {/* MusicProvider persistant : la musique partagée continue même quand
           l'utilisateur quitte l'écran plein format (mini-lecteur). */}
       <MusicProvider>
@@ -121,6 +123,18 @@ function SessionTracker({ groupId, mode }: { groupId: string; mode: "audio" | "v
     };
   }, [groupId, mode]);
 
+  return null;
+}
+
+// ─── Maintien de l'appel écran verrouillé (natif Android) ─────────────
+// Démarre le service premier plan quand l'appel commence, l'arrête à la fin.
+// 100 % inerte sur web/PWA (window.CcbCall n'existe que dans l'app Android).
+function CallKeepAlive() {
+  useEffect(() => {
+    const bridge = (window as unknown as { CcbCall?: { start?: () => void; stop?: () => void } }).CcbCall;
+    try { bridge?.start?.(); } catch { /* noop */ }
+    return () => { try { bridge?.stop?.(); } catch { /* noop */ } };
+  }, []);
   return null;
 }
 
