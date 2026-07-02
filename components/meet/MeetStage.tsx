@@ -72,11 +72,12 @@ interface Prayer { topic: string; endsAt: number; by: string }
 interface Rec { active: boolean; by: string }
 interface Spotlight { id: string; name: string; by: string }
 interface Signal {
-  t: "verse" | "verse-clear" | "prayer-start" | "prayer-stop" | "hand" | "rec" | "spotlight";
+  t: "verse" | "verse-clear" | "prayer-start" | "prayer-stop" | "hand" | "rec" | "spotlight" | "react";
   ref?: string; text?: string; by?: string;
   topic?: string; endsAt?: number;
   id?: string; name?: string; raised?: boolean;
   active?: boolean;
+  emoji?: string;
 }
 
 export default function MeetStage({ isAudio }: { isAudio: boolean }) {
@@ -104,6 +105,10 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   const [showVersePrompt, setShowVersePrompt] = useState(false);
   const [showPrayerPrompt, setShowPrayerPrompt] = useState(false);
   const [showAddCall, setShowAddCall] = useState(false); // inviter qqn à l'appel en cours (DM)
+  // Réactions emoji volantes (façon WhatsApp/Meet), synchronisées par data channel.
+  const [flying, setFlying] = useState<Array<{ id: number; emoji: string; left: number }>>([]);
+  const [showReactBar, setShowReactBar] = useState(false);
+  const reactIdRef = useRef(0);
 
   const room = useRoomContext();
   // Partage de musique (piste audio publiée, sans partage d'écran).
@@ -153,10 +158,23 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
       }
       else if (d.t === "rec") setRecording(d.active ? { active: true, by: d.by || "" } : null);
       else if (d.t === "spotlight") setSpotlight(d.id ? { id: d.id, name: d.name || "Participant", by: d.by || "" } : null);
+      else if (d.t === "react" && d.emoji) pushReaction(d.emoji);
     } catch { /* noop */ }
   });
   function broadcast(obj: Signal) {
     try { sendSignal(new TextEncoder().encode(JSON.stringify(obj)), { reliable: true }); } catch { /* noop */ }
+  }
+  // Réactions emoji : ajoute une emoji volante locale (auto-disparition ~3,6 s).
+  function pushReaction(emoji: string) {
+    const id = ++reactIdRef.current;
+    const left = 8 + Math.random() * 74; // position horizontale (%)
+    setFlying((f) => [...f.slice(-24), { id, emoji, left }]); // borne pour éviter l'accumulation
+    setTimeout(() => setFlying((f) => f.filter((x) => x.id !== id)), 3600);
+  }
+  function sendReaction(emoji: string) {
+    pushReaction(emoji);            // affichage immédiat chez l'émetteur
+    broadcast({ t: "react", emoji }); // + tous les participants
+    setShowReactBar(false);
   }
 
   // Persistance des notes partagées (ref, sans re-render de la grille)
@@ -437,6 +455,11 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         />
       )}
 
+      {/* ── Réactions emoji volantes (synchronisées) ── */}
+      <ReactionsOverlay items={flying} />
+      {showReactBar && <div onClick={() => setShowReactBar(false)} style={{ position: "absolute", inset: 0, zIndex: 6 }} />}
+      {showReactBar && <ReactionBar onPick={sendReaction} />}
+
       {/* ── Barre de contrôle (auto-masquée) ── */}
       <ControlBar
         visible={controlsVisible}
@@ -456,6 +479,7 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         onStats={() => setPanel((p) => (p === "stats" ? "none" : "stats"))}
         onMusic={() => setPanel((p) => (p === "music" ? "none" : "music"))}
         musicActive={music.active}
+        onReact={() => setShowReactBar((v) => !v)}
         onInvite={state.conversationId && !state.groupId ? () => setShowAddCall(true) : undefined}
         canRecord={canModerate}
         recording={!!recording}
@@ -1072,12 +1096,12 @@ function downloadBlob(blob: Blob, filename: string) {
 /* ─────────────── Barre de contrôle ─────────────── */
 function ControlBar({
   visible, isAudio, handRaised, unreadChat, panel, prayerActive,
-  onHand, onChat, onPeople, onVerse, onPrayer, onSettings, onNotes, onStats, onMusic, musicActive, onInvite,
+  onHand, onChat, onPeople, onVerse, onPrayer, onSettings, onNotes, onStats, onMusic, musicActive, onReact, onInvite,
   canRecord, recording, onRecord, onFullscreen, isFullscreen, onLeave,
 }: {
   visible: boolean; isAudio: boolean; handRaised: boolean; unreadChat: number; peopleCount: number; panel: Panel; prayerActive: boolean;
   onHand: () => void; onChat: () => void; onPeople: () => void; onVerse: () => void; onPrayer: () => void; onSettings: () => void;
-  onNotes: () => void; onStats: () => void; onMusic: () => void; musicActive: boolean; onInvite?: () => void;
+  onNotes: () => void; onStats: () => void; onMusic: () => void; musicActive: boolean; onReact: () => void; onInvite?: () => void;
   canRecord: boolean; recording: boolean; onRecord: () => void; onFullscreen: () => void; isFullscreen: boolean; onLeave: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -1106,6 +1130,7 @@ function ControlBar({
               <MenuTile emoji="👥" label="Membres" active={panel === "people"} onClick={run(onPeople)} />
               {onInvite && <MenuTile emoji="➕" label="Inviter" onClick={run(onInvite)} />}
               <MenuTile emoji="📖" label="Verset" onClick={run(onVerse)} />
+              <MenuTile emoji="😊" label="Réaction" onClick={run(onReact)} />
               <MenuTile emoji="🎵" label="Musique" active={musicActive} onClick={run(onMusic)} />
               <MenuTile emoji="🙏" label="Prière" active={prayerActive} onClick={run(onPrayer)} />
               <MenuTile emoji="📝" label="Notes" active={panel === "notes"} onClick={run(onNotes)} />
@@ -1156,6 +1181,36 @@ function FeatureBtn({ emoji, active, badge, onClick }: { emoji: string; active?:
         <span style={{ position: "absolute", top: -2, right: -2, background: "#DC2626", color: "#fff", fontSize: 10, fontWeight: 800, borderRadius: 999, minWidth: 17, height: 17, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", border: "2px solid #1E1E1E" }}>{badge > 9 ? "9+" : badge}</span>
       )}
     </button>
+  );
+}
+
+/* ─────────────── Réactions emoji ─────────────── */
+const REACTION_EMOJIS = ["👏", "🙏", "❤️", "🔥", "😂", "🎉", "👍", "🙌", "🕊️", "🎶"];
+
+function ReactionBar({ onPick }: { onPick: (e: string) => void }) {
+  return (
+    <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(84px + env(safe-area-inset-bottom, 0px))", zIndex: 8, display: "flex", justifyContent: "center", padding: "0 12px", pointerEvents: "none" }}>
+      <div style={{
+        pointerEvents: "auto", display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center",
+        maxWidth: "min(360px, 100%)", background: "rgba(28,28,28,0.98)", border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: 18, padding: "8px 10px", boxShadow: "0 14px 44px rgba(0,0,0,0.55)", backdropFilter: "blur(16px)",
+      }}>
+        {REACTION_EMOJIS.map((e) => (
+          <button key={e} onClick={() => onPick(e)} style={{ background: "none", border: "none", fontSize: 27, cursor: "pointer", padding: "3px 7px", lineHeight: 1 }}>{e}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReactionsOverlay({ items }: { items: Array<{ id: number; emoji: string; left: number }> }) {
+  return (
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 7 }}>
+      <style>{`@keyframes ccb-react-float{0%{opacity:0;transform:translateY(0) scale(.6);}12%{opacity:1;}100%{opacity:0;transform:translateY(-46vh) scale(1.3);}}`}</style>
+      {items.map((r) => (
+        <span key={r.id} style={{ position: "absolute", bottom: "13%", left: `${r.left}%`, fontSize: 40, willChange: "transform, opacity", animation: "ccb-react-float 3.5s ease-out forwards" }}>{r.emoji}</span>
+      ))}
+    </div>
   );
 }
 
