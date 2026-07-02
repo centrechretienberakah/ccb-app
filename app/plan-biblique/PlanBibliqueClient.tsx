@@ -4,11 +4,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { isNativeApp } from "@/lib/native/platform";
 import {
   READING_PLANS, getDayReading, calculateProgress,
   GOAL_LABELS,
   type ReadingPlan,
 } from "@/lib/bible/reading-plans";
+
+// ID fixe de la notification native « rappel de lecture » (pour la (re)programmer
+// ou l'annuler). Un seul rappel quotidien par utilisateur.
+const READING_NOTIF_ID = 778866;
 
 // localStorage sécurisé : dans certains navigateurs in-app / modes privés,
 // l'accès à localStorage lève une exception → on ne doit jamais planter la page.
@@ -116,6 +121,40 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
   }
 
   async function saveReminder(time: string) {
+    const [hh, mm] = String(time).split(":").map(Number);
+
+    // ── App native (Android) : notification LOCALE planifiée → se déclenche
+    // chaque jour à l'heure choisie, MÊME app fermée. Fiable, contrairement à
+    // la notif web (que la WebView Android ne sait pas autoriser). ──
+    if (isNativeApp()) {
+      try {
+        const { LocalNotifications } = await import("@capacitor/local-notifications");
+        const perm = await LocalNotifications.requestPermissions();
+        if (perm.display !== "granted") {
+          showToast("⚠️ Autorisez les notifications dans les réglages du téléphone");
+          return;
+        }
+        await LocalNotifications.cancel({ notifications: [{ id: READING_NOTIF_ID }] }).catch(() => {});
+        await LocalNotifications.schedule({
+          notifications: [{
+            id: READING_NOTIF_ID,
+            title: "📖 Rappel de lecture CCB",
+            body: "C'est l'heure de votre lecture biblique quotidienne !",
+            schedule: { on: { hour: hh, minute: mm }, allowWhileIdle: true },
+          }],
+        });
+        lsSet("ccb-reading-reminder", JSON.stringify({ time, enabled: true }));
+        setReminderTime(time);
+        setReminderEnabled(true);
+        setShowReminderModal(false);
+        showToast(`⏰ Rappel programmé à ${time} chaque jour !`);
+      } catch {
+        showToast("Impossible d'activer le rappel sur cet appareil.");
+      }
+      return;
+    }
+
+    // ── Web / PWA : notification navigateur + service worker. ──
     const permission = await requestNotifPermission();
     if (permission !== "granted") {
       showToast("⚠️ Autorisez les notifications dans votre navigateur");
@@ -129,7 +168,13 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
     showLocalNotification("⏰ Rappel de lecture activé", `Vous serez rappelé chaque jour à ${time}.`);
   }
 
-  function clearReminder() {
+  async function clearReminder() {
+    if (isNativeApp()) {
+      try {
+        const { LocalNotifications } = await import("@capacitor/local-notifications");
+        await LocalNotifications.cancel({ notifications: [{ id: READING_NOTIF_ID }] });
+      } catch { /* noop */ }
+    }
     lsDel("ccb-reading-reminder");
     setReminderEnabled(false);
     setShowReminderModal(false);
