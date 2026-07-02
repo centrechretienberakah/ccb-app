@@ -65,6 +65,14 @@ export default function DevotionCalendarPage() {
   const [preview, setPreview] = useState<{ date: string; gen: Generated } | null>(null);
   const [busyDate, setBusyDate] = useState<string | null>(null);
   const [runningToday, setRunningToday] = useState(false);
+  const [reach, setReach] = useState<{ total: number; reachable: number; web: number; app: number; both: number; none: number } | null>(null);
+
+  const loadReach = useCallback(async () => {
+    try {
+      const res = await fetch("/api/devotion/notif-reach");
+      if (res.ok) setReach(await res.json());
+    } catch { /* noop */ }
+  }, []);
 
   const flash = (type: "ok" | "err", text: string) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
 
@@ -85,6 +93,7 @@ export default function DevotionCalendarPage() {
         const { data } = await sb.rpc("devotion_push_count", { p_date: parisToday() });
         if (typeof data === "number") setNotifiedToday(data);
       } catch { /* RPC absente tant que v79 n'est pas exécutée */ }
+      void loadReach();
       setLoading(false);
     })().catch(() => setLoading(false));
   }, [router, loadMonths]);
@@ -238,6 +247,34 @@ export default function DevotionCalendarPage() {
           {runningToday ? "En cours…" : "▶ Publier + notifier aujourd'hui"}
         </button>
       </div>
+
+      {/* Portée des notifications : qui est joignable (app / web) et qui ne l'est pas. */}
+      {reach && (
+        <div style={{ ...card, marginBottom: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Portée des notifications</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "2px 0 12px" }}>
+            Membres pouvant recevoir la notif « méditation du jour » (push activé sur l&apos;app ou le navigateur).
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 10 }}>
+            {[
+              { label: "Joignables", value: `${reach.reachable}/${reach.total}`, color: "var(--gold-dark)" },
+              { label: "Sur l'app", value: reach.app, color: "var(--text-primary)" },
+              { label: "Sur navigateur", value: reach.web, color: "var(--text-primary)" },
+              { label: "Sans notif", value: reach.none, color: reach.none > 0 ? "#dc2626" : "var(--text-primary)" },
+            ].map((s) => (
+              <div key={s.label} style={{ background: "var(--page-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
+                <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {reach.none > 0 && (
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 10 }}>
+              💡 {reach.none} membre{reach.none > 1 ? "s" : ""} sans notification activée → à relancer (autoriser les notifs dans l&apos;app ou le navigateur).
+            </div>
+          )}
+        </div>
+      )}
 
       {msg && (
         <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: "var(--radius-md)", fontSize: 13,
