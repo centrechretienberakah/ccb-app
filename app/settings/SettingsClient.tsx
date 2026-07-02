@@ -86,6 +86,12 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
   const [savingPwd, setSavingPwd] = useState(false);
   const [pwdMsg, setPwdMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  // ── Suppression de compte ─────────────────────────────────
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState("");
+
   // ── Apparence ─────────────────────────────────────────────
   const [isDark, setIsDark] = useState(false);
   const [dataSaver, setDataSaverOn] = useState(true);
@@ -189,6 +195,23 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
+  }
+
+  // ── Suppression définitive du compte ──────────────────────
+  async function deleteAccount() {
+    if (deleteText.trim().toUpperCase() !== "SUPPRIMER") return;
+    setDeleting(true); setDeleteErr("");
+    try {
+      const res = await fetch("/api/account/delete", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setDeleteErr(data.error || "Échec de la suppression."); setDeleting(false); return; }
+      // Compte supprimé + session terminée côté serveur → on nettoie le client.
+      try { await createClient().auth.signOut(); } catch { /* noop */ }
+      router.replace("/");
+    } catch {
+      setDeleteErr("Erreur réseau. Réessaie.");
+      setDeleting(false);
+    }
   }
 
   // ── Initials avatar fallback ──────────────────────────────
@@ -459,11 +482,48 @@ export default function SettingsClient({ userId, email, profile: initialProfile 
         </button>
       </SectionCard>
 
+      {/* ── Zone dangereuse — Suppression du compte ── */}
+      <SectionCard title="Zone dangereuse" icon="⚠️">
+        <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+          La suppression de votre compte est <strong>définitive</strong>. Toutes vos données
+          (profil, messages, publications, prières…) seront <strong>effacées</strong> et ne pourront pas être récupérées.
+        </p>
+        <button onClick={() => { setShowDelete(true); setDeleteText(""); setDeleteErr(""); }}
+          style={{ width: "100%", background: "rgba(220,38,38,0.12)", border: "1px solid rgba(220,38,38,0.5)", borderRadius: "var(--radius-full)", padding: "12px", color: "var(--error)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+          🗑️ Supprimer mon compte
+        </button>
+      </SectionCard>
+
       {/* App version */}
       <div style={{ textAlign: "center", marginTop: 8, fontSize: 11, color: "var(--text-muted)" }}>
         Centre Chrétien Berakah · v1.0 · 2026
       </div>
       </div>
+
+      {/* ── Modale de confirmation de suppression ── */}
+      {showDelete && (
+        <div onClick={(e) => { if (e.target === e.currentTarget && !deleting) setShowDelete(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 3000, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(3px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ width: "100%", maxWidth: 420, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: 20 }}>
+            <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 800, color: "var(--error)" }}>⚠️ Supprimer définitivement le compte ?</h3>
+            <p style={{ margin: "0 0 14px", fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+              Cette action est <strong>irréversible</strong>. Pour confirmer, tape <strong>SUPPRIMER</strong> ci-dessous.
+            </p>
+            <input value={deleteText} onChange={(e) => setDeleteText(e.target.value)} placeholder="SUPPRIMER" autoFocus style={inputStyle} />
+            {deleteErr && <div style={{ marginTop: 10, fontSize: 12.5, color: "var(--error)" }}>{deleteErr}</div>}
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button onClick={() => setShowDelete(false)} disabled={deleting}
+                style={{ flex: 1, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "11px", color: "var(--text-secondary)", fontWeight: 700, fontSize: 14, cursor: deleting ? "not-allowed" : "pointer" }}>
+                Annuler
+              </button>
+              <button onClick={deleteAccount} disabled={deleting || deleteText.trim().toUpperCase() !== "SUPPRIMER"}
+                style={{ flex: 1, background: (deleteText.trim().toUpperCase() === "SUPPRIMER" && !deleting) ? "#DC2626" : "var(--surface)", border: "none", borderRadius: "var(--radius-full)", padding: "11px", color: "#fff", fontWeight: 700, fontSize: 14, cursor: (deleteText.trim().toUpperCase() === "SUPPRIMER" && !deleting) ? "pointer" : "not-allowed", opacity: (deleteText.trim().toUpperCase() === "SUPPRIMER" && !deleting) ? 1 : 0.55 }}>
+                {deleting ? "Suppression…" : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
