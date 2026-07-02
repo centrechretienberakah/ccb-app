@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -90,6 +91,11 @@
     <!-- Service premier plan « appel en cours » (audio écran verrouillé). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
+    <!-- Aucune publicité : on RETIRE l'identifiant publicitaire que des SDK
+         (Firebase…) pourraient fusionner automatiquement → cohérent avec la
+         déclaration Play « n'utilise pas d'identifiant publicitaire ». -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
 
     <!-- Caméra/micro non obligatoires : ne pas exclure les appareils sans. -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
