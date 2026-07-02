@@ -3,6 +3,7 @@ import { getParisDateString, getParisDayIndex } from "@/app/devotion/devotions-d
 import { resolveDailyDevotionInput } from "./resolveDaily";
 import { ensureDevotionInDb, findDevotionId } from "./ensure";
 import { configureWebPush, sendPushToUserIds } from "@/lib/push/sendToUsers";
+import { sendNativePush } from "@/lib/native/sendNative";
 
 /**
  * Notif push « Méditons ensemble » envoyée à TOUS les membres (push activé)
@@ -51,7 +52,6 @@ export interface NotifyResult {
 
 export async function notifyDevotionForParisDate(admin: SupabaseClient): Promise<NotifyResult> {
   const date = getParisDateString();
-  if (!configureWebPush()) return { ok: false, date, reason: "vapid-missing" };
 
   // 1) Garantit que la méditation du jour est publiée (normalement déjà fait).
   try {
@@ -62,10 +62,22 @@ export async function notifyDevotionForParisDate(admin: SupabaseClient): Promise
     }
   } catch { /* on notifie quand même */ }
 
-  // 2) Membres avec push activé
+  // 2) AUDIENCE = UNION des abonnés web-push ET des appareils NATIFS (app
+  //    Android, table native_push_tokens). Sans ça, les membres qui n'utilisent
+  //    QUE l'app ne recevaient jamais la notif (cause du « 10/19 reçue »).
+  const webConfigured = configureWebPush();
   const { data: subRows } = await admin
     .from("push_subscriptions").select("user_id").eq("enabled", true);
-  const userIds = [...new Set(((subRows ?? []) as Array<{ user_id: string }>).map((r) => r.user_id))];
+  const webIds = [...new Set(((subRows ?? []) as Array<{ user_id: string }>).map((r) => r.user_id))];
+
+  let nativeIds: string[] = [];
+  try {
+    const { data: natRows } = await admin.from("native_push_tokens").select("user_id");
+    nativeIds = [...new Set(((natRows ?? []) as Array<{ user_id: string }>).map((r) => r.user_id))];
+  } catch { /* table absente (v87 non migrée) */ }
+  const nativeSet = new Set(nativeIds);
+
+  const userIds = [...new Set([...webIds, ...nativeIds])];
   if (userIds.length === 0) return { ok: true, date, targets: 0, sent: 0, failed: 0, skipped: 0 };
 
   // 3) Anti-doublon : déjà notifiés pour cette date (Paris) ?
@@ -82,19 +94,36 @@ export async function notifyDevotionForParisDate(admin: SupabaseClient): Promise
   const body = tv.title
     ? `${tv.title}${tv.verseRef ? ` · ${tv.verseRef}` : ""}`
     : "Ta méditation du jour est disponible 🙏";
-
-  // 5) Envoi + journalisation
-  const res = await sendPushToUserIds(admin, pending, {
+  const payload = {
     title: `☀️ Méditons ensemble — ${frenchDate(date)}`,
     body,
     url: "/dashboard",
     type: "devotion",
     tag: "devotion-daily",
-  });
+  };
+
+  // 5) Envoi — UN SEUL canal par membre (évite les doublons) : natif (FCM) si
+  //    l'appareil est enregistré, sinon web-push.
+  const pendingNative = pending.filter((id) => nativeSet.has(id));
+  const pendingWebOnly = pending.filter((id) => !nativeSet.has(id));
+
+  let sent = 0, failed = 0;
+  try {
+    const rn = await sendNativePush(admin, pendingNative, payload);
+    sent += rn.sent; failed += rn.failed;
+  } catch { /* best-effort */ }
+  if (webConfigured && pendingWebOnly.length > 0) {
+    try {
+      const rw = await sendPushToUserIds(admin, pendingWebOnly, payload);
+      sent += rw.sent; failed += rw.failed;
+    } catch { /* best-effort */ }
+  }
+
+  // 6) Journalisation (anti-doublon pour les prochains appels du jour)
   await admin.from("devotion_push_log").upsert(
     pending.map((uid) => ({ user_id: uid, local_date: date })),
     { onConflict: "user_id,local_date", ignoreDuplicates: true },
   );
 
-  return { ok: true, date, targets: userIds.length, sent: res.sent, failed: res.failed, skipped: userIds.length - pending.length };
+  return { ok: true, date, targets: userIds.length, sent, failed, skipped: userIds.length - pending.length };
 }
