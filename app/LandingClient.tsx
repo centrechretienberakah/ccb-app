@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { isNativeApp } from "@/lib/native/platform";
 import { Reveal, Counter, useCountdown } from "./_landing/anim";
 
 /* ====================================================================
@@ -14,11 +16,25 @@ const BOOTCAMP_DATE = "2026-06-26T08:00:00+01:00";
 const BOOTCAMP_URL = "https://bootcamp.centrechretienberakah.com";
 
 export default function LandingClient() {
+  const router = useRouter();
+  const [nativeRedirect, setNativeRedirect] = useState(false);
+
+  // App native (Android) : on NE montre PAS la landing marketing → on va direct
+  // à l'accueil de l'app (/dashboard, qui renvoie vers la connexion si besoin).
+  // 100 % inerte sur web/PWA (isNativeApp() = false).
+  useEffect(() => {
+    if (isNativeApp()) {
+      setNativeRedirect(true);
+      router.replace("/dashboard");
+    }
+  }, [router]);
+
   // La landing s'affiche en sombre immersif, MAIS sans écraser la préférence
   // de thème de l'utilisateur (sinon son choix « clair » est perdu au passage
   // sur l'accueil). On force juste l'affichage le temps de la page, puis on
   // restaure son thème réel en quittant.
   useEffect(() => {
+    if (isNativeApp()) return;
     document.documentElement.setAttribute("data-theme", "dark");
     return () => {
       try {
@@ -28,6 +44,9 @@ export default function LandingClient() {
       } catch { /* noop */ }
     };
   }, []);
+
+  // Dans l'app native : rien à rendre (on redirige) → évite le flash de la landing.
+  if (nativeRedirect) return null;
 
   return (
     <div className="ccb-land">
