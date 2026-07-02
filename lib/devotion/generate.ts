@@ -107,8 +107,12 @@ async function callOpenRouter(key: string, models: string[], prompt: string, dia
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${key}`,
-          "HTTP-Referer": "https://centrechretienberakah.org",
-          "X-Title": "BERAKAH AI — Méditons ensemble",
+          // ⚠️ Les valeurs d'en-tête HTTP doivent être en ASCII pur (ByteString,
+          // ≤255). Un tiret cadratin « — » ou un accent fait PLANTER fetch AVANT
+          // l'envoi (« Cannot convert argument to a ByteString »). D'où l'échec
+          // systématique de la génération. On garde donc de l'ASCII strict ici.
+          "HTTP-Referer": "https://centrechretienberakah.com",
+          "X-Title": "BERAKAH AI - Meditons ensemble",
         },
         body: JSON.stringify({
           model,
