@@ -14,6 +14,8 @@ import {
 // ID fixe de la notification native « rappel de lecture » (pour la (re)programmer
 // ou l'annuler). Un seul rappel quotidien par utilisateur.
 const READING_NOTIF_ID = 778866;
+// Canal DÉDIÉ (Android 8+ : le SON dépend du canal, pas de la notif).
+const READING_CHANNEL = "reading_reminder";
 
 // localStorage sécurisé : dans certains navigateurs in-app / modes privés,
 // l'accès à localStorage lève une exception → on ne doit jamais planter la page.
@@ -134,10 +136,23 @@ export default function PlanBibliqueClient({ user, activePlans: initialPlans }: 
           showToast("⚠️ Autorisez les notifications dans les réglages du téléphone");
           return;
         }
+        // Canal dédié AVEC SON : importance haute (5) + vibration. Sans son
+        // personnalisé → Android utilise le son de notification par défaut.
+        try {
+          await LocalNotifications.createChannel({
+            id: READING_CHANNEL,
+            name: "Rappel de lecture",
+            description: "Rappel quotidien de lecture biblique",
+            importance: 5,
+            vibration: true,
+            visibility: 1,
+          });
+        } catch { /* canal déjà créé */ }
         await LocalNotifications.cancel({ notifications: [{ id: READING_NOTIF_ID }] }).catch(() => {});
         await LocalNotifications.schedule({
           notifications: [{
             id: READING_NOTIF_ID,
+            channelId: READING_CHANNEL,
             title: "📖 Rappel de lecture CCB",
             body: "C'est l'heure de votre lecture biblique quotidienne !",
             schedule: { on: { hour: hh, minute: mm }, allowWhileIdle: true },
