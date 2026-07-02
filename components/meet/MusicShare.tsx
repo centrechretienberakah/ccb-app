@@ -12,7 +12,8 @@
  * copie propre du son, pas via un micro).
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useRoomContext } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import type { Room, LocalTrackPublication } from "livekit-client";
 
@@ -121,6 +122,26 @@ export function useMusicShare(room: Room | null, flash?: (m: string) => void): M
   useEffect(() => () => { void cleanup(); try { ctxRef.current?.close(); } catch { /* noop */ } }, [cleanup]);
 
   return { active, playing, fileName, loop, volume, start, togglePlay, stop, setLoop, setVolume };
+}
+
+/**
+ * Fournit le partage de musique à un NIVEAU PERSISTANT (monté dans
+ * PersistentCallHost, à l'intérieur du <LiveKitRoom>, pour toute la durée de
+ * l'appel). Ainsi la musique CONTINUE quand le partageur quitte l'écran plein
+ * format (mini-lecteur) — elle ne s'arrête qu'à la fin de l'appel.
+ */
+const MusicCtx = createContext<MusicShare | null>(null);
+
+export function MusicProvider({ children }: { children: React.ReactNode }) {
+  const room = useRoomContext();
+  const music = useMusicShare(room);
+  return <MusicCtx.Provider value={music}>{children}</MusicCtx.Provider>;
+}
+
+export function useMusicShareContext(): MusicShare {
+  const ctx = useContext(MusicCtx);
+  if (!ctx) throw new Error("useMusicShareContext must be used within MusicProvider");
+  return ctx;
 }
 
 const bigBtn: React.CSSProperties = {

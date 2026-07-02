@@ -31,7 +31,7 @@ import type { TrackReference, TrackReferenceOrPlaceholder } from "@livekit/compo
 import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
 import { ringCall, pushCallNotification } from "@/lib/meet/calls";
-import { useMusicShare, MusicPanel } from "./MusicShare";
+import { useMusicShareContext, MusicPanel } from "./MusicShare";
 
 const VIOLET = "#5B21B6";
 const GOLD = "#D4AF37";
@@ -111,8 +111,9 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   const reactIdRef = useRef(0);
 
   const room = useRoomContext();
-  // Partage de musique (piste audio publiée, sans partage d'écran).
-  const music = useMusicShare(room, flash);
+  // Partage de musique — fourni par MusicProvider (niveau PersistentCallHost) →
+  // la musique continue même si on quitte l'écran plein format.
+  const music = useMusicShareContext();
   const [canModerate, setCanModerate] = useState(false);
   const [recording, setRecording] = useState<Rec | null>(null);
   const recEgressRef = useRef<string | null>(null);

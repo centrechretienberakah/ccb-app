@@ -23,6 +23,7 @@ import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useRef } from "react";
 import MeetStage from "./MeetStage";
+import { MusicProvider } from "./MusicShare";
 import { useDraggable } from "@/components/ui/useDraggable";
 
 export default function PersistentCallHost() {
@@ -60,13 +61,17 @@ export default function PersistentCallHost() {
       data-lk-theme="ccb"
     >
       <RoomAudioRenderer />
-      {/* Tracking DB des sessions — uniquement pour les appels de groupe.
-          Les appels privés (DM) ne passent pas par meet_sessions. */}
-      {state.groupId && (
-        <SessionTracker groupId={state.groupId} mode={isAudio ? "audio" : "video"} />
-      )}
-      {isOnMeetingPage ? <MeetStage isAudio={isAudio} /> : <MiniPlayer />}
-      <CallBrandingStyles isAudio={isAudio} />
+      {/* MusicProvider persistant : la musique partagée continue même quand
+          l'utilisateur quitte l'écran plein format (mini-lecteur). */}
+      <MusicProvider>
+        {/* Tracking DB des sessions — uniquement pour les appels de groupe.
+            Les appels privés (DM) ne passent pas par meet_sessions. */}
+        {state.groupId && (
+          <SessionTracker groupId={state.groupId} mode={isAudio ? "audio" : "video"} />
+        )}
+        {isOnMeetingPage ? <MeetStage isAudio={isAudio} /> : <MiniPlayer />}
+        <CallBrandingStyles isAudio={isAudio} />
+      </MusicProvider>
     </LiveKitRoom>
   );
 }
