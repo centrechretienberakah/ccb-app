@@ -42,6 +42,54 @@ export async function findDevotionId(
 }
 
 /**
+ * RÉÉCRIT en place le contenu d'une méditation EXISTANTE (par id), sans changer
+ * la ligne → l'UUID, les likes et les reçus de lecture sont préservés. Sert au
+ * bouton admin « Régénérer (remplacer) » pour corriger un jour publié en
+ * statique. Update ADAPTATIF (retire les colonnes inexistantes), même logique
+ * que l'insert. Ne touche NI à la date NI aux compteurs/relations.
+ */
+export async function regenerateDevotionInDb(
+  admin: SupabaseClient,
+  id: string,
+  input: DevotionEnsureInput,
+): Promise<DevotionEnsureResult> {
+  const payload: Record<string, unknown> = {
+    title: input.title,
+    verse_reference: input.verse_ref || "",
+    verse_ref: input.verse_ref || "",
+    verse_text: input.verse_text,
+    meditation_p1: input.content || "",
+    reflection_question: input.application || null,
+    application: input.application || null,
+    prayer: input.prayer || "",
+    declaration: input.declaration || "",
+    content: input.content || "",
+    author: input.author || "Rév. Elvis NGUIFFO",
+  };
+
+  const attempts: string[] = [];
+  let lastErr = "";
+  for (let i = 0; i < 14; i++) {
+    const upd = await admin.from("devotions").update(payload).eq("id", id).select("id").single();
+    if (!upd.error && upd.data?.id) return { id: upd.data.id as string, created: false };
+    lastErr = upd.error?.message ?? "unknown";
+    attempts.push(lastErr);
+
+    const colMatch = lastErr.match(/Could not find the '([^']+)' column/i)
+      ?? lastErr.match(/column "([^"]+)" of relation/i)
+      ?? lastErr.match(/'([a-z_]+)' column/i);
+    if (colMatch && colMatch[1] && colMatch[1] in payload) { delete payload[colMatch[1]]; continue; }
+
+    const genMatch = lastErr.match(/column "([^"]+)" can only be updated to DEFAULT/i)
+      ?? lastErr.match(/generated column "([^"]+)"/i);
+    if (genMatch && genMatch[1] && genMatch[1] in payload) { delete payload[genMatch[1]]; continue; }
+
+    break; // erreur non gérée
+  }
+  return { error: lastErr, attempts };
+}
+
+/**
  * Garantit qu'une méditation existe dans la table `devotions` et renvoie
  * son UUID. Insert ADAPTATIF : retire dynamiquement toute colonne signalée
  * inexistante / générée par PostgREST, gère NOT NULL et race duplicate key.

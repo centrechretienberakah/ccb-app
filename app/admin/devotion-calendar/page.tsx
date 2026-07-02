@@ -150,18 +150,20 @@ export default function DevotionCalendarPage() {
     flash(error ? "err" : "ok", error ? `Erreur : ${error.message}` : `Jour ${d.day_no} enregistré.`);
   }
 
-  async function generate(date: string, persist: boolean) {
+  async function generate(date: string, persist: boolean, force = false) {
+    if (force && !confirm("Remplacer la méditation déjà publiée pour cette date par une nouvelle version générée depuis le calendrier ? (les likes et lectures sont conservés)")) return;
     setBusyDate(date);
     try {
       const res = await fetch("/api/devotion/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, persist }),
+        body: JSON.stringify({ date, persist, force }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { flash("err", data.error || "Échec de la génération."); return; }
       if (data.meditation) setPreview({ date, gen: data.meditation as Generated });
       if (persist) {
-        if (data.alreadyExists) flash("ok", "Déjà publiée pour cette date (inchangée).");
+        if (data.replaced) flash("ok", "Méditation remplacée pour cette date. ✅");
+        else if (data.alreadyExists) flash("ok", "Déjà publiée (inchangée). Utilise « Régénérer (remplacer) » pour l'écraser.");
         else if (data.published) flash("ok", "Méditation publiée pour cette date.");
         else flash("err", data.error || "Non publiée.");
       }
@@ -305,11 +307,12 @@ export default function DevotionCalendarPage() {
             {preview.gen.application && <p style={{ fontSize: 13.5, color: "var(--text-primary)", margin: "0 0 8px" }}><b>💡 Question :</b> {preview.gen.application}</p>}
             {preview.gen.prayer && <p style={{ fontSize: 13.5, color: "var(--text-secondary)", fontStyle: "italic", margin: "0 0 8px" }}><b>🙏 Prière :</b> {preview.gen.prayer}</p>}
             {preview.gen.declaration && <p style={{ fontSize: 13.5, color: "var(--text-primary)", fontWeight: 600, margin: "0 0 14px" }}><b>✦ Déclaration :</b> {preview.gen.declaration}</p>}
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
               <button onClick={() => generate(preview.date, false)} disabled={busyDate === preview.date} style={btnGhost}>↻ Régénérer</button>
+              <button onClick={() => generate(preview.date, true, true)} disabled={busyDate === preview.date} style={{ ...btnGhost, borderColor: "var(--gold-dark)", color: "var(--gold-dark)", fontWeight: 700 }}>♻️ Régénérer (remplacer)</button>
               <button onClick={() => generate(preview.date, true)} disabled={busyDate === preview.date} style={btnGold}>Publier cette date</button>
             </div>
-            <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "10px 0 0" }}>La méditation est générée automatiquement à minuit. « Publier » sert à pré-publier une date à l&apos;avance.</p>
+            <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "10px 0 0" }}>« Publier » = pré-publier une date encore vide. « Régénérer (remplacer) » = écraser une date déjà publiée (ex. corriger un jour figé en statique) — les likes et lectures sont conservés. La méditation se génère aussi automatiquement à minuit.</p>
           </div>
         </div>
       )}

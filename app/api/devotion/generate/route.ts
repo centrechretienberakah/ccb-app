@@ -4,7 +4,7 @@ import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { isModerator } from "@/lib/rbac";
 import { getCalendarForDate } from "@/lib/devotion/calendar";
 import { generateMeditation } from "@/lib/devotion/generate";
-import { ensureDevotionInDb, findDevotionId } from "@/lib/devotion/ensure";
+import { ensureDevotionInDb, findDevotionId, regenerateDevotionInDb } from "@/lib/devotion/ensure";
 
 export const runtime = "nodejs";
 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Accès réservé à l'administration" }, { status: 403 });
   }
 
-  let body: { date?: string; persist?: boolean } = {};
+  let body: { date?: string; persist?: boolean; force?: boolean } = {};
   try { body = await req.json(); } catch { /* noop */ }
   const date = (body.date || "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -98,6 +98,17 @@ export async function POST(req: NextRequest) {
     }
     const existing = await findDevotionId(admin, date);
     if (existing) {
+      // Déjà publié : par défaut on ne réécrit pas (préserve likes/lectures).
+      // Avec force=true → RÉÉCRIT le contenu en place (même id → likes conservés),
+      // pour corriger un jour publié en statique avant que le calendrier marche.
+      if (body.force) {
+        const reg = await regenerateDevotionInDb(admin, existing, { date, author: "Rév. Elvis NGUIFFO", ...meditation });
+        return NextResponse.json({
+          meditation, calendar: cal,
+          published: !!reg.id, replaced: !!reg.id, id: reg.id ?? existing,
+          error: reg.id ? undefined : reg.error,
+        });
+      }
       return NextResponse.json({ meditation, calendar: cal, published: false, alreadyExists: true, id: existing });
     }
     const result = await ensureDevotionInDb(admin, { date, author: "Rév. Elvis NGUIFFO", ...meditation });
