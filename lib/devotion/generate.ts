@@ -20,14 +20,18 @@ export interface GeneratedMeditation {
   declaration: string;
 }
 
+// ⚠️ Les IDs de modèles GRATUITS d'OpenRouter changent souvent (dépréciations)
+// → une liste figée finit par renvoyer 404 pour chaque modèle et la génération
+// échoue (repli statique). On privilégie donc le ROUTEUR GRATUIT d'OpenRouter
+// (`openrouter/free`) qui choisit automatiquement un modèle gratuit DISPONIBLE.
+// Les suivants ne sont que des replis. Tout est surchargeable via la variable
+// d'env OPENROUTER_MODELS (CSV) sans toucher au code.
 const DEFAULT_FREE_MODELS = [
-  "meta-llama/llama-3.3-70b-instruct:free",
+  "openrouter/free",                              // routeur auto → modèle gratuit dispo (robuste)
+  "deepseek/deepseek-r1:free",
+  "nvidia/nemotron-3-ultra-550b-a55b:free",
   "deepseek/deepseek-chat-v3-0324:free",
-  "google/gemini-2.0-flash-exp:free",
-  "qwen/qwen-2.5-72b-instruct:free",
-  "meta-llama/llama-3.1-8b-instruct:free",
-  "google/gemma-2-9b-it:free",
-  "mistralai/mistral-7b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
 ];
 
 function envModels(): string[] | null {
