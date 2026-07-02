@@ -9,6 +9,10 @@ import { ensureDailyPrayerInDb } from "@/lib/prayer/dailyEnsure";
 import { reindexAiKnowledge } from "@/lib/ai/reindex";
 
 export const runtime = "nodejs";
+// Le cron fait plusieurs choses (génération IA + notif à tous + prière + RAG).
+// Sans ça, la fonction pouvait être coupée par le timeout par défaut → méditation
+// non publiée et notifs non envoyées. 60 s = plafond Hobby.
+export const maxDuration = 60;
 
 /**
  * GET /api/cron/daily

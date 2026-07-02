@@ -64,6 +64,7 @@ export default function DevotionCalendarPage() {
   // Prévisualisation IA
   const [preview, setPreview] = useState<{ date: string; gen: Generated } | null>(null);
   const [busyDate, setBusyDate] = useState<string | null>(null);
+  const [runningToday, setRunningToday] = useState(false);
 
   const flash = (type: "ok" | "err", text: string) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
 
@@ -150,6 +151,32 @@ export default function DevotionCalendarPage() {
     flash(error ? "err" : "ok", error ? `Erreur : ${error.message}` : `Jour ${d.day_no} enregistré.`);
   }
 
+  async function runToday() {
+    if (runningToday) return;
+    setRunningToday(true);
+    try {
+      const res = await fetch("/api/devotion/run-today", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { flash("err", data.error || "Échec."); return; }
+      const dev = data.devotion || {};
+      const sent = data.push?.sent ?? 0;
+      if (dev.error) {
+        flash("err", `Méditation non publiée : ${dev.error}`);
+      } else {
+        const via = dev.source === "calendar" ? "calendrier + IA" : dev.source === "existing" ? "déjà publiée" : "rotation statique";
+        flash("ok", `✅ Méditation du jour OK (${via}) · 🔔 ${sent} membre(s) notifié(s).`);
+      }
+      try {
+        const { data: n } = await sb.rpc("devotion_push_count", { p_date: parisToday() });
+        if (typeof n === "number") setNotifiedToday(n);
+      } catch { /* noop */ }
+    } catch {
+      flash("err", "Erreur réseau.");
+    } finally {
+      setRunningToday(false);
+    }
+  }
+
   async function generate(date: string, persist: boolean, force = false) {
     if (force && !confirm("Remplacer la méditation déjà publiée pour cette date par une nouvelle version générée depuis le calendrier ? (les likes et lectures sont conservés)")) return;
     setBusyDate(date);
@@ -195,6 +222,21 @@ export default function DevotionCalendarPage() {
             🔔 {notifiedToday} membre{notifiedToday > 1 ? "s" : ""} notifié{notifiedToday > 1 ? "s" : ""} aujourd&apos;hui
           </div>
         )}
+      </div>
+
+      {/* Filet de sécurité : relancer manuellement la publication + notif du jour
+          si le cron de minuit n'a pas tourné (Vercel Hobby = best-effort). */}
+      <div style={{ ...card, marginBottom: 18, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Méditation du jour</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 2 }}>
+            Publie la méditation d&apos;aujourd&apos;hui et envoie la notification à tous — si le rappel de minuit n&apos;a pas eu lieu.
+          </div>
+        </div>
+        <button onClick={runToday} disabled={runningToday}
+          style={{ ...btnGold, opacity: runningToday ? 0.6 : 1, whiteSpace: "nowrap" }}>
+          {runningToday ? "En cours…" : "▶ Publier + notifier aujourd'hui"}
+        </button>
       </div>
 
       {msg && (
