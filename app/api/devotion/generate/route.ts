@@ -70,15 +70,18 @@ export async function POST(req: NextRequest) {
 
   // 2) Génération IA
   const hasKey = !!(process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY);
-  const meditation = await generateMeditation(cal, frenchDate(date));
+  const diag: { error?: string } = {};
+  const meditation = await generateMeditation(cal, frenchDate(date), diag);
   if (!meditation) {
-    // Message PRÉCIS pour distinguer les deux causes possibles.
+    // Message PRÉCIS + détail brut de l'erreur du fournisseur pour diagnostic.
+    const base = hasKey
+      ? "CLÉ OK, mais le service IA n'a pas répondu"
+      : "AUCUNE CLÉ IA configurée (ajoute OPENROUTER_API_KEY dans Vercel puis redéploie)";
     return NextResponse.json(
       {
-        error: hasKey
-          ? "CLÉ OK, mais le service IA n'a pas répondu (modèles gratuits indisponibles ou limite atteinte). Réessaie dans un instant, ou configure OPENROUTER_MODELS avec un modèle disponible."
-          : "AUCUNE CLÉ IA configurée : ajoute OPENROUTER_API_KEY (ou OPENAI_API_KEY) dans les variables d'environnement Vercel, puis redéploie.",
+        error: diag.error ? `${base} — DÉTAIL : ${diag.error}` : base,
         reason: hasKey ? "models_unavailable" : "no_api_key",
+        detail: diag.error ?? null,
       },
       { status: 503 },
     );

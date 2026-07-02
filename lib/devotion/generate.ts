@@ -95,7 +95,11 @@ function str(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
-async function callOpenRouter(key: string, models: string[], prompt: string): Promise<string | null> {
+/** Collecteur de diagnostic : renseigné avec la DERNIÈRE erreur rencontrée. */
+export interface GenDiag { error?: string }
+
+async function callOpenRouter(key: string, models: string[], prompt: string, diag?: GenDiag): Promise<string | null> {
+  let lastError: string | null = null;
   for (const model of models) {
     try {
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -113,16 +117,25 @@ async function callOpenRouter(key: string, models: string[], prompt: string): Pr
           max_tokens: 1500,
         }),
       });
-      if (!res.ok) continue;
+      if (!res.ok) {
+        let body = "";
+        try { body = (await res.text()).slice(0, 200).replace(/\s+/g, " ").trim(); } catch { /* noop */ }
+        lastError = `OpenRouter ${res.status} sur ${model}${body ? ` — ${body}` : ""}`;
+        continue;
+      }
       const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
       const reply = data.choices?.[0]?.message?.content?.trim();
       if (reply) return reply;
-    } catch { /* modèle suivant */ }
+      lastError = `OpenRouter: réponse vide de ${model}`;
+    } catch (e) {
+      lastError = `OpenRouter (${model}) : ${e instanceof Error ? e.message : String(e)}`;
+    }
   }
+  if (diag && lastError) diag.error = lastError;
   return null;
 }
 
-async function callOpenAI(key: string, prompt: string): Promise<string | null> {
+async function callOpenAI(key: string, prompt: string, diag?: GenDiag): Promise<string | null> {
   try {
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -135,10 +148,16 @@ async function callOpenAI(key: string, prompt: string): Promise<string | null> {
         max_tokens: 1500,
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      let body = "";
+      try { body = (await res.text()).slice(0, 200).replace(/\s+/g, " ").trim(); } catch { /* noop */ }
+      if (diag) diag.error = `OpenAI ${res.status}${body ? ` — ${body}` : ""}`;
+      return null;
+    }
     const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
     return data.choices?.[0]?.message?.content?.trim() || null;
-  } catch {
+  } catch (e) {
+    if (diag) diag.error = `OpenAI : ${e instanceof Error ? e.message : String(e)}`;
     return null;
   }
 }
@@ -150,10 +169,11 @@ async function callOpenAI(key: string, prompt: string): Promise<string | null> {
 export async function generateMeditation(
   ctx: CalendarContext,
   dateLabel: string,
+  diag?: GenDiag,
 ): Promise<GeneratedMeditation | null> {
   const orKey = process.env.OPENROUTER_API_KEY;
   const oaKey = process.env.OPENAI_API_KEY;
-  if (!orKey && !oaKey) return null;
+  if (!orKey && !oaKey) { if (diag) diag.error = "Aucune clé IA (OPENROUTER_API_KEY/OPENAI_API_KEY)"; return null; }
   if (!ctx.dayTheme || !ctx.dayVerse) return null;
 
   const prompt = buildPrompt(ctx, dateLabel);
@@ -161,9 +181,9 @@ export async function generateMeditation(
   let raw: string | null = null;
   if (orKey) {
     const models = envModels() ?? DEFAULT_FREE_MODELS;
-    raw = await callOpenRouter(orKey, models, prompt);
+    raw = await callOpenRouter(orKey, models, prompt, diag);
   }
-  if (!raw && oaKey) raw = await callOpenAI(oaKey, prompt);
+  if (!raw && oaKey) raw = await callOpenAI(oaKey, prompt, diag);
   if (!raw) return null;
 
   const obj = extractJson(raw);
