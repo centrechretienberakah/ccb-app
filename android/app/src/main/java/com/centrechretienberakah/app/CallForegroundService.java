@@ -29,7 +29,10 @@ import androidx.core.app.NotificationCompat;
 public class CallForegroundService extends Service {
 
     private static final int NOTIF_ID = 424243;
-    private static final String CHANNEL = "ongoing_call";
+    // NB : nouvel ID de canal (les canaux sont IMMUABLES une fois créés) →
+    // garantit que les réglages « visible sur écran verrouillé » s'appliquent
+    // même sur un téléphone ayant déjà installé une version précédente.
+    private static final String CHANNEL = "ccb_call_ongoing";
     public static final String ACTION_START = "com.centrechretienberakah.app.CALL_FGS_START";
     public static final String ACTION_STOP = "com.centrechretienberakah.app.CALL_FGS_STOP";
 
@@ -80,11 +83,17 @@ public class CallForegroundService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm == null) return;
+            // IMPORTANCE_DEFAULT (et non LOW) : certains constructeurs masquent
+            // les notifications de faible importance de l'écran verrouillé. On
+            // reste SILENCIEUX (pas de son ni vibration) via le canal.
             NotificationChannel ch = new NotificationChannel(
-                    CHANNEL, "Appel en cours", NotificationManager.IMPORTANCE_LOW);
+                    CHANNEL, "Appel en cours", NotificationManager.IMPORTANCE_DEFAULT);
             ch.setDescription("Notification affichée pendant un appel CCB Meet");
             ch.setShowBadge(false);
             ch.setSound(null, null);
+            ch.enableVibration(false);
+            // Contenu VISIBLE sur l'écran verrouillé (sinon masqué/redacté).
+            ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             nm.createNotificationChannel(ch);
         }
     }
@@ -100,8 +109,10 @@ public class CallForegroundService extends Service {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("Appel CCB en cours")
                 .setContentText("Appuyez pour revenir à l'appel")
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setCategory(NotificationCompat.CATEGORY_CALL)
+                // Visible sur l'écran verrouillé, sur tous les téléphones.
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setOngoing(true)
                 .setSilent(true)
                 .setContentIntent(pi)
