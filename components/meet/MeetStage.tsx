@@ -31,6 +31,7 @@ import type { TrackReference, TrackReferenceOrPlaceholder } from "@livekit/compo
 import { useCall } from "@/lib/meet/CallContext";
 import { createClient } from "@/lib/supabase/client";
 import { ringCall, pushCallNotification } from "@/lib/meet/calls";
+import { useMusicShare, MusicPanel } from "./MusicShare";
 
 const VIOLET = "#5B21B6";
 const GOLD = "#D4AF37";
@@ -63,7 +64,7 @@ function initialsOf(name: string | undefined): string {
   return (name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-type Panel = "none" | "chat" | "people" | "settings" | "notes" | "stats";
+type Panel = "none" | "chat" | "people" | "settings" | "notes" | "stats" | "music";
 interface TalkEntry { name: string; secs: number }
 interface MeetStats { start: number; peak: number; shares: number; talk: Record<string, TalkEntry> }
 interface Verse { ref: string; text: string; by: string }
@@ -105,6 +106,8 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
   const [showAddCall, setShowAddCall] = useState(false); // inviter qqn à l'appel en cours (DM)
 
   const room = useRoomContext();
+  // Partage de musique (piste audio publiée, sans partage d'écran).
+  const music = useMusicShare(room, flash);
   const [canModerate, setCanModerate] = useState(false);
   const [recording, setRecording] = useState<Rec | null>(null);
   const recEgressRef = useRef<string | null>(null);
@@ -417,6 +420,9 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
       {panel === "stats" && (
         <StatsPanel statsRef={statsRef} onClose={() => setPanel("none")} />
       )}
+      {panel === "music" && (
+        <MusicPanel music={music} onClose={() => setPanel("none")} />
+      )}
 
       {/* ── Prompts ── */}
       {showVersePrompt && <VersePrompt onShare={(r, t) => { shareVerse(r, t); setShowVersePrompt(false); }} onClose={() => setShowVersePrompt(false)} />}
@@ -448,6 +454,8 @@ export default function MeetStage({ isAudio }: { isAudio: boolean }) {
         onSettings={() => setPanel((p) => (p === "settings" ? "none" : "settings"))}
         onNotes={() => setPanel((p) => (p === "notes" ? "none" : "notes"))}
         onStats={() => setPanel((p) => (p === "stats" ? "none" : "stats"))}
+        onMusic={() => setPanel((p) => (p === "music" ? "none" : "music"))}
+        musicActive={music.active}
         onInvite={state.conversationId && !state.groupId ? () => setShowAddCall(true) : undefined}
         canRecord={canModerate}
         recording={!!recording}
@@ -1063,12 +1071,12 @@ function downloadBlob(blob: Blob, filename: string) {
 /* ─────────────── Barre de contrôle ─────────────── */
 function ControlBar({
   visible, isAudio, handRaised, unreadChat, panel, prayerActive,
-  onHand, onChat, onPeople, onVerse, onPrayer, onSettings, onNotes, onStats, onInvite,
+  onHand, onChat, onPeople, onVerse, onPrayer, onSettings, onNotes, onStats, onMusic, musicActive, onInvite,
   canRecord, recording, onRecord, onFullscreen, isFullscreen, onLeave,
 }: {
   visible: boolean; isAudio: boolean; handRaised: boolean; unreadChat: number; peopleCount: number; panel: Panel; prayerActive: boolean;
   onHand: () => void; onChat: () => void; onPeople: () => void; onVerse: () => void; onPrayer: () => void; onSettings: () => void;
-  onNotes: () => void; onStats: () => void; onInvite?: () => void;
+  onNotes: () => void; onStats: () => void; onMusic: () => void; musicActive: boolean; onInvite?: () => void;
   canRecord: boolean; recording: boolean; onRecord: () => void; onFullscreen: () => void; isFullscreen: boolean; onLeave: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -1097,6 +1105,7 @@ function ControlBar({
               <MenuTile emoji="👥" label="Membres" active={panel === "people"} onClick={run(onPeople)} />
               {onInvite && <MenuTile emoji="➕" label="Inviter" onClick={run(onInvite)} />}
               <MenuTile emoji="📖" label="Verset" onClick={run(onVerse)} />
+              <MenuTile emoji="🎵" label="Musique" active={musicActive} onClick={run(onMusic)} />
               <MenuTile emoji="🙏" label="Prière" active={prayerActive} onClick={run(onPrayer)} />
               <MenuTile emoji="📝" label="Notes" active={panel === "notes"} onClick={run(onNotes)} />
               <MenuTile emoji="📊" label="Stats" active={panel === "stats"} onClick={run(onStats)} />
