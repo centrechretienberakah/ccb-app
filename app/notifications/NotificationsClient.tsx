@@ -104,8 +104,11 @@ export default function NotificationsClient({ notifications: initial }: { notifi
               <div
                 key={n.id}
                 style={{
-                  background: n.is_read ? "var(--card-bg)" : "var(--surface)",
-                  border: `1px solid ${n.is_read ? "var(--border-subtle)" : "var(--border)"}`,
+                  // Non lue = fond teinté violet + barre d'accent or à gauche
+                  // (boxShadow inset → pas de décalage de mise en page).
+                  background: n.is_read ? "var(--card-bg)" : "var(--violet-pale)",
+                  border: `1px solid ${n.is_read ? "var(--border-subtle)" : "var(--violet-light)"}`,
+                  boxShadow: n.is_read ? undefined : "inset 4px 0 0 var(--gold)",
                   borderRadius: "var(--radius-lg)",
                   padding: "14px 16px",
                   display: "flex",

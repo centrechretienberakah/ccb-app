@@ -684,7 +684,8 @@ function PrayerBanner({ prayer, canStop, onStop, onEnd }: { prayer: Prayer; canS
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, color: GOLD, fontWeight: 800, letterSpacing: "0.08em" }}>🙏 MODE PRIÈRE</div>
-          <div style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prayer.topic}</div>
+          {/* Sujet affiché EN ENTIER (retour à la ligne au lieu de tronquer). */}
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", marginTop: 2, lineHeight: 1.4, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>{prayer.topic}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800, fontSize: 17, color: "#fff" }}>{fmtDuration(remaining)}</span>
