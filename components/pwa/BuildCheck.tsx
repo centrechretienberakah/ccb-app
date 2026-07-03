@@ -86,7 +86,10 @@ export default function BuildCheck({ buildId }: { buildId: string }) {
           const server = data.buildId;
           if (server && server !== "dev" && server !== buildId && !isCallActive()) {
             try { localStorage.setItem(STORAGE_KEY, server); } catch { /* noop */ }
-            await hardRefresh();
+            // Rechargement DOUX au réveil (on NE vide PAS le cache : sinon on
+            // re-télécharge tout au moment où le réseau se réveille → risque
+            // d'écran de secours). Le SW/HTML network-first suffit à rafraîchir.
+            window.location.reload();
             return;
           }
         }

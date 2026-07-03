@@ -48,16 +48,30 @@
   <button class="retry" onclick="location.reload()">Réessayer</button>
 
   <script>
-    // Cette page n'est qu'un écran de secours embarqué. Le contenu réel de
-    // l'application est chargé depuis le serveur (server.url). Si l'appareil est
-    // hors-ligne au démarrage, on affiche un message + bouton « Réessayer ».
+    // Écran de secours embarqué. Le contenu réel vient du serveur (server.url).
+    // PROBLÈME CORRIGÉ : si la WebView atterrit ici (réseau pas encore prêt au
+    // réveil du téléphone, ex. à l'arrivée d'un appel), cette page RÉESSAIE
+    // AUTOMATIQUEMENT de charger l'app — au lieu de rester bloquée sur le
+    // spinner. Sinon l'écran d'appel n'apparaissait jamais.
+    var APP_URL = "https://centrechretienberakah.com";
     function check() {
       if (!navigator.onLine) document.body.classList.add('offline');
       else document.body.classList.remove('offline');
     }
-    window.addEventListener('online', check);
+    function loadApp() {
+      if (navigator.onLine) { try { location.replace(APP_URL); } catch (e) { location.href = APP_URL; } }
+    }
+    window.addEventListener('online', function () { check(); loadApp(); });
     window.addEventListener('offline', check);
     check();
+    // 1re tentative rapide, puis toutes les 2,5 s (jusqu'à ~60 s) tant qu'on est
+    // en ligne. Dès que l'app charge, on ne revient plus ici.
+    setTimeout(loadApp, 1000);
+    var n = 0;
+    var timer = setInterval(function () {
+      n++; if (n > 24) { clearInterval(timer); return; }
+      loadApp();
+    }, 2500);
   </script>
 </body>
 </html>
