@@ -29,7 +29,20 @@ export default function NativePushRegistrar() {
       try {
         const { PushNotifications } = await import("@capacitor/push-notifications");
 
-        // 1) Canaux Android (idempotent)
+        // 0) RÉINITIALISATION UNIQUE des canaux : un canal est IMMUABLE une fois
+        // créé. Si une version précédente en a créé un sans son / en faible
+        // importance, la mise à jour ne pouvait plus le corriger (notifs muettes).
+        // On les supprime UNE fois pour qu'ils soient recréés à neuf (avec son).
+        try {
+          if (!localStorage.getItem("ccb-notif-channels-reset-v2")) {
+            for (const ch of CHANNELS) {
+              try { await PushNotifications.deleteChannel({ id: ch.id }); } catch { /* noop */ }
+            }
+            localStorage.setItem("ccb-notif-channels-reset-v2", "1");
+          }
+        } catch { /* noop */ }
+
+        // 1) Canaux Android (idempotent) — importance ≥ DEFAULT → son par défaut.
         for (const ch of CHANNELS) {
           try {
             await PushNotifications.createChannel({
