@@ -18,6 +18,23 @@ import { useEffect } from "react";
 
 const STORAGE_KEY = "ccb_build_id";
 
+/**
+ * NE JAMAIS recharger pendant un APPEL (ou sur une page d'appel/réunion) : un
+ * rechargement couperait l'appel en cours ou casserait l'écran de décrochage.
+ * On diffère la mise à jour jusqu'à la fin de l'appel.
+ */
+function isCallActive(): boolean {
+  try {
+    const raw = sessionStorage.getItem("ccb-call-state");
+    if (raw) { const s = JSON.parse(raw) as { active?: boolean }; if (s?.active) return true; }
+  } catch { /* noop */ }
+  try {
+    const p = window.location.pathname;
+    if (/\/call(\/|$)/.test(p) || /\/meeting(\/|$)/.test(p)) return true;
+  } catch { /* noop */ }
+  return false;
+}
+
 /** Vide SW + caches puis recharge depuis le serveur. */
 async function hardRefresh(): Promise<void> {
   try {
@@ -42,6 +59,7 @@ export default function BuildCheck({ buildId }: { buildId: string }) {
       if (!buildId || buildId === "dev") return;
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored && stored !== buildId) {
+        if (isCallActive()) return;         // différer : appel en cours
         localStorage.setItem(STORAGE_KEY, buildId);
         void hardRefresh();
       } else {
@@ -59,13 +77,14 @@ export default function BuildCheck({ buildId }: { buildId: string }) {
     let checking = false;
     const check = async () => {
       if (document.visibilityState !== "visible" || checking) return;
+      if (isCallActive()) return;           // ne pas recharger pendant un appel
       checking = true;
       try {
         const res = await fetch("/api/version", { cache: "no-store" });
         if (res.ok) {
           const data = (await res.json()) as { buildId?: string };
           const server = data.buildId;
-          if (server && server !== "dev" && server !== buildId) {
+          if (server && server !== "dev" && server !== buildId && !isCallActive()) {
             try { localStorage.setItem(STORAGE_KEY, server); } catch { /* noop */ }
             await hardRefresh();
             return;
